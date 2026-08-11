@@ -19,4 +19,16 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Context providers colocate their Provider component with the hook
+    // that reads the context (ARCHITECTURE.md 13.4) — an accepted exception
+    // to the "one component per file" fast-refresh rule.
+    files: ['src/presentation/app/providers/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': [
+        'error',
+        { allowExportNames: ['useAuthContext', 'useDependencies'] },
+      ],
+    },
+  },
 ])

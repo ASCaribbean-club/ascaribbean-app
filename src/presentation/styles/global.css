@@ -1,0 +1,32 @@
+:root {
+  color-scheme: light dark;
+  --color-bg: #fff;
+  --color-text: #08060d;
+  --color-border: #e5e4e7;
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #16171d;
+    --color-text: #f3f4f6;
+    --color-border: #2e303a;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#root {
+  min-height: 100svh;
+}

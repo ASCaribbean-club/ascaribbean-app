@@ -1,6 +1,6 @@
 export interface Team {
   id: string
   name: string
-  section: string
-  season: string
+  sectionId: string
+  seasonId: string
 }

@@ -1,64 +1,64 @@
-# AS Caribbean — Club App
+# AS Caribbean — Application du Club
 
-Internal application for **AS Caribbean**, a multisport club in Nantes (Seniors, Caribbean Girlz, E-sport, Chess & Dominoes, and event/media activities).
+Application interne pour **AS Caribbean**, club multisports à Nantes (Seniors, Caribbean Girlz, E-sport, Échecs & Dominos, et activités événementielles/médias).
 
-> Centralize the sporting, administrative and financial life of the club in one simple, secure, mobile-first tool — for players, coaches, board members and volunteers alike.
+> Centraliser la vie sportive, administrative et financière du club dans un outil simple, sécurisé et mobile-first — pour les joueurs, entraîneurs, membres du bureau et bénévoles.
 
-The app doesn't replace human coordination — it's the shared reference point that cuts down on missed information and keeps the club's tracking reliable: a single members database, a shared calendar with call-ups and attendance, sporting follow-up, document/payment tracking, and the ASC Legacy engagement-rewards module.
+L'application ne remplace pas la coordination humaine — elle est le point de référence partagé qui réduit les pertes d'information et fiabilise le suivi du club : une base de membres unique, un calendrier partagé avec convocations et présences, un suivi sportif, un suivi des documents/paiements, et le module de récompenses d'engagement ASC Legacy.
 
-## Roles
+## Rôles
 
-Access is role-based, and a person can hold several roles at once (e.g. a player who is also a coach). Every screen and every piece of data is scoped to what the role actually needs — least privilege by default, enforced both in the UI and at the database level (Row-Level Security).
+L'accès est basé sur des rôles, et une personne peut cumuler plusieurs rôles à la fois (par exemple un joueur qui est aussi entraîneur). Chaque écran et chaque donnée est limité à ce dont le rôle a réellement besoin — moindre privilège par défaut, appliqué à la fois dans l'interface et au niveau de la base de données (Row-Level Security).
 
-| Role | What they can do |
+| Rôle | Ce qu'il peut faire |
 |---|---|
-| **Player / Player (f.)** | Own profile, calendar, call-ups, attendance, documents, Legacy points |
-| **Coach / Staff** | Their team's roster, attendance, evaluations, call-ups, observations |
-| **Section manager** | Runs their section: events, roster, documents, reports |
-| **Authorized officer** | Members, licenses, payments, documents, communication, exports |
-| **Treasurer** | Membership fees, payment schedules, reminders, financial exports |
-| **Medical referent** | Health information strictly needed for follow-up — narrow, audited access |
-| **Volunteer** | Missions, planning, instructions and confirmations |
-| **Administrator** | Configuration, accounts, roles, seasons, security, audit log |
+| **Joueur / Joueuse** | Profil personnel, calendrier, convocations, présences, documents, points Legacy |
+| **Entraîneur / Staff** | Effectif de son équipe, présences, évaluations, convocations, observations |
+| **Responsable de section** | Gère sa section : événements, effectif, documents, rapports |
+| **Dirigeant habilité** | Membres, licences, paiements, documents, communication, exports |
+| **Trésorier** | Cotisations, échéanciers de paiement, relances, exports financiers |
+| **Référent médical** | Informations de santé strictement nécessaires au suivi — accès restreint et audité |
+| **Bénévole** | Missions, planning, instructions et confirmations |
+| **Administrateur** | Configuration, comptes, rôles, saisons, sécurité, journal d'audit |
 
-See `docs/CDC_AS_Caribbean.pdf` (section 3) for the full permissions matrix.
+Voir `docs/CDC_AS_Caribbean.pdf` (section 3) pour la matrice complète des permissions.
 
-## Screenshots
+## Captures d'écran
 
-<!-- TODO: add screenshots once the first screens are built -->
+<!-- TODO: ajouter les captures d'écran une fois les premiers écrans construits -->
 
-| Home | Calendar | Member profile |
+| Accueil | Calendrier | Profil membre |
 |---|---|---|
-| _coming soon_ | _coming soon_ | _coming soon_ |
+| _à venir_ | _à venir_ | _à venir_ |
 
-## Tech overview
+## Aperçu technique
 
-- **React 19 + Vite**, packaged as an installable PWA (mobile-first, offline-friendly for critical screens)
-- **Supabase** (Postgres, Auth, Storage) as the backend, with Row-Level Security as the real authorization boundary
-- **TanStack Query** for server-state (cache, retry, invalidation)
-- **Clean Architecture** split into `domain/` (framework-free business logic), `data/` (Supabase implementations), `presentation/` (React)
-- **Vitest** for domain, data and view-model tests
+- **React 19 + Vite**, packagé en PWA installable (mobile-first, utilisable hors ligne pour les écrans critiques)
+- **Supabase** (Postgres, Auth, Storage) comme backend, avec Row-Level Security comme véritable frontière d'autorisation
+- **TanStack Query** pour l'état serveur (cache, retry, invalidation)
+- **Clean Architecture** répartie en `domain/` (logique métier indépendante des frameworks), `data/` (implémentations Supabase), `presentation/` (React)
+- **Vitest** pour les tests de domaine, de données et de view-models
 
-The codebase is organized so the business logic (roles, rules, use cases) stays portable and testable independently of React or Supabase — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full rationale and target folder structure.
+Le code est organisé pour que la logique métier (rôles, règles, cas d'usage) reste portable et testable indépendamment de React ou de Supabase — voir [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) pour l'argumentaire complet et la structure de dossiers cible.
 
-## Getting started
+## Démarrage
 
 ```bash
 npm install
-npm run dev        # start the dev server
-npm run build       # typecheck + production build
-npm run test         # run the test suite (Vitest)
-npm run lint          # lint the codebase
-npm run boundaries      # verify architecture layer boundaries
+npm run dev        # démarrer le serveur de développement
+npm run build       # typecheck + build de production
+npm run test         # lancer la suite de tests (Vitest)
+npm run lint          # linter le code
+npm run boundaries      # vérifier les frontières entre couches d'architecture
 ```
 
 ## Documentation
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — application architecture (layers, permissions model, testing strategy, target folder structure)
-- [`docs/GOUVERNANCE.md`](docs/GOUVERNANCE.md) — project governance
-- [`docs/RETENTION_PURGE.md`](docs/RETENTION_PURGE.md) — data retention & purge policy
-- [`docs/CDC_AS_Caribbean.pdf`](docs/CDC_AS_Caribbean.pdf) — full functional & technical specification (French)
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture applicative (couches, modèle de permissions, stratégie de tests, structure de dossiers cible)
+- [`docs/GOUVERNANCE.md`](docs/GOUVERNANCE.md) — gouvernance du projet
+- [`docs/RETENTION_PURGE.md`](docs/RETENTION_PURGE.md) — politique de rétention et de purge des données
+- [`docs/CDC_AS_Caribbean.pdf`](docs/CDC_AS_Caribbean.pdf) — cahier des charges fonctionnel et technique complet
 
-## Status
+## Statut
 
-Internal club application, private use only — not intended for public distribution.
+Application interne du club, usage privé uniquement — non destinée à une distribution publique.

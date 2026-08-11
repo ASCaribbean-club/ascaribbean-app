@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "boundaries": "depcruise --config .dependency-cruiser.cjs src"
+    "boundaries": "depcruise --config .dependency-cruiser.cjs src",
+    "create-user": "node --env-file=.env scripts/create-user.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",

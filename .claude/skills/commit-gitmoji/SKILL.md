@@ -68,3 +68,4 @@ Full list at gitmoji.dev; this project uses a deliberately small, consistent sub
 3. Prefer `domain`/`data`/`presentation` as scope when the change is architecturally focused (e.g. a single use case or repository); prefer the feature/module name when the change spans layers but stays within one feature.
 4. Flag it explicitly if a change touches sensitive areas (health data, RBAC permissions, audit log) even when the gitmoji already signals it — a one-line note in the body is enough, not a restatement of the diff.
 5. Never invent a scope that doesn't match an existing module or layer in `ARCHITECTURE.md`.
+6. Never include Claude co-author footers (e.g. `Co-Authored-By: Claude ...`) in commit messages — commits must not reference Claude or any AI assistant.

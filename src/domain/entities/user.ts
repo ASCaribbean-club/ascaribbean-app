@@ -31,4 +31,7 @@ export interface User {
   fullName: string
   email: string
   roles: RoleAssignment[]
+  // CDC §3.1: "activation après acceptation de la charte" — null until the
+  // member accepts, set once via the accept_charter() RPC, never cleared.
+  charterAcceptedAt: Date | null
 }

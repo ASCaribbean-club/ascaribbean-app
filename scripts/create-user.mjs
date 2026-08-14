@@ -74,7 +74,7 @@ async function main() {
     redirectTo,
   })
 
-  if (invited) {
+  if (invited?.user) {
     userId = invited.user.id
     console.log(`Invitation envoyee a ${email}.`)
   } else if (inviteError?.message.toLowerCase().includes('already registered')) {

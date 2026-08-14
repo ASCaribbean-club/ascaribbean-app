@@ -58,7 +58,10 @@ src/
     app/             main.tsx, App.tsx, router.tsx, providers/
     di/              container.ts
     shared/          components/, layout/, hooks/, query-keys.ts, formatters/
-    features/        one folder per screen: Page + ViewModel + local components
+    features/        one subfolder per screen: Page + ViewModel + local components — even when
+                     several screens share a feature module, e.g. features/auth/login/,
+                     features/auth/charter/, not a flat features/auth/ with every screen's
+                     files side by side
 ```
 
 Don't create `presentation/mobile/` or `presentation/desktop/` — single-render phase, no folder for a symmetry that doesn't exist yet. Don't create a `utils/` or global `types/` folder — everything belongs to an identifiable layer.

@@ -31,6 +31,8 @@ If you're about to write an import that violates this, stop and flag it instead 
 | Use case | `PascalCaseUseCase`, in `domain/usecases/` (e.g. `RespondToConvocationUseCase`) |
 | Repository interface | `domain/repositories/xxx-repository.ts`, e.g. `ConvocationRepository` |
 | Repository implementation | `data/repositories/XxxRepositoryImpl.ts` |
+| DTO — table/view row | `XxxRow` in `data/dto/` — maps 1:1 to one table or view's columns (a view counts even if it's backed by a join/aggregation, as long as it's a stable column set), e.g. `UserRow` |
+| DTO — everything else | `XxxDto` in `data/dto/` — RPC return value, inline join/aggregation with no view behind it, or external API payload, e.g. `ConvocationSummaryDto` |
 | Mapper | `data/mappers/`, always present between DTO and entity — never skip it, even for a "simple" table |
 | ViewModel hook | `use<Feature>ViewModel.ts` — the `use` prefix is mandatory, not cosmetic (React's `rules-of-hooks` identifies hooks by name) |
 | Screen component | `<Feature>Page.tsx` — zero business logic, only `if (isLoading)` / `if (error)` / `if (canX)` branches on booleans the ViewModel already computed |

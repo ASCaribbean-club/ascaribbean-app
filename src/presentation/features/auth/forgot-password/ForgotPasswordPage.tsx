@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { AuthCard } from '../../../shared/components/AuthCard'
+import { AuthCard } from '../components/AuthCard'
 import { useForgotPasswordViewModel } from './useForgotPasswordViewModel'
 
 export function ForgotPasswordPage() {

@@ -1,4 +1,4 @@
-import { AuthCard } from '../../../shared/components/AuthCard'
+import { AuthCard } from '../components/AuthCard'
 import { useCharterViewModel } from './useCharterViewModel'
 
 // Charter text/URL: OPEN — not specified anywhere yet (no docs/CHARTE.md,

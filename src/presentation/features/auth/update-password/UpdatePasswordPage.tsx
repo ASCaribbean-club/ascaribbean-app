@@ -1,5 +1,5 @@
 import { Link, Navigate } from 'react-router-dom'
-import { AuthCard } from '../../../shared/components/AuthCard'
+import { AuthCard } from '../components/AuthCard'
 import { formatRole } from '../../../shared/formatters/role-labels'
 import { useUpdatePasswordViewModel } from './useUpdatePasswordViewModel'
 

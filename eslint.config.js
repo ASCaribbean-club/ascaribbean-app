@@ -20,14 +20,16 @@ export default defineConfig([
     },
   },
   {
-    // Context providers colocate their Provider component with the hook
-    // that reads the context (ARCHITECTURE.md 13.4) — an accepted exception
-    // to the "one component per file" fast-refresh rule.
+    // Context providers colocate their Provider component with the hook (or,
+    // for DependenciesContext, the Context object itself — read via
+    // di/hooks/use-<domain>-dependencies.ts) that reads the context
+    // (ARCHITECTURE.md 13.4) — an accepted exception to the "one component
+    // per file" fast-refresh rule.
     files: ['src/presentation/app/providers/*.tsx'],
     rules: {
       'react-refresh/only-export-components': [
         'error',
-        { allowExportNames: ['useAuthContext', 'useDependencies'] },
+        { allowExportNames: ['useAuthContext', 'DependenciesContext'] },
       ],
     },
   },

@@ -1,10 +1,15 @@
-// Câble les implémentations de data/ aux use cases de domain/.
-// Instancié une fois, exposé aux hooks via DependenciesProvider.
-// Vide à l'amorçage — un câblage par module fonctionnel, au fur et à mesure
-// que domain/usecases/ et data/repositories/ se remplissent.
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- vide à l'amorçage, s'étoffe module par module
-export interface Container {}
+// Câble les implémentations de data/ aux use cases de domain/, un
+// sous-container par domaine (di/containers/). Client Supabase unique,
+// créé ici et transmis aux sous-containers — jamais recréé par domaine.
+import { supabaseClient } from '@data/datasources/supabase-client'
+import { createAuthContainer, type AuthContainer } from './containers/auth-container'
+
+export interface Container {
+  auth: AuthContainer
+}
 
 export function createContainer(): Container {
-  return {}
+  return {
+    auth: createAuthContainer(supabaseClient),
+  }
 }

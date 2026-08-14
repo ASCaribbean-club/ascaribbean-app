@@ -29,8 +29,8 @@ module.exports = {
       name: 'presentation-no-direct-data',
       severity: 'error',
       comment:
-        "presentation/ n'importe jamais data/ directement — l'injection passe par presentation/di/container.ts.",
-      from: { path: '^src/presentation', pathNot: '^src/presentation/di/container\\.ts$' },
+        "presentation/ n'importe jamais data/ directement — l'injection passe par presentation/di/container.ts et ses sous-containers (presentation/di/containers/*.ts).",
+      from: { path: '^src/presentation', pathNot: '^src/presentation/di/(container\\.ts|containers/)' },
       to: { path: '^src/data' },
     },
   ],

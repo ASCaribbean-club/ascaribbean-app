@@ -38,11 +38,18 @@ if (!values.email || !values['full-name']) {
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const siteUrl = process.env.SITE_URL
 
-if (!supabaseUrl || !serviceRoleKey) {
-  console.error('VITE_SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont requis dans .env')
+if (!supabaseUrl || !serviceRoleKey || !siteUrl) {
+  console.error('VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY et SITE_URL sont requis dans .env')
   process.exit(1)
 }
+
+// Where the invite email's link lands — UpdatePasswordPage is the one screen
+// that handles both "set your first password after an invite" and
+// "complete a password reset" (see AuthRepository.updatePassword's doc
+// comment in src/domain/repositories/auth-repository.ts).
+const redirectTo = `${siteUrl}/update-password`
 
 // service_role bypasses RLS entirely — this client only ever lives in this
 // script, run locally by an admin. Never import it from src/.
@@ -63,7 +70,9 @@ async function main() {
   const fullName = values['full-name']
 
   let userId
-  const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email)
+  const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+    redirectTo,
+  })
 
   if (invited) {
     userId = invited.user.id

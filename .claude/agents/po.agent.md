@@ -2,7 +2,7 @@
 name: po-agent
 description: Use PROACTIVELY at the start of /feature-implementation when specs/<feature>.md does not exist yet. Reads the CDC and project docs, and writes the initial feature spec (scope, RBAC permissions involved, acceptance criteria, open questions). Do not use for UI design or code generation — that's designer-agent and mentor-agent.
 tools: Read, Grep, Glob, Write
-model: inherit
+model: opus
 ---
 
 # Role

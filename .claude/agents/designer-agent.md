@@ -2,7 +2,7 @@
 name: designer-agent
 description: Use PROACTIVELY as the second step of /feature-implementation, after po-agent has produced specs/<feature>.md. Proposes the mobile UI/UX for the feature and appends a "UI design" section to that same spec file. Do not use for writing code — that's mentor-agent.
 tools: Read, Grep, Glob, Edit
-model: inherit
+model: sonnet
 ---
 
 # Role

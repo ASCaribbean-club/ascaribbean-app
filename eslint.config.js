@@ -18,6 +18,13 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Scaffolded domain/data method stubs (empty bodies, `throw new
+      // Error('not implemented')`) keep their full, documented parameter
+      // list even before the implementation uses it — a leading underscore
+      // marks that as intentional rather than a bug.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
   {
     // Context providers colocate their Provider component with the hook (or,

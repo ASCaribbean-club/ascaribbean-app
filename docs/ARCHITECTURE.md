@@ -323,11 +323,11 @@ Périmètre : squelette + configuration uniquement. Le premier module fonctionne
 ├── docs/
 │   ├── ARCHITECTURE.md               Ce document
 │   ├── GOUVERNANCE.md
-│   ├── RETENTION-PURGE.md
-│   └── specs/                        Specs par feature (handoff entre agents)
+│   └── RETENTION-PURGE.md
 ├── public/
 │   ├── icons/                        Icônes PWA (192, 512, maskable)
 │   └── robots.txt                    Application interne : indexation refusée
+├── specs/                            Specs par feature (handoff entre agents)
 ├── src/
 ├── supabase/
 │   ├── migrations/                   Schéma, politiques RLS, triggers d'audit

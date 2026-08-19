@@ -10,6 +10,8 @@ Internal sports-club management PWA, invitation-only (no public area). 8 cumulat
 
 Vite + React + React Router + vite-plugin-pwa + TanStack Query + Context API + Supabase (Postgres + RLS) + Netlify. This is decided. Do not propose Next.js, Redux, Zustand, Prisma, or other state/backend libraries "as an improvement."
 
+UI primitives: Tailwind CSS v4 + shadcn/ui (Radix base, `radix-nova` style). Prefer a shadcn primitive over a hand-rolled component whenever one exists for the job — install with `npx shadcn add <component>` rather than hand-authoring the same thing. `components.json` redirects shadcn's default `@/components`/`@/lib`/`@/hooks` aliases into `presentation/shared/` (see §5) so generated files land inside the layer structure instead of a bare `src/components`. Files under `presentation/shared/components/ui/` are vendored from shadcn — don't hand-edit their internals beyond what `npx shadcn diff` would show as your own change, and re-run `shadcn add --overwrite` to pick up upstream updates instead of patching by hand. The existing hand-written BEM CSS in `presentation/styles/global.css` (auth screens, coach-dashboard) predates this and isn't retrofitted to Tailwind automatically — migrate a screen to Tailwind/shadcn only when it's already being touched for other reasons, not as a drive-by rewrite.
+
 ## 3. Architecture — the one non-negotiable rule
 
 Three layers, dependency arrows always point inward:
@@ -57,7 +59,9 @@ src/
   presentation/
     app/             main.tsx, App.tsx, router.tsx, providers/
     di/              container.ts
-    shared/          components/, layout/, hooks/, query-keys.ts, formatters/
+    shared/          components/ (ui/ = shadcn primitives, vendored — see §2), layout/,
+                     hooks/, query-keys.ts, formatters/, lib/ (shadcn's cn() helper only —
+                     not a general-purpose utils dump)
     features/        one subfolder per screen: Page + ViewModel + local components — even when
                      several screens share a feature module, e.g. features/auth/login/,
                      features/auth/charter/, not a flat features/auth/ with every screen's

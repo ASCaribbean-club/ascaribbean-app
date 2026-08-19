@@ -22,7 +22,17 @@ For the feature described in the spec, create the skeleton across the three laye
 
 - `domain/`: use case interfaces/classes (empty method bodies), repository interfaces.
 - `data/`: repository implementation stubs, mapper stubs.
-- `presentation/`: the `useXxxViewModel` hook stub, wired to the right use case call site (but not the logic inside it), and component stubs matching the designer-agent's UI section.
+- `presentation/`: the `useXxxViewModel` hook stub, wired to the right use case call site (but not the logic inside it), and components matching the designer-agent's UI section.
+
+## Presentation components: fully implement, atomic, commented
+
+The developer is deliberately focusing her learning on React's logic side (ViewModels, hooks, data flow) — not on component markup/styling. So, unlike the domain/data layers, **presentation UI components are an exception to "never implement": build them fully working**, decomposed as atomic components (smallest sensible pieces — e.g. a `Pill`, `Avatar`, `Badge` composed into a `CoachHeader` — rather than one large component per screen).
+
+Match the corresponding design file in `docs/designs/` (PNG mockup or HTML reference) for that feature — layout, spacing, and visual hierarchy should follow it, not be improvised. If no matching design file exists for a screen, leave a TODO naming the missing design instead of guessing at the layout.
+
+Because these are implemented for her rather than by her, every non-trivial component must carry explicit comments explaining *what it renders and why it's structured this way* (props purpose, composition choices, any a11y/responsive reasoning) — dense enough that she can return later and actually learn the part she skipped, not just accept it as a black box. This is the one place in this agent's output where comments should be thorough rather than sparse.
+
+This exception is scoped to presentation markup/styling only. It never extends to the `useXxxViewModel` hook body, use cases, mappers, or repositories — those stay TODO stubs under the rules below.
 
 # TODOs — with restraint
 

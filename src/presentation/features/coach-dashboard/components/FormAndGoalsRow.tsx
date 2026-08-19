@@ -21,7 +21,7 @@ export function FormAndGoalsRow() {
     <div className="grid grid-cols-2 gap-2.5">
       <Card className="gap-2.5 rounded-[18px] border-white/10 bg-white/6 p-3.5">
         <CardHeader className="p-0">
-          <CardTitle className="text-[10.5px] font-extrabold tracking-[0.05em] text-white/55 uppercase">
+          <CardTitle className="text-[10.5px] font-extrabold tracking-wider text-white/55 uppercase">
             Forme récente
           </CardTitle>
         </CardHeader>
@@ -41,7 +41,7 @@ export function FormAndGoalsRow() {
 
       <Card className="gap-2.25 rounded-[18px] border-white/10 bg-white/6 p-3.5">
         <CardHeader className="p-0">
-          <CardTitle className="text-[10.5px] font-extrabold tracking-[0.05em] text-white/55 uppercase">
+          <CardTitle className="text-[10.5px] font-extrabold tracking-wider text-white/55 uppercase">
             Buts
           </CardTitle>
         </CardHeader>

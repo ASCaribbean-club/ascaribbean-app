@@ -66,7 +66,7 @@ export function CoachHeader({
         <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
       </div>
 
-      <h1 className="pr-13 text-[30px] leading-[1.05] font-black tracking-[-0.015em] text-white">
+      <h1 className="pr-13 text-[30px] leading-[1.05] font-black tracking-tight text-white">
         Bonjour,
         <br />
         {firstName}

@@ -33,7 +33,7 @@ export function NextMatchCard({ nextMatch, onOpen }: NextMatchCardProps) {
       className="flex cursor-pointer flex-col gap-3.5 rounded-[20px] border-white/10 bg-white/6 p-4.5 backdrop-blur-sm"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11.5px] font-extrabold tracking-[0.05em] text-coach-green-label uppercase">
+        <span className="text-[11.5px] font-extrabold tracking-wider text-coach-green-label uppercase">
           PROCHAIN MATCH
         </span>
         <Badge className="rounded-full bg-coach-red-badge px-2.25 py-0.75 text-[10.5px] font-extrabold text-white">

@@ -40,4 +40,13 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // shadcn/ui components (installed via `npx shadcn add`, never hand-authored)
+    // export a cva `xxxVariants` helper alongside the component by convention —
+    // re-splitting them would break `shadcn diff`/re-installs going forward.
+    files: ['src/presentation/shared/components/ui/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

@@ -22,7 +22,7 @@ export class GetCoachTeamsUseCase {
   }
 
   async execute(_input: GetCoachTeamsInput): Promise<CoachTeamSummary[]> {
-    var teams = await this.teamRepository.findByIds(_input.coachTeamIds) // Team list
+    const teams = await this.teamRepository.findByIds(_input.coachTeamIds)
 
     const summaries = await Promise.all(
       teams.map(async (team) => {

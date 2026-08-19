@@ -1,11 +1,14 @@
 import { NavLink } from 'react-router-dom'
 
-// Cibles réelles à câbler au fur et à mesure que les features
-// (dashboard, calendrier, recherche, menu) atterrissent.
+// 4 entrées fixes, établies par specs/coach-dashboard.md ("établit ce
+// pattern pour ce premier écran du projet, à réutiliser tel quel"). Dashboard
+// et Actus sont câblés (coach-dashboard, respectivement stub PO-1) ;
+// Calendrier et Menu restent des cibles à câbler quand ces features
+// atterrissent.
 const NAV_ITEMS = [
   { label: 'Dashboard', to: '/' },
   { label: 'Calendrier', to: '/' },
-  { label: 'Recherche', to: '/' },
+  { label: 'Actus', to: '/actus' },
   { label: 'Menu', to: '/' },
 ] as const
 

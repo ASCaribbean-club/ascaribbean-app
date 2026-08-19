@@ -1,32 +1,48 @@
 import { NavLink } from 'react-router-dom'
+import { IconLayoutDashboard, IconCalendarEvent, IconBell, IconMenu2 } from '@tabler/icons-react'
 import { cn } from '../lib/utils'
 
-// 4 entrées fixes, établies par specs/coach-dashboard.md ("établit ce
-// pattern pour ce premier écran du projet, à réutiliser tel quel"). Dashboard
-// et Actus sont câblés (coach-dashboard, respectivement stub PO-1) ;
-// Calendrier et Menu restent des cibles à câbler quand ces features
-// atterrissent.
+// 4 entrées fixes, établies par specs/coach-dashboard.md
 const NAV_ITEMS = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'Calendrier', to: '/' },
-  { label: 'Actus', to: '/actus' },
-  { label: 'Menu', to: '/' },
+  { label: 'Dashboard', to: '/', icon: IconLayoutDashboard },
+  { label: 'Calendrier', to: '/calendar', icon: IconCalendarEvent },
+  { label: 'Actus', to: '/actus', icon: IconBell },
+  { label: 'Menu', to: '/menu', icon: IconMenu2 },
 ] as const
 
 export function BottomNav() {
   return (
-    <nav className="fixed right-8 bottom-5 left-8 z-20 flex rounded-full border border-white/10 bg-white/6 shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-      {NAV_ITEMS.map((item) => (
-        <NavLink
-          key={item.label}
-          to={item.to}
-          className={({ isActive }) =>
-            cn('flex-1 py-2.5 text-center text-[11px] font-semibold text-white/45', isActive && 'text-white')
-          }
-        >
-          {item.label}
-        </NavLink>
-      ))}
+    <nav
+      className="fixed right-8 bottom-5 left-8 z-20 flex rounded-full border border-white/10 bg-white/6 shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+      role="tablist"
+      aria-label="Navigation principale"
+    >
+      {NAV_ITEMS.map((item) => {
+        const Icon = item.icon
+        return (
+          <NavLink
+            key={item.label}
+            to={item.to}
+            className={({ isActive }) =>
+              cn(
+                'group flex flex-1 flex-col items-center justify-center gap-0 py-2 text-center transition-all',
+                'text-white/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20',
+                isActive && 'text-white'
+              )
+            }
+            role="tab"
+            aria-label={item.label}
+          >
+            <Icon
+              size={14}
+              strokeWidth={1.5}
+              className="transition-transform group-active:scale-95"
+              aria-hidden="true"
+            />
+            <span className="text-[10px] font-semibold">{item.label}</span>
+          </NavLink>
+        )
+      })}
     </nav>
   )
 }

@@ -6,6 +6,8 @@ import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePassw
 import { CharterPage } from '../features/auth/charter/CharterPage'
 import { CoachDashboardPage } from '../features/coach-dashboard/CoachDashboardPage'
 import { ActusPage } from '../features/actus/ActusPage'
+import { CalendarPage } from '../features/calendar/CalendarPage'
+import { MenuPage } from '../features/menu/MenuPage'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
 
@@ -29,9 +31,11 @@ export const router = createBrowserRouter([
               // Coach's dashboard is the default landing screen — see
               // specs/coach-dashboard.md "Emplacement dans la nav". Not
               // role-branched here (PO-2 role switching is a no-op in v1):
-              // this route always renders the Coach view.
+              // this route always renders the Coach view for now.
               { index: true, element: <CoachDashboardPage /> },
+              { path: 'calendar', element: <CalendarPage /> },
               { path: 'actus', element: <ActusPage /> },
+              { path: 'menu', element: <MenuPage /> },
             ],
           },
         ],

@@ -295,3 +295,522 @@ body {
   color: var(--color-auth-primary);
   align-self: center;
 }
+
+/* Coach dashboard — from docs/designs/v4_coach_dashboard.png ("maquette
+   v4", allégée). Dark-only by design, same rationale as the auth screens
+   above but inverted: the mockup has no light variant, so these use fixed
+   --color-coach-* tokens instead of the app-wide --color-* ones (see
+   AC-CD-11, specs/coach-dashboard.md). Establishes the card/pill pattern
+   this spec says future dashboards should reuse — see specs/coach-dashboard.md
+   UI design "Composants réutilisés vs nouveaux". Note the mockup shows a
+   "Relancer" CTA on the next-match card and on each "À venir" row — the
+   spec explicitly cuts both (PO-4, AC-CD-05b), so no corresponding class
+   exists here; that omission is intentional, not incomplete styling. */
+
+:root {
+  --color-coach-bg: oklch(9% 0.006 90);
+  --color-coach-text: #fff;
+  --color-coach-text-muted: rgba(255, 255, 255, 0.75);
+  --color-coach-text-subtle: rgba(255, 255, 255, 0.5);
+  --color-coach-text-faint: rgba(255, 255, 255, 0.45);
+  --color-coach-green: oklch(50% 0.18 152);
+  --color-coach-green-text: oklch(78% 0.14 152);
+  --color-coach-green-label: oklch(70% 0.1 152);
+  --color-coach-green-link: oklch(70% 0.16 145);
+  --color-coach-red: oklch(58% 0.2 26);
+  --color-coach-red-badge: oklch(52% 0.19 26);
+  --color-coach-red-text: oklch(75% 0.15 26);
+  --color-coach-amber: oklch(65% 0.18 58);
+  --color-coach-card-bg: rgba(255, 255, 255, 0.06);
+  --color-coach-card-border: rgba(255, 255, 255, 0.1);
+  --color-coach-pill-bg: rgba(255, 255, 255, 0.1);
+  --color-coach-pill-border: rgba(255, 255, 255, 0.14);
+  --color-coach-divider: rgba(255, 255, 255, 0.08);
+  --font-coach: 'Public Sans', var(--font-sans);
+}
+
+.app-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-coach-bg);
+  font-family: var(--font-coach);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell__content {
+  flex: 1;
+  padding-bottom: 96px;
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 32px;
+  right: 32px;
+  bottom: 20px;
+  z-index: 20;
+  display: flex;
+  background: var(--color-coach-card-bg);
+  border: 1px solid var(--color-coach-card-border);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.bottom-nav__item {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-coach-text-faint);
+}
+
+.bottom-nav__item.active {
+  color: var(--color-coach-text);
+}
+
+.coach-dashboard {
+  position: relative;
+  padding: 22px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--color-coach-text);
+}
+
+.coach-dashboard__header {
+  position: relative;
+  overflow: hidden;
+  padding: 4px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Decorative stripe/fade behind the header only — approximates the
+   mockup's angled red banners without hardcoding a fixed frame width. */
+.coach-dashboard__header::before {
+  content: '';
+  position: absolute;
+  inset: -40px -60px auto -60px;
+  height: 220px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      transparent 0 54px,
+      oklch(58% 0.2 26 / 0.5) 54px 62px,
+      transparent 62px 150px
+    ),
+    linear-gradient(180deg, transparent 0%, var(--color-coach-bg) 92%);
+}
+
+.coach-dashboard__header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.coach-dashboard__pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-dashboard__pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--color-coach-pill-bg);
+  border: 1px solid var(--color-coach-pill-border);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-coach-text);
+  cursor: pointer;
+}
+
+.coach-dashboard__role-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: none;
+  background: conic-gradient(var(--color-coach-green) 0deg 180deg, var(--color-coach-red) 180deg 360deg);
+}
+
+.coach-dashboard__avatar-wrap {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+}
+
+.coach-dashboard__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-coach-green);
+  border: 2px solid var(--color-coach-red);
+  color: var(--color-coach-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.coach-dashboard__avatar-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-coach-red);
+  border: 2px solid var(--color-coach-bg);
+}
+
+.coach-dashboard__greeting {
+  margin: 0;
+  padding-right: 52px;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--color-coach-text);
+}
+
+.coach-dashboard__context-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-coach-text-muted);
+}
+
+.coach-dashboard__context-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-coach-green);
+  flex: none;
+}
+
+.next-match-card {
+  background: var(--color-coach-card-bg);
+  border: 1px solid var(--color-coach-card-border);
+  backdrop-filter: blur(8px);
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.next-match-card__band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.next-match-card__label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--color-coach-green-label);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.next-match-card__countdown {
+  background: var(--color-coach-red-badge);
+  color: var(--color-coach-text);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.next-match-card__meta {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-coach-text-muted);
+}
+
+.response-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.response-bar__track {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.response-bar__segment {
+  height: 100%;
+}
+
+.response-bar__segment--present {
+  background: var(--color-coach-green);
+}
+
+.response-bar__segment--absent {
+  background: var(--color-coach-red);
+}
+
+.response-bar__segment--pending {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.response-bar__legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.response-bar__legend li:nth-child(1) {
+  color: var(--color-coach-green-text);
+}
+
+.response-bar__legend li:nth-child(2) {
+  color: var(--color-coach-red-text);
+}
+
+.response-bar__legend li:nth-child(3) {
+  color: var(--color-coach-text-subtle);
+}
+
+.coach-dashboard__stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.coach-dashboard__stats-card {
+  min-width: 0;
+  background: var(--color-coach-card-bg);
+  border: 1px solid var(--color-coach-card-border);
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.coach-dashboard__stats-card h2 {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.coach-dashboard__form-pills {
+  display: flex;
+  gap: 5px;
+}
+
+.coach-dashboard__form-pill {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--color-coach-text);
+}
+
+.coach-dashboard__form-pill--V {
+  background: var(--color-coach-green);
+}
+
+.coach-dashboard__form-pill--N {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.coach-dashboard__form-pill--D {
+  background: var(--color-coach-red);
+}
+
+.coach-dashboard__goals-line {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.coach-dashboard__goals-value {
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.coach-dashboard__goals-line--for .coach-dashboard__goals-value {
+  color: var(--color-coach-green-text);
+}
+
+.coach-dashboard__goals-line--against .coach-dashboard__goals-value {
+  color: var(--color-coach-red-text);
+}
+
+.upcoming-list__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.upcoming-list__header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-coach-text);
+}
+
+.upcoming-list__see-all {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-coach-green-link);
+  cursor: pointer;
+}
+
+.upcoming-list__empty {
+  font-size: 13px;
+  color: var(--color-coach-text-subtle);
+}
+
+.upcoming-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-list__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 12px 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-coach-divider);
+  cursor: pointer;
+}
+
+.upcoming-list__item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.upcoming-list__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.upcoming-list__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.upcoming-list__item--training::before {
+  background: var(--color-coach-green);
+}
+
+.upcoming-list__item--meeting::before {
+  background: var(--color-coach-amber);
+}
+
+.upcoming-list__item--match::before {
+  background: var(--color-coach-red);
+}
+
+.upcoming-list__item-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-coach-text);
+  line-height: 1.25;
+}
+
+.upcoming-list__item-meta {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-coach-text-subtle);
+}
+
+.upcoming-list__item-rate {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.upcoming-list__item--training .upcoming-list__item-rate {
+  color: var(--color-coach-green-text);
+  background: oklch(50% 0.18 152 / 0.15);
+  border: 1px solid oklch(50% 0.18 152 / 0.35);
+}
+
+.upcoming-list__item--meeting .upcoming-list__item-rate {
+  color: var(--color-coach-amber);
+  background: oklch(65% 0.18 58 / 0.15);
+  border: 1px solid oklch(65% 0.18 58 / 0.35);
+}
+
+.upcoming-list__item--match .upcoming-list__item-rate {
+  color: var(--color-coach-red-text);
+  background: oklch(58% 0.2 26 / 0.15);
+  border: 1px solid oklch(58% 0.2 26 / 0.35);
+}
+
+.create-convocation-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 96px;
+  z-index: 15;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-coach-green);
+  color: var(--color-coach-text);
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}

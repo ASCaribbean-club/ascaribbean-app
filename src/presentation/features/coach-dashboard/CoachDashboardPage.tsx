@@ -17,6 +17,7 @@ export function CoachDashboardPage() {
     <div className="coach-dashboard">
       <CoachHeader
         firstName={vm.firstName}
+        initials={vm.initials}
         teamName={vm.currentTeam?.name}
         activeMemberCount={vm.activeMemberCount}
         dayMarker={vm.dayMarker}

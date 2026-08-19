@@ -26,7 +26,7 @@ export function NextMatchCard({ nextMatch, onOpen }: NextMatchCardProps) {
     // stopPropagation ci-dessous plutôt qu'un <button> englobant toute la carte.
     <div className="next-match-card" onClick={onOpen} role="button" tabIndex={0}>
       <div className="next-match-card__band">
-        <span>PROCHAIN MATCH</span>
+        <span className="next-match-card__label">PROCHAIN MATCH</span>
         <span className="next-match-card__countdown">{formatCountdown(convocation.date, new Date())}</span>
       </div>
 

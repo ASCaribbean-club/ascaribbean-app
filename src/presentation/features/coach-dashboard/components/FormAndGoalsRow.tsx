@@ -26,8 +26,12 @@ export function FormAndGoalsRow() {
 
       <div className="coach-dashboard__stats-card">
         <h2>Buts</h2>
-        <p className="coach-dashboard__goals-line coach-dashboard__goals-line--for">{GOALS_FOR} marqués</p>
-        <p className="coach-dashboard__goals-line coach-dashboard__goals-line--against">{GOALS_AGAINST} encaissés</p>
+        <p className="coach-dashboard__goals-line coach-dashboard__goals-line--for">
+          <span className="coach-dashboard__goals-value">{GOALS_FOR}</span> marqués
+        </p>
+        <p className="coach-dashboard__goals-line coach-dashboard__goals-line--against">
+          <span className="coach-dashboard__goals-value">{GOALS_AGAINST}</span> encaissés
+        </p>
       </div>
     </div>
   )

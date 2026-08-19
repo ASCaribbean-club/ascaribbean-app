@@ -1,5 +1,6 @@
 import type { ConvocationType } from '@domain/entities/convocation'
 import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
+import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 
 interface UpcomingListProps {
   items: UpcomingConvocation[]
@@ -39,10 +40,12 @@ export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
                 className={`upcoming-list__item ${TYPE_ACCENT[convocation.type]}`}
                 onClick={() => onOpen(convocation.id)}
               >
-                <p className="upcoming-list__item-title">{convocation.type}</p>
-                <p className="upcoming-list__item-meta">
-                  {convocation.date} · {convocation.location}
-                </p>
+                <div className="upcoming-list__item-content">
+                  <p className="upcoming-list__item-title">{formatConvocationType(convocation.type)}</p>
+                  <p className="upcoming-list__item-meta">
+                    {convocation.date} · {convocation.location}
+                  </p>
+                </div>
                 <span className="upcoming-list__item-rate">
                   {responded}/{total}
                 </span>

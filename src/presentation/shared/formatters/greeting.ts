@@ -5,3 +5,13 @@
 export function getFirstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName
 }
+
+// Avatar initials (specs/coach-dashboard.md UI design §1: "Avatar / initiales").
+// First letter of the first two words — display-only, same rationale as getFirstName.
+export function getInitials(fullName: string): string {
+  const words = fullName.trim().split(/\s+/)
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('')
+}

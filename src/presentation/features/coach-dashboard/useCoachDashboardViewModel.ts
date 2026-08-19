@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { getFirstName } from '../../shared/formatters/greeting'
+import { getFirstName, getInitials } from '../../shared/formatters/greeting'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
@@ -49,6 +49,7 @@ export function useCoachDashboardViewModel() {
 
     /// --- Header ---
     firstName: user ? getFirstName(user.fullName) : '',
+    initials: user ? getInitials(user.fullName) : '',
     currentTeam,
     activeMemberCount: currentTeamSummary?.activeMemberCount,
     // It's the number of matchday + 1 but not implemented in P0 because not sure it's useful

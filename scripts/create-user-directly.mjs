@@ -10,17 +10,33 @@
 // Usage (Node's --env-file loads .env, no dotenv dependency needed):
 //   npm run create-user-directly -- --email=joueur@example.fr --password=... [--full-name="Prenom Nom"]
 //
+// Optional role/team/section/season provisioning (see scripts/lib/provision-role.mjs
+// for the exact flag rules — they mirror the user_roles_scope_check CHECK
+// constraint). Section/season/team are created on the fly if they don't exist yet:
+//   npm run create-user-directly -- --email=coach@example.fr --password=... \
+//     --role=coach --team="U15,U17" --section="Football" --section-type=football \
+//     --season="2026-2027" --season-start=2026-08-01 --season-end=2027-06-30
+//
 // Replay-safe: re-running with the same --email resets the existing user's
-// password instead of failing.
+// password instead of failing, and re-running with the same --role/--team/
+// --section never creates duplicate rows.
 
 import { parseArgs } from 'node:util'
 import { createClient } from '@supabase/supabase-js'
+import { assignRole, resolveRoleContext } from './lib/provision-role.mjs'
 
 const { values } = parseArgs({
   options: {
     email: { type: 'string' },
     password: { type: 'string' },
     'full-name': { type: 'string' },
+    role: { type: 'string' },
+    team: { type: 'string' },
+    section: { type: 'string' },
+    'section-type': { type: 'string' },
+    season: { type: 'string' },
+    'season-start': { type: 'string' },
+    'season-end': { type: 'string' },
   },
 })
 
@@ -54,6 +70,10 @@ async function main() {
   const password = values.password
   const fullName = values['full-name'] ?? email.split('@')[0]
 
+  // Resolve before touching auth.users: fail fast on a missing --team/--section
+  // flag rather than leaving behind an account with no role assigned.
+  const roleContext = await resolveRoleContext(supabase, values.role, values)
+
   let userId
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email,
@@ -81,6 +101,10 @@ async function main() {
   if (upsertError) throw upsertError
 
   console.log(`Profil public.users a jour pour ${email}. Connexion possible avec ce mot de passe.`)
+
+  if (values.role) {
+    await assignRole(supabase, userId, values.role, roleContext)
+  }
 }
 
 main().catch((error) => {

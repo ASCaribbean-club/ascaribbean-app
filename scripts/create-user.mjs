@@ -16,18 +16,34 @@
 // Usage (Node's --env-file loads .env, no dotenv dependency needed):
 //   npm run create-user -- --email=joueur@example.fr --full-name="Prenom Nom"
 //
+// Optional role/team/section/season provisioning (see scripts/lib/provision-role.mjs
+// for the exact flag rules — they mirror the user_roles_scope_check CHECK
+// constraint). Section/season/team are created on the fly if they don't exist yet:
+//   npm run create-user -- --email=coach@example.fr --full-name="Prenom Nom" \
+//     --role=coach --team="U15,U17" --section="Football" --section-type=football \
+//     --season="2026-2027" --season-start=2026-08-01 --season-end=2027-06-30
+//
 // Replay-safe: re-running with the same --email recovers the existing
 // auth user instead of failing once the invite has already been sent or
-// accepted, and the public.users upsert only refreshes full_name — no
-// duplicate rows, no duplicate invite emails.
+// accepted, the public.users upsert only refreshes full_name — no
+// duplicate rows, no duplicate invite emails — and re-running with the same
+// --role/--team/--section never creates duplicate user_roles rows.
 
 import { parseArgs } from 'node:util'
 import { createClient } from '@supabase/supabase-js'
+import { assignRole, resolveRoleContext } from './lib/provision-role.mjs'
 
 const { values } = parseArgs({
   options: {
     email: { type: 'string' },
     'full-name': { type: 'string' },
+    role: { type: 'string' },
+    team: { type: 'string' },
+    section: { type: 'string' },
+    'section-type': { type: 'string' },
+    season: { type: 'string' },
+    'season-start': { type: 'string' },
+    'season-end': { type: 'string' },
   },
 })
 
@@ -69,6 +85,10 @@ async function main() {
   const email = values.email
   const fullName = values['full-name']
 
+  // Resolve before touching auth.users: fail fast on a missing --team/--section
+  // flag rather than sending an invite for an account with no role assigned.
+  const roleContext = await resolveRoleContext(supabase, values.role, values)
+
   let userId
   const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo,
@@ -92,6 +112,10 @@ async function main() {
   if (upsertError) throw upsertError
 
   console.log(`Profil public.users a jour pour ${email}.`)
+
+  if (values.role) {
+    await assignRole(supabase, userId, values.role, roleContext)
+  }
 }
 
 main().catch((error) => {

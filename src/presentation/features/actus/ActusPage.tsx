@@ -5,9 +5,9 @@
 // it a real useActusViewModel.ts once Communication has a spec of its own.
 export function ActusPage() {
   return (
-    <div className="actus-stub">
-      <h1>Actus</h1>
-      <p>Bientôt disponible</p>
+    <div className="flex min-h-[60svh] flex-col items-center justify-center gap-2 px-6 text-center text-white">
+      <h1 className="text-lg font-extrabold">Actus</h1>
+      <p className="text-sm text-white/60">Bientôt disponible</p>
     </div>
   )
 }

@@ -4,8 +4,8 @@ import { BottomNav } from './BottomNav'
 
 export function AppShell({ children }: PropsWithChildren) {
   return (
-    <div className="app-shell">
-      <main className="app-shell__content">{children ?? <Outlet />}</main>
+    <div className="flex min-h-svh flex-col bg-coach-bg font-coach antialiased">
+      <main className="flex-1 pb-24">{children ?? <Outlet />}</main>
       <BottomNav />
     </div>
   )

@@ -1,3 +1,5 @@
+import { Button } from '../../../shared/components/ui/button'
+
 interface CreateConvocationFabProps {
   visible: boolean
   onClick: () => void
@@ -10,8 +12,13 @@ export function CreateConvocationFab({ visible, onClick }: CreateConvocationFabP
   if (!visible) return null
 
   return (
-    <button type="button" className="create-convocation-fab" onClick={onClick} aria-label="Créer une convocation">
+    <Button
+      onClick={onClick}
+      aria-label="Créer une convocation"
+      size="icon"
+      className="fixed right-6 bottom-24 z-15 size-13 rounded-full bg-coach-green text-2xl leading-none text-white shadow-[0_8px_20px_rgba(0,0,0,0.4)] hover:bg-coach-green/90"
+    >
       +
-    </button>
+    </Button>
   )
 }

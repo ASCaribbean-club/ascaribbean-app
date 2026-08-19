@@ -1,5 +1,7 @@
 import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
 import { formatCountdown } from '../../../shared/formatters/countdown'
+import { Badge } from '../../../shared/components/ui/badge'
+import { Card } from '../../../shared/components/ui/card'
 import { ResponseBar } from './ResponseBar'
 
 interface NextMatchCardProps {
@@ -24,20 +26,29 @@ export function NextMatchCard({ nextMatch, onOpen }: NextMatchCardProps) {
     // UI design §2 : tape sur la carte "hors zone barre" ouvre le détail —
     // la barre elle-même n'est qu'un indicateur (PO-4), d'où le
     // stopPropagation ci-dessous plutôt qu'un <button> englobant toute la carte.
-    <div className="next-match-card" onClick={onOpen} role="button" tabIndex={0}>
-      <div className="next-match-card__band">
-        <span className="next-match-card__label">PROCHAIN MATCH</span>
-        <span className="next-match-card__countdown">{formatCountdown(convocation.date, new Date())}</span>
+    <Card
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      className="flex cursor-pointer flex-col gap-3.5 rounded-[20px] border-white/10 bg-white/6 p-4.5 backdrop-blur-sm"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[11.5px] font-extrabold tracking-[0.05em] text-coach-green-label uppercase">
+          PROCHAIN MATCH
+        </span>
+        <Badge className="rounded-full bg-coach-red-badge px-2.25 py-0.75 text-[10.5px] font-extrabold text-white">
+          {formatCountdown(convocation.date, new Date())}
+        </Badge>
       </div>
 
       {/* Opponent name — see TODO above, not modeled yet. */}
-      <p className="next-match-card__meta">
+      <p className="text-[12.5px] text-white/60">
         {convocation.date} · {convocation.location}
       </p>
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseBar counts={responseCounts} />
       </div>
-    </div>
+    </Card>
   )
 }

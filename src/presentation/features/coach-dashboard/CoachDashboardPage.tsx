@@ -14,7 +14,7 @@ export function CoachDashboardPage() {
   if (vm.error) return <p role="alert">Une erreur est survenue.</p>
 
   return (
-    <div className="coach-dashboard">
+    <div className="flex flex-col gap-5 px-5.5 pt-5.5 pb-6 text-white">
       <CoachHeader
         firstName={vm.firstName}
         initials={vm.initials}

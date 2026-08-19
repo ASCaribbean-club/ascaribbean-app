@@ -1,4 +1,7 @@
 import { AuthCard } from '../components/AuthCard'
+import { Button } from '../../../shared/components/ui/button'
+import { Checkbox } from '../../../shared/components/ui/checkbox'
+import { Label } from '../../../shared/components/ui/label'
 import { useCharterViewModel } from './useCharterViewModel'
 
 // Charter text/URL: OPEN — not specified anywhere yet (no docs/CHARTE.md,
@@ -9,19 +12,29 @@ export function CharterPage() {
 
   return (
     <AuthCard title="Charte du club">
-      <div className="auth-charter-text">
+      <div className="max-h-40 overflow-y-auto rounded-[14px] bg-auth-bg p-3.5 text-xs leading-relaxed text-[oklch(48%_0.01_90)]">
         {/* TODO OPEN: real charter content/URL not specified yet — club to provide. */}
         Le texte de la charte n'est pas encore disponible ici.
       </div>
 
-      <label className="auth-checkbox-label">
-        <input type="checkbox" checked={vm.hasRead} onChange={(event) => vm.setHasRead(event.target.checked)} />
+      <Label htmlFor="charter-accept" className="items-start gap-2.5 text-[12.5px] font-semibold text-auth-text">
+        <Checkbox
+          id="charter-accept"
+          checked={vm.hasRead}
+          onCheckedChange={(checked) => vm.setHasRead(checked === true)}
+          className="mt-0.5 size-4.5 border-auth-border data-[state=checked]:border-auth-primary data-[state=checked]:bg-auth-primary"
+        />
         J'ai lu et j'accepte la charte du club
-      </label>
+      </Label>
 
-      <button type="button" className="auth-button" disabled={!vm.canAccept} onClick={vm.accept}>
+      <Button
+        type="button"
+        disabled={!vm.canAccept}
+        onClick={vm.accept}
+        className="h-auto w-full rounded-full bg-auth-primary py-3.5 text-sm font-bold text-white hover:bg-auth-primary-hover disabled:bg-auth-disabled-bg disabled:text-auth-disabled-text"
+      >
         {vm.isAccepting ? 'Enregistrement…' : 'Activer mon compte'}
-      </button>
+      </Button>
     </AuthCard>
   )
 }

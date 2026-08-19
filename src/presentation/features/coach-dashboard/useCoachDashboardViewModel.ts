@@ -36,7 +36,7 @@ export function useCoachDashboardViewModel() {
     enabled: !!currentTeam,
   })
 
-  // Get nextTrainingOrMatch & the others incoming convocations 
+  // Get nextTrainingOrMatch & the others incoming convocations
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
   const nextTrainingOrMatch = upcomingConvocations.find((c) => c.convocation.type == 'training' || c.convocation.type == 'match')
   const upcomingList = upcomingConvocations.filter((c) => c !== nextTrainingOrMatch);
@@ -60,7 +60,7 @@ export function useCoachDashboardViewModel() {
     onTeamSelectorClick: () => { },
 
     /// --- Next training or match card ---
-    nextTrainingOrMatch: nextTrainingOrMatch,
+    nextMatch: nextTrainingOrMatch,
 
     /// --- Events/convocations to come ---
     upcomingList,

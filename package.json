@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "boundaries": "depcruise --config .dependency-cruiser.cjs src",
     "create-user": "node --env-file=.env scripts/create-user.mjs",
-    "create-user-directly": "node --env-file=.env scripts/create-user-directly.mjs"
+    "create-user-directly": "node --env-file=.env scripts/create-user-directly.mjs",
+    "add-opponent": "node --env-file=.env scripts/add-opponent.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",

@@ -16,7 +16,11 @@ import type { Action } from './actions'
 // équipe (joueur et coach), lecture admin sans restriction — l'écran ne
 // change pas de structure, seul le contenu retourné diffère.
 export const rbacMatrix: Record<Action, Role[]> = {
-  'convocation:create': ['coach', 'authorized-officer', 'admin'],
+  // specs/create-convocation.md §3 — 'section-manager' added here. See the
+  // matching TODO in can.ts's 'section-manager' branch: adding the role
+  // here without that scope check would let a section-manager create a
+  // convocation for ANY team, not just one in their own section.
+  'convocation:create': ['coach', 'section-manager', 'authorized-officer', 'admin'],
   'convocation:respond': ['player'],
   'section:manage': ['section-manager', 'admin'],
 }

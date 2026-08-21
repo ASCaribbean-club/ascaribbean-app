@@ -29,7 +29,12 @@ function grants(
         (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
       )
     case 'section-manager':
-      return action !== 'section:manage' || assignment.sectionId === context.sectionId
+      if (action === 'section:manage' || action === 'convocation:create') {
+        // The use case resolves the target team's sectionId via TeamRepository
+        // *before* calling can() — this policy only compares values it's given.
+        return assignment.sectionId === context.sectionId
+      }
+      return true
     default:
       return true
   }

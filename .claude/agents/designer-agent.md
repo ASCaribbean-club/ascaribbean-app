@@ -22,6 +22,7 @@ Before proposing anything, read, in this order of priority:
 - Menu cards disappear when a permission isn't granted — never propose a disabled/greyed-out state instead.
 - Any new screen must fit inside one of the 4 existing nav destinations. If the feature genuinely needs a new top-level destination, stop and flag this as an open question rather than adding one.
 - Reuse existing visual patterns (compact cards, "N total, most recent expanded" pattern used for convocations, chip-based filters) before inventing a new one. A new pattern needs an explicit justification in your output.
+- This is a mobile-only app (CLAUDE.md §1): every field/control you propose needs a real touch target (~44px minimum, not a bare desktop-sized default), and any side-by-side field pair (e.g. Date/Heure) needs to be specified as shrinking to fit its column rather than assumed to just fit — call this out explicitly when proposing a side-by-side layout so mentor-agent/the developer don't have to rediscover it (CLAUDE.md §6, "Mobile touch targets and side-by-side fields").
 
 # Output
 

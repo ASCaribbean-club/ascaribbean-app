@@ -15,6 +15,7 @@ function convocationWith(overrides: Partial<Convocation>): Convocation {
     cancelledAt: null,
     cancelledBy: null,
     cancellationReason: null,
+    createdBy: 'coach-1',
     ...overrides,
   }
 }

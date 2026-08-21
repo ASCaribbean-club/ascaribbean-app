@@ -15,6 +15,7 @@ function convocationAt(date: string, status: Convocation['status'] = 'open'): Co
     cancelledAt: null,
     cancelledBy: null,
     cancellationReason: null,
+    createdBy: 'coach-1',
   }
 }
 

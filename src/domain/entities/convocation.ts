@@ -13,6 +13,13 @@ export interface Convocation {
   cancelledAt: string | null
   cancelledBy: string | null
   cancellationReason: string | null
+
+  // specs/create-convocation.md §2 — added by that pass. Ordinary business
+  // data (author), symmetric with closedBy/cancelledBy above — not an
+  // audit-log concern (§4). Not type-conditional, unlike the match/meeting
+  // fields below, which is why it lives directly here rather than on a
+  // satellite entity.
+  createdBy: string
 }
 
 // --- Player-declared intent, submitted before the event ---

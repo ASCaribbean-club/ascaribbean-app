@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Convocation } from '../entities/convocation'
-import { isUpcoming } from './convocation-rules'
+import { byDateAscending, isUpcoming } from './convocation-rules'
 
 function convocationAt(date: string, status: Convocation['status'] = 'open'): Convocation {
   return {
@@ -40,5 +40,14 @@ describe('isUpcoming', () => {
 
   it('is false for a cancelled convocation even with a future date', () => {
     expect(isUpcoming(convocationAt('2026-08-25T18:30:00.000Z', 'cancelled'), now)).toBe(false)
+  })
+})
+
+describe('byDateAscending', () => {
+  it('sorts convocations soonest-first regardless of input order', () => {
+    const later = convocationAt('2026-08-27T17:00:00.000Z')
+    const sooner = convocationAt('2026-08-22T14:29:00.000Z')
+
+    expect([later, sooner].sort(byDateAscending)).toEqual([sooner, later])
   })
 })

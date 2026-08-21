@@ -13,6 +13,19 @@ export function isUpcoming(convocation: Convocation, now: Date): boolean {
   return convocation.status === 'open' && new Date(convocation.date) > now
 }
 
+export function isPastDate(date: string, now: Date): boolean {
+  return new Date(date) < now
+}
+
+// Soonest-first comparator for `Array.prototype.sort` — "next" (the nearest
+// upcoming convocation) and "à venir" (chronological list) both depend on
+// this order, so it's a rule, not an incidental repository/query detail
+// (ListUpcomingTeamConvocationsUseCase can't assume listForTeam's own
+// ordering).
+export function byDateAscending(a: Convocation, b: Convocation): number {
+  return new Date(a.date).getTime() - new Date(b.date).getTime()
+}
+
 // Counts from ConvocationResponse only (AC-CD-04 — never AttendanceRecord,
 // CLAUDE.md §6). Known gap against AC-CD-05 (présents + absents + en
 // attente = nombre de convoqués): a convoked player who hasn't responded

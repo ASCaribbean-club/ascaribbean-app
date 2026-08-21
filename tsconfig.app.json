@@ -2,12 +2,16 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "es2023",
-    "lib": ["ES2023", "DOM"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "module": "esnext",
-    "types": ["vite/client"],
+    "types": [
+      "vite/client"
+    ],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -15,20 +19,37 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Path aliases — miroir de resolve.alias dans vite.config.ts */
     "paths": {
-      "@/*": ["./src/*"],
-      "@domain/*": ["./src/domain/*"],
-      "@data/*": ["./src/data/*"],
-      "@presentation/*": ["./src/presentation/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@domain/*": [
+        "./src/domain/*"
+      ],
+      "@data/*": [
+        "./src/data/*"
+      ],
+      "@presentation/*": [
+        "./src/presentation/*"
+      ]
     },
-
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    // erasableSyntaxOnly is OFF on purpose.
+    // This option exists for Node's native TS type-stripping (Node running
+    // .ts files directly, erasing types only, no code generation). This
+    // project is bundled by Vite/esbuild, which already handles constructor
+    // parameter properties correctly — the constraint this option enforces
+    // does not apply to our runtime. Parameter properties
+    // (`private readonly x: Foo` in a constructor) are used throughout the
+    // domain/data layers for DI (see ARCHITECTURE.md §3); turning this on
+    // would force verbose constructors project-wide for no real benefit.
+    "erasableSyntaxOnly": false
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

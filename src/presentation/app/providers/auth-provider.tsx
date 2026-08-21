@@ -13,7 +13,10 @@ const AuthContext = createContext<AuthState | null>(null)
 export function AuthProvider({ children }: PropsWithChildren) {
   const { authRepository, getCurrentUserUseCase } = useAuthDependencies()
   const [state, setState] = useState<Omit<AuthState, 'refreshUser'>>({ user: null, isLoading: true })
-  const userIdRef = useRef<string | null>(null)
+  // undefined (not null) so the first INITIAL_SESSION event — even a
+  // logged-out one, where session is null — is never mistaken for a
+  // dedup'd repeat of "already loaded, still logged out".
+  const userIdRef = useRef<string | null | undefined>(undefined)
 
   const loadUser = useCallback(
     async (userId: string | null) => {
@@ -46,7 +49,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return unsubscribe
   }, [authRepository, loadUser])
 
-  const refreshUser = useCallback(() => loadUser(userIdRef.current), [loadUser])
+  const refreshUser = useCallback(() => loadUser(userIdRef.current ?? null), [loadUser])
 
   return <AuthContext.Provider value={{ ...state, refreshUser }}>{children}</AuthContext.Provider>
 }

@@ -9,6 +9,11 @@ Feature name: $ARGUMENTS
 
 Follow these steps in order. Do not skip a step, do not merge two steps into one pass, and do not proceed to the next step if the current one reports an open question that blocks it.
 
+0. Check whether the current git branch is a `feature/*` branch for this feature (i.e. `feature/$ARGUMENTS` or a name clearly matching it).
+   - If the current branch already matches, continue on it — do not create a new one.
+   - Otherwise, invoke the `branch-creation` skill to create `feature/$ARGUMENTS` (or a name adapted from it per the skill's naming convention) from `develop`, then continue the pipeline on that branch.
+   - Never run the rest of this pipeline directly on `main` or `develop`.
+
 1. Check whether `specs/$ARGUMENTS.md` already exists.
    - If it doesn't, or it exists but has no Scope/RBAC section yet: use the po-agent to write it.
    - If po-agent reports a blocking open question, stop here and surface it — do not proceed to design.

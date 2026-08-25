@@ -5,4 +5,5 @@
 export const queryKeys = {
   coachTeams: (coachId: string) => ['teams', 'coach', coachId] as const,
   teamUpcomingConvocations: (teamId: string) => ['convocations', 'team', teamId, 'upcoming'] as const,
+  teamOpponents: (teamId?: string) => ['opponents', 'team', teamId ?? ''] as const,
 }

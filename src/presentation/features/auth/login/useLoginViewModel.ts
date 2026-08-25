@@ -20,6 +20,11 @@ export function useLoginViewModel() {
     mutationFn: () => requestMagicLinkUseCase.execute({ email }),
   })
 
+  const getErrorMessage = () => {
+    const error = isPasswordMode ? passwordSignIn.error : magicLink.error
+    return error instanceof DomainError ? error.message : null
+  }
+
   return {
     email,
     setEmail,
@@ -30,7 +35,7 @@ export function useLoginViewModel() {
     primaryLabel: isPasswordMode ? 'Se connecter' : 'Envoyer le lien de connexion',
     submit: () => (isPasswordMode ? passwordSignIn.mutate() : magicLink.mutate()),
     isSubmitting: isPasswordMode ? passwordSignIn.isPending : magicLink.isPending,
-    signInError: passwordSignIn.error instanceof DomainError ? passwordSignIn.error.message : null,
+    signInError: getErrorMessage(),
     magicLinkSent: magicLink.isSuccess,
   }
 }

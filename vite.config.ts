@@ -14,6 +14,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: true,
+      },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'AS Caribbean',
@@ -21,9 +24,10 @@ export default defineConfig({
         description: "Application du club AS Caribbean",
         lang: 'fr',
         start_url: '/',
+        scope: '/',
         display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#aa3bff',
+        background_color: '#030201',
+        theme_color: '#030201',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Accessibility trade-off (CDC §12 — AA contrast, keyboard navigation): user-scalable=no
+      disables pinch-to-zoom app-wide for a native-app feel consistent with the fixed bottom
+      nav, but low-vision users may rely on pinch-zoom to read content. Accepted for now as a
+      project-level default, not a permanent decision — see docs/DEFAULTS-A-CHALLENGER.md. If
+      a specific screen/zone later needs zoom (e.g. viewing a document/certificate image),
+      re-enable it scoped to that one zone (dedicated <meta> override or component-level
+      solution), not globally.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AS Caribbean" />
+    <meta name="theme-color" content="#030201" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

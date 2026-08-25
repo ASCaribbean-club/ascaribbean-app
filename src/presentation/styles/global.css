@@ -92,15 +92,51 @@
   box-sizing: border-box;
 }
 
+/* iOS standalone-PWA cold-start bug: 100dvh (and svh/lvh) resolve to a
+   too-short value on first paint, before WebKit settles the visual
+   viewport, leaving a strip of the system's white canvas exposed below
+   the app until the first scroll/touch forces a recompute. Pinning #root
+   with position: fixed; inset: 0 sidesteps it — iOS computes fixed-position
+   insets against the real visual viewport correctly from the first frame.
+   #root becomes the scroll container so inner content still scrolls; see
+   AppShell's min-h-full, which resolves against #root's fixed height. */
+/* background lives on html too, not just body: WebKit can paint the canvas
+   behind the safe-area insets (notch/home-indicator) from html's background
+   rather than body's, so leaving html's unset (transparent → white) can leak
+   a white sliver under the home indicator even when body is themed dark. */
+html,
+body {
+  height: 100%;
+  overflow: hidden; /* html/body never scroll — #root is the single scrollable container below */
+  /* Fixed, not var(--color-bg): this is the PWA's fallback frame color, not a
+     themed screen background — it should never flip with the OS's light/dark
+     setting. Matches manifest background_color/theme_color (vite.config.ts)
+     so any sliver behind the app (safe-area edges, cold-start) is always this
+     near-black, never a mismatched white/gray. */
+  background: #030201;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--color-bg);
   color: var(--color-text);
 }
 
 #root {
-  min-height: 100svh;
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none; /* disables iOS rubber-band bounce and pull-to-refresh on #root's own scroll, since #root (not body) is what actually scrolls here */
+}
+
+/* Removes the ~300ms tap delay and the browser's wait to see if a tap is
+   the start of a double-tap-to-zoom gesture — moot anyway since pinch/
+   double-tap zoom is disabled app-wide (index.html, user-scalable=no). */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
 }
 
 .sr-only {

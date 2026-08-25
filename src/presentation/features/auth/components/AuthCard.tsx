@@ -9,7 +9,10 @@ interface AuthCardProps extends PropsWithChildren {
 
 export function AuthCard({ title, subtitle, brand, children }: AuthCardProps) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-7 bg-auth-bg px-6 py-12 font-auth antialiased">
+    // min-h-full (not min-h-svh/dvh): this div sits directly under #root,
+    // which is already pinned full-screen — see the cold-start note in
+    // global.css. A *vh unit here reintroduces the same bug standalone.
+    <div className="flex min-h-full flex-col items-center justify-center gap-7 bg-auth-bg px-6 py-12 font-auth antialiased">
       {brand && (
         <div className="flex flex-col items-center gap-3">
           <div className="size-14 rounded-full bg-[conic-gradient(oklch(45%_0.16_152)_0deg_180deg,var(--color-auth-primary)_180deg_360deg)]" />

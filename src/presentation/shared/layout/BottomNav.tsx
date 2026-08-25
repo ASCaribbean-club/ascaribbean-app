@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 export function BottomNav() {
   return (
     <nav
-      className="fixed right-8 bottom-5 left-8 z-20 flex rounded-full border border-white/10 bg-white/6 shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm"
+      className="fixed right-4 bottom-[0.8rem] p-2 left-4 z-20 flex rounded-full border border-white/10 bg-white/6 shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm"
       role="tablist"
       aria-label="Navigation principale"
     >
@@ -25,7 +25,7 @@ export function BottomNav() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'group flex flex-1 flex-col items-center justify-center gap-0 py-2 text-center transition-all',
+                'group flex flex-1 flex-col items-center justify-center gap-0 py-1 text-center transition-all',
                 'text-white/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20',
                 isActive && 'text-white'
               )
@@ -34,12 +34,12 @@ export function BottomNav() {
             aria-label={item.label}
           >
             <Icon
-              size={14}
+              size={18}
               strokeWidth={1.5}
               className="transition-transform group-active:scale-95"
               aria-hidden="true"
             />
-            <span className="text-[10px] font-semibold">{item.label}</span>
+            <span className="text-[0.7rem] font-semibold">{item.label}</span>
           </NavLink>
         )
       })}

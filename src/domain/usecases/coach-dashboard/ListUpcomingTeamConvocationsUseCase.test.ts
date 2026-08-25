@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse } from '../../entities/convocation'
+import type { MatchDetails } from '../../entities/match-details'
+import type { Opponent } from '../../entities/opponent'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
+import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
+import type { OpponentRepository } from '../../repositories/opponent-repository'
 import { ListUpcomingTeamConvocationsUseCase } from './ListUpcomingTeamConvocationsUseCase'
 
 function convocationWith(overrides: Partial<Convocation>): Convocation {
@@ -17,6 +21,7 @@ function convocationWith(overrides: Partial<Convocation>): Convocation {
     cancelledAt: null,
     cancelledBy: null,
     cancellationReason: null,
+    createdBy: 'coach-1',
     ...overrides,
   }
 }
@@ -31,6 +36,17 @@ function responseWith(overrides: Partial<ConvocationResponse>): ConvocationRespo
     respondedAt: null,
     ...overrides,
   }
+}
+
+// Neither method is exercised for a non-'match' convocation (see
+// loadMatchInfo's early return) — these stand in as no-op collaborators for
+// tests that aren't about match resolution.
+function noopMatchDetailsRepository(): MatchDetailsRepository {
+  return { upsert: vi.fn(), findByConvocationId: vi.fn() }
+}
+
+function noopOpponentRepository(): OpponentRepository {
+  return { findByTeamId: vi.fn(), findById: vi.fn(), create: vi.fn() }
 }
 
 describe('ListUpcomingTeamConvocationsUseCase', () => {
@@ -48,6 +64,8 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const result = await new ListUpcomingTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      noopMatchDetailsRepository(),
+      noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
 
     expect(result.map((r) => r.convocation.id)).toEqual(['c-upcoming'])
@@ -75,11 +93,13 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const result = await new ListUpcomingTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      noopMatchDetailsRepository(),
+      noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
 
     expect(result).toEqual([
-      { convocation: trainingConvocation, responseCounts: { present: 1, absent: 1, pending: 0 } },
-      { convocation: meetingConvocation, responseCounts: { present: 0, absent: 0, pending: 1 } },
+      { convocation: trainingConvocation, responseCounts: { present: 1, absent: 1, pending: 0 }, matchDetails: null, opponent: null },
+      { convocation: meetingConvocation, responseCounts: { present: 0, absent: 0, pending: 1 }, matchDetails: null, opponent: null },
     ])
   })
 
@@ -92,9 +112,68 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const result = await new ListUpcomingTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      noopMatchDetailsRepository(),
+      noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
 
     expect(result).toEqual([])
     expect(findByConvocation).not.toHaveBeenCalled()
+  })
+
+  it('resolves MatchDetails and the opponent for a match convocation', async () => {
+    const matchConvocation = convocationWith({ id: 'c-match', type: 'match' })
+    const listForTeam = vi.fn().mockResolvedValue([matchConvocation])
+    const findByConvocation = vi.fn().mockResolvedValue([])
+    const matchDetails: MatchDetails = {
+      convocationId: 'c-match',
+      opponentId: 'opponent-1',
+      isHome: true,
+      meetingPointTime: '2026-08-20T17:00:00.000Z',
+      meetingPointLocation: 'Stade municipal',
+    }
+    const opponent: Opponent = { id: 'opponent-1', name: 'Caribbean Girlz' }
+    const findByConvocationId = vi.fn().mockResolvedValue(matchDetails)
+    const findById = vi.fn().mockResolvedValue(opponent)
+    const convocationRepository = { listForTeam } as unknown as ConvocationRepository
+    const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const matchDetailsRepository = { upsert: vi.fn(), findByConvocationId } as unknown as MatchDetailsRepository
+    const opponentRepository = { findByTeamId: vi.fn(), findById, create: vi.fn() } as unknown as OpponentRepository
+
+    const result = await new ListUpcomingTeamConvocationsUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      matchDetailsRepository,
+      opponentRepository,
+    ).execute({ teamId: 'team-1', now })
+
+    expect(findByConvocationId).toHaveBeenCalledWith('c-match')
+    expect(findById).toHaveBeenCalledWith('opponent-1')
+    expect(result).toEqual([
+      { convocation: matchConvocation, responseCounts: { present: 0, absent: 0, pending: 0 }, matchDetails, opponent },
+    ])
+  })
+
+  it('returns null matchDetails/opponent when a match convocation has no MatchDetails row yet', async () => {
+    const matchConvocation = convocationWith({ id: 'c-match', type: 'match' })
+    const listForTeam = vi.fn().mockResolvedValue([matchConvocation])
+    const findByConvocation = vi.fn().mockResolvedValue([])
+    const findByConvocationId = vi.fn().mockResolvedValue(null)
+    const findById = vi.fn()
+    const convocationRepository = { listForTeam } as unknown as ConvocationRepository
+    const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const matchDetailsRepository = { upsert: vi.fn(), findByConvocationId } as unknown as MatchDetailsRepository
+    const opponentRepository = { findByTeamId: vi.fn(), findById, create: vi.fn() } as unknown as OpponentRepository
+
+    const result = await new ListUpcomingTeamConvocationsUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      matchDetailsRepository,
+      opponentRepository,
+    ).execute({ teamId: 'team-1', now })
+
+    expect(findById).not.toHaveBeenCalled()
+    expect(result).toEqual([
+      { convocation: matchConvocation, responseCounts: { present: 0, absent: 0, pending: 0 }, matchDetails: null, opponent: null },
+    ])
   })
 })

@@ -2,6 +2,7 @@ import type { ConvocationType } from '@domain/entities/convocation'
 import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
 import { Badge } from '../../../shared/components/ui/badge'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
+import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
 
 interface UpcomingListProps {
   items: UpcomingConvocation[]
@@ -48,7 +49,7 @@ export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
                     {formatConvocationType(convocation.type)}
                   </p>
                   <p className="m-0 mt-0.75 text-[11.5px] font-semibold text-white/50">
-                    {convocation.date} · {convocation.location}
+                    {formatEventSchedule(convocation.date, convocation.location)}
                   </p>
                 </div>
                 <Badge className={`shrink-0 rounded-full px-2.25 py-0.75 text-[10.5px] font-extrabold ${accent.badge}`}>

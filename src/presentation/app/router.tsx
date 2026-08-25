@@ -8,6 +8,7 @@ import { CoachDashboardPage } from '../features/coach-dashboard/CoachDashboardPa
 import { ActusPage } from '../features/actus/ActusPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
+import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
 
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
   // session for RequireSession to gate on. See useUpdatePasswordViewModel.
   { path: '/update-password', element: <UpdatePasswordPage /> },
   {
+    path: '/',
     element: <RequireSession />,
     children: [
       { path: '/charter', element: <CharterPage /> },
@@ -38,6 +40,13 @@ export const router = createBrowserRouter([
               { path: 'menu', element: <MenuPage /> },
             ],
           },
+          // specs/create-convocation.md UI design, "Emplacement dans la
+          // nav": a full-screen route pushed OVER one of the 4 tabs, no
+          // bottom-nav chrome — deliberately NOT nested under AppShell
+          // (which always renders BottomNav, see shared/layout/AppShell.tsx).
+          // Reached only via CreateConvocationFab today (coach-dashboard);
+          // a future Calendrier "+" would push this same element (§7).
+          { path: 'convocations/new', element: <CreateConvocationForm /> },
         ],
       },
     ],

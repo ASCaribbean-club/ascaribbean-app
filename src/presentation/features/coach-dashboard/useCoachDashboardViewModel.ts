@@ -4,12 +4,14 @@ import { getFirstName, getInitials } from '../../shared/formatters/greeting'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
+import { useAuthDependencies } from '../../di/hooks/use-auth-dependencies'
 import { useCoachDashboardDependencies } from '../../di/hooks/use-coach-dashboard-dependencies'
 
 export function useCoachDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { getCoachTeamsUseCase, listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
+  const { signOutUseCase } = useAuthDependencies()
 
   // Get teams ids where coach is assigned to
   const coachAssignment = user?.roles.find((assignment) => assignment.role === 'coach')
@@ -38,7 +40,7 @@ export function useCoachDashboardViewModel() {
 
   // Get nextTrainingOrMatch & the others incoming convocations
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
-  const nextTrainingOrMatch = upcomingConvocations.find((c) => c.convocation.type == 'training' || c.convocation.type == 'match')
+  const nextTrainingOrMatch = upcomingConvocations.find((c) => c.convocation.type === 'training' || c.convocation.type === 'match')
   const upcomingList = upcomingConvocations.filter((c) => c !== nextTrainingOrMatch);
 
   const canCreateConvocation = usePermission('convocation:create', { teamId: currentTeam?.id })
@@ -59,9 +61,15 @@ export function useCoachDashboardViewModel() {
     onRoleClick: () => { },
     // TODO(PO-6, AC-CD-14): team selector pill click — no-op in v1 by design.
     onTeamSelectorClick: () => { },
+    // RequireSession picks up the resulting session-null state reactively
+    // (see auth-provider.tsx's onSessionChange) and redirects to /login —
+    // no navigate() needed here.
+    onLogout: () => {
+      void signOutUseCase.execute()
+    },
 
     /// --- Next training or match card ---
-    nextMatch: nextTrainingOrMatch,
+    nextTrainingOrMatch: nextTrainingOrMatch,
 
     /// --- Events/convocations to come ---
     upcomingList,
@@ -77,11 +85,19 @@ export function useCoachDashboardViewModel() {
 
     /// --- Floatting "+" button ---
     canCreateConvocation,
+    // specs/create-convocation.md §1 — CreateConvocationForm lives in its
+    // own feature (presentation/features/convocation/), not inside
+    // coach-dashboard; this FAB triggers it without owning it. The target
+    // team has no selector on that screen (§1, "l'équipe cible n'est pas
+    // choisie sur cet écran") — it's inherited from `currentTeam` computed
+    // above, passed through router state rather than re-derived by
+    // useCreateConvocationViewModel (see that hook's TODO on why a hard
+    // refresh loses this).
     openConvocationCreate: () => {
-      // TODO: convocation creation lives in the Calendrier feature (§1
-      // "Hors périmètre"), which doesn't have a route yet. Wire the real
-      // path, scoped to the coach's teams (AC-CD-06), once it exists.
-      navigate('/')
+      if (!currentTeam) return
+      navigate('/convocations/new', {
+        state: { teamId: currentTeam.id, activeMemberCount: currentTeamSummary?.activeMemberCount },
+      })
     },
   }
 }

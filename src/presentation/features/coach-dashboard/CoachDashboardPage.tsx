@@ -1,7 +1,7 @@
 import { CoachHeader } from './components/CoachHeader'
 import { CreateConvocationFab } from './components/CreateConvocationFab'
 import { FormAndGoalsRow } from './components/FormAndGoalsRow'
-import { NextMatchCard } from './components/NextMatchCard'
+import { NextTrainingOrMatchCard } from './components/NextTrainingOrMatchCard'
 import { UpcomingList } from './components/UpcomingList'
 import { useCoachDashboardViewModel } from './useCoachDashboardViewModel'
 
@@ -14,7 +14,7 @@ export function CoachDashboardPage() {
   if (vm.error) return <p role="alert">Une erreur est survenue.</p>
 
   return (
-    <div className="flex flex-col gap-5 px-5.5 pt-5.5 pb-6 text-white">
+    <div className="flex flex-col text-white">
       <CoachHeader
         firstName={vm.firstName}
         initials={vm.initials}
@@ -24,13 +24,16 @@ export function CoachDashboardPage() {
         hasMultipleTeams={vm.hasMultipleTeams}
         onRoleClick={vm.onRoleClick}
         onTeamSelectorClick={vm.onTeamSelectorClick}
+        onLogout={vm.onLogout}
       />
 
-      <NextMatchCard nextMatch={vm.nextMatch} onOpen={vm.goToCalendar} />
+      <div className="flex flex-col gap-5 px-5.5 pb-16">
+        <NextTrainingOrMatchCard nextTrainingOrMatch={vm.nextTrainingOrMatch} onOpen={vm.goToCalendar} />
 
-      <FormAndGoalsRow />
+        <FormAndGoalsRow />
 
-      <UpcomingList items={vm.upcomingList} onOpen={vm.goToConvocationDetail} onSeeAll={vm.goToCalendar} />
+        <UpcomingList items={vm.upcomingList} onOpen={vm.goToConvocationDetail} onSeeAll={vm.goToCalendar} />
+      </div>
 
       <CreateConvocationFab visible={vm.canCreateConvocation} onClick={vm.openConvocationCreate} />
     </div>

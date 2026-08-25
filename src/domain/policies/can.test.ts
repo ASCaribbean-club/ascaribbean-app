@@ -27,15 +27,13 @@ describe('can', () => {
     expect(can(user, 'convocation:respond', { teamId: 'team-2' })).toBe(false)
   })
 
-  // specs/create-convocation.md §3, "Écart identifié" — 'section-manager' is
-  // now in rbacMatrix['convocation:create'], but the actual section-scope
-  // comparison is a TODO in can.ts (needs a team lookup this file can't do).
-  // Fails closed in the meantime: this test should start failing the moment
-  // someone resolves that TODO with a real sectionId comparison — replace it
-  // with a pair of allow/deny-by-section tests at that point, don't just
-  // delete it.
-  it('denies a section-manager from creating a convocation until the section-scope check is implemented (see can.ts TODO)', () => {
+  it('allows a section-manager to create a convocation for a team in their section', () => {
     const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
-    expect(can(user, 'convocation:create', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    expect(can(user, 'convocation:create', { teamId: 'team-1', sectionId: 'section-a' })).toBe(true)
+  })
+
+  it('denies a section-manager from creating a convocation for a team outside their section', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'convocation:create', { teamId: 'team-1', sectionId: 'section-b' })).toBe(false)
   })
 })

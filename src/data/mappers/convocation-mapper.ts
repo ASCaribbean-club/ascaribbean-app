@@ -14,6 +14,7 @@ export function toConvocation(row: ConvocationRow): Convocation {
     cancelledAt: row.cancelled_at,
     cancelledBy: row.cancelled_by,
     cancellationReason: row.cancellation_reason,
+    createdBy: row.created_by,
   }
 }
 

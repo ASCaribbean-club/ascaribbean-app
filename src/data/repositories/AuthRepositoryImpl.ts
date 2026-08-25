@@ -28,12 +28,12 @@ export class AuthRepositoryImpl implements AuthRepository {
 
   async requestMagicLink(email: string): Promise<void> {
     const { error } = await this.client.auth.signInWithOtp({ email })
-    if (error) throw error
+    if (error) throw mapSupabaseAuthError(error)
   }
 
   async requestPasswordReset(email: string): Promise<void> {
     const { error } = await this.client.auth.resetPasswordForEmail(email)
-    if (error) throw error
+    if (error) throw mapSupabaseAuthError(error)
   }
 
   hasRecoveryLinkError(): boolean {
@@ -48,11 +48,11 @@ export class AuthRepositoryImpl implements AuthRepository {
 
   async updatePassword(newPassword: string): Promise<void> {
     const { error } = await this.client.auth.updateUser({ password: newPassword })
-    if (error) throw error
+    if (error) throw mapSupabaseAuthError(error)
   }
 
   async signOut(): Promise<void> {
     const { error } = await this.client.auth.signOut()
-    if (error) throw error
+    if (error) throw mapSupabaseAuthError(error)
   }
 }

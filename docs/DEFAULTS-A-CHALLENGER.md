@@ -137,4 +137,34 @@ export interface Team {
 
 ---
 
+## Mapping `DomainError` → `UiError` non exhaustif
+
+**Où** : `presentation/shared/errors/map-domain-error-to-ui-error.ts`
+
+**Valeur actuelle** : chaîne d'`instanceof` avec un repli générique (`DomainError` non mappée, puis erreur réseau/inconnue), pas vérifiée par le compilateur.
+
+**Pourquoi cette valeur, provisoirement** : les sous-classes de `DomainError` forment une hiérarchie de classes, pas une union discriminée avec un champ `code` — il n'existe donc pas de vérification `never` à la compilation comme celle qui existe pour `ConvocationType` ailleurs dans le code. Une branche oubliée ne casse pas le build, elle tombe silencieusement dans le repli générique.
+
+**Ce qu'il faudrait challenger** :
+- Une fois que le nombre de branches grandit, le risque qu'une nouvelle sous-classe de `DomainError` soit ajoutée sans branche dédiée dans ce mapper devient réel — faut-il faire porter un discriminant `code` aux erreurs de domaine pour retrouver une vérification à la compilation ?
+
+**Priorité de revisite** : basse — à revisiter une fois que le mapper accumule assez de branches pour que ce risque devienne concret, ou si un cas manqué arrive réellement en production.
+
+---
+
+## Pas de composant toast/snackbar générique
+
+**Où** : `presentation/shared/components/`
+
+**Valeur actuelle** : les erreurs de mutation s'affichent comme un message inline local à l'action qui a échoué (ex. `PlayerDashboardPage`, `respondError`), pas via un composant de feedback partagé.
+
+**Pourquoi cette valeur, provisoirement** : construire un composant de feedback partagé maintenant reviendrait à trancher des questions UX (empilement de plusieurs erreurs, durée d'affichage, façon de le fermer) sans avoir de second écran consommateur pour les éclairer.
+
+**Ce qu'il faudrait challenger** :
+- Construire le vrai composant dès qu'un deuxième écran a besoin du même type de feedback, ou dès que produit/design précise le comportement attendu d'un toast.
+
+**Priorité de revisite** : après les premiers retours réels.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

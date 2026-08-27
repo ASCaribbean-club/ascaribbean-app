@@ -212,6 +212,49 @@ Mettre `useQuery` dans un use case rendrait le domaine dépendant d'une biblioth
 
 **Convention de `queryKey`** : `[ressource, ...discriminants]`, à figer dès le premier écran dans un fichier partagé. Des clés incohérentes rendent l'invalidation imprévisible, et le bug qui en résulte (« la donnée ne se rafraîchit pas ») est pénible à diagnostiquer plus tard.
 
+### Les erreurs de mutation — de DomainError à UiError
+
+Une `useMutation` qui échoue sans `onError` échoue **silencieusement** : la requête réseau part, rejette, et rien à l'écran ne le montre. C'est le même problème qu'un composant qui calculerait lui-même une règle métier — sauf qu'ici, ce qui manque n'est pas une règle mais une traduction.
+
+`domain/errors/` répond à la question « que s'est-il passé, en termes métier » — `NotFoundError`, `ForbiddenError`, `InvalidScheduleError`, etc. Une `DomainError` ne sait rien d'un écran : elle ne porte ni message destiné à un utilisateur, ni indication sur la façon de l'afficher. Ce n'est pas un oubli, c'est la même règle qu'ailleurs dans ce document — le domaine ne connaît pas la présentation.
+
+Il faut donc un point qui fait le pas suivant, symétrique à `data/errors/map-supabase-error.ts` (qui traduit déjà une erreur Postgres en `DomainError`, section 4) : ce fichier-ci traduit une `DomainError` en ce qu'un écran affiche. Il vit dans `presentation/shared/errors/`, pas dans une feature, parce que n'importe quelle `useMutation` du projet peut échouer de la même façon silencieuse — le mapper et son type sont un outil transverse, pas un outil player-dashboard.
+
+```ts
+// presentation/shared/errors/ui-error.ts
+export type UiErrorVariant = 'toast' | 'inline' | 'blocking'
+
+export interface UiError {
+  message: string       // copie fr-FR, prête à afficher
+  variant: UiErrorVariant
+  retryable: boolean
+}
+
+// presentation/shared/errors/map-domain-error-to-ui-error.ts
+export function mapDomainErrorToUiError(error: unknown): UiError {
+  if (error instanceof ForbiddenError) { /* ... */ }
+  if (error instanceof NotFoundError) { /* ... */ }
+  // ... une branche par sous-classe concrète de DomainError
+  if (error instanceof DomainError) { /* repli générique */ }
+  return { /* repli réseau/inconnu */ }
+}
+```
+
+Le ViewModel branche ça dans `onError` de la mutation :
+
+```ts
+const [respondError, setRespondError] = useState<UiError | null>(null)
+
+const respondMutation = useMutation({
+  mutationFn: (input) => respondToConvocation.execute(input),
+  onMutate: () => setRespondError(null),
+  onError: (error) => setRespondError(mapDomainErrorToUiError(error)),
+  onSuccess: () => setRespondError(null),
+})
+```
+
+`respondError` reste un champ **distinct** de l'`error` déjà exposé par le ViewModel pour les `useQuery` de chargement. Les deux répondent à des questions différentes : l'un bloque l'écran entier (donnée de base indisponible), l'autre est transitoire et rattaché à une seule action (un bouton a échoué, le reste de l'écran reste utilisable). Les fusionner forcerait le composant à deviner lequel des deux il regarde — contraire à la règle de la section 6 (« le composant ne décide jamais de ce qui est vrai »).
+
 ## 7. Les permissions — deux applications de la même matrice
 
 ### Pourquoi deux endroits
@@ -306,6 +349,7 @@ Dans les deux cas, la journalisation n'est **jamais** un appel depuis un composa
 7. **Le journal d'audit ne se journalise jamais depuis un composant** — trigger Postgres pour les accès, use case pour les actions métier (voir section 11).
 8. **La politique de rétention n'est pas du code applicatif.** Elle est implémentée côté Supabase (job planifié) et documentée dans `RETENTION-PURGE.md` ; `domain/` ne la connaît pas.
 9. **Ne pas créer de couche vide par anticipation.** Chaque dossier doit avoir une raison d'exister aujourd'hui.
+10. **Une erreur de mutation n'est jamais gérée brute dans un composant.** Le ViewModel la traduit d'abord via `mapDomainErrorToUiError` (section 6) avant de l'exposer.
 
 ## 13. Arborescence cible — amorçage du projet
 
@@ -418,6 +462,9 @@ src/presentation/
 │   ├── hooks/
 │   │   ├── use-auth.ts
 │   │   └── use-permission.ts         Enveloppe de can() côté React
+│   ├── errors/
+│   │   ├── ui-error.ts               Type UiError (message, variant, retryable)
+│   │   └── map-domain-error-to-ui-error.ts  DomainError → UiError, voir section 6
 │   ├── query-keys.ts                 Fabriques de queryKey — à figer dès le premier écran
 │   └── formatters/                   Dates, montants — locale fr-FR
 ├── features/

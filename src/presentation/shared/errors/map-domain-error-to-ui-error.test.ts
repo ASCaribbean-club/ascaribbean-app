@@ -1,0 +1,96 @@
+import { DomainError } from '@domain/errors/domain-error'
+import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
+import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { NotFoundError } from '@domain/errors/not-found-error'
+import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
+import { describe, expect, it } from 'vitest'
+import { mapDomainErrorToUiError } from './map-domain-error-to-ui-error'
+
+// Stand-in for a DomainError subclass this mapper has no dedicated branch
+// for — exercises the generic DomainError fallback, distinct from the six
+// subclasses above and from the final not-a-DomainError-at-all fallback.
+class UnmappedDomainError extends DomainError {}
+
+describe('mapDomainErrorToUiError', () => {
+  it('maps ForbiddenError to a non-retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new ForbiddenError('forbidden'))
+
+    expect(result).toEqual({
+      message: "Vous n'êtes plus autorisé à effectuer cette action.",
+      variant: 'inline',
+      retryable: false,
+    })
+  })
+
+  it('maps NotFoundError to a non-retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new NotFoundError('not found'))
+
+    expect(result).toEqual({
+      message: "Cet élément n'existe plus ou a été supprimé.",
+      variant: 'inline',
+      retryable: false,
+    })
+  })
+
+  it('maps InvalidCredentialsError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new InvalidCredentialsError('bad credentials'))
+
+    expect(result).toEqual({
+      message: 'Identifiants incorrects. Vérifiez votre saisie et réessayez.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  it('maps InvalidScheduleError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new InvalidScheduleError('bad schedule'))
+
+    expect(result).toEqual({
+      message: 'Le rendez-vous doit précéder le coup d’envoi, le même jour.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  it('maps OverlappingSeasonError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new OverlappingSeasonError('overlap'))
+
+    expect(result).toEqual({
+      message: 'Les dates de cette saison chevauchent une saison existante.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  it('maps InvalidRoleScopeError to a non-retryable toast error', () => {
+    const result = mapDomainErrorToUiError(new InvalidRoleScopeError('bad scope'))
+
+    expect(result).toEqual({
+      message: 'Une erreur technique est survenue. Contactez un administrateur si cela persiste.',
+      variant: 'toast',
+      retryable: false,
+    })
+  })
+
+  it('falls back to a generic non-retryable toast error for an unmapped DomainError subclass', () => {
+    const result = mapDomainErrorToUiError(new UnmappedDomainError('unmapped'))
+
+    expect(result).toEqual({
+      message: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+      variant: 'toast',
+      retryable: false,
+    })
+  })
+
+  it('falls back to a generic network/unknown error for anything that is not a DomainError', () => {
+    const result = mapDomainErrorToUiError(new TypeError('Failed to fetch'))
+
+    expect(result).toEqual({
+      message: 'Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.',
+      variant: 'toast',
+      retryable: true,
+    })
+  })
+})

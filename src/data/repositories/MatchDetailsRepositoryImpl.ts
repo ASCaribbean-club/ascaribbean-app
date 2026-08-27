@@ -1,8 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MatchDetails } from '@domain/entities/match-details'
 import type { MatchDetailsRepository } from '@domain/repositories/match-details-repository'
-import type { MatchDetailsRow } from '../dto/match-details-dto'
-import { toMatchDetails, toMatchDetailsRow } from '../mappers/match-details-mapper'
+import type { MatchDetailsRow } from '@data/dto/match-details-dto'
+import { toMatchDetails, toMatchDetailsRow } from '@data/mappers/match-details-mapper'
+import { mapSupabaseError } from '@data/errors/map-supabase-error'
 
 // `public.match_details` — migration
 // 20260821091519_convocation_creation_schema.sql (see match-details-dto.ts).
@@ -23,7 +24,7 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) throw mapSupabaseError(error)
 
     return toMatchDetails(data as MatchDetailsRow)
   }
@@ -34,11 +35,11 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
     // wired, but this repository must not throw on it) is a valid `null`.
     const { data, error } = await this.client
       .from('match_details')
-      .select()
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location')
       .eq('convocation_id', convocationId)
       .maybeSingle()
 
-    if (error) throw error
+    if (error) throw mapSupabaseError(error)
     if (!data) return null
 
     return toMatchDetails(data as MatchDetailsRow)

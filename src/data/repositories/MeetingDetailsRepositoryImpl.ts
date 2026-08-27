@@ -1,12 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { MeetingDetailsRepository } from '@domain/repositories/meeting-details-repository'
+import { toMeetingDetails, toMeetingDetailsRow } from '@data/mappers/meeting-details-mapper'
+import type { MeetingDetailsRow } from '@data/dto/meeting-details-dto'
+import { mapSupabaseError } from '@data/errors/map-supabase-error'
 
-// TODO (specs/create-convocation.md §2): implement against
-// public.meeting_details once that migration exists. Stubbed so
-// CreateConvocationUseCase / GetConvocationDetailsUseCase have something
-// concrete to wire against in the DI container — see
-// presentation/di/containers/convocation-container.ts.
 export class MeetingDetailsRepositoryImpl implements MeetingDetailsRepository {
   private readonly client: SupabaseClient
 
@@ -14,19 +12,33 @@ export class MeetingDetailsRepositoryImpl implements MeetingDetailsRepository {
     this.client = client
   }
 
-  async upsert(_details: MeetingDetails): Promise<MeetingDetails> {
-    // TODO: `.from('meeting_details').upsert(toMeetingDetailsRow(_details))
-    // .select().single()`, map back with toMeetingDetails. Upsert on
-    // `convocation_id` (the primary key) — CLAUDE.md §6, "current state"
-    // table, not append-only.
-    throw new Error('Not implemented')
+  async upsert(details: MeetingDetails): Promise<MeetingDetails> {
+    const { data, error } = await this.client
+      .from('meeting_details')
+      .upsert(toMeetingDetailsRow(details), {
+        onConflict: 'convocation_id'
+      })
+      .select()
+      .single()
+
+    if (error) throw mapSupabaseError(error)
+
+    return toMeetingDetails(data as MeetingDetailsRow)
   }
 
-  async findByConvocationId(_convocationId: string): Promise<MeetingDetails | null> {
-    // TODO: `.maybeSingle()` — a meeting with an empty agenda still has a
-    // row (§2: "Liste vide acceptée à la soumission"), but a convocation
-    // whose creation hasn't finished writing this satellite yet should not
-    // throw here.
-    throw new Error('Not implemented')
+  async findByConvocationId(convocationId: string): Promise<MeetingDetails | null> {
+    // `.maybeSingle()`, not `.single()` — a meeting convocation with no
+    // MeetingDetails row yet is a valid `null`, same convention as
+    // MatchDetailsRepositoryImpl.
+    const { data, error } = await this.client
+      .from('meeting_details')
+      .select('convocation_id, title, agenda')
+      .eq('convocation_id', convocationId)
+      .maybeSingle<MeetingDetailsRow>()
+
+    if (error) throw mapSupabaseError(error)
+    if (!data) return null
+
+    return toMeetingDetails(data as MeetingDetailsRow)
   }
 }

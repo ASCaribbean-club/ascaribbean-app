@@ -1,6 +1,6 @@
-import type { ConvocationType } from '@domain/entities/convocation'
 import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
 import { Badge } from '../../../shared/components/ui/badge'
+import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
 
@@ -8,14 +8,6 @@ interface UpcomingListProps {
   items: UpcomingConvocation[]
   onOpen: (convocationId: string) => void
   onSeeAll: () => void
-}
-
-// Type → couleur du liseré + du badge de taux (UI design §4) : mapping
-// d'affichage pur, pas une règle métier, donc pas de TODO/décision ici.
-const TYPE_ACCENT: Record<ConvocationType, { rail: string; badge: string }> = {
-  training: { rail: 'bg-coach-green', badge: 'border-coach-green/35 bg-coach-green/15 text-coach-green-text' },
-  meeting: { rail: 'bg-coach-amber', badge: 'border-coach-amber/35 bg-coach-amber/15 text-coach-amber' },
-  match: { rail: 'bg-coach-red', badge: 'border-coach-red/35 bg-coach-red/15 text-coach-red-text' },
 }
 
 export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
@@ -36,7 +28,7 @@ export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
           {items.map(({ convocation, responseCounts }) => {
             const total = responseCounts.present + responseCounts.absent + responseCounts.pending
             const responded = responseCounts.present + responseCounts.absent
-            const accent = TYPE_ACCENT[convocation.type]
+            const accent = CONVOCATION_TYPE_ACCENT[convocation.type]
             return (
               <li
                 key={convocation.id}

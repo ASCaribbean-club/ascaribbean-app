@@ -26,7 +26,7 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
       .select(CONVOCATION_COLUMNS)
       .eq('team_id', teamId)
       .order('date', { ascending: false })
-      .returns<ConvocationRow[]>()
+      .overrideTypes<ConvocationRow[]>()
 
     if (error) throw mapSupabaseError(error)
     return (data ?? []).map(toConvocation)

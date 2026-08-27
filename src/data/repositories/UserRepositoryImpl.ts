@@ -26,7 +26,7 @@ export class UserRepositoryImpl implements UserRepository {
       .from('user_roles')
       .select('role, team_id, section_id')
       .eq('user_id', id)
-      .returns<UserRoleRow[]>()
+      .overrideTypes<UserRoleRow[]>()
 
     if (rolesError) throw mapSupabaseError(rolesError)
 

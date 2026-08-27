@@ -30,7 +30,7 @@ export class TeamRepositoryImpl implements TeamRepository {
       .select('id, name, section_id, season_id')
       .in('id', ids)
       .eq('season_id', currentSeason.id)
-      .returns<TeamRow[]>()
+      .overrideTypes<TeamRow[]>()
 
     if (error) throw mapSupabaseError(error)
     return (data ?? []).map(toTeam)

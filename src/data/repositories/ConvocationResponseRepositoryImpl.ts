@@ -17,7 +17,7 @@ export class ConvocationResponseRepositoryImpl implements ConvocationResponseRep
       .from('convocation_responses')
       .select('id, convocation_id, user_id, status, reason, responded_at')
       .eq('convocation_id', convocationId)
-      .returns<ConvocationResponseRow[]>()
+      .overrideTypes<ConvocationResponseRow[]>()
 
     if (error) throw mapSupabaseError(error)
     return (data ?? []).map(toConvocationResponse)

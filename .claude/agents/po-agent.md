@@ -15,7 +15,8 @@ Before writing anything, read, in this order:
 1. `priorisation-fonctionnelle-as-caribbean.md` — P0/P1/P2 scope and the RBAC permission matrix.
 2. `roles-personas-as-caribbean.md` — the 8 roles and multi-role account model.
 3. Any existing `specs/*.md` for related features, to stay consistent with prior decisions.
-4. `docs/designs/*.png`, if any exist for this feature — not to make UI decisions (that's designer-agent's job), but a mockup already existing is a signal of what's actually in scope and can sharpen the Scope section. Just note its filename if relevant; don't describe or evaluate the visual.
+4. `docs/designs/DESIGN_LINKS.md` §4, for this feature's registry row, before looking at `docs/designs/*.png` directly or asking the developer for a mockup link: an `actif` row means use that link, don't ask; a `mort` row means use the local snapshot it points to and say explicitly that the registered link is dead; no row (or `absent`) means ask the developer once, then add the row yourself once you have the link — don't ask again on a later run. Follow the registry's own §4 workflow rather than reinventing it here.
+5. `docs/designs/*.png`, if any exist for this feature — not to make UI decisions (that's designer-agent's job), but a mockup already existing is a signal of what's actually in scope and can sharpen the Scope section. Just note its filename if relevant; don't describe or evaluate the visual.
 
 Never invent a requirement that isn't grounded in these documents. If the CDC doesn't settle a point the feature needs, that's an open question — write it down, don't guess.
 

@@ -28,3 +28,19 @@ export function toConvocationResponse(row: ConvocationResponseRow): ConvocationR
     respondedAt: row.responded_at,
   }
 }
+
+// Reverse of toConvocationResponse above — needed by
+// ConvocationResponseRepositoryImpl.upsert (specs/player-dashboard.md,
+// RespondToConvocationUseCase). CLAUDE.md §4: a mapper is always present
+// between DTO and entity, in both directions, never skipped.
+export function toConvocationResponseRow(
+  response: Omit<ConvocationResponse, 'id'>,
+): Omit<ConvocationResponseRow, 'id'> {
+  return {
+    convocation_id: response.convocationId,
+    user_id: response.userId,
+    status: response.status,
+    reason: response.reason,
+    responded_at: response.respondedAt,
+  }
+}

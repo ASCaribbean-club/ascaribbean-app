@@ -15,6 +15,21 @@ export class TeamRepositoryImpl implements TeamRepository {
     this.seasonRepository = seasonRepository
   }
 
+  async findById(id: string): Promise<Team | null> {
+    const currentSeason = await this.seasonRepository.findCurrent()
+    if (!currentSeason) return null // gap between two seasons — valid state, not an error
+
+    const { data, error } = await this.client
+      .from('teams')
+      .select('id, name, section_id, season_id')
+      .eq('id', id)
+      .eq('season_id', currentSeason.id)
+      .single<TeamRow>()
+
+    if (error) throw mapSupabaseError(error)
+    return toTeam(data)
+  }
+
   // AC-CD-01: a coach's assignment from a prior season must not resolve here
   // — teams are per-season rows (see the table comment in the initial
   // schema migration), so "current teams" means "current season's teams".

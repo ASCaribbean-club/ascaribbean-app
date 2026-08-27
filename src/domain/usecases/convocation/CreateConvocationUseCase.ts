@@ -58,9 +58,7 @@ export class CreateConvocationUseCase {
       throw new ForbiddenError(`User not found: ${input.createdBy}`)
     }
 
-    // TODO To change if a findById in TeamRepository is implemented in the future
-    const teams = await this.teamRepository.findByIds([input.teamId])
-    const team = teams[0]
+    const team = await this.teamRepository.findById(input.teamId)
 
     const canCreate = can(user, 'convocation:create', {
       teamId: input.teamId,
@@ -74,11 +72,6 @@ export class CreateConvocationUseCase {
       )
     }
 
-    // TODO (specs/create-convocation.md §5, "Date passée interdite"): reject
-    // a past `date` before writing anything — call the mirror rule once it
-    // exists in domain/rules/convocation-rules.ts (left as a TODO there).
-    // The BEFORE INSERT Postgres trigger is the actual authority; this is
-    // only a fast, readable rejection without a round-trip.
     if (isPastDate(input.date, new Date())) {
       throw new Error(`Convocation the user want to create is in the past: ${input.date}`)
     }

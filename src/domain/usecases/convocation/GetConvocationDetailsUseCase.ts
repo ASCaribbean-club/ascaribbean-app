@@ -20,7 +20,7 @@ export class GetConvocationDetailsUseCase {
     private readonly matchDetails: MatchDetailsRepository,
     // trainingDetails: to add once training_details exists — see §2/§7,
     // "no shape defined yet", not created in this pass.
-  ) {}
+  ) { }
 
   async execute(convocation: Convocation): Promise<MeetingDetails | MatchDetails | null> {
     switch (convocation.type) {

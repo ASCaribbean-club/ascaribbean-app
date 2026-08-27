@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getFirstName, getInitials } from '../../shared/formatters/greeting'
+import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
@@ -10,6 +11,7 @@ import { useCoachDashboardDependencies } from '../../di/hooks/use-coach-dashboar
 export function useCoachDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { toggleActiveRole } = useActiveRole()
   const { getCoachTeamsUseCase, listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
   const { signOutUseCase } = useAuthDependencies()
 
@@ -57,8 +59,7 @@ export function useCoachDashboardViewModel() {
     // It's the number of matchday + 1 but not implemented in P0 because not sure it's useful
     dayMarker: undefined as string | undefined,
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,
-    // TODO(PO-2, AC-CD-13): role pill click — no-op in v1 by design.
-    onRoleClick: () => { },
+    onRoleClick: toggleActiveRole,
     // TODO(PO-6, AC-CD-14): team selector pill click — no-op in v1 by design.
     onTeamSelectorClick: () => { },
     // RequireSession picks up the resulting session-null state reactively

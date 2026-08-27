@@ -4,11 +4,12 @@ import { LoginPage } from '../features/auth/login/LoginPage'
 import { ForgotPasswordPage } from '../features/auth/forgot-password/ForgotPasswordPage'
 import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePasswordPage'
 import { CharterPage } from '../features/auth/charter/CharterPage'
-import { CoachDashboardPage } from '../features/coach-dashboard/CoachDashboardPage'
 import { ActusPage } from '../features/actus/ActusPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
+import { ActiveRoleProvider } from './providers/active-role-provider'
+import { DashboardIndexPage } from './DashboardIndexPage'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
 
@@ -28,13 +29,18 @@ export const router = createBrowserRouter([
         element: <RequireCharterAccepted />,
         children: [
           {
-            element: <AppShell />,
+            // PO-2 (specs/coach-dashboard.md) / PO-PD-01 (specs/player-dashboard.md):
+            // the role pill is now wired for real — ActiveRoleProvider tracks
+            // which of the user's dashboard-capable roles (coach/player) is
+            // active, and DashboardIndexPage renders accordingly. Defaults to
+            // Player for a dual-role account.
+            element: (
+              <ActiveRoleProvider>
+                <AppShell />
+              </ActiveRoleProvider>
+            ),
             children: [
-              // Coach's dashboard is the default landing screen — see
-              // specs/coach-dashboard.md "Emplacement dans la nav". Not
-              // role-branched here (PO-2 role switching is a no-op in v1):
-              // this route always renders the Coach view for now.
-              { index: true, element: <CoachDashboardPage /> },
+              { index: true, element: <DashboardIndexPage /> },
               { path: 'calendar', element: <CalendarPage /> },
               { path: 'actus', element: <ActusPage /> },
               { path: 'menu', element: <MenuPage /> },

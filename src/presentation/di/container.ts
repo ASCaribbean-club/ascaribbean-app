@@ -5,11 +5,13 @@ import { supabaseClient } from '@data/datasources/supabase-client'
 import { createAuthContainer, type AuthContainer } from './containers/auth-container'
 import { createCoachDashboardContainer, type CoachDashboardContainer } from './containers/coach-dashboard-container'
 import { createConvocationContainer, type ConvocationContainer } from './containers/convocation-container'
+import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 
 export interface Container {
   auth: AuthContainer
   coachDashboard: CoachDashboardContainer
   convocation: ConvocationContainer
+  playerDashboard: PlayerDashboardContainer
 }
 
 export function createContainer(): Container {
@@ -17,5 +19,6 @@ export function createContainer(): Container {
     auth: createAuthContainer(supabaseClient),
     coachDashboard: createCoachDashboardContainer(supabaseClient),
     convocation: createConvocationContainer(supabaseClient),
+    playerDashboard: createPlayerDashboardContainer(supabaseClient),
   }
 }

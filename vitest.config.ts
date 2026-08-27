@@ -9,6 +9,7 @@ const alias = {
   '@domain': path.resolve(dirname, 'src/domain'),
   '@data': path.resolve(dirname, 'src/data'),
   '@presentation': path.resolve(dirname, 'src/presentation'),
+  '@': path.resolve(dirname, 'src'),
 }
 
 // Deux projets, comme le prescrit ARCHITECTURE.md section 8 : le domaine et

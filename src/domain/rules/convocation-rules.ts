@@ -1,7 +1,7 @@
 // Règles dérivées de l'état d'une Convocation / d'un jeu de ConvocationResponse :
 // "qu'est-ce qui est vrai", jamais "qui a le droit" (ça reste dans domain/policies/).
 
-import type { Convocation, ConvocationResponse } from '../entities/convocation'
+import type { Convocation, ConvocationResponse, DeclaredStatus } from '../entities/convocation'
 
 export interface ResponseCounts {
   present: number
@@ -30,22 +30,25 @@ export function byDateAscending(a: Convocation, b: Convocation): number {
 // CLAUDE.md §6). Known gap against AC-CD-05 (présents + absents + en
 // attente = nombre de convoqués): a convoked player who hasn't responded
 // has no ConvocationResponse row at all, so they're absent from this count
-// entirely rather than counted as pending — same shape of problem
-// isConvocationComplete() (../policies/convocation-closure.ts) solved for
-// AttendanceRecord by taking `requiredUserIds: string[]`. Deferred until
-// roster access for a coach is settled (specs/coach-dashboard.md PO-6b,
-// still open) — no repository exposes a team roster today, only
-// TeamRepository.countActiveMembers (an aggregate).
+// entirely rather than counted as pending. Still open for
+// ListUpcomingTeamConvocationsUseCase (specs/coach-dashboard.md PO-6b) —
+// that use case only has ConvocationResponseRepository, no roster. Resolved
+// for the roster-aware call site (GetConvocationRosterForCoachUseCase) by
+// summarizeRosterStatuses below, once ConvocationRespondersRepository gave
+// it the full convoked roster to default non-responders to 'pending' with.
 export function summarizeResponses(responses: ConvocationResponse[]): ResponseCounts {
-  const counts = responses.reduce<ResponseCounts>(
+  return summarizeRosterStatuses(responses)
+}
 
-    (counts, response) => {
-      counts[response.status]++
+// Same tally, but over anything carrying a DeclaredStatus — in particular
+// a roster already completed with 'pending' for non-responders, so counts
+// stay consistent with AC-CD-05 instead of only reflecting response rows.
+export function summarizeRosterStatuses(items: { status: DeclaredStatus }[]): ResponseCounts {
+  return items.reduce<ResponseCounts>(
+    (counts, item) => {
+      counts[item.status]++
       return counts
     },
     { present: 0, absent: 0, pending: 0 }
   )
-
-  return counts
-
 }

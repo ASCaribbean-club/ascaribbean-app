@@ -219,3 +219,38 @@ Cet écran n'est rendu que pour un utilisateur dont un des rôles actifs est Coa
 Aucune. Tous les points bloquants pour ce screen (PO-1 à PO-6) sont tranchés côté spec, et aucun composant visuel nouveau n'est requis — la maquette existante couvre l'intégralité de la mise en page une fois les blocs de relance retirés. PO-6b (portée du compteur « licenciés ») reste ouvert mais n'affecte pas la conception : le compteur reste un agrégat textuel simple quelle que soit l'issue.
 
 **Prêt pour transmission à mentor-agent : oui.**
+
+## UI design — addendum : lignes date/heure · lieu · RDV (carte « Prochain match »)
+
+**Demande** : la carte « Prochain match » (point 2 ci-dessus) rend aujourd'hui `formatMatchSchedule()` dans un unique `<p className="text-[12.5px] whitespace-pre-line text-white/60">` — trois lignes de texte brut jointes par `\n`, sans hiérarchie visuelle ni séparation claire entre date/heure, lieu et heure de RDV. La développeuse a jugé le rendu cramped et demande un traitement plus ergonomique pour ces trois informations, à l'identique sur la carte « Prochaine convocation » du joueur (`specs/player-dashboard.md`, même addendum).
+
+Ce point n'est pas couvert par la maquette `docs/designs/v4_coach_dashboard.png`, qui montre déjà le même bloc trois-lignes cramped — c'est justement le pattern à remplacer, pas une référence à suivre ici. Aucune maquette dédiée à ce micro-composant n'existe : la mise en page proposée ci-dessous s'appuie sur le langage visuel déjà établi par ce projet (icônes déjà utilisées sur la carte joueur équivalente, `NextConvocationCard.tsx` lignes 73-74 ; composant `Badge` déjà utilisé plus haut sur cette même carte pour le compte à rebours) plutôt que sur un nouveau pattern non fondé visuellement. Elle s'inspire aussi, sans le reproduire, du pattern « une ligne = une donnée, avec son propre traitement visuel » déjà utilisé pour l'onglet Infos du détail de convocation (`docs/designs/player-match-details/[v3] [Joueur] Mob - Détail Match-selection_1.png`, lignes MATCH / RDV ÉQUIPE / LIEU RDV) — ce dernier reste un tableau plein écran à étiquettes, non transposable tel quel à une carte compacte de dashboard, d'où une variante plus dense ci-dessous plutôt qu'une reprise directe.
+
+### Composant nouveau : `ScheduleInfo`
+
+Composant partagé, `presentation/shared/components/ScheduleInfo.tsx` — même emplacement que les autres composants déjà mutualisés entre les deux tableaux de bord (`ResponseBar`, `ResponseActions`, désormais dans `presentation/shared/components/` d'après l'état du dépôt). Justification du partage : la carte coach et la carte joueur affichent exactement les trois mêmes données (date/heure, lieu, heure de RDV optionnelle) avec la même hiérarchie visuelle — un seul composant, pas deux implémentations parallèles à maintenir en synchronisation.
+
+**Props** : `dateIso: string`, `location: string`, `meetingPointTime: string | null | undefined`. Le composant reçoit les champs bruts de la convocation/`MatchDetails`, pas une chaîne pré-formatée — il remplace l'usage de `formatMatchSchedule()` sur cette carte (qui devient un export inutilisé de `match-schedule.ts` à ce seul endroit ; `formatEventSchedule()` reste inchangé et continue de servir les lignes de liste « À venir », `UpcomingList.tsx`, hors périmètre de cet addendum). En interne, `ScheduleInfo` réutilise les formateurs déjà exportés `formatConvocationDate()` et `formatTime()`.
+
+**Layout** — trois lignes empilées (`flex flex-col gap-1`), une hiérarchie de poids visuel décroissante du haut vers le bas :
+
+1. **Date/heure (poids primaire)** : icône `IconCalendarEvent` (`size-3.5 shrink-0 text-white/45`) + `formatConvocationDate(dateIso)` (ex. « Samedi 14h00 »), texte `text-[13px] font-semibold text-white/80`.
+2. **Lieu (poids secondaire)** : icône `IconMapPin` (mêmes dimensions/couleur que ci-dessus) + `location`, texte `text-[12px] font-normal text-white/55` — visiblement plus discret que la ligne date/heure.
+3. **Heure de RDV (poids tertiaire, mais mis en évidence)**, rendue **seulement si `meetingPointTime` est renseigné** : plutôt qu'une troisième ligne de texte plate qui se fondrait dans les deux précédentes, elle prend la forme d'un **badge/chip** (réutilisation du composant `Badge` déjà importé sur cette carte, pas un nouvel élément visuel) — `variant="outline"`, classes `mt-0.5 w-fit gap-1 border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white/70`, icône `IconClock` (`size-3`) + « RDV {formatTime(meetingPointTime)} » (ex. « RDV 13h30»). Ce traitement en chip — plutôt qu'une ligne de plus — signale visuellement que cette information a une valeur d'action (« soyez là à cette heure ») distincte d'une simple donnée descriptive, sans introduire de nouvelle couleur sémantique (le badge reste dans la même gamme neutre gris/blanc que le reste de la carte, pour ne pas entrer en concurrence avec le vert/rouge déjà réservé aux réponses de convocation).
+
+### États
+
+- **Avec RDV** (match dont `matchDetails.meetingPointTime` est renseigné) : les trois lignes/éléments décrits ci-dessus.
+- **Sans RDV** (entraînement/réunion, ou match dont `MatchDetails` n'est pas encore écrit — cas déjà commenté dans `NextTrainingOrMatchCard.tsx` lignes 18-22) : seules les deux premières lignes sont rendues ; le badge est simplement absent, pas de hauteur de secours réservée à sa place.
+
+### Touche mobile
+
+Aucun contrôle interactif introduit par ce composant (texte et icônes statiques, badge non cliquable) — pas de cible tactile à dimensionner ici. La carte entière reste le seul élément tappable (`onOpen`), comportement inchangé.
+
+### Ce qui change par rôle
+
+Rien : ce composant est de la pure présentation d'une donnée déjà lue et bornée par les règles RBAC existantes de cette spec (§2) — il ne lit ni n'affiche aucune donnée supplémentaire par rapport à `formatMatchSchedule()`, il en change seulement la mise en page. Aucun impact sur AC-CD-11/AC-CD-12 (contraste et doublage texte de l'information colorée) au-delà de la vérification déjà requise — le badge RDV reste sur fond neutre, pas sur une couleur porteuse de sens à elle seule.
+
+### Questions ouvertes UI
+
+Aucune. Ce composant est une reformulation de mise en page d'une donnée déjà spécifiée, pas une nouvelle fonctionnalité — pas de nouveau point RBAC ni de nouveau flux à trancher.

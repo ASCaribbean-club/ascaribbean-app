@@ -283,3 +283,28 @@ Cet écran n'est rendu que pour un utilisateur dont le rôle actif est Joueur/Jo
 - Aucune autre question bloquante : PO-PD-01 et PO-PD-04 sont des questions d'implémentation/routage, pas de mise en page (§5, tableau), et n'affectent aucun choix pris dans cette section.
 
 **Prêt pour transmission à mentor-agent : oui, avec la même réserve que celle déjà posée en §6 — la moitié basse de l'écran reste hors conception tant que PO-PD-02/PO-PD-07 ne sont pas arbitrés.**
+
+## UI design — addendum : lignes date/heure · lieu · RDV (carte « Prochaine convocation »)
+
+**Demande, identique côté coach** : la carte « Prochaine convocation » (point 3 ci-dessus) rend aujourd'hui `formatMatchSchedule()`/`formatEventSchedule()` dans un unique `<p className="text-[12.5px] whitespace-pre-line text-white/60">` — trois lignes de texte brut jointes par `\n` pour une convocation de type match (date/heure, lieu, RDV), sans hiérarchie visuelle. Le même besoin d'un traitement plus ergonomique a été formulé côté coach (`specs/coach-dashboard.md`, même addendum) ; la solution retenue est **partagée entre les deux cartes**, pas dupliquée.
+
+### Composant réutilisé : `ScheduleInfo`
+
+Voir `specs/coach-dashboard.md` UI design — addendum pour la description complète du composant (`presentation/shared/components/ScheduleInfo.tsx`, props `dateIso`/`location`/`meetingPointTime`, layout en 3 éléments à poids visuel décroissant, badge `Badge` réutilisé pour la ligne RDV). Rien n'est spécifique à la vue joueur dans ce composant : il est déjà pensé partagé, au même titre que `ResponseActions`/`ResponseBar`.
+
+**Particularité de cette carte** : `NextConvocationCard.tsx` rend une convocation de **n'importe quel type** (§1 point 3 de cette spec), pas seulement un match — `ScheduleInfo` s'applique sans changement aux trois cas :
+
+- **Match** (`matchDetails` présent) : les trois éléments (date/heure, lieu, badge RDV) — identique au rendu coach.
+- **Entraînement ou réunion** : `meetingPointTime` vaut `null`/`undefined`, seules les deux premières lignes (date/heure, lieu) sont rendues, pas de badge — même dégradation que côté coach pour une convocation non-match.
+
+### Ce qui change par rôle
+
+Rien : pure reformulation de mise en page des trois données déjà lues par cette carte (§1 point 3, §2). Aucun nouveau champ affiché — en particulier, ce composant ne réintroduit ni agrégat d'équipe (PO-PD-05/AC-PD-09), ni donnée de santé (§3/AC-PD-08) : il ne fait que restructurer visuellement `convocation.date`, `convocation.location` et `matchDetails.meetingPointTime`, trois champs déjà dans le périmètre validé de cette spec.
+
+### Touche mobile
+
+Aucun contrôle interactif introduit (texte, icônes et badge statiques) — pas de cible tactile à dimensionner pour ce composant. Les boutons Présent/Absent (point 4 de la spec ci-dessus, `h-11`/`min-w-0` déjà spécifiés) sont un bloc distinct, rendu séparément sous `ScheduleInfo` dans la carte ; cet addendum ne les modifie pas.
+
+### Questions ouvertes UI
+
+Aucune — cf. `specs/coach-dashboard.md` UI design — addendum. Ce composant ne rouvre aucun des points ouverts de cette spec (§5) : il ne dépend ni de PO-PD-02 ni de PO-PD-07 (moitié basse de l'écran, toujours hors conception — voir point 6 de la section « Structure de l'écran » ci-dessus, inchangé par cet addendum).

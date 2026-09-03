@@ -167,4 +167,19 @@ export interface Team {
 
 ---
 
+## Variante de l'écran détail convocation pilotée par l'onglet de rôle actif
+
+**Où** : `domain/rules/active-role-scope.ts`, rendu de l'écran détail convocation (`presentation/features/convocation/ConvocationDetailPage.tsx` / `useConvocationDetailViewModel.ts`).
+
+**Valeur actuelle** : la variante (joueur / coach) de la convocation est entièrement pilotée par l'onglet de rôle actif du tableau de bord (`useActiveRole()`), pas recalculée à partir de `user.roles` comparé à `convocation.teamId`.
+
+**Pourquoi cette valeur, provisoirement** : choisi pour sa simplicité face à un modèle de composition par permission ; ne fait délibérément pas apparaître les deux variantes pour un compte joueur-coach de la même équipe sans bascule explicite d'onglet.
+
+**Ce qu'il faudrait challenger** :
+- Est-ce que ça devient une friction réelle une fois que des comptes joueur-coach existent vraiment au club et utilisent cet écran — si des demandes de support ou de la confusion observée apparaissent, reconsidérer une composition des deux variantes (booléens par capacité) plutôt qu'un simple aiguillage par rôle actif.
+
+**Priorité de revisite** : après premiers retours réels — pas avant, pas de façon spéculative.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

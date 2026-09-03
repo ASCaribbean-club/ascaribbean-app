@@ -18,13 +18,24 @@ Deux niveaux de référence, dans cet ordre de préférence :
 
 | Feature / spec | Lien artifact | Récupéré le | Instantané local | Statut |
 |---|---|---|---|---|
-| match_details_page | https://claude.ai/code/artifact/e3e3d973-cd15-41ce-a08f-3525a594796b | 2026-08-27 | N/A | actif |
+| match_details_page — **vue joueur** | https://claude.ai/code/artifact/cd36ac10-2c12-4616-8141-5468a779ad9f | 2026-08-27 | N/A | actif |
+| match_details_page — **vue coach** | https://claude.ai/code/artifact/97e7d0a5-a538-4f59-a9af-897b235220a1 | 2026-08-27 | N/A | actif |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 
 - `actif` — lien vérifié valide.
 - `mort` — lien testé, ne répond plus ; se rabattre sur l'instantané local.
 - `absent` — aucune maquette encore produite pour cette feature.
+
+**Note sur les deux lignes `match_details_page`** : la développeuse a confirmé (2026-08-27) que l'écran de détail d'une convocation existe en **deux variantes de maquette distinctes**, la vue coach étant « légèrement différente » de la vue joueur. Les deux liens sont fournis et actifs. Règle de lecture propre à la vue joueur, confirmée à cette occasion : le joueur voit **qui** a répondu, mais **jamais si la personne a répondu présent ou absent** — voir `specs/match_details_page.md` §2 et §3.
+
+### Historique des remplacements
+
+Quand un lien est remplacé pour une feature déjà inscrite, l'ancien est noté ici plutôt que supprimé sans trace — un export ou une capture ancienne peut encore y renvoyer.
+
+| Feature / spec | Ancien lien | Remplacé le | Motif |
+|---|---|---|---|
+| match_details_page — vue joueur | https://claude.ai/code/artifact/e3e3d973-cd15-41ce-a08f-3525a594796b | 2026-08-27 | Remplacé par la développeuse en séance de cadrage — nouvelle version de la maquette |
 
 ## 3. Quand alimenter ce registre
 
@@ -48,3 +59,4 @@ Le registre est donc alimenté par les agents autant que par la développeuse �
 
 - Format de l'instantané local (PNG suffisant, ou conserver aussi le HTML brut de l'artifact pour la structure) — à trancher au premier cas réel.
 - Automatisation de la détection de lien mort (ping périodique) — non prioritaire tant que le registre reste petit ; vérification manuelle par l'agent au moment de l'usage pour l'instant.
+- Une feature dont la maquette existe en plusieurs variantes de rôle occupe plusieurs lignes (cas `match_details_page`). Si ce cas se répète, envisager une colonne `Variante` plutôt que de suffixer le nom de la feature.

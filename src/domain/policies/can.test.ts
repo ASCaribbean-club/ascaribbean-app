@@ -3,7 +3,7 @@ import type { User } from '../entities/user'
 import { can } from './can'
 
 function userWith(roles: User['roles']): User {
-  return { id: 'u1', fullName: 'Test User', email: 't@example.com', roles, charterAcceptedAt: null }
+  return { id: 'u1', fullName: 'Test User', email: 't@example.com', roles, position: null, charterAcceptedAt: null }
 }
 
 describe('can', () => {

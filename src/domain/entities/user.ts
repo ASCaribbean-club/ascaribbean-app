@@ -26,11 +26,23 @@ export type RoleAssignment =
 
 export type Role = RoleAssignment['role']
 
+// specs/match_details_page.md correction #10 originally removed the
+// Effectif roster's position sub-label ("Gardienne", "Milieu"...) for lack
+// of domain support — this is that support, added back deliberately rather
+// than left as a mockup-only decoration. Top-level and nullable rather than
+// nested under the 'player' RoleAssignment branch: a position is a fact
+// about the person's game role, not part of the team-scope shape
+// RoleAssignment already models, and staying flat avoids forcing every
+// non-player branch to carry a dead `position` field.
+export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
+
 export interface User {
   id: string
   fullName: string
   email: string
   roles: RoleAssignment[]
+  // null for every non-player role, and for a player who hasn't set one yet.
+  position: PlayerPosition | null
   // CDC §3.1: "activation après acceptation de la charte" — null until the
   // member accepts, set once via the accept_charter() RPC, never cleared.
   charterAcceptedAt: Date | null

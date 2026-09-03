@@ -22,6 +22,7 @@ function coachUser(teamIds: string[]): User {
     fullName: 'Coach',
     email: 'coach@example.com',
     roles: [{ role: 'coach', teamIds }],
+    position: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
   }
 }
@@ -32,6 +33,7 @@ function sectionManagerUser(sectionId: string): User {
     fullName: 'Section Manager',
     email: 'manager@example.com',
     roles: [{ role: 'section-manager', sectionId }],
+    position: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
   }
 }

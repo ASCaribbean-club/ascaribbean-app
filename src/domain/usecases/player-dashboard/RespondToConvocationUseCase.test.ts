@@ -16,6 +16,7 @@ function playerUser(teamId: string): User {
     fullName: 'Player',
     email: 'player@example.com',
     roles: [{ role: 'player', teamId }],
+    position: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
   }
 }

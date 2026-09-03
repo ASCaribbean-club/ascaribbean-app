@@ -1,4 +1,4 @@
-import type { RoleAssignment, User } from '@domain/entities/user'
+import type { PlayerPosition, RoleAssignment, User } from '@domain/entities/user'
 import type { UserRoleRow, UserRow } from '../dto/user-dto'
 
 // user_roles has one row per team for a coach, but User.roles collapses
@@ -9,6 +9,10 @@ export function toUser(row: UserRow, roleRows: UserRoleRow[]): User {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
+    // Cast, not validated here — same trust boundary as `role` in
+    // toRoleAssignments below: the CHECK constraint on public.users.position
+    // is what actually guarantees the value is one of PlayerPosition's four.
+    position: row.position as PlayerPosition | null,
     charterAcceptedAt: row.charter_accepted_at ? new Date(row.charter_accepted_at) : null,
     roles: toRoleAssignments(roleRows),
   }

@@ -6,6 +6,7 @@ const userRow: UserRow = {
   id: 'u1',
   full_name: 'Test User',
   email: 't@example.com',
+  position: null,
   charter_accepted_at: null,
 }
 
@@ -17,6 +18,11 @@ describe('toUser', () => {
   it('maps charter_accepted_at to a Date when set', () => {
     const row: UserRow = { ...userRow, charter_accepted_at: '2026-08-13T00:00:00.000Z' }
     expect(toUser(row, []).charterAcceptedAt).toEqual(new Date('2026-08-13T00:00:00.000Z'))
+  })
+
+  it('maps a set position through unchanged', () => {
+    const row: UserRow = { ...userRow, position: 'midfielder' }
+    expect(toUser(row, []).position).toBe('midfielder')
   })
 
   it('maps a player row to a single teamId assignment', () => {

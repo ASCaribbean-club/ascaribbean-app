@@ -1,10 +1,8 @@
-import { IconClipboardList, IconRun, IconTrophy } from '@tabler/icons-react'
-import type { ConvocationType } from '@domain/entities/convocation'
 import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
 import { Card } from '../../../shared/components/ui/card'
-import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
-import { formatEventSchedule, formatMatchSchedule } from '../../../shared/formatters/match-schedule'
-import { ResponseActions } from './ResponseActions'
+import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
+import { ResponseActions } from '@presentation/shared/components/ResponseActions'
+import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 
 interface NextConvocationCardProps {
   data: UpcomingConvocationForPlayer | undefined
@@ -12,16 +10,6 @@ interface NextConvocationCardProps {
   onRespondPresent: () => void
   onRespondAbsent: () => void
   onOpen: () => void
-}
-
-// icon glyph per type — mirrors the mockup's 🏃/🏆/📋 pictograms
-// (docs/designs/player-dashboard/v2_joueur_dashboard.png) with tabler
-// icons (this project's icon library, components.json "iconLibrary":
-// "tabler") rather than literal emoji.
-const TYPE_ICON: Record<ConvocationType, typeof IconRun> = {
-  training: IconRun,
-  match: IconTrophy,
-  meeting: IconClipboardList,
 }
 
 // specs/player-dashboard.md UI design §3 — reuses the coach's "Prochain
@@ -40,7 +28,7 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
   if (!data) return null // AC-PD-02 : état vide géré par le parent (aucune échéance à venir)
 
   const { convocation, matchDetails, opponent, meetingDetails, myResponse } = data
-  const Icon = TYPE_ICON[convocation.type]
+  const Icon = getConvocationTypeIcon(convocation.type)
 
 
   const title =
@@ -50,10 +38,7 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
         ? meetingDetails.title
         : formatConvocationType(convocation.type)
 
-  const schedule =
-    convocation.type === 'match' && matchDetails
-      ? formatMatchSchedule(convocation.date, convocation.location, matchDetails.meetingPointTime)
-      : formatEventSchedule(convocation.date, convocation.location)
+  const meetingPointTime = convocation.type === 'match' && matchDetails ? matchDetails.meetingPointTime : null
 
   return (
     // Tap on the card (outside the buttons) opens the detail (AC-PD-14) —
@@ -74,7 +59,7 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
         <p className="text-[19px] leading-tight font-extrabold text-white">{title}</p>
       </div>
 
-      <p className="text-[12.5px] text-white/60">{schedule}</p>
+      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseActions

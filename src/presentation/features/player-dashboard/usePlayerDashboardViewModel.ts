@@ -13,9 +13,11 @@ import { queryKeys } from '@presentation/shared/query-keys'
 import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
 import { hasMissingOrRejectedDocument } from '@domain/rules/document-rules'
+import { useNavigate } from 'react-router-dom'
 
 export function usePlayerDashboardViewModel() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { toggleActiveRole } = useActiveRole()
   const {
@@ -98,6 +100,8 @@ export function usePlayerDashboardViewModel() {
       // useCreateConvocationViewModel's onSuccess.
       if (teamId && user) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.playerUpcomingConvocations(teamId, user.id) })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.playerConvocationResponse(nextConvocation.convocation.id, user.id) })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationResponders(nextConvocation.convocation.id) })
       }
     },
     onError: (error) => {
@@ -130,8 +134,22 @@ export function usePlayerDashboardViewModel() {
     nextConvocation,
     canRespond,
     respondError,
-    onRespondPresent: () => respondMutation.mutate('present'),
-    onRespondAbsent: () => respondMutation.mutate('absent'),
+    // Guards against a duplicate upsert for the same convocation/status:
+    // - respondMutation.isPending blocks a second tap while the first
+    //   round trip is still in flight (before myResponse has refetched).
+    // - the myResponse.status check blocks re-tapping the button that's
+    //   already the player's recorded answer, even long after the mutation
+    //   has settled — same status means the write would be a no-op, so
+    //   there's no reason to re-hit the network (AC-PD-04, single upsert
+    //   per actual change).
+    onRespondPresent: () => {
+      if (respondMutation.isPending || nextConvocation?.myResponse?.status === 'present') return
+      respondMutation.mutate('present')
+    },
+    onRespondAbsent: () => {
+      if (respondMutation.isPending || nextConvocation?.myResponse?.status === 'absent') return
+      respondMutation.mutate('absent')
+    },
 
     /// --- "À venir" list ---
     upcomingList,
@@ -139,8 +157,9 @@ export function usePlayerDashboardViewModel() {
       // TODO: Calendrier route doesn't exist yet — same as
       // useCoachDashboardViewModel.goToCalendar (AC-PD-14 "Voir tout").
     },
-    goToConvocationDetail: (_convocationId: string) => {
-      // TODO: same as above — detail route belongs to Calendrier.
+    goToConvocationDetail: (convocationId: string) => {
+      if (!convocationId) return
+      navigate(`/convocations/${convocationId}`)
     },
   }
 }

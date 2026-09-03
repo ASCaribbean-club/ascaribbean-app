@@ -28,7 +28,7 @@ export function CoachDashboardPage() {
       />
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">
-        <NextTrainingOrMatchCard nextTrainingOrMatch={vm.nextTrainingOrMatch} onOpen={vm.goToCalendar} />
+        <NextTrainingOrMatchCard nextTrainingOrMatch={vm.nextTrainingOrMatch} onOpen={() => vm.goToConvocationDetail(vm.nextTrainingOrMatch?.convocation.id ?? '')} />
 
         <FormAndGoalsRow />
 

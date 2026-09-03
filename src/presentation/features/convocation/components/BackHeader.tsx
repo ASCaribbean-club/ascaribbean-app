@@ -16,6 +16,11 @@ interface BackHeaderProps {
 // the back arrow scrolls away with the content — the only way back would be
 // the OS gesture/button. Matches the submit bar's own `sticky bottom-0` a
 // few lines down in the parent screen.
+//
+// AC-MD-23 requires a ~44px (`h-11`) minimum touch target for the back
+// arrow on this screen; bumped from the original `size-9.5` mockup size to
+// `size-11` to meet it. This component is shared with convocations/new, so
+// the larger target applies there too — a strictly positive change.
 export function BackHeader({ title, onBack }: BackHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex items-center gap-3 bg-coach-bg px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-2">
@@ -24,7 +29,7 @@ export function BackHeader({ title, onBack }: BackHeaderProps) {
         aria-label="Retour"
         variant="ghost"
         size="icon"
-        className="size-9.5 shrink-0 rounded-full bg-white/8 text-white hover:bg-white/15"
+        className="size-11 shrink-0 rounded-full bg-white/8 text-white hover:bg-white/15"
       >
         <IconChevronLeft className="size-5" />
       </Button>

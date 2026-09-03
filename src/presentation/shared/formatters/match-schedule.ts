@@ -2,26 +2,38 @@
 // (specs/coach-dashboard.md UI design §2). `HHhMM` is the informal French
 // time notation used throughout the maquette — Intl doesn't produce it, so
 // hours/minutes are formatted by hand.
-function formatTime(dateIso: string): string {
+// Exported (not just used internally) so specs/match_details_page.md's Infos
+// tab can render "RDV — heure" (MatchDetails.meetingPointTime) as a bare
+// "13h30" — a full formatDateTime/formatEventSchedule would also print a
+// weekday, which AC-MD-03 doesn't ask for on that specific row (the weekday
+// is already shown once, on "Coup d'envoi").
+export function formatTime(dateIso: string): string {
   const date = new Date(dateIso)
   const hours = date.getHours()
   const minutes = date.getMinutes().toString().padStart(2, '0')
   return `${hours}h${minutes}`
 }
 
-function capitalize(word: string): string {
-  return word.charAt(0).toUpperCase() + word.slice(1)
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-// "Jeudi 18h30 · Stade municipal" — shared base for any convocation's meta
-// line ("À venir" list rows, and the "Prochain match" card when it isn't
-// rendering an actual match — see formatMatchSchedule below for that case).
+export function formatConvocationDate(dateIso: string): string {
+  const date = new Date(dateIso)
+
+  const weekday = capitalize(date.toLocaleDateString('fr-FR', { weekday: 'long' }))
+  const day = date.toLocaleDateString('fr-FR', { day: 'numeric' })
+  const month = capitalize(date.toLocaleDateString('fr-FR', { month: 'long' }))
+
+  const hours = date.getHours()
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  const time = `${hours}h${minutes}`
+
+  return `${weekday} ${day} ${month} · ${time}`
+}
+
+// "Jeudi 10 Septembre · 18h30 · Stade municipal" — shared base for any convocation's meta
+// line ("À venir" list rows).
 export function formatEventSchedule(dateIso: string, location: string): string {
-  const weekday = capitalize(new Date(dateIso).toLocaleDateString('fr-FR', { weekday: 'long' }))
-  return [`${weekday} ${formatTime(dateIso)}`, location].join(' · ')
-}
-
-export function formatMatchSchedule(kickoffIso: string, location: string, meetingPointTime: string | null): string {
-  const base = formatEventSchedule(kickoffIso, location)
-  return meetingPointTime ? `${base} · RDV ${formatTime(meetingPointTime)}` : base
+  return [formatConvocationDate(dateIso), location].join(' · ')
 }

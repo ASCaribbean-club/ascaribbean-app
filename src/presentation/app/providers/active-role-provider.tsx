@@ -1,6 +1,13 @@
 import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react'
 import { useAuth } from '../../shared/hooks/use-auth'
 
+// Only 'player'/'coach' — a section-manager/authorized-officer/admin
+// account (no player/coach role) never gets a dashboard tab here, so it can
+// never reach a screen gated by useActiveRole() (e.g. the convocation
+// detail screen). Pre-existing, app-wide gap (no admin dashboard exists
+// yet), not introduced by that screen — tracked as
+// specs/match_details_page.md §"Questions ouvertes UI" #1, not resolved
+// here.
 export type DashboardRole = 'coach' | 'player'
 
 interface ActiveRoleState {

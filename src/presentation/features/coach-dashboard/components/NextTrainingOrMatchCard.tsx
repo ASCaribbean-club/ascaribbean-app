@@ -1,9 +1,9 @@
 import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
 import { formatCountdown } from '../../../shared/formatters/countdown'
-import { formatEventSchedule, formatMatchSchedule } from '../../../shared/formatters/match-schedule'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Card } from '../../../shared/components/ui/card'
-import { ResponseBar } from './ResponseBar'
+import { ResponseBar } from '@presentation/shared/components/ResponseBar'
+import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 
 interface NextTrainingOrMatchCardProps {
   nextTrainingOrMatch: UpcomingConvocation | undefined
@@ -18,12 +18,9 @@ export function NextTrainingOrMatchCard({ nextTrainingOrMatch, onOpen }: NextTra
   // `nextMatch` can be a training convocation too (useCoachDashboardViewModel
   // picks the first upcoming training-or-match) or a match whose
   // MatchDetails row isn't written yet — in both cases opponent/RDV are
-  // absent, so the card degrades to the plain date · lieu line rather than
+  // absent, so ScheduleInfo degrades to date/heure + lieu only rather than
   // rendering a title-less gap or a faked opponent name.
-  const schedule =
-    opponent && matchDetails
-      ? formatMatchSchedule(convocation.date, convocation.location, matchDetails.meetingPointTime)
-      : formatEventSchedule(convocation.date, convocation.location)
+  const meetingPointTime = opponent && matchDetails ? matchDetails.meetingPointTime : null
 
   return (
     // UI design §2 : tape sur la carte "hors zone barre" ouvre le détail —
@@ -46,7 +43,7 @@ export function NextTrainingOrMatchCard({ nextTrainingOrMatch, onOpen }: NextTra
 
       {opponent && <p className="text-[21px] leading-tight font-extrabold text-white">{opponent.name}</p>}
 
-      <p className="text-[12.5px] text-white/60">{schedule}</p>
+      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseBar counts={responseCounts} />

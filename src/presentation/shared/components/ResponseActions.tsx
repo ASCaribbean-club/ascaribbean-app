@@ -1,6 +1,6 @@
 import type { DeclaredStatus } from '@domain/entities/convocation'
-import { Button } from '../../../shared/components/ui/button'
-import { cn } from '../../../shared/lib/utils'
+import { Button } from '@presentation/shared/components/ui/button'
+import { cn } from '@presentation/shared/lib/utils'
 
 interface ResponseActionsProps {
   // AC-PD-06 — true only while the player is both authorized to respond
@@ -15,6 +15,14 @@ interface ResponseActionsProps {
   myResponse: DeclaredStatus | null
   onRespondPresent: () => void
   onRespondAbsent: () => void
+  // 'default' (full-width h-11 pair, CLAUDE.md §6's ~44px touch-target
+  // minimum) is this component's original NextConvocationCard shape and
+  // stays the default so that caller is unaffected. 'compact' is for
+  // SelfRosterRow (specs/match_details_page.md mockup, Effectif tab): the
+  // mockup's Présente/Absente pills sit inline next to the row's badge, so
+  // this keeps their smaller font/padding but floors height at `min-h-11`
+  // (AC-MD-23) rather than shrinking the tap target with the pill.
+  size?: 'default' | 'compact'
 }
 
 // specs/player-dashboard.md UI design §4 — the screen's one real business
@@ -38,7 +46,7 @@ interface ResponseActionsProps {
 // buttons call their respective `onRespond*` prop straight away, and the
 // caller (usePlayerDashboardViewModel) is responsible for making that a
 // single upsert, never two writes (AC-PD-04).
-export function ResponseActions({ canRespond, myResponse, onRespondPresent, onRespondAbsent }: ResponseActionsProps) {
+export function ResponseActions({ canRespond, myResponse, onRespondPresent, onRespondAbsent, size = 'default' }: ResponseActionsProps) {
   if (!canRespond) {
     if (myResponse === 'present' || myResponse === 'absent') {
       return (
@@ -55,20 +63,26 @@ export function ResponseActions({ canRespond, myResponse, onRespondPresent, onRe
 
   const isPresent = myResponse === 'present'
   const isAbsent = myResponse === 'absent'
+  const isCompact = size === 'compact'
 
   return (
     // CLAUDE.md §6 "Mobile touch targets and side-by-side fields": each
     // button gets `min-w-0` (so it can shrink below its own text's
     // intrinsic width on a narrow phone instead of overflowing its
-    // grid track) and `h-11` (~44px, not shadcn Button's un-overridden
-    // `h-8` default).
-    <div className="grid grid-cols-2 gap-2.5">
+    // grid track). Height is `h-11` (~44px) by default, not shadcn
+    // Button's un-overridden `h-8` default — `compact` keeps the smaller
+    // visual pill (font/padding) but floors height at `min-h-11` so the
+    // tap target still meets AC-MD-23.
+    <div className={cn('grid grid-cols-2', isCompact ? 'gap-2' : 'gap-2.5')}>
       <Button
         type="button"
         aria-pressed={isPresent}
         onClick={onRespondPresent}
         className={cn(
-          'h-11 min-w-0 rounded-full border border-white/20 text-[14px] font-bold',
+          'min-w-0 rounded-full border border-white/18',
+          isCompact
+            ? 'text-[10.5px] font-semibold text-white bg-white/14 px-2.5 py-1.25 tracking-[0.03em]'
+            : 'h-11 text-[14px]',
           isPresent
             ? 'border-transparent bg-coach-green text-white hover:bg-coach-green/90'
             : 'bg-transparent text-white hover:bg-white/10',
@@ -81,7 +95,10 @@ export function ResponseActions({ canRespond, myResponse, onRespondPresent, onRe
         aria-pressed={isAbsent}
         onClick={onRespondAbsent}
         className={cn(
-          'h-11 min-w-0 rounded-full border border-white/20 text-[14px] font-bold',
+          'min-w-0 rounded-full border border-white/20 font-bold',
+          isCompact
+            ? 'text-[10.5px] font-semibold text-white bg-white/14 px-2.5 py-1.25 tracking-[0.03em]'
+            : 'h-11 text-[14px]',
           isAbsent
             ? 'border-transparent bg-coach-red text-white hover:bg-coach-red/90'
             : 'bg-transparent text-white hover:bg-white/10',

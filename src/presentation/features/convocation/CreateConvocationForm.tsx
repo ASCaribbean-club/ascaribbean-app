@@ -112,7 +112,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
             </FormField>
 
             <div className={FIELD_ROW_CLASSNAME}>
-              <FormField label="RDV — heure" htmlFor="meetingPointTime">
+              <FormField label="Heure de RDV" htmlFor="meetingPointTime">
                 <DateTimeInput
                   id="meetingPointTime"
                   type="time"
@@ -120,7 +120,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
                   onChange={vm.setMeetingPointTime}
                 />
               </FormField>
-              <FormField label="RDV — lieu" htmlFor="meetingPointLocation">
+              <FormField label="Lieu de RDV" htmlFor="meetingPointLocation">
                 <Input
                   id="meetingPointLocation"
                   value={values.meetingPointLocation}

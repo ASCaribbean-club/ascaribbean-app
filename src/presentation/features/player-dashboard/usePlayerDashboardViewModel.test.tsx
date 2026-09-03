@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Convocation, ConvocationStatus } from '@domain/entities/convocation'
+import type { Convocation, ConvocationResponse, ConvocationStatus } from '@domain/entities/convocation'
 import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
@@ -48,22 +48,23 @@ function buildConvocation(overrides: Partial<Convocation> = {}): Convocation {
   }
 }
 
-function buildUpcoming(convocation: Convocation): UpcomingConvocationForPlayer {
-  return { convocation, myResponse: null, matchDetails: null, opponent: null, meetingDetails: null }
+function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse | null = null): UpcomingConvocationForPlayer {
+  return { convocation, myResponse, matchDetails: null, opponent: null, meetingDetails: null }
 }
 
 function renderViewModel(upcoming: UpcomingConvocationForPlayer[]) {
   mockedUseAuth.mockReturnValue({
-    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], charterAcceptedAt: null },
+    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], position: null, charterAcceptedAt: null },
     isLoading: false,
     refreshUser: vi.fn(),
   })
   mockedUseActiveRole.mockReturnValue({ activeRole: 'player', toggleActiveRole: vi.fn() })
   mockedUseAuthDependencies.mockReturnValue({ signOutUseCase: { execute: vi.fn() } } as never)
+  const respondToConvocationUseCase = { execute: vi.fn().mockResolvedValue(undefined) }
   mockedUsePlayerDashboardDependencies.mockReturnValue({
     getPlayerTeamUseCase: { execute: vi.fn().mockResolvedValue({ id: TEAM_ID, name: 'Équipe 1' }) },
     listUpcomingConvocationsForPlayerUseCase: { execute: vi.fn().mockResolvedValue(upcoming) },
-    respondToConvocationUseCase: { execute: vi.fn() },
+    respondToConvocationUseCase,
     listUserMissingOrRejectedDocumentsUseCase: { execute: vi.fn().mockResolvedValue([]) },
   } as never)
 
@@ -71,7 +72,7 @@ function renderViewModel(upcoming: UpcomingConvocationForPlayer[]) {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )
-  return renderHook(() => usePlayerDashboardViewModel(), { wrapper })
+  return { ...renderHook(() => usePlayerDashboardViewModel(), { wrapper }), respondToConvocationUseCase }
 }
 
 describe('usePlayerDashboardViewModel', () => {
@@ -115,5 +116,30 @@ describe('usePlayerDashboardViewModel', () => {
 
     expect(result.current.nextConvocation).toBeUndefined()
     expect(result.current.canRespond).toBe(false)
+  })
+
+  it('skips the upsert when re-tapping the button matching the already-recorded response', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const myResponse: ConvocationResponse = {
+      id: 'response-1',
+      convocationId: 'convocation-1',
+      userId: USER_ID,
+      status: 'absent',
+      reason: null,
+      respondedAt: '2026-08-27T12:00:00.000Z',
+    }
+    const upcoming = buildUpcoming(buildConvocation(), myResponse)
+    const { result, respondToConvocationUseCase } = renderViewModel([upcoming])
+
+    await waitFor(() => expect(result.current.nextConvocation).toBeDefined())
+
+    result.current.onRespondAbsent()
+    expect(respondToConvocationUseCase.execute).not.toHaveBeenCalled()
+
+    result.current.onRespondPresent()
+    await waitFor(() => expect(respondToConvocationUseCase.execute).toHaveBeenCalledTimes(1))
+    expect(respondToConvocationUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'present' }),
+    )
   })
 })

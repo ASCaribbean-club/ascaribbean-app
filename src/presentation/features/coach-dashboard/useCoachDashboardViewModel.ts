@@ -79,9 +79,9 @@ export function useCoachDashboardViewModel() {
       // feature lands (AC-CD-08 "Voir tout" → Calendrier).
       // navigate('/calendar/{convocation.date}')
     },
-    goToConvocationDetail: (_convocationId: string) => {
-      // TODO: same as above — detail route belongs to Calendrier.
-      // navigate('/convocation/{id}')
+    goToConvocationDetail: (convocationId: string) => {
+      if (!convocationId) return
+      navigate(`/convocations/${convocationId}`)
     },
 
     /// --- Floatting "+" button ---

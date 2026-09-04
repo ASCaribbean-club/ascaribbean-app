@@ -1,7 +1,7 @@
 // Règles dérivées de l'état d'une Convocation / d'un jeu de ConvocationResponse :
 // "qu'est-ce qui est vrai", jamais "qui a le droit" (ça reste dans domain/policies/).
 
-import type { Convocation, ConvocationResponse, DeclaredStatus } from '../entities/convocation'
+import type { Convocation, ConvocationResponse, ConvocationType, DeclaredStatus } from '../entities/convocation'
 
 export interface ResponseCounts {
   present: number
@@ -51,4 +51,32 @@ export function summarizeRosterStatuses(items: { status: DeclaredStatus }[]): Re
     },
     { present: 0, absent: 0, pending: 0 }
   )
+}
+
+// Local calendar day (Y-M-D), not ISO/UTC — two convocations at 23h and 1h
+// the next day must land in different cells, which a UTC-normalized key
+// would get wrong for any user west of UTC. Exported so callers (the
+// Calendar screen's ViewModel) can build the same key for a plain Date and
+// look up groupConvocationTypesByDay's result.
+export function dayKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
+// Distinct ConvocationTypes occurring on each calendar day, for the
+// Calendar screen's day-cell dot markers (specs/calendar.md, UI design
+// §"Composant nouveau" #1 — EventTypeDots). Insertion-ordered, not a fixed
+// priority: EventTypeDots itself caps the display at 3 dots + overflow,
+// this rule only groups and deduplicates (two trainings the same day still
+// produce one 'training' entry).
+export function groupConvocationTypesByDay(convocations: Convocation[]): Map<string, ConvocationType[]> {
+  const byDay = new Map<string, ConvocationType[]>()
+  for (const convocation of convocations) {
+    const key = dayKey(new Date(convocation.date))
+    const types = byDay.get(key) ?? []
+    if (!types.includes(convocation.type)) {
+      types.push(convocation.type)
+    }
+    byDay.set(key, types)
+  }
+  return byDay
 }

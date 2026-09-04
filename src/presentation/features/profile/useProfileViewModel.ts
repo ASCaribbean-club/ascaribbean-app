@@ -14,9 +14,7 @@ import { queryKeys } from '@presentation/shared/query-keys'
 // than fetched-but-unrendered: specs/profile-page.md §1 point 4/5 and
 // AC-PR-14/AC-PR-15 still describe this data as in scope for "Mon profil",
 // so this is a flagged spec/design discrepancy, not a resolved one — see
-// the same note left on ProfilePage.tsx. ListProfileDocumentsUseCase stays
-// wired in profile-container.ts untouched (cheap to leave, no consumer
-// currently calls it from here).
+// the same note left on ProfilePage.tsx.
 
 // UI design "ViewModel — ce que useProfileViewModel doit exposer" — one
 // entry per DISTINCT role (PR-1), never per RoleAssignment/affectation.

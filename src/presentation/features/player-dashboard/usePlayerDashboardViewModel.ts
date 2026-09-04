@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DeclaredStatus } from '@domain/entities/convocation'
-import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
+import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
@@ -52,8 +52,8 @@ export function usePlayerDashboardViewModel() {
   })
 
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
-  const nextConvocation: UpcomingConvocationForPlayer | undefined = upcomingConvocations[0]
-  const upcomingList: UpcomingConvocationForPlayer[] = upcomingConvocations.filter((c) => c !== nextConvocation)
+  const nextConvocation: ConvocationForPlayer | undefined = upcomingConvocations[0]
+  const upcomingList: ConvocationForPlayer[] = upcomingConvocations.filter((c) => c !== nextConvocation)
 
   const hasMissingDocument = hasMissingOrRejectedDocument(documentsQuery.data ?? [])
 

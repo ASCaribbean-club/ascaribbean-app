@@ -13,7 +13,7 @@ export function useCoachDashboardViewModel() {
   const navigate = useNavigate()
   const { toggleActiveRole } = useActiveRole()
   const { selectedCoachTeamId, selectCoachTeam } = useActiveTeam()
-  const { getCoachTeamsUseCase, listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
+  const { getCoachTeamsUseCase, listTeamConvocationsUseCase: listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
 
   // Get teams ids where coach is assigned to
   const coachAssignment = user?.roles.find((assignment) => assignment.role === 'coach')

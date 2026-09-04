@@ -1,11 +1,11 @@
-import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
+import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { Card } from '../../../shared/components/ui/card'
 import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 
 interface NextConvocationCardProps {
-  data: UpcomingConvocationForPlayer | undefined
+  data: ConvocationForPlayer | undefined
   canRespond: boolean
   onRespondPresent: () => void
   onRespondAbsent: () => void

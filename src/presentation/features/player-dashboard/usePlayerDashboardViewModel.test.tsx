@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse, ConvocationStatus } from '@domain/entities/convocation'
-import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
+import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
@@ -46,11 +46,11 @@ function buildConvocation(overrides: Partial<Convocation> = {}): Convocation {
   }
 }
 
-function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse | null = null): UpcomingConvocationForPlayer {
+function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse | null = null): ConvocationForPlayer {
   return { convocation, myResponse, matchDetails: null, opponent: null, meetingDetails: null }
 }
 
-function renderViewModel(upcoming: UpcomingConvocationForPlayer[]) {
+function renderViewModel(upcoming: ConvocationForPlayer[]) {
   mockedUseAuth.mockReturnValue({
     user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], position: null, charterAcceptedAt: null },
     isLoading: false,

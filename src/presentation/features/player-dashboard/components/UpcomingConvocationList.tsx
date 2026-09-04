@@ -1,10 +1,10 @@
-import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
+import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
 
 interface UpcomingConvocationListProps {
-  items: UpcomingConvocationForPlayer[]
+  items: ConvocationForPlayer[]
   onOpen: (convocationId: string) => void
   onSeeAll: () => void
 }
@@ -13,8 +13,8 @@ interface UpcomingConvocationListProps {
 // sous-ligne row shape, same colors (CONVOCATION_TYPE_ACCENT, shared
 // specifically so both screens stay consistent — see that formatter's own
 // comment). Not the SAME component because the two screens' item shapes
-// genuinely differ: coach's UpcomingConvocation carries a team-wide
-// `responseCounts` aggregate, this screen's UpcomingConvocationForPlayer
+// genuinely differ: coach's ConvocationForCoach carries a team-wide
+// `responseCounts` aggregate, this screen's ConvocationForPlayer
 // carries the player's own `myResponse` instead — and per specs/
 // player-dashboard.md §6 corrections 3 & 4 (AC-PD-09, AC-PD-10), this list
 // renders neither a rate badge ("15/18") nor a "⋮" menu, so there would be

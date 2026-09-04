@@ -5,17 +5,18 @@ import type { ConvocationResponseRepository } from '@/domain/repositories/convoc
 import type { AssembleConvocationDetailFieldsUseCase, ConvocationDetailFields } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import type { GetConvocationDetailsUseCase } from '@/domain/usecases/convocation/GetConvocationDetailsUseCase'
 
-export interface ListUpcomingConvocationsForPlayerInput {
+export interface ListConvocationsForPlayerInput {
   teamId: string
   userId: string
   now: Date
+  includePast?: boolean
 }
 
-export interface UpcomingConvocationForPlayer extends ConvocationDetailFields {
+export interface ConvocationForPlayer extends ConvocationDetailFields {
   convocation: Convocation
   // The player's OWN declared intent for this convocation — never an
   // aggregate across the team (PO-PD-05, AC-PD-09 — contrast with
-  // ListUpcomingTeamConvocationsUseCase's `responseCounts`) and never an
+  // ListTeamConvocationsUseCase's `responseCounts`) and never an
   // AttendanceRecord (AC-PD-03). `null` means no response row exists yet,
   // which is a distinct state from a ConvocationResponse whose `status`
   // happens to be 'pending' (domain/entities/convocation.ts, DeclaredStatus).
@@ -30,12 +31,15 @@ export class ListUpcomingConvocationsForPlayerUseCase {
     private readonly getConvocationDetailsUseCase: GetConvocationDetailsUseCase,
   ) { }
 
-  async execute(input: ListUpcomingConvocationsForPlayerInput): Promise<UpcomingConvocationForPlayer[]> {
-    const upcomingTeamConvocations = (await this.convocationRepository.listForTeam(input.teamId))
-      .filter((convocation) => isUpcoming(convocation, input.now))
+  async execute(input: ListConvocationsForPlayerInput): Promise<ConvocationForPlayer[]> {
+    // Despite the name, `input.includePast` means this set is not
+    // exclusively upcoming convocations (specs/calendar.md PO-CA-02) —
+    // same reasoning as ListTeamConvocationsUseCase's own scopedConvocations.
+    const scopedConvocations = (await this.convocationRepository.listForTeam(input.teamId))
+      .filter((convocation) => input.includePast ? true : isUpcoming(convocation, input.now))
       .sort(byDateAscending)
 
-    return await Promise.all(upcomingTeamConvocations.map(async (convocation) => {
+    return await Promise.all(scopedConvocations.map(async (convocation) => {
       const details = convocation.type === 'training' // TODO To remove when training will be mapped
         ? null
         : await this.getConvocationDetailsUseCase.execute(convocation)

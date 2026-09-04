@@ -1,4 +1,4 @@
-import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
+import type { ConvocationForCoach } from '@/domain/usecases/coach-dashboard/ListTeamConvocationsUseCase'
 import { formatCountdown } from '../../../shared/formatters/countdown'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Card } from '../../../shared/components/ui/card'
@@ -6,7 +6,7 @@ import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 
 interface NextTrainingOrMatchCardProps {
-  nextTrainingOrMatch: UpcomingConvocation | undefined
+  nextTrainingOrMatch: ConvocationForCoach | undefined
   onOpen: () => void
 }
 

@@ -3,10 +3,11 @@ import type { Convocation, ConvocationResponse } from '../../entities/convocatio
 import type { MatchDetails } from '../../entities/match-details'
 import type { Opponent } from '../../entities/opponent'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
+import type { ConvocationRespondersRepository, ConvocationResponderStatus } from '../../repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
 import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { OpponentRepository } from '../../repositories/opponent-repository'
-import { ListUpcomingTeamConvocationsUseCase } from './ListUpcomingTeamConvocationsUseCase'
+import { ListTeamConvocationsUseCase } from './ListTeamConvocationsUseCase'
 
 function convocationWith(overrides: Partial<Convocation>): Convocation {
   return {
@@ -38,6 +39,16 @@ function responseWith(overrides: Partial<ConvocationResponse>): ConvocationRespo
   }
 }
 
+function responderWith(overrides: Partial<ConvocationResponderStatus>): ConvocationResponderStatus {
+  return {
+    userId: 'u1',
+    hasResponded: false,
+    displayName: 'Joueuse',
+    position: null,
+    ...overrides,
+  }
+}
+
 // Neither method is exercised for a non-'match' convocation (see
 // loadMatchInfo's early return) — these stand in as no-op collaborators for
 // tests that aren't about match resolution.
@@ -49,21 +60,24 @@ function noopOpponentRepository(): OpponentRepository {
   return { findByTeamId: vi.fn(), findById: vi.fn(), create: vi.fn() }
 }
 
-describe('ListUpcomingTeamConvocationsUseCase', () => {
+describe('ListTeamConvocationsUseCase', () => {
   const now = new Date('2026-08-19T00:00:00.000Z')
 
-  it('excludes closed and past convocations, keeping only open ones in the future', async () => {
+  it('by default (includePast omitted), excludes closed and past convocations, keeping only open ones in the future', async () => {
     const upcoming = convocationWith({ id: 'c-upcoming', date: '2026-08-20T18:00:00.000Z', status: 'open' })
     const past = convocationWith({ id: 'c-past', date: '2026-08-01T18:00:00.000Z', status: 'open' })
     const closed = convocationWith({ id: 'c-closed', date: '2026-08-25T18:00:00.000Z', status: 'closed' })
     const listForTeam = vi.fn().mockResolvedValue([upcoming, past, closed])
     const findByConvocation = vi.fn().mockResolvedValue([])
+    const listForConvocation = vi.fn().mockResolvedValue([])
     const convocationRepository = { listForTeam } as unknown as ConvocationRepository
     const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
 
-    const result = await new ListUpcomingTeamConvocationsUseCase(
+    const result = await new ListTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      convocationRespondersRepository,
       noopMatchDetailsRepository(),
       noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
@@ -74,25 +88,36 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     expect(findByConvocation).not.toHaveBeenCalledWith('c-closed')
   })
 
-  it('scopes response counts to each convocation independently (AC-CD-04)', async () => {
+  it('scopes response counts to each convocation independently (AC-CD-04), defaulting non-responders in the roster to pending', async () => {
     const trainingConvocation = convocationWith({ id: 'c-training', date: '2026-08-20T18:00:00.000Z' })
     const meetingConvocation = convocationWith({ id: 'c-meeting', date: '2026-08-21T18:00:00.000Z' })
     const listForTeam = vi.fn().mockResolvedValue([trainingConvocation, meetingConvocation])
     const findByConvocation = vi.fn().mockImplementation((convocationId: string) => {
       if (convocationId === 'c-training') {
         return Promise.resolve([
-          responseWith({ id: 'r1', convocationId, status: 'present' }),
-          responseWith({ id: 'r2', convocationId, status: 'absent' }),
+          responseWith({ id: 'r1', convocationId, userId: 'u1', status: 'present' }),
+          responseWith({ id: 'r2', convocationId, userId: 'u2', status: 'absent' }),
         ])
       }
-      return Promise.resolve([responseWith({ id: 'r3', convocationId, status: 'pending' })])
+      return Promise.resolve([])
+    })
+    const listForConvocation = vi.fn().mockImplementation((convocationId: string) => {
+      if (convocationId === 'c-training') {
+        return Promise.resolve([
+          responderWith({ userId: 'u1', hasResponded: true }),
+          responderWith({ userId: 'u2', hasResponded: true }),
+        ])
+      }
+      return Promise.resolve([responderWith({ userId: 'u3', hasResponded: false })])
     })
     const convocationRepository = { listForTeam } as unknown as ConvocationRepository
     const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
 
-    const result = await new ListUpcomingTeamConvocationsUseCase(
+    const result = await new ListTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      convocationRespondersRepository,
       noopMatchDetailsRepository(),
       noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
@@ -103,15 +128,46 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     ])
   })
 
+  it('includePast: true keeps past AND closed convocations too (specs/calendar.md PO-CA-02), still soonest-first', async () => {
+    const upcoming = convocationWith({ id: 'c-upcoming', date: '2026-08-25T18:00:00.000Z', status: 'open' })
+    const past = convocationWith({ id: 'c-past', date: '2026-08-01T18:00:00.000Z', status: 'open' })
+    const closed = convocationWith({ id: 'c-closed', date: '2026-08-10T18:00:00.000Z', status: 'closed' })
+    // Order deliberately scrambled on input — byDateAscending is what
+    // should produce the sorted output, not incidental listForTeam order.
+    const listForTeam = vi.fn().mockResolvedValue([upcoming, closed, past])
+    const findByConvocation = vi.fn().mockResolvedValue([])
+    const listForConvocation = vi.fn().mockResolvedValue([])
+    const convocationRepository = { listForTeam } as unknown as ConvocationRepository
+    const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
+
+    const result = await new ListTeamConvocationsUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      convocationRespondersRepository,
+      noopMatchDetailsRepository(),
+      noopOpponentRepository(),
+    ).execute({ teamId: 'team-1', now, includePast: true })
+
+    // includePast bypasses isUpcoming entirely — it doesn't filter on
+    // `status` either, only on the date ordering below (AC-CA-16 renders
+    // 'closed'/'cancelled' via StatusBadge on the calendar row, it isn't
+    // this use case's job to hide them).
+    expect(result.map((r) => r.convocation.id)).toEqual(['c-past', 'c-closed', 'c-upcoming'])
+  })
+
   it('returns an empty list when the team has no upcoming convocation', async () => {
     const listForTeam = vi.fn().mockResolvedValue([])
     const findByConvocation = vi.fn()
+    const listForConvocation = vi.fn()
     const convocationRepository = { listForTeam } as unknown as ConvocationRepository
     const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
 
-    const result = await new ListUpcomingTeamConvocationsUseCase(
+    const result = await new ListTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      convocationRespondersRepository,
       noopMatchDetailsRepository(),
       noopOpponentRepository(),
     ).execute({ teamId: 'team-1', now })
@@ -124,6 +180,7 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const matchConvocation = convocationWith({ id: 'c-match', type: 'match' })
     const listForTeam = vi.fn().mockResolvedValue([matchConvocation])
     const findByConvocation = vi.fn().mockResolvedValue([])
+    const listForConvocation = vi.fn().mockResolvedValue([])
     const matchDetails: MatchDetails = {
       convocationId: 'c-match',
       opponentId: 'opponent-1',
@@ -136,12 +193,14 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const findById = vi.fn().mockResolvedValue(opponent)
     const convocationRepository = { listForTeam } as unknown as ConvocationRepository
     const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
     const matchDetailsRepository = { upsert: vi.fn(), findByConvocationId } as unknown as MatchDetailsRepository
     const opponentRepository = { findByTeamId: vi.fn(), findById, create: vi.fn() } as unknown as OpponentRepository
 
-    const result = await new ListUpcomingTeamConvocationsUseCase(
+    const result = await new ListTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      convocationRespondersRepository,
       matchDetailsRepository,
       opponentRepository,
     ).execute({ teamId: 'team-1', now })
@@ -157,16 +216,19 @@ describe('ListUpcomingTeamConvocationsUseCase', () => {
     const matchConvocation = convocationWith({ id: 'c-match', type: 'match' })
     const listForTeam = vi.fn().mockResolvedValue([matchConvocation])
     const findByConvocation = vi.fn().mockResolvedValue([])
+    const listForConvocation = vi.fn().mockResolvedValue([])
     const findByConvocationId = vi.fn().mockResolvedValue(null)
     const findById = vi.fn()
     const convocationRepository = { listForTeam } as unknown as ConvocationRepository
     const convocationResponseRepository = { findByConvocation } as unknown as ConvocationResponseRepository
+    const convocationRespondersRepository = { listForConvocation } as unknown as ConvocationRespondersRepository
     const matchDetailsRepository = { upsert: vi.fn(), findByConvocationId } as unknown as MatchDetailsRepository
     const opponentRepository = { findByTeamId: vi.fn(), findById, create: vi.fn() } as unknown as OpponentRepository
 
-    const result = await new ListUpcomingTeamConvocationsUseCase(
+    const result = await new ListTeamConvocationsUseCase(
       convocationRepository,
       convocationResponseRepository,
+      convocationRespondersRepository,
       matchDetailsRepository,
       opponentRepository,
     ).execute({ teamId: 'team-1', now })

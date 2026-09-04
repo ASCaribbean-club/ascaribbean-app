@@ -1,11 +1,11 @@
-import type { UpcomingConvocation } from '@domain/usecases/coach-dashboard/ListUpcomingTeamConvocationsUseCase'
+import type { ConvocationForCoach } from '@/domain/usecases/coach-dashboard/ListTeamConvocationsUseCase'
 import { Badge } from '../../../shared/components/ui/badge'
 import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
 
 interface UpcomingListProps {
-  items: UpcomingConvocation[]
+  items: ConvocationForCoach[]
   onOpen: (convocationId: string) => void
   onSeeAll: () => void
 }
@@ -35,9 +35,9 @@ export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
                 className="relative mb-3 flex items-start justify-between gap-3 border-b border-white/8 py-0 pb-3 pl-3.5 last:mb-0 last:border-b-0 last:pb-0"
                 onClick={() => onOpen(convocation.id)}
               >
-                <span aria-hidden className={`absolute top-0.5 bottom-3.5 left-0 w-[3px] rounded-full ${accent.rail}`} />
+                <span aria-hidden className={`absolute top-0.5 bottom-3.5 left-0 w-0.75 rounded-full ${accent.rail}`} />
                 <div className="min-w-0 flex-1">
-                  <p className="m-0 text-[13.5px] leading-[1.25] font-bold text-white">
+                  <p className="m-0 text-[13.5px] leading-tight font-bold text-white">
                     {formatConvocationType(convocation.type)}
                   </p>
                   <p className="m-0 mt-0.75 text-[11.5px] font-semibold text-white/50">

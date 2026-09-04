@@ -36,4 +36,25 @@ export const queryKeys = {
   // team name for EITHER role variant (specs/match_details_page.md UI
   // design, "Zone d'identité").
   team: (teamId: string) => ['teams', teamId] as const,
+
+  // specs/profile-page.md — the profile screen's own reads. Both are
+  // deliberately distinct from every key above even though they can touch
+  // the same underlying tables:
+  //  - profileRoleScopes: the WHOLE resolved+filtered per-role scope read
+  //    (GetProfileRoleScopesUseCase composes TeamRepository AND
+  //    SectionRepository behind one call) — not shared with `team`/
+  //    `playerTeam`, which each return a single bare Team, not this
+  //    screen's ProfileRoleScope[] shape.
+  //  - profileDocuments: the user's FULL document list (ListProfileDocumentsUseCase),
+  //    distinct from `userMissingOrRejectedDocuments` above — same table,
+  //    different (unfiltered) shape.
+  profileRoleScopes: (userId: string) => ['profile', userId, 'roleScopes'] as const,
+  profileDocuments: (userId: string) => ['documents', 'profile', userId] as const,
+
+  // specs/profile-page.md, 2026-09-04 addendum (PO-PR-06) — the user's own
+  // membership + current season label, bundled (GetProfileMembershipUseCase
+  // resolves both together, see that use case's own comment on why).
+  // Distinct from `profileRoleScopes`: different table, different shape,
+  // no reason to share a cache entry.
+  profileMembership: (userId: string) => ['profile', userId, 'membership'] as const,
 }

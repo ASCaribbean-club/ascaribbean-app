@@ -23,6 +23,8 @@ Deux niveaux de référence, dans cet ordre de préférence :
 | profile-page — **variante multi-rôles** (`[v3] [Coach] Mob - Profil (Multi-rôles).dc.html`) | https://claude.ai/design/p/e7fa6de4-7d5b-42a5-93ff-f75669e9adbf?file=%5Bv3%5D+%5BCoach%5D+Mob+-+Profil+%28Multi-r%C3%B4les%29.dc.html | 2026-09-03 | N/A | actif |
 | profile-page — **variante rôle unique** (`[v3] [Joueur] Mob - Profil Joueur.dc.html`) | https://claude.ai/design/p/e7fa6de4-7d5b-42a5-93ff-f75669e9adbf?file=%5Bv3%5D+%5BJoueur%5D+Mob+-+Profil+Joueur.dc.html | 2026-09-03 | N/A | actif |
 | menu (`[v0] Mob - Menu`) | — aucun lien fourni | 2026-09-04 | `docs/designs/menu/[v0] Mob - Menu.png` | **instantané seul** |
+| calendar — **vue coach** (`[v0] [Coach] Mob - Calendrier`) | — aucun lien fourni | 2026-09-04 | `docs/designs/calendar/[v0] [Coach] Mob - Calendrier.png` | **instantané seul** |
+| calendar — **vue joueur** (`[v0] [Joueur] Mob - Calendrier_1..4`) | — aucun lien fourni | 2026-09-04 | `docs/designs/calendar/[v0] [Joueur] Mob - Calendrier_{1,2,3,4}.png` | **instantané seul** |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 

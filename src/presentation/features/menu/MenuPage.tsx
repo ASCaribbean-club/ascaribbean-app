@@ -24,7 +24,8 @@ export function MenuPage() {
 
   return (
     <div className="flex min-h-[75svh] flex-col gap-6 px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-[max(1.375rem,env(safe-area-inset-bottom))] text-white">
-      <h1 className="text-xl font-extrabold">Menu</h1>
+      <h1 className="text-[26px] font-extrabold text-white pt-6">Menu</h1>
+
 
       {/* "SUIVI DE L'ÉQUIPE" — Statistiques/Classement: no CDC-grounded
           module behind either card (specs/menu.md Écarts, PO-MN-04).

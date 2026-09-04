@@ -20,7 +20,7 @@ export function CalendarPage() {
   if (vm.error) return <p role="alert">Une erreur est survenue.</p>
 
   return (
-    <div className="flex flex-col text-white">
+    <div className="flex flex-col text-white pt-10">
       <CalendarHeader monthYearLabel={vm.monthYearLabel} />
 
       {!vm.hasAnyConvocationInScope ? (

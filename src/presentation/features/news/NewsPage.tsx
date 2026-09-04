@@ -10,8 +10,8 @@ export function NewsPage() {
 
   return (
     <div className="flex min-h-[75svh] flex-col gap-5 px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-[max(1.375rem,env(safe-area-inset-bottom))] text-white">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-extrabold">Actus du club</h1>
+      <header className="flex flex-col gap-2 pt-6">
+        <h1 className="text-[26px] font-extrabold text-white">Actus du club</h1>
         {/* Purely decorative banner from the mockup (club colors) — no
             interactivity, no state, specific to this screen only. */}
         <div aria-hidden className="h-1 w-24 rounded-full bg-linear-to-r from-coach-red via-coach-green to-white" />

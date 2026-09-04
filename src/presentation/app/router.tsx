@@ -64,9 +64,10 @@ export const router = createBrowserRouter([
                   // PO-PR-05 (specs/profile-page.md §5) resolved by the
                   // developer 2026-09-04: Profile is reached from the
                   // avatar on the dashboard header (CoachHeader/
-                  // PlayerHeader), NOT from this Menu tab — Menu stays the
-                  // unrelated stub it already was (TODO(PO-1),
-                  // specs/coach-dashboard.md §1).
+                  // PlayerHeader), NOT from this Menu tab. specs/menu.md
+                  // confirms this rather than reopening it (§1, "Mon profil
+                  // comme entrée de menu"). Menu is no longer the
+                  // TODO(PO-1) stub — see MenuPage.tsx/useMenuViewModel.ts.
                   { path: 'menu', element: <MenuPage /> },
                 ],
               },

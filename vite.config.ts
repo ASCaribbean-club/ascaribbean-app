@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -7,8 +8,21 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// Read directly from package.json rather than `process.env.npm_package_version`:
+// that env var is only populated when the dev/build command is invoked through
+// npm's own script runner, and comes back `undefined` under pnpm/yarn or a
+// direct `vite` invocation — reading the file works the same way regardless
+// of how the command was launched.
+const { version: appVersion } = JSON.parse(readFileSync(path.resolve(dirname, 'package.json'), 'utf-8')) as {
+  version: string
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    // Typed in src/vite-env.d.ts — consumed by useMenuViewModel.ts (AC-MN-09).
+    APP_VERSION: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),

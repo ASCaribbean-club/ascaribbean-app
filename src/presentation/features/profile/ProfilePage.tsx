@@ -1,15 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@presentation/shared/components/ui/alert-dialog'
-import { Button } from '@presentation/shared/components/ui/button'
 import { formatPlayerPosition } from '@presentation/shared/formatters/player-position-labels'
 import { formatRole } from '@presentation/shared/formatters/role-labels'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
@@ -89,7 +77,6 @@ export function ProfilePage() {
         <ProfileIdentityHeader
           fullName={vm.fullName}
           initials={vm.initials}
-          onLogout={vm.onLogout}
           roleLabel={flatRoleBlock ? formatRole(flatRoleBlock.role) : null}
           positionLabel={showPositionPill ? positionLabel : null}
         />
@@ -122,30 +109,6 @@ export function ProfilePage() {
             />
           </div>
         )}
-
-        {/* Explicit, discoverable logout affordance in addition to the
-            avatar-tap one in ProfileIdentityHeader (developer request
-            2026-09-04) — same confirmation dialog + vm.onLogout, not a
-            second code path. */}
-        <div className="px-5.5">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="h-11 w-full">
-                Se déconnecter
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
-                <AlertDialogDescription>Vous devrez vous reconnecter pour accéder à l'application.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={vm.onLogout}>Se déconnecter</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
       </div>
     </div>
   )

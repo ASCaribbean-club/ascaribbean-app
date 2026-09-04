@@ -1,20 +1,8 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@presentation/shared/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '@presentation/shared/components/ui/avatar'
 
 interface ProfileIdentityHeaderProps {
   fullName: string
   initials: string
-  onLogout: () => void
   // Only passed for the flat (single distinct role) variant — v4
   // (docs/designs/profile-page/) shows the role as its own pill next to the
   // position pill there. The tabbed (2+ roles) variant has no separate role
@@ -52,42 +40,17 @@ interface ProfileIdentityHeaderProps {
 // long list ABOVE this block on this screen that would justify pinning it
 // — it scrolls away with the rest of the page, per the spec's own "Pas
 // sticky" note.
-export function ProfileIdentityHeader({ fullName, initials, onLogout, roleLabel, positionLabel }: ProfileIdentityHeaderProps) {
+export function ProfileIdentityHeader({ fullName, initials, roleLabel, positionLabel }: ProfileIdentityHeaderProps) {
   return (
     <header className="mx-5.5 mt-[max(1.375rem,env(safe-area-inset-top))] flex flex-col items-center gap-1.5 rounded-3xl border border-white/10 bg-gradient-to-b from-coach-green/20 to-transparent px-5 pt-7 pb-6 text-center">
-      {/* Tap opens the sign-out confirmation — same AlertDialog pattern
-          CoachHeader/PlayerHeader used to have on their own avatar (spec §1
-          "Hors périmètre": reusing an existing use case here needs no new
-          permission or journalisation). Router course-correction
-          2026-09-04: since this screen is now reached BY tapping that same
-          avatar (CoachHeader/PlayerHeader's goToProfilePage), the avatar
-          can't do both at once — sign-out moved here, this is now the ONLY
-          place it lives, not a duplicate of a still-present dashboard
-          affordance. */}
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <button type="button" aria-label="Se déconnecter" className="mb-1.5">
-            {/* Same palette as CoachHeader/PlayerHeader's account avatar
-                (bg-coach-green/texte blanc, spec's own instruction "pour
-                rester cohérent visuellement avec le reste de l'app") but
-                WITHOUT their red border or notification dot — both are
-                dashboard-specific decoration this screen has no use for. */}
-            <Avatar className="size-20">
-              <AvatarFallback className="bg-coach-green text-2xl font-semibold text-white">{initials}</AvatarFallback>
-            </Avatar>
-          </button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
-            <AlertDialogDescription>Vous devrez vous reconnecter pour accéder à l'application.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={onLogout}>Se déconnecter</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Plain identity avatar, no tap affordance — sign-out briefly lived
+          here as an AlertDialog trigger, but a further 2026-09-04
+          correction consolidated it into the Menu screen's own
+          LogoutButton (menu/components/LogoutButton.tsx) as the single
+          place it lives, rather than duplicating it on this avatar too. */}
+      <Avatar className="size-20">
+        <AvatarFallback className="bg-coach-green text-2xl font-semibold text-white">{initials}</AvatarFallback>
+      </Avatar>
 
       <p className="text-[19px] font-extrabold text-white">{fullName}</p>
 

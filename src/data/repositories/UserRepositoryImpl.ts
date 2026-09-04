@@ -15,7 +15,7 @@ export class UserRepositoryImpl implements UserRepository {
   async findById(id: string): Promise<User | null> {
     const { data: userRow, error: userError } = await this.client
       .from('users')
-      .select('id, full_name, email, charter_accepted_at')
+      .select('id, full_name, email, charter_accepted_at, position')
       .eq('id', id)
       .maybeSingle<UserRow>()
 

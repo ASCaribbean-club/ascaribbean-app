@@ -10,7 +10,6 @@ import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
-import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
 import { hasMissingOrRejectedDocument } from '@domain/rules/document-rules'
 import { useNavigate } from 'react-router-dom'
@@ -26,7 +25,6 @@ export function usePlayerDashboardViewModel() {
     respondToConvocationUseCase,
     listUserMissingOrRejectedDocumentsUseCase,
   } = usePlayerDashboardDependencies()
-  const { signOutUseCase } = useAuthDependencies()
 
   // The 'player' RoleAssignment carries a single teamId (domain/entities/
   // user.ts, "one team per player") — no array/selector logic needed here,
@@ -118,9 +116,6 @@ export function usePlayerDashboardViewModel() {
     initials: user ? getInitials(user.fullName) : '',
     teamName: teamQuery.data?.name,
     onRoleClick: toggleActiveRole,
-    onLogout: () => {
-      void signOutUseCase.execute()
-    },
 
     /// --- "Document manquant" alert ---
     hasMissingDocument,
@@ -160,6 +155,15 @@ export function usePlayerDashboardViewModel() {
     goToConvocationDetail: (convocationId: string) => {
       if (!convocationId) return
       navigate(`/convocations/${convocationId}`)
+    },
+
+    /// --- Avatar click (specs/profile-page.md, router course-correction
+    // 2026-09-04: the avatar now opens the profile screen instead of a
+    // sign-out confirmation directly here — sign-out moved to ProfilePage's
+    // own avatar) ---
+    goToProfilePage: () => {
+      if (!user) return
+      navigate(`/profile`)
     },
   }
 }

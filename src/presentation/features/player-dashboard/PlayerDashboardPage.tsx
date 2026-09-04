@@ -22,7 +22,7 @@ export function PlayerDashboardPage() {
         initials={vm.initials}
         teamName={vm.teamName}
         onRoleClick={vm.onRoleClick}
-        onLogout={vm.onLogout}
+        onAvatarClick={vm.goToProfilePage}
       />
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">

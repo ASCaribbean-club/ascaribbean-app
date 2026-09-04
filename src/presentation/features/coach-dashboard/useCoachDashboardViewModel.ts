@@ -5,7 +5,6 @@ import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
-import { useAuthDependencies } from '../../di/hooks/use-auth-dependencies'
 import { useCoachDashboardDependencies } from '../../di/hooks/use-coach-dashboard-dependencies'
 
 export function useCoachDashboardViewModel() {
@@ -13,7 +12,6 @@ export function useCoachDashboardViewModel() {
   const navigate = useNavigate()
   const { toggleActiveRole } = useActiveRole()
   const { getCoachTeamsUseCase, listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
-  const { signOutUseCase } = useAuthDependencies()
 
   // Get teams ids where coach is assigned to
   const coachAssignment = user?.roles.find((assignment) => assignment.role === 'coach')
@@ -62,12 +60,6 @@ export function useCoachDashboardViewModel() {
     onRoleClick: toggleActiveRole,
     // TODO(PO-6, AC-CD-14): team selector pill click — no-op in v1 by design.
     onTeamSelectorClick: () => { },
-    // RequireSession picks up the resulting session-null state reactively
-    // (see auth-provider.tsx's onSessionChange) and redirects to /login —
-    // no navigate() needed here.
-    onLogout: () => {
-      void signOutUseCase.execute()
-    },
 
     /// --- Next training or match card ---
     nextTrainingOrMatch: nextTrainingOrMatch,
@@ -82,6 +74,15 @@ export function useCoachDashboardViewModel() {
     goToConvocationDetail: (convocationId: string) => {
       if (!convocationId) return
       navigate(`/convocations/${convocationId}`)
+    },
+
+    /// --- Avatar click (specs/profile-page.md, router course-correction
+    // 2026-09-04: the avatar now opens the profile screen instead of a
+    // sign-out confirmation directly here — sign-out moved to ProfilePage's
+    // own avatar, same change as usePlayerDashboardViewModel's) ---
+    goToProfilePage: () => {
+      if (!user) return
+      navigate('/profile')
     },
 
     /// --- Floatting "+" button ---

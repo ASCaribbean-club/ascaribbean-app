@@ -24,7 +24,7 @@ export function CoachDashboardPage() {
         hasMultipleTeams={vm.hasMultipleTeams}
         onRoleClick={vm.onRoleClick}
         onTeamSelectorClick={vm.onTeamSelectorClick}
-        onLogout={vm.onLogout}
+        onAvatarClick={vm.goToProfilePage}
       />
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">

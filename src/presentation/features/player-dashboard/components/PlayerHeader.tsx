@@ -1,14 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../../../shared/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
 import { Pill } from '../../../shared/components/Pill'
 import { formatRole } from '../../../shared/formatters/role-labels'
@@ -19,7 +8,7 @@ interface PlayerHeaderProps {
   initials: string
   teamName?: string
   onRoleClick: () => void
-  onLogout: () => void
+  onAvatarClick: () => void
 }
 
 // Reuses the header pattern established by coach-dashboard's CoachHeader
@@ -35,7 +24,7 @@ interface PlayerHeaderProps {
 //   - no ASC Legacy points line either (§6 correction 1, AC-PD-12) — the
 //     salutation is followed directly by whatever the page renders next
 //     (the alert banner or the convocation card), not by this component.
-export function PlayerHeader({ firstName, initials, teamName, onRoleClick, onLogout }: PlayerHeaderProps) {
+export function PlayerHeader({ firstName, initials, teamName, onRoleClick, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
     // scrolling") — same reasoning as CoachHeader: the content below can
@@ -69,32 +58,20 @@ export function PlayerHeader({ firstName, initials, teamName, onRoleClick, onLog
         {teamName && <TeamPill teamName={teamName} />}
 
         {/* Avatar/initiales + pastille de notification : reprise identique
-            de CoachHeader (comportement de la pastille hors périmètre de
-            cette feature). Tap ouvre la confirmation de déconnexion. */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button type="button" aria-label="Compte" className="absolute top-0 right-0">
-              <Avatar className="size-9.5 border-2 border-coach-red">
-                <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Vous devrez vous reconnecter pour accéder à l'application.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={onLogout}>Se déconnecter</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            de CoachHeader (décoration hors périmètre). Router
+            course-correction 2026-09-04 (specs/profile-page.md): tap now
+            navigates to /profile instead of opening a sign-out
+            confirmation directly here — see CoachHeader's own comment for
+            why sign-out moved onto ProfilePage's avatar instead of staying
+            duplicated on both dashboard headers. */}
+        <button type="button" onClick={goToProfilePage} aria-label="Mon profil" className="absolute top-0 right-0">
+          <Avatar className="size-9.5 border-2 border-coach-red">
+            <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
+        </button>
       </div>
 
       <h1 className="pr-13 text-[30px] leading-[1.05] font-black tracking-tight text-white">

@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse, ConvocationStatus } from '@domain/entities/convocation'
 import type { UpcomingConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUpcomingConvocationsForPlayerUseCase'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
-import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
 import { usePlayerDashboardViewModel } from './usePlayerDashboardViewModel'
 
@@ -18,13 +18,11 @@ import { usePlayerDashboardViewModel } from './usePlayerDashboardViewModel'
 vi.mock('@presentation/shared/hooks/use-auth')
 vi.mock('@presentation/shared/hooks/use-active-role')
 vi.mock('@presentation/shared/hooks/use-permission')
-vi.mock('@presentation/di/hooks/use-auth-dependencies')
 vi.mock('@presentation/di/hooks/use-player-dashboard-dependencies')
 
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedUseActiveRole = vi.mocked(useActiveRole)
 const mockedUsePermission = vi.mocked(usePermission)
-const mockedUseAuthDependencies = vi.mocked(useAuthDependencies)
 const mockedUsePlayerDashboardDependencies = vi.mocked(usePlayerDashboardDependencies)
 
 const USER_ID = 'user-1'
@@ -59,7 +57,6 @@ function renderViewModel(upcoming: UpcomingConvocationForPlayer[]) {
     refreshUser: vi.fn(),
   })
   mockedUseActiveRole.mockReturnValue({ activeRole: 'player', toggleActiveRole: vi.fn() })
-  mockedUseAuthDependencies.mockReturnValue({ signOutUseCase: { execute: vi.fn() } } as never)
   const respondToConvocationUseCase = { execute: vi.fn().mockResolvedValue(undefined) }
   mockedUsePlayerDashboardDependencies.mockReturnValue({
     getPlayerTeamUseCase: { execute: vi.fn().mockResolvedValue({ id: TEAM_ID, name: 'Équipe 1' }) },
@@ -70,7 +67,9 @@ function renderViewModel(upcoming: UpcomingConvocationForPlayer[]) {
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
   )
   return { ...renderHook(() => usePlayerDashboardViewModel(), { wrapper }), respondToConvocationUseCase }
 }

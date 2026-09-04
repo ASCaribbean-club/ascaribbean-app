@@ -1,14 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../../../shared/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
 import { Dot } from '../../../shared/components/Dot'
 import { Pill } from '../../../shared/components/Pill'
@@ -23,7 +12,7 @@ interface CoachHeaderProps {
   hasMultipleTeams: boolean
   onRoleClick: () => void
   onTeamSelectorClick: () => void
-  onLogout: () => void
+  onAvatarClick: () => void
 }
 
 export function CoachHeader({
@@ -35,7 +24,7 @@ export function CoachHeader({
   hasMultipleTeams,
   onRoleClick,
   onTeamSelectorClick,
-  onLogout,
+  onAvatarClick: goToProfilePage,
 }: CoachHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
@@ -72,35 +61,22 @@ export function CoachHeader({
 
         {/* Avatar/initiales + pastille de notification : la pastille est
             purement décorative ici — son comportement (lu/non-lu) reste hors
-            périmètre de cette feature (spec UI design §1). Tap ouvre la
-            confirmation de déconnexion — seule action portée par l'avatar
-            pour l'instant. Positioned relative to this row (not the whole
-            header) so its top edge lines up with the role/team pills
-            instead of the header's own padding edge. */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button type="button" aria-label="Compte" className="absolute top-0 right-0">
-              <Avatar className="size-9.5 border-2 border-coach-red">
-                <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Vous devrez vous reconnecter pour accéder à l'application.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={onLogout}>Se déconnecter</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            périmètre de cette feature (spec UI design §1). Router
+            course-correction 2026-09-04 (specs/profile-page.md): tap now
+            navigates to /profile (Mon profil) instead of opening a sign-out
+            confirmation directly here — sign-out moved onto ProfilePage's
+            own avatar (ProfileIdentityHeader), since a single tap target
+            can't sensibly do both at once. Positioned relative to this row
+            (not the whole header) so its top edge lines up with the
+            role/team pills instead of the header's own padding edge. */}
+        <button type="button" onClick={goToProfilePage} aria-label="Mon profil" className="absolute top-0 right-0">
+          <Avatar className="size-9.5 border-2 border-coach-red">
+            <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
+        </button>
       </div>
 
       <h1 className="pr-13 text-[30px] leading-[1.05] font-black tracking-tight text-white">

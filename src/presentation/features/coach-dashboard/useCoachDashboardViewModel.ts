@@ -57,6 +57,7 @@ export function useCoachDashboardViewModel() {
     // It's the number of matchday + 1 but not implemented in P0 because not sure it's useful
     dayMarker: undefined as string | undefined,
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,
+    hasMultipleRoles: (user?.roles.length ?? 0) > 1,
     onRoleClick: toggleActiveRole,
     // TODO(PO-6, AC-CD-14): team selector pill click — no-op in v1 by design.
     onTeamSelectorClick: () => { },

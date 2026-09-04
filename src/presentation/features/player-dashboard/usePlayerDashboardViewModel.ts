@@ -115,6 +115,7 @@ export function usePlayerDashboardViewModel() {
     firstName: user ? getFirstName(user.fullName) : '',
     initials: user ? getInitials(user.fullName) : '',
     teamName: teamQuery.data?.name,
+    hasMultipleRoles: (user?.roles.length ?? 0) > 1,
     onRoleClick: toggleActiveRole,
 
     /// --- "Document manquant" alert ---

@@ -7,6 +7,7 @@ interface PlayerHeaderProps {
   firstName: string
   initials: string
   teamName?: string
+  hasMultipleRoles: boolean
   onRoleClick: () => void
   onAvatarClick: () => void
 }
@@ -24,7 +25,7 @@ interface PlayerHeaderProps {
 //   - no ASC Legacy points line either (§6 correction 1, AC-PD-12) — the
 //     salutation is followed directly by whatever the page renders next
 //     (the alert banner or the convocation card), not by this component.
-export function PlayerHeader({ firstName, initials, teamName, onRoleClick, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
+export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, onRoleClick, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
     // scrolling") — same reasoning as CoachHeader: the content below can
@@ -49,6 +50,7 @@ export function PlayerHeader({ firstName, initials, teamName, onRoleClick, onAva
             className="size-5.5 shrink-0 rounded-full bg-[conic-gradient(var(--color-coach-green)_0deg_180deg,var(--color-coach-red)_180deg_360deg)]"
           />
           {formatRole('player')}
+          {hasMultipleRoles && <span className="text-white/60">▾</span>}
         </Pill>
 
         {/* Rendered only once the player's team resolves — absent, not

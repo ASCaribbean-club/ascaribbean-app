@@ -10,6 +10,7 @@ interface CoachHeaderProps {
   activeMemberCount?: number
   dayMarker?: string
   hasMultipleTeams: boolean
+  hasMultipleRoles: boolean
   onRoleClick: () => void
   onTeamSelectorClick: () => void
   onAvatarClick: () => void
@@ -22,6 +23,7 @@ export function CoachHeader({
   activeMemberCount,
   dayMarker,
   hasMultipleTeams,
+  hasMultipleRoles,
   onRoleClick,
   onTeamSelectorClick,
   onAvatarClick: goToProfilePage,
@@ -49,6 +51,7 @@ export function CoachHeader({
             className="size-5.5 shrink-0 rounded-full bg-[conic-gradient(var(--color-coach-green)_0deg_180deg,var(--color-coach-red)_180deg_360deg)]"
           />
           {formatRole('coach')}
+          {hasMultipleRoles && <span className="text-white/60">▾</span>}
         </Pill>
 
         {/* Rendue seulement pour un coach multi-équipes — absente, pas

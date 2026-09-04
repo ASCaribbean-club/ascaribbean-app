@@ -3,6 +3,7 @@
 // créé ici et transmis aux sous-containers — jamais recréé par domaine.
 import { supabaseClient } from '@data/datasources/supabase-client'
 import { createAuthContainer, type AuthContainer } from './containers/auth-container'
+import { createCalendarContainer, type CalendarContainer } from './containers/calendar-container'
 import { createCoachDashboardContainer, type CoachDashboardContainer } from './containers/coach-dashboard-container'
 import { createConvocationContainer, type ConvocationContainer } from './containers/convocation-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
@@ -10,6 +11,7 @@ import { createProfileContainer, type ProfileContainer } from './containers/prof
 
 export interface Container {
   auth: AuthContainer
+  calendar: CalendarContainer
   coachDashboard: CoachDashboardContainer
   convocation: ConvocationContainer
   playerDashboard: PlayerDashboardContainer
@@ -19,6 +21,7 @@ export interface Container {
 export function createContainer(): Container {
   return {
     auth: createAuthContainer(supabaseClient),
+    calendar: createCalendarContainer(supabaseClient),
     coachDashboard: createCoachDashboardContainer(supabaseClient),
     convocation: createConvocationContainer(supabaseClient),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),

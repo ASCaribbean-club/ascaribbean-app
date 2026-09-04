@@ -50,4 +50,19 @@ export const queryKeys = {
   // Distinct from `profileRoleScopes`: different table, different shape,
   // no reason to share a cache entry.
   profileMembership: (userId: string) => ['profile', userId, 'membership'] as const,
+
+  // specs/calendar.md §7 (mentor-agent note) — deliberately NOT
+  // `teamUpcomingConvocations` / `playerUpcomingConvocations` above, even
+  // though both screens call the very same use cases
+  // (ListUpcomingTeamConvocationsUseCase / ListUpcomingConvocationsForPlayerUseCase,
+  // per that same note "reuse before forking"): PO-CA-02 requires this
+  // screen's list to include past convocations too, a different temporal
+  // scope than the dashboards' "upcoming only" reads. Sharing a cache entry
+  // across a different scope would be wrong the moment that filter is
+  // extended (see the TODOs on both use cases), so the key is split now
+  // rather than after the fact. Shape still differs coach (`responseCounts`)
+  // vs player (`myResponse`) — same reason the dashboard keys are split.
+  calendarTeamConvocations: (teamId: string) => ['convocations', 'team', teamId, 'calendar'] as const,
+  calendarPlayerConvocations: (teamId: string, userId: string) =>
+    ['convocations', 'team', teamId, 'player', userId, 'calendar'] as const,
 }

@@ -50,4 +50,8 @@ export const queryKeys = {
   // Distinct from `profileRoleScopes`: different table, different shape,
   // no reason to share a cache entry.
   profileMembership: (userId: string) => ['profile', userId, 'membership'] as const,
+
+  // specs/actus.md — club-wide, identical for every role: no discriminant
+  // beyond the resource name itself (no userId/teamId — nothing to scope by).
+  newsFeed: () => ['news', 'feed'] as const,
 }

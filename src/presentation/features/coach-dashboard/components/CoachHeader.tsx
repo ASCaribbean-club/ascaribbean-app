@@ -1,7 +1,18 @@
+import type { Team } from '@domain/entities/team'
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
 import { Dot } from '../../../shared/components/Dot'
 import { Pill } from '../../../shared/components/Pill'
 import { formatRole } from '../../../shared/formatters/role-labels'
+
+// Reshapes shadcn's Select trigger to look like the role Pill beside it
+// (rounded-full, translucent border/bg, same text size/weight) instead of
+// its own default rectangular input look — visual parity is the point, the
+// two pills should read as one family. Keeps the shadcn chevron icon rather
+// than the hand-drawn "▾" the (non-Select) team Pill below still uses for
+// its own disabled, non-selector state.
+const TEAM_SELECT_TRIGGER_CLASSNAME =
+  'h-auto w-auto gap-1.5 rounded-full border-white/15 bg-white/10 px-3 py-1.5 text-[12.5px] font-bold text-white data-[placeholder]:text-white [&>svg]:size-3.5 [&>svg]:text-white/60 [&>svg]:opacity-100'
 
 interface CoachHeaderProps {
   firstName: string
@@ -12,7 +23,16 @@ interface CoachHeaderProps {
   hasMultipleTeams: boolean
   hasMultipleRoles: boolean
   onRoleClick: () => void
-  onTeamSelectorClick: () => void
+  // PO-6/AC-CD-14 resolved: real selection, not a click-through. `teams` is
+  // the coach's full team list (for the dropdown's options — including the
+  // single-team case where nothing renders it, see below), `selectedTeamId`
+  // is which one to show as selected (mirrors `teamName`, which is derived
+  // from the SAME currentTeam upstream in useCoachDashboardViewModel — kept
+  // as two props rather than one object so this component doesn't need to
+  // know the shape of a "current team summary").
+  teams: Team[]
+  selectedTeamId: string | undefined
+  onSelectTeam: (teamId: string) => void
   onAvatarClick: () => void
 }
 
@@ -25,7 +45,9 @@ export function CoachHeader({
   hasMultipleTeams,
   hasMultipleRoles,
   onRoleClick,
-  onTeamSelectorClick,
+  teams,
+  selectedTeamId,
+  onSelectTeam,
   onAvatarClick: goToProfilePage,
 }: CoachHeaderProps) {
   return (
@@ -54,12 +76,31 @@ export function CoachHeader({
           {hasMultipleRoles && <span className="text-white/60">▾</span>}
         </Pill>
 
-        {/* Rendue seulement pour un coach multi-équipes — absente, pas
-            grisée, sinon (specs/coach-dashboard.md UI design §1). */}
-        {hasMultipleTeams && (
-          <Pill onClick={onTeamSelectorClick}>
-            {teamName} <span className="text-white/60">▾</span>
-          </Pill>
+        {/* Toujours affichée dès qu'une équipe est résolue — mais seule la
+            variante multi-équipes est un vrai sélecteur (Select) : rien à
+            choisir pour un coach mono-équipe, donc une Pill non cliquable,
+            sans chevron, au même endroit (specs/coach-dashboard.md UI
+            design §1 : absente devient grisée pour cette passe — la Pill
+            reste visible pour que l'équipe soit toujours nommée). */}
+        {hasMultipleTeams ? (
+          <Select value={selectedTeamId} onValueChange={onSelectTeam}>
+            <SelectTrigger className={TEAM_SELECT_TRIGGER_CLASSNAME} aria-label="Choisir une équipe">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  {team.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          teamName && (
+            <Pill disabled className="disabled:cursor-default">
+              {teamName}
+            </Pill>
+          )
         )}
 
         {/* Avatar/initiales : tap navigates to /profile (Mon profil) —

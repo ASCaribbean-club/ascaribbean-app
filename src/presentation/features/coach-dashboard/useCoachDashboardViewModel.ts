@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getFirstName, getInitials } from '../../shared/formatters/greeting'
 import { useActiveRole } from '../../shared/hooks/use-active-role'
+import { useActiveTeam } from '../../shared/hooks/use-active-team'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
@@ -11,6 +12,7 @@ export function useCoachDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { toggleActiveRole } = useActiveRole()
+  const { selectedCoachTeamId, selectCoachTeam } = useActiveTeam()
   const { getCoachTeamsUseCase, listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
 
   // Get teams ids where coach is assigned to
@@ -23,13 +25,13 @@ export function useCoachDashboardViewModel() {
     enabled: !!user && coachTeamIds.length > 0, // Condition that should be ok to launch the function. Query stays in loading status
   })
 
-  // TODO(PO-6): the selector pill is a no-op in v1 (AC-CD-14) — there is no
-  // bascule to read a "selected team" from. Which of teamsQuery.data is
-  // rendered as the current/default team when the coach has several? Spec
-  // doesn't say; pick a deterministic rule (e.g. first by name) and
-  // document it here — don't leave it as "whatever the array order happens
-  // to be" from the repository.
-  const currentTeamSummary = teamsQuery.data?.[0]
+  // PO-6/AC-CD-14 resolved: the pill is a real ActiveTeamProvider-backed
+  // selector now (CoachHeader renders a Select once hasMultipleTeams).
+  // `selectedCoachTeamId` is `null` until the coach actually picks one —
+  // falls back to teamsQuery.data[0], the same deterministic-but-arbitrary
+  // "first by array order" default as before, so a coach who never opens
+  // the selector sees exactly the old behavior.
+  const currentTeamSummary = teamsQuery.data?.find((summary) => summary.team.id === selectedCoachTeamId) ?? teamsQuery.data?.[0]
   const currentTeam = currentTeamSummary?.team
 
   const upcomingConvocationsQuery = useQuery({
@@ -59,8 +61,9 @@ export function useCoachDashboardViewModel() {
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,
     hasMultipleRoles: (user?.roles.length ?? 0) > 1,
     onRoleClick: toggleActiveRole,
-    // TODO(PO-6, AC-CD-14): team selector pill click — no-op in v1 by design.
-    onTeamSelectorClick: () => { },
+    // PO-6/AC-CD-14: real team list + selection, driven by ActiveTeamProvider.
+    teams: teamsQuery.data?.map((summary) => summary.team) ?? [],
+    onSelectTeam: selectCoachTeam,
 
     /// --- Next training or match card ---
     nextTrainingOrMatch: nextTrainingOrMatch,
@@ -68,9 +71,7 @@ export function useCoachDashboardViewModel() {
     /// --- Events/convocations to come ---
     upcomingList,
     goToCalendar: () => {
-      // TODO: Calendrier route doesn't exist yet — replace once that
-      // feature lands (AC-CD-08 "Voir tout" → Calendrier).
-      // navigate('/calendar/{convocation.date}')
+      navigate('/calendar')
     },
     goToConvocationDetail: (convocationId: string) => {
       if (!convocationId) return

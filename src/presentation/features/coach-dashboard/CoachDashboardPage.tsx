@@ -24,7 +24,9 @@ export function CoachDashboardPage() {
         hasMultipleTeams={vm.hasMultipleTeams}
         hasMultipleRoles={vm.hasMultipleRoles}
         onRoleClick={vm.onRoleClick}
-        onTeamSelectorClick={vm.onTeamSelectorClick}
+        teams={vm.teams}
+        selectedTeamId={vm.currentTeam?.id}
+        onSelectTeam={vm.onSelectTeam}
         onAvatarClick={vm.goToProfilePage}
       />
 

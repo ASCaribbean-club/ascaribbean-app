@@ -11,6 +11,7 @@ import { CreateConvocationForm } from '../features/convocation/CreateConvocation
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
+import { ActiveTeamProvider } from './providers/active-team-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
@@ -44,9 +45,17 @@ export const router = createBrowserRouter([
             // untouched — it still renders its own <Outlet/> for its own
             // children. Placement change only — zero behavior change to how
             // ActiveRoleProvider computes or persists the active role.
+            // ActiveTeamProvider nested inside it: coach-only "which of the
+            // coach's teams is selected" state (active-team-provider.tsx),
+            // needed by both CoachDashboardPage's team pill and
+            // useCalendarViewModel's own team resolution, so it lives at the
+            // same scope as ActiveRoleProvider rather than duplicated per
+            // screen.
             element: (
               <ActiveRoleProvider>
-                <Outlet />
+                <ActiveTeamProvider>
+                  <Outlet />
+                </ActiveTeamProvider>
               </ActiveRoleProvider>
             ),
             children: [

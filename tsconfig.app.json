@@ -51,5 +51,15 @@
   },
   "include": [
     "src"
+  ],
+  // *.rls.test.ts and their shared support module are Node-only integration
+  // tests (real child_process/crypto calls against a local Supabase stack —
+  // see rls-test-support.ts) — type-checked instead under tsconfig.rls-test.json,
+  // which has "node" in `types`. Kept out of this project on purpose: adding
+  // "node" here would make Node globals ambient across the whole app, which
+  // this mobile-only PWA (CLAUDE.md §1) never assumes.
+  "exclude": [
+    "src/**/*.rls.test.ts",
+    "src/data/repositories/rls-test-support.ts"
   ]
 }

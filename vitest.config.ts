@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +24,10 @@ export default defineConfig({
           name: 'domain-data',
           environment: 'node',
           include: ['src/domain/**/*.test.ts', 'src/data/**/*.test.ts'],
+          // *.rls.test.ts needs a running local Supabase stack (`supabase
+          // start`) — excluded from the default project list, run instead
+          // via the separate `rls` project below (`npm run test:rls`).
+          exclude: [...configDefaults.exclude, '**/*.rls.test.ts'],
         },
       },
       {
@@ -37,6 +41,19 @@ export default defineConfig({
           // @testing-library/jest-dom extends the global `expect` on import —
           // needs `globals: true` in this project only, domain/data stay explicit.
           globals: true,
+        },
+      },
+      {
+        resolve: { alias },
+        test: {
+          name: 'rls',
+          environment: 'node',
+          include: ['src/**/*.rls.test.ts'],
+          // Real network round trips (Postgres + GoTrue via a local Docker
+          // stack) in beforeAll — slower than this suite's usual mocked unit
+          // tests, needs more headroom than the 5s/10s defaults.
+          testTimeout: 30000,
+          hookTimeout: 30000,
         },
       },
     ],

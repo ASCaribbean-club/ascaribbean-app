@@ -20,11 +20,27 @@ export type RoleAssignment =
   | { role: 'authorized-officer' }
   | { role: 'treasurer' }
   | { role: 'medical-referent' } // TODO: confirm with CDC section 6.3 whether this
-                                  // should eventually be section-scoped, not club-wide
+  // should eventually be section-scoped, not club-wide
   | { role: 'volunteer' }        // scope lives in mission/event assignment, not here
   | { role: 'admin' }
 
 export type Role = RoleAssignment['role']
+
+export function distinctRoles(assignments: RoleAssignment[]) {
+  return Array.from(new Set(assignments.map((assignment) => assignment.role)))
+}
+
+export function isPlayer(assignment: RoleAssignment): assignment is Extract<RoleAssignment, { role: 'player' }> {
+  return assignment.role === 'player'
+}
+
+export function isCoach(assignment: RoleAssignment): assignment is Extract<RoleAssignment, { role: 'coach' }> {
+  return assignment.role === 'coach'
+}
+
+export function isSectionManager(assignment: RoleAssignment): assignment is Extract<RoleAssignment, { role: 'section-manager' }> {
+  return assignment.role === 'section-manager'
+}
 
 // specs/match_details_page.md correction #10 originally removed the
 // Effectif roster's position sub-label ("Gardienne", "Milieu"...) for lack

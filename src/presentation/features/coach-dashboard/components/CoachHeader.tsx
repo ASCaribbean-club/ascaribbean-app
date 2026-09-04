@@ -62,23 +62,18 @@ export function CoachHeader({
           </Pill>
         )}
 
-        {/* Avatar/initiales + pastille de notification : la pastille est
-            purement décorative ici — son comportement (lu/non-lu) reste hors
-            périmètre de cette feature (spec UI design §1). Router
-            course-correction 2026-09-04 (specs/profile-page.md): tap now
-            navigates to /profile (Mon profil) instead of opening a sign-out
-            confirmation directly here — sign-out moved onto ProfilePage's
-            own avatar (ProfileIdentityHeader), since a single tap target
-            can't sensibly do both at once. Positioned relative to this row
-            (not the whole header) so its top edge lines up with the
-            role/team pills instead of the header's own padding edge. */}
+        {/* Avatar/initiales : tap navigates to /profile (Mon profil) —
+            sign-out lives on ProfilePage's own avatar (ProfileIdentityHeader)
+            instead, since a single tap target can't sensibly do both at
+            once. Positioned relative to this row (not the whole header) so
+            its top edge lines up with the role/team pills instead of the
+            header's own padding edge. */}
         <button type="button" onClick={goToProfilePage} aria-label="Mon profil" className="absolute top-0 right-0">
           <Avatar className="size-9.5 border-2 border-coach-red">
             <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
         </button>
       </div>
 

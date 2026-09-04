@@ -59,20 +59,16 @@ export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, 
             this screen. */}
         {teamName && <TeamPill teamName={teamName} />}
 
-        {/* Avatar/initiales + pastille de notification : reprise identique
-            de CoachHeader (décoration hors périmètre). Router
-            course-correction 2026-09-04 (specs/profile-page.md): tap now
-            navigates to /profile instead of opening a sign-out
-            confirmation directly here — see CoachHeader's own comment for
-            why sign-out moved onto ProfilePage's avatar instead of staying
-            duplicated on both dashboard headers. */}
+        {/* Avatar/initiales : reprise identique de CoachHeader. Tap
+            navigates to /profile — see CoachHeader's own comment for why
+            sign-out lives on ProfilePage's avatar instead of duplicated on
+            both dashboard headers. */}
         <button type="button" onClick={goToProfilePage} aria-label="Mon profil" className="absolute top-0 right-0">
           <Avatar className="size-9.5 border-2 border-coach-red">
             <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-coach-bg bg-coach-red" />
         </button>
       </div>
 

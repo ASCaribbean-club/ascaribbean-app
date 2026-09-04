@@ -65,4 +65,8 @@ export const queryKeys = {
   calendarTeamConvocations: (teamId: string) => ['convocations', 'team', teamId, 'calendar'] as const,
   calendarPlayerConvocations: (teamId: string, userId: string) =>
     ['convocations', 'team', teamId, 'player', userId, 'calendar'] as const,
+
+  // specs/actus.md — club-wide, identical for every role: no discriminant
+  // beyond the resource name itself (no userId/teamId — nothing to scope by).
+  newsFeed: () => ['news', 'feed'] as const,
 }

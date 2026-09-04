@@ -4,7 +4,7 @@ import { LoginPage } from '../features/auth/login/LoginPage'
 import { ForgotPasswordPage } from '../features/auth/forgot-password/ForgotPasswordPage'
 import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePasswordPage'
 import { CharterPage } from '../features/auth/charter/CharterPage'
-import { ActusPage } from '../features/actus/ActusPage'
+import { NewsPage } from '../features/news/NewsPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
@@ -69,7 +69,7 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <DashboardIndexPage /> },
                   { path: 'calendar', element: <CalendarPage /> },
-                  { path: 'actus', element: <ActusPage /> },
+                  { path: 'actus', element: <NewsPage /> },
                   // PO-PR-05 (specs/profile-page.md §5) resolved by the
                   // developer 2026-09-04: Profile is reached from the
                   // avatar on the dashboard header (CoachHeader/

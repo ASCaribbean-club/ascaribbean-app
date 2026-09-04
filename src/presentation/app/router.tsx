@@ -9,6 +9,7 @@ import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
+import { ProfilePage } from '../features/profile/ProfilePage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
 import { RequireSession } from './RequireSession'
@@ -60,9 +61,27 @@ export const router = createBrowserRouter([
                   { index: true, element: <DashboardIndexPage /> },
                   { path: 'calendar', element: <CalendarPage /> },
                   { path: 'actus', element: <ActusPage /> },
+                  // PO-PR-05 (specs/profile-page.md §5) resolved by the
+                  // developer 2026-09-04: Profile is reached from the
+                  // avatar on the dashboard header (CoachHeader/
+                  // PlayerHeader), NOT from this Menu tab — Menu stays the
+                  // unrelated stub it already was (TODO(PO-1),
+                  // specs/coach-dashboard.md §1).
                   { path: 'menu', element: <MenuPage /> },
                 ],
               },
+              // specs/profile-page.md — pushed OVER a tab, same
+              // full-screen/no-bottom-nav group as convocations/new and
+              // convocations/:id below (NOT nested under AppShell): reached
+              // by tapping the avatar in CoachHeader/PlayerHeader
+              // (useCoachDashboardViewModel.goToProfilePage /
+              // usePlayerDashboardViewModel.goToProfilePage), never a 5th
+              // BottomNav destination. Inside ActiveRoleProvider's scope
+              // like its siblings, even though ProfilePage itself must NOT
+              // read useActiveRole() (AC-PR-04) — it's here purely so this
+              // group's placement stays uniform, not because the screen
+              // needs that context.
+              { path: 'profile', element: <ProfilePage /> },
               // specs/create-convocation.md UI design, "Emplacement dans la
               // nav": a full-screen route pushed OVER one of the 4 tabs, no
               // bottom-nav chrome — deliberately NOT nested under AppShell

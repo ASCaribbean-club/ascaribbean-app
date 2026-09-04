@@ -182,4 +182,34 @@ export interface Team {
 
 ---
 
+## Filtrage par saison des actus — via `current_season()`, pas `season_id`
+
+**Où** : toute future requête « actus de la saison en cours » (`domain/repositories/news-repository.ts`, `NewsRepository.listVisible`, et son implémentation future).
+
+**Valeur actuelle** : aucune colonne `season_id` sur `public.club_news` — rien n'est stocké, le filtrage se calculerait à la lecture contre `seasons.season_range` via `current_season()` (`docs/season-scoping-correction.md` §3.2), le jour où un écran en aurait besoin.
+
+**Pourquoi cette valeur, provisoirement** : aucun écran spécifié à ce jour n'a besoin d'un fil d'actus scopé à la saison en cours (`specs/actus.md` §2) — construire la requête maintenant serait de l'anticipation sans besoin démontré.
+
+**Ce qu'il faudrait challenger** :
+- Construire la requête (jointure/filtre contre `current_season()`) une fois qu'un écran de ce type est effectivement spécifié — pas avant.
+
+**Priorité de revisite** : basse.
+
+---
+
+## Permissions d'écriture sur `club_news` — non définies
+
+**Où** : `domain/policies/rbac-matrix.ts` / politique RLS `insert`/`update` sur `public.club_news`.
+
+**Valeur actuelle** : aucune politique d'écriture n'existe sur `club_news` — refus par défaut (RLS activée, seule une politique `select` existe). Aucun rôle, administrateur compris, ne peut créer ou faire évoluer le statut d'une actualité via le client.
+
+**Pourquoi cette valeur, provisoirement** : l'ensemble exact des rôles autorisés à rédiger/publier n'est pas confirmé (`specs/actus.md` PO-AT-01) — hypothèse de séance non validée : sous-ensemble de Trésorier / Dirigeant habilité / Administrateur.
+
+**Ce qu'il faudrait challenger** :
+- Trancher qui, parmi Trésorier / Dirigeant habilité / Administrateur, peut rédiger/publier une actualité — et si « Secrétaire » est un manque réel du modèle à 8 rôles (`docs/roles-personas-as-caribbean.md`, point ouvert n°1).
+
+**Priorité de revisite** : avant mise en prod — bloque entièrement la feature (aucun chemin d'écriture, aucun écran de rédaction possible) tant que ce n'est pas résolu.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

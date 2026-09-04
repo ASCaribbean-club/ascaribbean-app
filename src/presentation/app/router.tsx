@@ -75,8 +75,7 @@ export const router = createBrowserRouter([
                   // avatar on the dashboard header (CoachHeader/
                   // PlayerHeader), NOT from this Menu tab. specs/menu.md
                   // confirms this rather than reopening it (§1, "Mon profil
-                  // comme entrée de menu"). Menu is no longer the
-                  // TODO(PO-1) stub — see MenuPage.tsx/useMenuViewModel.ts.
+                  // comme entrée de menu").
                   { path: 'menu', element: <MenuPage /> },
                 ],
               },

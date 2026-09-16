@@ -10,3 +10,14 @@ export type Action =
   // _update_validate in supabase/migrations/20260811171754_initial_schema.sql
   // for the RLS side this mirrors.
   | 'attendance:validate'
+  // specs/player-vote.md §2 — "Action métier nouvelle proposée": the ONLY
+  // matrix entry this feature needs. Reading vote results stays RLS-only,
+  // deliberately without a matrix entry (§2, "La lecture des résultats
+  // reste RLS-only, sans entrée de matrice" — the tab doesn't change
+  // STRUCTURE per role, only the content returned does, same criterion
+  // documented at the top of rbac-matrix.ts).
+  // specs/player-vote.md §5 — PO-PV-01 (ASC Legacy attachment) and PO-PV-02
+  // (the negative category, rejected) are both tranché (2026-09-16,
+  // developer decision): this action and its matrix entry below back a real
+  // write path (CastVoteUseCase), not scaffolding waiting on the Bureau.
+  | 'vote:cast'

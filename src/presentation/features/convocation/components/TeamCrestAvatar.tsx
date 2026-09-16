@@ -1,16 +1,8 @@
 // The club's own "crest" circle in the match hero (docs/designs/player-match-details/
-// [v3] [Joueur] Mob - Détail Match-selection_1.png) — a plain two-tone
-// circle (club colors, split diagonally), not a real logo image: `Team`
-// (domain/entities/team.ts) carries no crest/logo field, so this is
-// decorative shorthand for "our team" rather than data-driven. Mirrors the
-// same conic-gradient trick already used for the role pill's dot in
-// CoachHeader.tsx, just full-size and applied to the whole circle instead
-// of a small leading dot.
+// [v3] [Joueur] Mob - Détail Match-selection_1.png) — the app icon
+// (public/icons/icon-512.png), not per-team data: `Team`
+// (domain/entities/team.ts) carries no crest/logo field, and this is a
+// single-club app, so the club logo stands in for "our team" everywhere.
 export function TeamCrestAvatar() {
-  return (
-    <span
-      aria-hidden
-      className="size-11 shrink-0 rounded-full bg-[conic-gradient(var(--color-coach-green)_0deg_180deg,var(--color-coach-red)_180deg_360deg)]"
-    />
-  )
+  return <img src="/icons/icon-512.png" alt="" aria-hidden className="size-11 shrink-0 rounded-full object-cover" />
 }

@@ -21,3 +21,9 @@ export type Action =
   // developer decision): this action and its matrix entry below back a real
   // write path (CastVoteUseCase), not scaffolding waiting on the Bureau.
   | 'vote:cast'
+  // specs/web-empty-state.md §2 — "Entrée de matrice proposée": routing must
+  // decide whether to render the backoffice shell at all, BEFORE any query
+  // — and in this slice there is no query at all. That's exactly the
+  // criterion this file's own matrix (rbac-matrix.ts) documents at its top
+  // for when an action earns a row instead of staying RLS-only.
+  | 'backoffice:access'

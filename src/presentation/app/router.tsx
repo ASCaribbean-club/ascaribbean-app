@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from '../shared/layout/AppShell'
 import { LoginPage } from '../features/auth/login/LoginPage'
 import { ForgotPasswordPage } from '../features/auth/forgot-password/ForgotPasswordPage'
@@ -10,11 +10,21 @@ import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
+import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
+import { BackofficeUsersPage } from '../features/backoffice/users/BackofficeUsersPage'
+import { BackofficeSectionsPage } from '../features/backoffice/sections/BackofficeSectionsPage'
+import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
+import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
+import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
 import { ActiveTeamProvider } from './providers/active-team-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
+import { RequireDesktopViewport } from './RequireDesktopViewport'
+import { RequireBackofficeSession } from './RequireBackofficeSession'
+import { RequireBackofficeAccess } from './RequireBackofficeAccess'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -23,6 +33,51 @@ export const router = createBrowserRouter([
   // link" state for a rejected recovery link, which never produces a
   // session for RequireSession to gate on. See useUpdatePasswordViewModel.
   { path: '/update-password', element: <UpdatePasswordPage /> },
+  {
+    // specs/web-empty-state.md — first desktop-only surface in the app
+    // (PO-WE-02/PO-WE-03, both resolved by the developer per that spec's
+    // §5 "Handoff": same router.tsx, `/admin` prefix, screens under
+    // presentation/features/backoffice/ — no presentation/desktop/ folder,
+    // see CLAUDE.md §5 on why this is a real exception to the "no empty
+    // desktop/mobile folder" rule rather than a violation of it: these
+    // screens have no mobile equivalent to be a variant OF). Entirely
+    // separate from the '/' tree below: no AppShell, no BottomNav, no
+    // ActiveRoleProvider (an 'admin'-only account isn't a dashboard role
+    // there today — see active-role-provider.tsx's own comment on that
+    // gap, which this feature exists to close, without touching that
+    // provider itself, per the spec's "Ce que cette tranche débloque,
+    // accessoirement").
+    path: '/admin',
+    element: <RequireDesktopViewport />,
+    children: [
+      { path: 'login', element: <BackofficeLoginPage /> },
+      {
+        element: <RequireBackofficeSession />,
+        children: [
+          {
+            element: <RequireBackofficeAccess />,
+            children: [
+              {
+                // PO-WE-05 (specs/web-empty-state.md §5), resolved: the
+                // backoffice does NOT go through RequireCharterAccepted —
+                // that redirects to /charter, a mobile screen an admin
+                // account has no reason to see on this surface.
+                element: <BackofficeDashboardLayout />,
+                children: [
+                  { index: true, element: <Navigate to="users" replace /> },
+                  { path: 'users', element: <BackofficeUsersPage /> },
+                  { path: 'sections', element: <BackofficeSectionsPage /> },
+                  { path: 'seasons', element: <BackofficeSeasonsPage /> },
+                  { path: 'memberships', element: <BackofficeMembershipsPage /> },
+                  { path: 'news', element: <BackofficeNewsPage /> },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   {
     path: '/',
     element: <RequireSession />,

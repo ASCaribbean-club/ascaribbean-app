@@ -51,4 +51,18 @@ describe('can', () => {
     const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
     expect(can(user, 'attendance:validate', { teamId: 'team-2' })).toBe(false)
   })
+
+  // specs/player-vote.md §2/§7 — third occurrence of the same team-scope
+  // gap (after 'section-manager' and 'coach' above): this pair proves the
+  // 'player' branch's `requiresTeamScope` fix actually covers 'vote:cast',
+  // not just 'convocation:respond'.
+  it('allows a player to vote on a convocation belonging to their own team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'vote:cast', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a player from voting on a convocation belonging to another team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'vote:cast', { teamId: 'team-2' })).toBe(false)
+  })
 })

@@ -36,4 +36,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // that role, so extending it needs PO-AT-01 resolved first, not an
   // extensive reading of a neighboring row.
   'attendance:validate': ['coach'],
+
+  // specs/player-vote.md §2 — "Il n'existe aucune ligne de matrice
+  // applicable" for a positive vote: this is a brand-new matrix row, not an
+  // extrapolation of an existing one (the closest CDC line, "Saisir une
+  // évaluation sportive", grants the OPPOSITE role pair — coach writes,
+  // player reads — reusing it would be a contresens, not a shortcut).
+  // Scoped to the voter's own team, same shape as 'convocation:respond'
+  // above — enforced by can.ts's 'player' branch (`requiresTeamScope`),
+  // extended in the same pass to cover this action too.
+  'vote:cast': ['player'],
 }

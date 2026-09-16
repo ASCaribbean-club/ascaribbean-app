@@ -12,7 +12,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 
-export type ConvocationDetailTab = 'infos' | 'effectif'
+export type ConvocationDetailTab = 'infos' | 'effectif' | 'votes'
 
 // specs/match_details_page.md §7 — this hook is the "câblage presentation/"
 // the correction pass explicitly deferred (docs/convocation_visibility_rls_correction.md
@@ -32,6 +32,10 @@ export function useConvocationDetailViewModel() {
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
     confirmAttendanceUseCase,
+    castVoteUseCase,
+    getMyVoteUseCase,
+    getVoteTallyUseCase,
+    getVoteCategoryUseCase,
   } = useConvocationDependencies()
 
   // UI design §"Structure de l'écran" — "deux onglets seulement", local UI
@@ -84,7 +88,12 @@ export function useConvocationDetailViewModel() {
   const respondersQuery = useQuery({
     queryKey: queryKeys.convocationResponders(convocationId ?? ''),
     queryFn: () => listConvocationRespondersUseCase.execute(convocationId!),
-    enabled: !!convocationId && activeRole === 'player' && activeTab === 'effectif',
+    // specs/player-vote.md PO-PV-10a — resolved (2026-09-16, developer
+    // decision): the convoked roster this query already fetches for the
+    // Effectif tab is also the vote ballot's candidate set, so the votes
+    // tab needs this query enabled too rather than adding a second read
+    // path for the same "who's convoked" data.
+    enabled: !!convocationId && activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes'),
   })
 
   const playerResponseQuery = useQuery({
@@ -256,6 +265,107 @@ export function useConvocationDetailViewModel() {
   // per ARCHITECTURE.md §6 ("un composant ne calcule rien").
   const others = (respondersQuery.data ?? []).filter((responder) => responder.userId !== user?.id)
 
+  // --- specs/player-vote.md — third tab, net-new in this pass ---
+  //
+  // AC-PV-16/PO-PV-02 — only the positive category is ever wired here (the
+  // negative category is REJECTED, not just deferred). This hook composes
+  // plain data/state only (candidates, ballot vs. results booleans, error
+  // strings) — the actual `VoteCategoryViewModel[]` (icon JSX, `Badge`
+  // elements) is built in ConvocationDetailPage.tsx, a .tsx file, since
+  // this hook is .ts and can't hold JSX (same reasoning AttendanceConfirmRow
+  // picks its own icons rather than receiving them from this hook).
+  //
+  // specs/player-vote.md PO-PV-03 — resolved (2026-09-16, developer
+  // decision): exactly one category, seeded as `vote_categories.id =
+  // 'man_of_the_match'` (see supabase/migrations/20260916172217_vote_categories.sql).
+  // The id itself is a fixed known value, not looked up — but its LABEL is
+  // a database column (vote_categories.label), fetched below via
+  // GetVoteCategoryUseCase rather than duplicated here as a constant.
+  const POSITIVE_VOTE_CATEGORY_ID = 'man_of_the_match'
+
+  const voteCategoryQuery = useQuery({
+    queryKey: queryKeys.voteCategory(POSITIVE_VOTE_CATEGORY_ID),
+    queryFn: () => getVoteCategoryUseCase.execute({ categoryId: POSITIVE_VOTE_CATEGORY_ID }),
+    enabled: activeTab === 'votes',
+  })
+
+  const hasVoteCastPermission = usePermission('vote:cast', { teamId: convocation?.teamId })
+  // Same activeRole-gate reasoning as canRespond/canValidateAttendance
+  // above: a coach+player multi-role account with "Coach" active must not
+  // see ballot controls just because can() would allow them as a player
+  // (specs/player-vote.md §2, "moindre privilège... absence, pas
+  // désactivation").
+  const canCastVote = activeRole === 'player' && hasVoteCastPermission
+
+  const myVoteQuery = useQuery({
+    queryKey: queryKeys.voteMyBallot(convocationId ?? '', POSITIVE_VOTE_CATEGORY_ID, user?.id ?? ''),
+    queryFn: () => getMyVoteUseCase.execute({ convocationId: convocationId!, categoryId: POSITIVE_VOTE_CATEGORY_ID, voterId: user!.id }),
+    enabled: !!convocationId && !!user && activeTab === 'votes',
+  })
+
+  const voteTallyQuery = useQuery({
+    queryKey: queryKeys.voteTally(convocationId ?? '', POSITIVE_VOTE_CATEGORY_ID),
+    queryFn: () => getVoteTallyUseCase.execute({ convocationId: convocationId!, categoryId: POSITIVE_VOTE_CATEGORY_ID }),
+    enabled: !!convocationId && activeTab === 'votes',
+  })
+
+  // specs/player-vote.md PO-PV-10a — resolved (2026-09-16, developer
+  // decision): candidates are the convoked roster (respondersQuery, already
+  // fetched above), never a new read path or a `convocation_attendees`
+  // table (spec §5 explicitly forbids the latter). PO-PV-10b — resolved,
+  // self-voting is not permitted, so the caller's own row is excluded here
+  // exactly like `others` above filters itself out of the Effectif roster —
+  // same identity filter, not a business rule, kept here per
+  // ARCHITECTURE.md §6 rather than in VotesTab/VoteCategoryCard.
+  const voteCandidates = (respondersQuery.data ?? []).filter((responder) => responder.userId !== user?.id)
+
+  // Local-only: which radio is currently picked in the ballot, before
+  // submission.
+  const [voteSelectedCandidateId, setVoteSelectedCandidateId] = useState<string | null>(null)
+  const [voteSubmitError, setVoteSubmitError] = useState<UiError | null>(null)
+  // UI design "Changer mon vote" — the results card flips back to ballot
+  // mode locally (no navigation), pre-selecting the previous choice. `false`
+  // covers both "hasn't voted yet" (ballot renders regardless of this flag,
+  // see ConvocationDetailPage.tsx's composition) and "voted, viewing
+  // results" — only a "Changer mon vote" tap or a fresh mount ever flips it.
+  const [isEditingVote, setIsEditingVote] = useState(false)
+
+  function onChangeVote() {
+    setVoteSelectedCandidateId(myVoteQuery.data?.candidateId ?? null)
+    setIsEditingVote(true)
+  }
+
+  const castVoteMutation = useMutation({
+    mutationFn: (candidateId: string) => {
+      if (!convocationId || !user) {
+        return Promise.reject(new Error('no convocation to vote on yet'))
+      }
+      return castVoteUseCase.execute({
+        convocationId,
+        categoryId: POSITIVE_VOTE_CATEGORY_ID,
+        voterId: user.id,
+        candidateId,
+        now: new Date(),
+      })
+    },
+    onMutate: () => setVoteSubmitError(null),
+    onSuccess: () => {
+      // AC-PV-05 — modifying a vote must update the aggregate too, not just
+      // this voter's own row: both keys invalidated together, same
+      // dual-invalidation shape as respondMutation's onSuccess above.
+      if (!convocationId || !user) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.voteTally(convocationId, POSITIVE_VOTE_CATEGORY_ID) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.voteMyBallot(convocationId, POSITIVE_VOTE_CATEGORY_ID, user.id) })
+      setIsEditingVote(false)
+    },
+    onError: (error) => setVoteSubmitError(mapDomainErrorToUiError(error)),
+  })
+
+  function onSubmitVote() {
+    if (!voteSelectedCandidateId || castVoteMutation.isPending) return
+    castVoteMutation.mutate(voteSelectedCandidateId)
+  }
+
   return {
     isLoading: detailedConvocationQuery.isLoading,
     // Merges every query this screen depends on — a failure on any one of
@@ -311,5 +421,31 @@ export function useConvocationDetailViewModel() {
     attendanceErrorByUserId,
     onConfirmAttendancePresent,
     onConfirmAttendanceAbsent,
+
+    // specs/player-vote.md — plain data/state only; ConvocationDetailPage.tsx
+    // composes this into the `VoteCategoryViewModel[]` VotesTab actually
+    // renders (icon JSX, `Badge` elements), since that composition needs
+    // JSX and this hook is a .ts file (see the comment above
+    // POSITIVE_VOTE_CATEGORY_ID). PO-PV-06 (voting window/closed state)
+    // stays unresolved — no "votes closed" state is composed anywhere yet.
+    votes: {
+      categoryId: POSITIVE_VOTE_CATEGORY_ID,
+      // `null` while voteCategoryQuery hasn't resolved yet — callers already
+      // branch on `isLoading` below before rendering this.
+      categoryLabel: voteCategoryQuery.data?.label ?? null,
+      canCastVote,
+      candidates: voteCandidates,
+      myVote: myVoteQuery.data ?? null,
+      tally: voteTallyQuery.data ?? null,
+      isLoading: myVoteQuery.isLoading || voteTallyQuery.isLoading || voteCategoryQuery.isLoading,
+      error: myVoteQuery.error ?? voteTallyQuery.error ?? voteCategoryQuery.error,
+      isEditingVote,
+      onChangeVote,
+      selectedCandidateId: voteSelectedCandidateId,
+      onSelectCandidate: setVoteSelectedCandidateId,
+      onSubmit: onSubmitVote,
+      isSubmitting: castVoteMutation.isPending,
+      submitError: voteSubmitError,
+    },
   }
 }

@@ -21,8 +21,13 @@ function grants(
   if (!allowedRoles.includes(assignment.role)) return false
 
   switch (assignment.role) {
-    case 'player':
-      return action !== 'convocation:respond' || assignment.teamId === context.teamId
+    case 'player': {
+      // specs/player-vote.md §2/§7 — third occurrence of the same gap already
+      // fixed for 'section-manager' and 'coach' above: applying the same
+      // shape rather than reinventing one.
+      const requiresTeamScope = action === 'convocation:respond' || action === 'vote:cast'
+      return !requiresTeamScope || assignment.teamId === context.teamId
+    }
     case 'coach': {
       // specs/coach-attendance-confirmation.md §2/§7 — 'attendance:validate'
       // is added to this branch's team-scope check rather than appended to

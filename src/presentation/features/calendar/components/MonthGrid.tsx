@@ -34,9 +34,8 @@ export function MonthGrid({ weeks, selectedDate, today, onSelectDate }: MonthGri
       </div>
 
       {weeks.map((week, weekIndex) => (
-        // eslint-disable-next-line react/no-array-index-key -- weeks don't
-        // carry a stable id of their own; index is fine, the row never
-        // reorders independently of the grid itself.
+        // weeks don't carry a stable id of their own; index is fine, the
+        // row never reorders independently of the grid itself.
         <div key={weekIndex} className="grid grid-cols-7 gap-1">
           {week.map((day, dayIndex) =>
             day ? (
@@ -53,7 +52,6 @@ export function MonthGrid({ weeks, selectedDate, today, onSelectDate }: MonthGri
               // not tappable, so it can't be mistaken for "previous month's
               // day N" (UI design §2, explicit instruction not to reproduce
               // that pattern).
-              // eslint-disable-next-line react/no-array-index-key
               <span key={dayIndex} aria-hidden className="min-h-11 rounded-xl border border-white/8" />
             ),
           )}

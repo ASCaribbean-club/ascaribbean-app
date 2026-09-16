@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { Card } from '../../../shared/components/ui/card'
 import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
@@ -55,7 +56,11 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
       </span>
 
       <div className="flex items-center gap-2">
-        <Icon className="size-5 shrink-0 text-white/70" aria-hidden />
+        {/* createElement, not JSX: Icon is a value looked up at render time
+            (always a stable reference from CONVOCATION_TYPE_ICONS, but the
+            react-hooks/static-components rule can't see that through the
+            map lookup and flags a JSX tag bound to a local variable). */}
+        {createElement(Icon, { className: 'size-5 shrink-0 text-white/70', 'aria-hidden': true })}
         <p className="text-[19px] leading-tight font-extrabold text-white">{title}</p>
       </div>
 

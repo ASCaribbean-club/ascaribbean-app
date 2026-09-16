@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import type { Convocation } from '@domain/entities/convocation'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { Opponent } from '@domain/entities/opponent'
@@ -61,7 +62,11 @@ export function ConvocationHero({ convocation, teamName, opponent, meetingDetail
       ) : (
         <div className="flex flex-col items-center gap-2.5 py-2 text-center">
           <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-white/8">
-            <Icon className="size-6 text-white/70" aria-hidden />
+            {/* createElement, not JSX: Icon is a value looked up at render time
+                (always a stable reference from CONVOCATION_TYPE_ICONS, but the
+                react-hooks/static-components rule can't see that through the
+                map lookup and flags a JSX tag bound to a local variable). */}
+            {createElement(Icon, { className: 'size-6 text-white/70', 'aria-hidden': true })}
           </span>
           <p className="text-[19px] leading-tight font-extrabold text-white">{title}</p>
         </div>

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRecordRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
@@ -8,6 +9,7 @@ import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImp
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
+import type { AttendanceRecordRepository } from '@domain/repositories/attendance-record-repository'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { ConvocationRespondersRepository } from '@domain/repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
@@ -18,6 +20,7 @@ import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
 import type { UserRepository } from '@domain/repositories/user-repository'
 import { AssembleConvocationDetailFieldsUseCase } from '@domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
+import { ConfirmAttendanceUseCase } from '@domain/usecases/convocation/ConfirmAttendanceUseCase'
 import { CreateConvocationUseCase } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import { GetConvocationDetailsUseCase } from '@domain/usecases/convocation/GetConvocationDetailsUseCase'
 import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
@@ -41,6 +44,9 @@ export interface ConvocationContainer {
   matchDetailsRepository: MatchDetailsRepository
   meetingDetailsRepository: MeetingDetailsRepository
   opponentRepository: OpponentRepository
+  // specs/coach-attendance-confirmation.md §1 — net-new, no implementation
+  // existed anywhere in the repo before this pass.
+  attendanceRecordRepository: AttendanceRecordRepository
 
   // Use cases
   createConvocationUseCase: CreateConvocationUseCase
@@ -50,6 +56,7 @@ export interface ConvocationContainer {
   getConvocationRosterForCoachUseCase: GetConvocationRosterForCoachUseCase
   respondToConvocationUseCase: RespondToConvocationUseCase
   getConvocationResponseByUserUseCase: GetConvocationResponseByUserUseCase
+  confirmAttendanceUseCase: ConfirmAttendanceUseCase
 }
 
 export function createConvocationContainer(supabaseClient: SupabaseClient): ConvocationContainer {
@@ -62,6 +69,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const matchDetailsRepository = new MatchDetailsRepositoryImpl(supabaseClient)
   const meetingDetailsRepository = new MeetingDetailsRepositoryImpl(supabaseClient)
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
+  const attendanceRecordRepository = new AttendanceRecordRepositoryImpl(supabaseClient)
   const getConvocationDetailsUseCase = new GetConvocationDetailsUseCase(meetingDetailsRepository, matchDetailsRepository)
   const getConvocationResponseByUserUseCase = new GetConvocationResponseByUserUseCase(convocationResponseRepository)
   const assembleConvocationDetailFieldsUseCase = new AssembleConvocationDetailFieldsUseCase(opponentRepository)
@@ -75,8 +83,10 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const getConvocationRosterForCoachUseCase = new GetConvocationRosterForCoachUseCase(
     convocationRespondersRepository,
     convocationResponseRepository,
+    attendanceRecordRepository,
   )
   const respondToConvocationUseCase = new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository)
+  const confirmAttendanceUseCase = new ConfirmAttendanceUseCase(userRepository, convocationRepository, attendanceRecordRepository)
 
   return {
     userRepository,
@@ -88,6 +98,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     matchDetailsRepository,
     meetingDetailsRepository,
     opponentRepository,
+    attendanceRecordRepository,
     createConvocationUseCase,
     getConvocationDetailsUseCase,
     getConvocationWithDetailsUseCase,
@@ -95,5 +106,6 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     getConvocationRosterForCoachUseCase,
     respondToConvocationUseCase,
     getConvocationResponseByUserUseCase,
+    confirmAttendanceUseCase,
   }
 }

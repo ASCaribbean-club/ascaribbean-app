@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { DeclaredStatus } from '@domain/entities/convocation'
+import type { ActualStatus, DeclaredStatus } from '@domain/entities/convocation'
 import { hasActiveRoleForConvocation } from '@domain/rules/active-role-scope'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
@@ -30,6 +30,7 @@ export function useConvocationDetailViewModel() {
     getConvocationRosterForCoachUseCase,
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
+    confirmAttendanceUseCase,
   } = useConvocationDependencies()
 
   // UI design §"Structure de l'écran" — "deux onglets seulement", local UI
@@ -97,6 +98,16 @@ export function useConvocationDetailViewModel() {
     return () => clearInterval(id)
   }, [])
 
+  // specs/coach-attendance-confirmation.md §2 — RBAC-only render gate,
+  // moindre privilège (AC-AT-06/07): buttons must be ABSENT, never disabled,
+  // for anyone this evaluates false for. `activeRole === 'coach'` is also
+  // required — a coach+player multi-role account with "Joueur" active on
+  // THIS screen must not see coach controls just because the underlying
+  // `can()` check would pass, same reasoning as `canRespond` below gating on
+  // `activeRole === 'player'`.
+  const hasAttendanceValidatePermission = usePermission('attendance:validate', { teamId: convocation?.teamId })
+  const canValidateAttendance = activeRole === 'coach' && hasAttendanceValidatePermission
+
   const hasRbacPermission = usePermission('convocation:respond', { teamId: convocation?.teamId })
   // AC-MD-13 — RBAC AND response-deadline window, same shape as
   // usePlayerDashboardViewModel.canRespond. Also gated on `activeRole`
@@ -158,6 +169,75 @@ export function useConvocationDetailViewModel() {
     respondMutation.mutate('absent')
   }
 
+  // Keyed by userId (UI design §"État d'écriture en cours / échouée, par
+  // ligne") — one row's failed write never affects another's, unlike the
+  // single shared `respondError` field above.
+  const [attendanceErrorByUserId, setAttendanceErrorByUserId] = useState<Record<string, string>>({})
+
+  // specs/coach-attendance-confirmation.md §7 — call site only: mutationFn
+  // points at ConfirmAttendanceUseCase.execute, which is what CLAUDE.md §4's
+  // "queryFn only inside useXxxViewModel hooks" requires — the use case
+  // itself stays domain/, this hook is the one place allowed to call it via
+  // TanStack Query.
+  const confirmAttendanceMutation = useMutation({
+    mutationFn: (input: { userId: string; actualStatus: ActualStatus }) => {
+      if (!convocationId || !user) {
+        return Promise.reject(new Error('no convocation to confirm attendance for yet'))
+      }
+      return confirmAttendanceUseCase.execute({
+        convocationId,
+        userId: input.userId,
+        actualStatus: input.actualStatus,
+        validatedBy: user.id,
+        now: new Date(),
+      })
+    },
+    onMutate: (input) => {
+      setAttendanceErrorByUserId((prev) => {
+        if (!(input.userId in prev)) return prev
+        const next = { ...prev }
+        delete next[input.userId]
+        return next
+      })
+    },
+    onSuccess: (_data, input) => {
+      if (!convocationId) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.convocationRosterForCoach(convocationId) })
+      // AC-AT-10, spec §7 "mentor-agent" note — confirming the last required
+      // player can flip convocation.status via the DB trigger
+      // (attendance_records_close_convocation), unlike respondMutation's
+      // onSuccess above where only the roster/responders keys are at stake.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      setAttendanceErrorByUserId((prev) => {
+        if (!(input.userId in prev)) return prev
+        const next = { ...prev }
+        delete next[input.userId]
+        return next
+      })
+    },
+    onError: (error, input) => {
+      setAttendanceErrorByUserId((prev) => ({ ...prev, [input.userId]: mapDomainErrorToUiError(error).message }))
+    },
+  })
+
+  // specs/coach-attendance-confirmation.md UI design, "État des deux
+  // boutons": re-tapping the already-confirmed state is a deliberate no-op
+  // VISUALLY but still re-fires the upsert ("un tap... déclenche quand même
+  // l'upsert (AC-AT-03)") — the OPPOSITE of onRespondPresent/onRespondAbsent
+  // above, which skip the call entirely on an already-recorded value. Do not
+  // copy that guard here without re-reading AC-AT-03 first.
+  function onConfirmAttendancePresent(userId: string) {
+    confirmAttendanceMutation.mutate({ userId, actualStatus: 'present' })
+  }
+  function onConfirmAttendanceAbsent(userId: string) {
+    confirmAttendanceMutation.mutate({ userId, actualStatus: 'absent' })
+  }
+
+  // TanStack Query's own tracked `.variables` — accurate per-row "in flight"
+  // state without inventing separate local state for it, since only one
+  // upsert can be in flight per mutation instance at a time.
+  const savingUserId = confirmAttendanceMutation.isPending ? (confirmAttendanceMutation.variables?.userId ?? null) : null
+
   // "Reste de l'effectif" (RosterList's `others`) excludes the current user
   // — their own row is SelfRosterRow instead (UI design §"Nouveau composant
   // — liste Effectif": always first, "<nom> (moi)"). Plain identity
@@ -207,5 +287,11 @@ export function useConvocationDetailViewModel() {
 
     coachRoster: rosterForCoachQuery.data?.roster ?? [],
     responseCounts: rosterForCoachQuery.data?.responseCounts,
+
+    canValidateAttendance,
+    savingUserId,
+    attendanceErrorByUserId,
+    onConfirmAttendancePresent,
+    onConfirmAttendanceAbsent,
   }
 }

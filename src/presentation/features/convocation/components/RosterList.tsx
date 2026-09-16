@@ -3,6 +3,7 @@ import type { ResponseCounts } from '@domain/rules/convocation-rules'
 import type { PlayerPosition } from '@domain/entities/user'
 import type { ConvocationResponderStatus } from '@domain/repositories/convocation-responders-repository'
 import type { CoachRosterStatusItem } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
+import { AttendanceConfirmRow } from './AttendanceConfirmRow'
 import { ResponderStatusBadge } from './ResponderStatusBadge'
 import { RosterRow } from './RosterRow'
 import { SelfRosterRow } from './SelfRosterRow'
@@ -16,13 +17,35 @@ export interface SelfRosterProps {
   onRespondAbsent: () => void
 }
 
+// specs/coach-attendance-confirmation.md §2/§6 — everything a coach roster
+// row needs to render its confirmation controls, grouped so RosterList's
+// coach branch stays a plain prop-threading passthrough rather than
+// growing a pile of loose function/state props at the JSX call site.
+export interface AttendanceConfirmProps {
+  // Render-time gate, AC-AT-06/07 (moindre privilège: absent, never
+  // disabled): false for any non-authorized viewer, including a coach whose
+  // active team doesn't match this convocation's. When false, every row
+  // falls back to the plain, non-interactive RosterRow below — this prop
+  // does NOT get threaded further down into AttendanceConfirmRow, which is
+  // simply never mounted for that case.
+  canValidateAttendance: boolean
+  // Scoped to a single row at a time (see AttendanceConfirmRow's own
+  // `isSaving` doc) — `null` means no row is currently saving.
+  savingUserId: string | null
+  // Keyed by userId, so one row's failed write never affects another's
+  // (UI design §"État d'écriture en cours / échouée, par ligne").
+  errorByUserId: Record<string, string>
+  onConfirmPresent: (userId: string) => void
+  onConfirmAbsent: (userId: string) => void
+}
+
 // Discriminated union, same reasoning as ResponderStatusBadge: a player
 // never sees `roster` (tri-state, coach-only, AC-MD-10) and a coach never
 // sees `self` (a coach doesn't respond, §2) — the two variants are
 // literally mutually exclusive props, not two optional halves of one shape.
 type RosterListProps =
   | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[] }
-  | { variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts }
+  | ({ variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts } & AttendanceConfirmProps)
 
 // UI design §"Nouveau composant — liste Effectif": section header ("Qui a
 // répondu" + compteur d'effectif, same position/style as existing
@@ -87,14 +110,32 @@ export function RosterList(props: RosterListProps) {
             ))}
           </>
         ) : (
-          props.roster.map((entry) => (
-            <RosterRow
-              key={entry.userId}
-              name={entry.displayName}
-              position={entry.position}
-              badge={<ResponderStatusBadge variant="tri-state" status={entry.status} />}
-            />
-          ))
+          props.roster.map((entry) =>
+            // AC-AT-06/07 — the confirmation controls are ABSENT (not
+            // disabled) for a non-authorized viewer, falling back to the
+            // exact same RosterRow the player variant renders above rather
+            // than a greyed-out AttendanceConfirmRow.
+            props.canValidateAttendance ? (
+              <AttendanceConfirmRow
+                key={entry.userId}
+                name={entry.displayName}
+                position={entry.position}
+                declaredStatus={entry.status}
+                actualStatus={entry.actualStatus}
+                isSaving={props.savingUserId === entry.userId}
+                errorMessage={props.errorByUserId[entry.userId] ?? null}
+                onConfirmPresent={() => props.onConfirmPresent(entry.userId)}
+                onConfirmAbsent={() => props.onConfirmAbsent(entry.userId)}
+              />
+            ) : (
+              <RosterRow
+                key={entry.userId}
+                name={entry.displayName}
+                position={entry.position}
+                badge={<ResponderStatusBadge variant="tri-state" status={entry.status} />}
+              />
+            ),
+          )
         )}
       </ul>
     </div>

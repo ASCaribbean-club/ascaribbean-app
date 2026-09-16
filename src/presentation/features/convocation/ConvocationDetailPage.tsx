@@ -102,7 +102,16 @@ export function ConvocationDetailPage() {
               so vm.activeRole reliably picks the right variant — no more
               defaulting-to-player-during-TODO. */}
           {vm.activeRole === 'coach' ? (
-            <EffectifTab variant="coach" roster={vm.coachRoster} responseCounts={vm.responseCounts ?? { present: 0, absent: 0, pending: 0 }} />
+            <EffectifTab
+              variant="coach"
+              roster={vm.coachRoster}
+              responseCounts={vm.responseCounts ?? { present: 0, absent: 0, pending: 0 }}
+              canValidateAttendance={vm.canValidateAttendance}
+              savingUserId={vm.savingUserId}
+              errorByUserId={vm.attendanceErrorByUserId}
+              onConfirmPresent={vm.onConfirmAttendancePresent}
+              onConfirmAbsent={vm.onConfirmAttendanceAbsent}
+            />
           ) : (
             <EffectifTab
               variant="player"

@@ -1,6 +1,7 @@
-import type { DeclaredStatus } from '../../entities/convocation'
+import type { ActualStatus, DeclaredStatus } from '../../entities/convocation'
 import type { PlayerPosition } from '../../entities/user'
 import { summarizeRosterStatuses, type ResponseCounts } from '../../rules/convocation-rules'
+import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
 import type { ConvocationRespondersRepository } from '../../repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
 
@@ -15,6 +16,13 @@ export interface CoachRosterStatusItem {
   // the real value instead of a boolean (legitimate here — the coach is
   // authorized to see status, unlike the player, §2).
   status: DeclaredStatus
+  // specs/coach-attendance-confirmation.md §1/§7 — the coach-CONFIRMED fact,
+  // sourced from AttendanceRecord, kept entirely independent of `status`
+  // above (never derived from it — "deux entités, jamais fusionnées"). Three
+  // states, not two (AC-AT-12/AC-AT-13): `null` = no AttendanceRecord row
+  // yet ("non confirmée", the default for an untouched roster), 'present'
+  // or 'absent' once the coach has actually confirmed.
+  actualStatus: ActualStatus | null
 }
 
 export interface ConvocationRosterForCoach {
@@ -38,23 +46,31 @@ export class GetConvocationRosterForCoachUseCase {
   constructor(
     private readonly convocationRespondersRepository: ConvocationRespondersRepository,
     private readonly convocationResponseRepository: ConvocationResponseRepository,
+    // specs/coach-attendance-confirmation.md §7 — added by that pass to
+    // eventually source CoachRosterStatusItem.actualStatus. Wired into the
+    // constructor (and the DI container) now so callers/tests don't need a
+    // second breaking constructor change once the merge below is filled in.
+    private readonly attendanceRecordRepository: AttendanceRecordRepository,
   ) { }
 
   async execute(convocationId: string): Promise<ConvocationRosterForCoach> {
-    const [convocationResponders, responses] = await Promise.all([
+    const [convocationResponders, responses, attendanceRecords] = await Promise.all([
       this.convocationRespondersRepository.listForConvocation(convocationId),
       this.convocationResponseRepository.findByConvocation(convocationId),
+      this.attendanceRecordRepository.findByConvocation(convocationId),
     ])
 
     const coachRosters = convocationResponders.map((convocationResponder) => {
       const userId = convocationResponder.userId
       const userResponse = responses.find((r) => r.userId === userId) ?? null
+      const attendanceRecord = attendanceRecords.find((r) => r.userId === userId) ?? null
 
       return {
         userId: userId,
         displayName: convocationResponder.displayName,
         position: convocationResponder.position,
-        status: userResponse?.status ?? 'pending'
+        status: userResponse?.status ?? 'pending',
+        actualStatus: attendanceRecord?.actualStatus ?? (null as ActualStatus | null),
       }
     }
     )

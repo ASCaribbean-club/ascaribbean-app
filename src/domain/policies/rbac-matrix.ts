@@ -23,4 +23,17 @@ export const rbacMatrix: Record<Action, Role[]> = {
   'convocation:create': ['coach', 'section-manager', 'authorized-officer', 'admin'],
   'convocation:respond': ['player'],
   'section:manage': ['section-manager', 'admin'],
+
+  // specs/coach-attendance-confirmation.md §2 — "Décision de cadrage":
+  // ['coach'] only, scoped to their own team (see the matching fix in
+  // can.ts's 'coach' branch). NOT 'admin', even though the RLS policies
+  // (attendance_records_insert_validate / _update_validate) already grant
+  // the write to admin too — that grant predates this action and is kept
+  // as a statu quo in RLS, but no matrix entry / UI entry point is built
+  // for it in this pass (PO-AT-01, still open). NOT 'section-manager'
+  // either, despite the developer's own hunch that they should hold this —
+  // the closest matrix row ("Saisir une évaluation sportive") says ❌ for
+  // that role, so extending it needs PO-AT-01 resolved first, not an
+  // extensive reading of a neighboring row.
+  'attendance:validate': ['coach'],
 }

@@ -36,4 +36,19 @@ describe('can', () => {
     const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
     expect(can(user, 'convocation:create', { teamId: 'team-1', sectionId: 'section-b' })).toBe(false)
   })
+
+  // specs/coach-attendance-confirmation.md §2/§7 — same coverage shape as
+  // the two 'convocation:create' coach tests above, for the newly-added
+  // action. This pair is what proves the can.ts fix actually closes the
+  // gap (a coach without this check could "validate" a team they don't
+  // coach) rather than just compiling.
+  it('allows a coach to validate attendance for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'attendance:validate', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from validating attendance for a team they are not assigned to', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'attendance:validate', { teamId: 'team-2' })).toBe(false)
+  })
 })

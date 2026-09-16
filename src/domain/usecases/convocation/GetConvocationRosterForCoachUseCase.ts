@@ -1,6 +1,6 @@
 import type { ActualStatus, DeclaredStatus } from '../../entities/convocation'
 import type { PlayerPosition } from '../../entities/user'
-import { summarizeRosterStatuses, type ResponseCounts } from '../../rules/convocation-rules'
+import { byDisplayNameAscending, summarizeRosterStatuses, type ResponseCounts } from '../../rules/convocation-rules'
 import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
 import type { ConvocationRespondersRepository } from '../../repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
@@ -47,9 +47,8 @@ export class GetConvocationRosterForCoachUseCase {
     private readonly convocationRespondersRepository: ConvocationRespondersRepository,
     private readonly convocationResponseRepository: ConvocationResponseRepository,
     // specs/coach-attendance-confirmation.md §7 — added by that pass to
-    // eventually source CoachRosterStatusItem.actualStatus. Wired into the
-    // constructor (and the DI container) now so callers/tests don't need a
-    // second breaking constructor change once the merge below is filled in.
+    // source CoachRosterStatusItem.actualStatus, merged into the roster
+    // below the same "find-or-default" way as `responses`.
     private readonly attendanceRecordRepository: AttendanceRecordRepository,
   ) { }
 
@@ -60,20 +59,24 @@ export class GetConvocationRosterForCoachUseCase {
       this.attendanceRecordRepository.findByConvocation(convocationId),
     ])
 
-    const coachRosters = convocationResponders.map((convocationResponder) => {
-      const userId = convocationResponder.userId
-      const userResponse = responses.find((r) => r.userId === userId) ?? null
-      const attendanceRecord = attendanceRecords.find((r) => r.userId === userId) ?? null
+    const coachRosters = convocationResponders
+      .map((convocationResponder) => {
+        const userId = convocationResponder.userId
+        const userResponse = responses.find((r) => r.userId === userId) ?? null
+        const attendanceRecord = attendanceRecords.find((r) => r.userId === userId) ?? null
 
-      return {
-        userId: userId,
-        displayName: convocationResponder.displayName,
-        position: convocationResponder.position,
-        status: userResponse?.status ?? 'pending',
-        actualStatus: attendanceRecord?.actualStatus ?? (null as ActualStatus | null),
-      }
-    }
-    )
+        return {
+          userId: userId,
+          displayName: convocationResponder.displayName,
+          position: convocationResponder.position,
+          status: userResponse?.status ?? 'pending',
+          actualStatus: attendanceRecord?.actualStatus ?? (null as ActualStatus | null),
+        }
+      })
+      // 2026-09-16 — "sort players by alphabetical order in the Effectif
+      // tab", same comparator/reasoning as ListConvocationRespondersUseCase's
+      // own sort: never assume convocationResponders' own row order.
+      .sort(byDisplayNameAscending)
 
     return { roster: coachRosters, responseCounts: summarizeRosterStatuses(coachRosters) }
   }

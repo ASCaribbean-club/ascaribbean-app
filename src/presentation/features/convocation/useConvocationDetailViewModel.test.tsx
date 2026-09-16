@@ -12,8 +12,11 @@ import { useConvocationDependencies } from '@presentation/di/hooks/use-convocati
 import { useConvocationDetailViewModel } from './useConvocationDetailViewModel'
 
 // canRespond's RBAC/deadline/activeRole combination, playerResponse's
-// derivation from playerResponseQuery, the duplicate-upsert guards, and the
-// `others` self-exclusion filter are the real logic living in this
+// derivation from playerResponseQuery, the duplicate-upsert guards, the
+// `others` self-exclusion filter, and (specs/coach-attendance-confirmation.md
+// §2/§7) canValidateAttendance's RBAC/activeRole gate, the always-re-fires
+// confirm mutation (AC-AT-03), its per-row saving/error state, and its
+// dual cache invalidation (AC-AT-10) are the real logic living in this
 // ViewModel (CLAUDE.md §8 carve-out) — everything else is DI/context wiring.
 
 vi.mock('@presentation/shared/hooks/use-auth')
@@ -79,13 +82,27 @@ function renderViewModel(options: {
   const listConvocationRespondersUseCase = { execute: vi.fn().mockResolvedValue(options.responders ?? []) }
   const getConvocationRosterForCoachUseCase = { execute: vi.fn().mockResolvedValue({ roster: [], responseCounts: { present: 0, absent: 0, pending: 0 } }) }
   const getConvocationResponseByUserUseCase = { execute: vi.fn().mockResolvedValue(options.playerResponse ?? null) }
+  const getConvocationWithDetailsUseCase = { execute: vi.fn().mockResolvedValue(convocation ? { convocation, matchDetails: null, opponent: null, meetingDetails: null } : null) }
+  const confirmAttendanceUseCase = {
+    execute: vi.fn().mockResolvedValue({
+      id: 'attendance-1',
+      convocationId: CONVOCATION_ID,
+      userId: USER_ID,
+      actualStatus: 'present',
+      absenceValidity: null,
+      note: null,
+      validatedBy: 'coach-1',
+      validatedAt: '2026-08-27T19:00:00.000Z',
+    }),
+  }
   mockedUseConvocationDependencies.mockReturnValue({
     teamRepository: { findById: vi.fn().mockResolvedValue({ id: TEAM_ID, name: 'Équipe 1', sectionId: 'section-1', seasonId: 'season-1' }) },
-    getConvocationWithDetailsUseCase: { execute: vi.fn().mockResolvedValue(convocation ? { convocation, matchDetails: null, opponent: null, meetingDetails: null } : null) },
+    getConvocationWithDetailsUseCase,
     listConvocationRespondersUseCase,
     getConvocationRosterForCoachUseCase,
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
+    confirmAttendanceUseCase,
   } as never)
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -104,6 +121,8 @@ function renderViewModel(options: {
     listConvocationRespondersUseCase,
     getConvocationRosterForCoachUseCase,
     getConvocationResponseByUserUseCase,
+    getConvocationWithDetailsUseCase,
+    confirmAttendanceUseCase,
   }
 }
 
@@ -235,5 +254,111 @@ describe('useConvocationDetailViewModel', () => {
     expect(listConvocationRespondersUseCase.execute).not.toHaveBeenCalled()
     expect(getConvocationResponseByUserUseCase.execute).not.toHaveBeenCalled()
     expect(getConvocationRosterForCoachUseCase.execute).not.toHaveBeenCalled()
+  })
+
+  // specs/coach-attendance-confirmation.md §2 — same RBAC/activeRole gate
+  // shape as canRespond above, moindre privilège (AC-AT-06/07): a coach+
+  // player multi-role account must not see coach controls with "Joueur"
+  // active even though the underlying can() check would pass.
+  it.each<[string, ActiveDashboardRole, boolean, boolean]>([
+    ['authorized coach', 'coach', true, true],
+    ['RBAC denied', 'coach', false, false],
+    ['player active, even with the permission granted', 'player', true, false],
+  ])('canValidateAttendance — %s', async (_label, activeRole, rbac, expected) => {
+    mockedUsePermission.mockReturnValue(rbac)
+    const { result } = renderViewModel({ activeRole })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(result.current.canValidateAttendance).toBe(expected)
+  })
+
+  // AC-AT-03 — the opposite contract from onRespondPresent/onRespondAbsent's
+  // duplicate-upsert guard above: re-tapping the same confirmed state must
+  // still re-fire the upsert (last-value-wins, idempotent on the server
+  // side), never be silently skipped client-side.
+  it('re-fires the upsert on every call, even repeated taps for the same actualStatus (AC-AT-03)', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const { result, confirmAttendanceUseCase } = renderViewModel({ activeRole: 'coach' })
+    act(() => result.current.setActiveTab('effectif'))
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    result.current.onConfirmAttendancePresent('player-1')
+    await waitFor(() => expect(confirmAttendanceUseCase.execute).toHaveBeenCalledTimes(1))
+
+    result.current.onConfirmAttendancePresent('player-1')
+    await waitFor(() => expect(confirmAttendanceUseCase.execute).toHaveBeenCalledTimes(2))
+
+    expect(confirmAttendanceUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'player-1', actualStatus: 'present' }),
+    )
+  })
+
+  it('scopes savingUserId to the row currently in flight and clears it once the upsert settles', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    let resolveUpsert!: () => void
+    const { result, confirmAttendanceUseCase } = renderViewModel({ activeRole: 'coach' })
+    act(() => result.current.setActiveTab('effectif'))
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    confirmAttendanceUseCase.execute.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveUpsert = () =>
+          resolve({
+            id: 'attendance-1',
+            convocationId: CONVOCATION_ID,
+            userId: 'player-1',
+            actualStatus: 'present',
+            absenceValidity: null,
+            note: null,
+            validatedBy: 'coach-1',
+            validatedAt: '2026-08-27T19:00:00.000Z',
+          })
+      }),
+    )
+
+    act(() => result.current.onConfirmAttendancePresent('player-1'))
+    await waitFor(() => expect(result.current.savingUserId).toBe('player-1'))
+
+    await act(async () => {
+      resolveUpsert()
+      await Promise.resolve()
+    })
+
+    await waitFor(() => expect(result.current.savingUserId).toBeNull())
+  })
+
+  it('sets a per-row error message on failure, keyed by userId, and clears it on the next attempt for that row', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const { result, confirmAttendanceUseCase } = renderViewModel({ activeRole: 'coach' })
+    act(() => result.current.setActiveTab('effectif'))
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    confirmAttendanceUseCase.execute.mockRejectedValueOnce(new Error('network down'))
+
+    act(() => result.current.onConfirmAttendanceAbsent('player-1'))
+    await waitFor(() => expect(result.current.attendanceErrorByUserId['player-1']).toBeTruthy())
+
+    act(() => result.current.onConfirmAttendancePresent('player-1'))
+    await waitFor(() => expect(result.current.attendanceErrorByUserId['player-1']).toBeUndefined())
+  })
+
+  // AC-AT-10, spec §7 "mentor-agent" note — confirming attendance can flip
+  // the convocation's status via the DB trigger, so both the coach-roster
+  // AND the convocation-detail queries must refetch, not just the roster
+  // (unlike respondMutation's onSuccess, which only touches roster/
+  // responders keys).
+  it('invalidates both the coach roster and the convocation detail queries on a successful confirmation (AC-AT-10)', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const { result, confirmAttendanceUseCase, getConvocationRosterForCoachUseCase, getConvocationWithDetailsUseCase } = renderViewModel({ activeRole: 'coach' })
+    act(() => result.current.setActiveTab('effectif'))
+    await waitFor(() => expect(getConvocationRosterForCoachUseCase.execute).toHaveBeenCalledTimes(1))
+    expect(getConvocationWithDetailsUseCase.execute).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.onConfirmAttendancePresent('player-1'))
+    await waitFor(() => expect(confirmAttendanceUseCase.execute).toHaveBeenCalledTimes(1))
+
+    await waitFor(() => expect(getConvocationRosterForCoachUseCase.execute).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(getConvocationWithDetailsUseCase.execute).toHaveBeenCalledTimes(2))
   })
 })

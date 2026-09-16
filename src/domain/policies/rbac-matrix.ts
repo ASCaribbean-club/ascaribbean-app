@@ -46,4 +46,18 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // above — enforced by can.ts's 'player' branch (`requiresTeamScope`),
   // extended in the same pass to cover this action too.
   'vote:cast': ['player'],
+
+  // specs/web-empty-state.md §2 — narrowest position retained for this pass:
+  // 'admin' only ("moindre privilège", the matrix itself gives no other role
+  // a line exclusive to club-wide administration). Club-wide by construction
+  // — the 'admin' RoleAssignment carries no scope field — so no matching
+  // scope check is needed in can.ts (its default branch already returns
+  // true for any role without a scoped case of its own).
+  // PO-WE-01 stays open: widening to 'authorized-officer' and/or
+  // 'section-manager' is a product decision, not made here. If
+  // 'section-manager' is ever added, see can.ts's own 'section-manager'
+  // branch first — its scope IS bounded to one section, unlike this shell's
+  // club-wide nav, so admitting it would need a new scope check, not just
+  // this row.
+  'backoffice:access': ['admin'],
 }

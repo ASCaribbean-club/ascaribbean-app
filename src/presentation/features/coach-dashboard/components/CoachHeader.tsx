@@ -69,10 +69,7 @@ export function CoachHeader({
             active role and recompose the dashboard) is a future feature,
             not this click handler. */}
         <Pill onClick={onRoleClick}>
-          <span
-            aria-hidden
-            className="size-5.5 shrink-0 rounded-full bg-[conic-gradient(var(--color-coach-green)_0deg_180deg,var(--color-coach-red)_180deg_360deg)]"
-          />
+          <img src="/icons/icon-512.png" alt="" aria-hidden className="size-5.5 shrink-0 rounded-full object-cover" />
           {formatRole('coach')}
           {hasMultipleRoles && <span className="text-white/60">▾</span>}
         </Pill>

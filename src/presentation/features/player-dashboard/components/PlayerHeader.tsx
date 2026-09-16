@@ -31,12 +31,12 @@ export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, 
     // scrolling") — same reasoning as CoachHeader: the content below can
     // grow past the viewport.
     <header className="sticky top-0 z-10 isolate flex flex-col gap-5 overflow-hidden bg-coach-bg px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-5">
-      {/* Decorative stripe/fade behind the header, identical treatment to
-          CoachHeader's — same dark-theme mockup family (v4_coach_dashboard
-          and v2_joueur_dashboard share this diagonal red/green motif). */}
+      {/* App background image behind the header, identical treatment to
+          CoachHeader's — same fade into coach-bg so it blends with the page
+          below instead of hard-cutting at the header's edge. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-x-15 -top-10 -z-10 h-55 bg-[repeating-linear-gradient(-18deg,transparent_0_54px,oklch(58%_0.2_26/0.5)_54px_62px,transparent_62px_150px),linear-gradient(180deg,transparent_0%,var(--color-coach-bg)_92%)]"
+        className="pointer-events-none absolute -inset-x-15 -top-10 -z-10 h-100 bg-[linear-gradient(180deg,transparent_0%,var(--color-coach-bg)_92%),url(/background.jpeg)] bg-cover bg-center"
       />
 
       <div className="relative flex items-center gap-2">

@@ -26,6 +26,15 @@ export function byDateAscending(a: Convocation, b: Convocation): number {
   return new Date(a.date).getTime() - new Date(b.date).getTime()
 }
 
+// Alphabetical comparator for `Array.prototype.sort` — the Effectif tab's
+// roster (both the player-facing "qui a répondu" list and the coach-facing
+// one) is sorted by name, not by convocation_responders/roster query order.
+// `localeCompare('fr')` (not `<`) so accented names (é, è, …) sort where a
+// French reader expects, not after every unaccented letter.
+export function byDisplayNameAscending(a: { displayName: string }, b: { displayName: string }): number {
+  return a.displayName.localeCompare(b.displayName, 'fr')
+}
+
 // Counts from ConvocationResponse only (AC-CD-04 — never AttendanceRecord,
 // CLAUDE.md §6). Known gap against AC-CD-05 (présents + absents + en
 // attente = nombre de convoqués): a convoked player who hasn't responded

@@ -7,6 +7,7 @@ import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepos
 import { MeetingDetailsRepositoryImpl } from '@data/repositories/MeetingDetailsRepositoryImpl'
 import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
+import { SectionRepositoryImpl } from '@data/repositories/SectionRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
 import type { AttendanceRecordRepository } from '@domain/repositories/attendance-record-repository'
@@ -17,6 +18,7 @@ import type { MatchDetailsRepository } from '@domain/repositories/match-details-
 import type { MeetingDetailsRepository } from '@domain/repositories/meeting-details-repository'
 import type { OpponentRepository } from '@domain/repositories/opponent-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
+import type { SectionRepository } from '@domain/repositories/section-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
 import type { UserRepository } from '@domain/repositories/user-repository'
 import { AssembleConvocationDetailFieldsUseCase } from '@domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
@@ -38,6 +40,9 @@ export interface ConvocationContainer {
   userRepository: UserRepository
   seasonRepository: SeasonRepository
   teamRepository: TeamRepository
+  // 2026-09-16 hero pass — training header title needs the team's section
+  // name, not just the team itself (see ConvocationHero).
+  sectionRepository: SectionRepository
   convocationRepository: ConvocationRepository
   convocationResponseRepository: ConvocationResponseRepository
   convocationRespondersRepository: ConvocationRespondersRepository
@@ -63,6 +68,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const userRepository = new UserRepositoryImpl(supabaseClient)
   const seasonRepository = new SeasonRepositoryImpl(supabaseClient)
   const teamRepository = new TeamRepositoryImpl(supabaseClient, seasonRepository)
+  const sectionRepository = new SectionRepositoryImpl(supabaseClient)
   const convocationRepository = new ConvocationRepositoryImpl(supabaseClient)
   const convocationResponseRepository = new ConvocationResponseRepositoryImpl(supabaseClient)
   const convocationRespondersRepository = new ConvocationRespondersRepositoryImpl(supabaseClient)
@@ -92,6 +98,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     userRepository,
     seasonRepository,
     teamRepository,
+    sectionRepository,
     convocationRepository,
     convocationResponseRepository,
     convocationRespondersRepository,

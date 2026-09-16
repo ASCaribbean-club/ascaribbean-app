@@ -2,7 +2,12 @@ import { IconChevronLeft } from '@tabler/icons-react'
 import { Button } from '@presentation/shared/components/ui/button'
 
 interface BackHeaderProps {
-  title: string
+  // Optional (2026-09-16, ConvocationDetailPage training hero pass): the
+  // convocation detail screen's big hero title right below this header made
+  // repeating it here redundant, so that call site omits it — back arrow
+  // only. Other call sites (CreateConvocationForm, ProfilePage) keep passing
+  // a title as before.
+  title?: string
   onBack: () => void
 }
 
@@ -40,7 +45,7 @@ export function BackHeader({ title, onBack }: BackHeaderProps) {
       >
         <IconChevronLeft className="size-5" />
       </Button>
-      <h1 className="text-xl font-extrabold text-white">{title}</h1>
+      {title && <h1 className="text-xl font-extrabold text-white">{title}</h1>}
     </header>
   )
 }

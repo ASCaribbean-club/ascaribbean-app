@@ -37,6 +37,11 @@ export const queryKeys = {
   // design, "Zone d'identité").
   team: (teamId: string) => ['teams', teamId] as const,
 
+  // Convocation detail hero title (2026-09-16 pass): "Entraînement —
+  // {section.name}" needs the section a team belongs to, not the team
+  // itself — a distinct resource from `team` above, same shape reasoning.
+  section: (sectionId: string) => ['sections', sectionId] as const,
+
   // specs/profile-page.md — the profile screen's own read: the WHOLE
   // resolved+filtered per-role scope (GetProfileRoleScopesUseCase composes
   // TeamRepository AND SectionRepository behind one call) — not shared with

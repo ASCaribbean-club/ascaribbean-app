@@ -10,6 +10,7 @@ import { TeamCrestAvatar } from './TeamCrestAvatar'
 interface ConvocationHeroProps {
   convocation: Convocation
   teamName: string | undefined
+  sectionName: string | undefined
   opponent: Opponent | null
   meetingDetails: MeetingDetails | null
 }
@@ -21,16 +22,27 @@ interface ConvocationHeroProps {
 //   - match: two avatars either side of "VS" (docs/designs/player-match-details/
 //     .../selection_1.png) — TeamCrestAvatar for "us" (no real crest data,
 //     see that component), InitialsAvatar(opponent.name) for them.
-//   - training/meeting: no face-off, just an icon + title, matching the
-//     pattern NextConvocationCard already uses for the same two types.
+//   - training: left-aligned "Entraînement — {sectionName}" + "{teamName} ·
+//     {location}" subtitle (docs/designs/coach-attendance-confirmation/).
+//   - meeting: no face-off, just an icon + title, matching the pattern
+//     NextConvocationCard still uses for it.
 // The status pastille (top-right in the mockup) and the cancellation reason
 // line are common to all three types — rendered once, outside the
 // match/non-match branch.
-export function ConvocationHero({ convocation, teamName, opponent, meetingDetails }: ConvocationHeroProps) {
+export function ConvocationHero({ convocation, teamName, sectionName, opponent, meetingDetails }: ConvocationHeroProps) {
   const Icon = getConvocationTypeIcon(convocation.type)
 
   const title =
     convocation.type === 'meeting' && meetingDetails ? meetingDetails.title : formatConvocationType(convocation.type)
+
+  // docs/designs/coach-attendance-confirmation/[v3] [Coach] Mob - Coach
+  // attendance confirmation.png — the only type with its own hero mockup so
+  // far (AC-AT header pass, corrected 2026-09-16). Title line reads
+  // "{section.name}" (the section the team belongs to, e.g.
+  // "Seniors" — coarser than the team itself); the team then moves down to
+  // the subtitle next to `convocation.location`, e.g. "Groupe A · Stade
+  // municipal" in the mockup.
+  const trainingSubtitle = teamName ? `${teamName} · ${convocation.location}` : convocation.location
 
   return (
     <div className="flex flex-col gap-4 px-5.5 pt-1 pb-5">
@@ -58,6 +70,13 @@ export function ConvocationHero({ convocation, teamName, opponent, meetingDetail
             <InitialsAvatar name={opponent?.name ?? '?'} />
             <p className="text-[12.5px] leading-tight font-bold text-white">{opponent?.name}</p>
           </div>
+        </div>
+      ) : convocation.type === 'training' ? (
+        <div className="flex flex-col items-start gap-0.5 text-left">
+          <p className="text-2xl leading-tight font-extrabold text-white">
+            {sectionName}
+          </p>
+          <p className="text-[13.5px] font-semibold text-white/50">{trainingSubtitle}</p>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2.5 py-2 text-center">

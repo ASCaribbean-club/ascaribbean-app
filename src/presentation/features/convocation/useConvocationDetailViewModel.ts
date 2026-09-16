@@ -25,6 +25,7 @@ export function useConvocationDetailViewModel() {
   const queryClient = useQueryClient()
   const {
     teamRepository,
+    sectionRepository,
     getConvocationWithDetailsUseCase,
     listConvocationRespondersUseCase,
     getConvocationRosterForCoachUseCase,
@@ -50,6 +51,16 @@ export function useConvocationDetailViewModel() {
     queryKey: queryKeys.team(convocation?.teamId ?? ''),
     queryFn: () => teamRepository.findById(convocation!.teamId),
     enabled: !!convocation,
+  })
+
+  // 2026-09-16 hero pass — ConvocationHero's training title now reads
+  // "Entraînement — {section.name}" (the club's own wording, not the team
+  // itself, which moved down to the subtitle line). Chained off teamQuery
+  // since the section id lives on Team, not Convocation.
+  const sectionQuery = useQuery({
+    queryKey: queryKeys.section(teamQuery.data?.sectionId ?? ''),
+    queryFn: () => sectionRepository.findById(teamQuery.data!.sectionId),
+    enabled: !!teamQuery.data,
   })
 
   // specs/match_details_page.md, "Emplacement dans la nav" (resolution,
@@ -253,7 +264,13 @@ export function useConvocationDetailViewModel() {
     // responded yet" (others/coachRoster/responseCounts all fall back to
     // an empty default below). Same `??` merge shape as
     // usePlayerDashboardViewModel's `error`.
-    error: detailedConvocationQuery.error ?? teamQuery.error ?? respondersQuery.error ?? playerResponseQuery.error ?? rosterForCoachQuery.error,
+    error:
+      detailedConvocationQuery.error ??
+      teamQuery.error ??
+      sectionQuery.error ??
+      respondersQuery.error ??
+      playerResponseQuery.error ??
+      rosterForCoachQuery.error,
     // AC-MD-01 — `null` is the one
     // state ConvocationDetailPage renders NotFoundState for; a genuine
     // network/server error stays in `error` above instead.
@@ -263,6 +280,7 @@ export function useConvocationDetailViewModel() {
 
     convocation,
     teamName: teamQuery.data?.name,
+    sectionName: sectionQuery.data?.name,
     matchDetails: detailedConvocationQuery.data?.matchDetails ?? null,
     opponent: detailedConvocationQuery.data?.opponent ?? null,
     meetingDetails: detailedConvocationQuery.data?.meetingDetails ?? null,

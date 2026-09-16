@@ -74,4 +74,22 @@ export const queryKeys = {
   // specs/actus.md — club-wide, identical for every role: no discriminant
   // beyond the resource name itself (no userId/teamId — nothing to scope by).
   newsFeed: () => ['news', 'feed'] as const,
+
+  // specs/player-vote.md — third tab on ConvocationDetailPage. Two distinct
+  // keys, same "shape differs, don't share a cache entry" reasoning as
+  // convocationDetail/convocationRosterForCoach above: voteMyBallot returns
+  // ONE voter's own Vote|null (AC-PV-04/05), voteTally returns the
+  // voter-identity-free aggregate every role reads (AC-PV-10) — sharing one
+  // entry between the two would be wrong even for the same user on the same
+  // convocation. PO-PV-01 is resolved (§7) — added now, so the
+  // convention is fixed before any hook needs it (ARCHITECTURE.md §6, "les
+  // queryKey se conventionnent dès le premier écran").
+  voteMyBallot: (convocationId: string, categoryId: string, voterId: string) =>
+    ['votes', convocationId, 'category', categoryId, 'voter', voterId] as const,
+  voteTally: (convocationId: string, categoryId: string) => ['votes', convocationId, 'category', categoryId, 'tally'] as const,
+
+  // Reference data (vote_categories), not scoped by convocation — the same
+  // category row backs every convocation's Votes tab, so this key isn't
+  // nested under `['votes', convocationId, ...]` like the two above.
+  voteCategory: (categoryId: string) => ['voteCategories', categoryId] as const,
 }

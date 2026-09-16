@@ -1,5 +1,8 @@
+import { IconTrophy } from '@tabler/icons-react'
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
+import { Badge } from '@presentation/shared/components/ui/badge'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
+import { cn } from '@presentation/shared/lib/utils'
 import { formatConvocationType } from '../../shared/formatters/convocation-labels'
 import { formatRole } from '../../shared/formatters/role-labels'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/components/ui/tabs'
@@ -8,7 +11,110 @@ import { EffectifTab } from './components/EffectifTab'
 import { InfosTab } from './components/InfosTab'
 import { NotFoundState } from './components/NotFoundState'
 import { RoleMismatchState } from './components/RoleMismatchState'
+import type { VoteCategoryViewModel } from './components/VotesTab'
+import { VotesTab } from './components/VotesTab'
 import { useConvocationDetailViewModel } from './useConvocationDetailViewModel'
+
+// specs/player-vote.md — composes useConvocationDetailViewModel's plain
+// `votes` data/state into the JSX-bearing `VoteCategoryViewModel[]` VotesTab
+// renders. Lives here (a .tsx file) rather than in the hook (.ts, can't hold
+// JSX) — same split ARCHITECTURE.md §6 already draws elsewhere on this
+// screen (e.g. AttendanceConfirmRow picks its own icons rather than
+// receiving them from the ViewModel). Every branch below reads a value the
+// ViewModel already computed (`myVote`, `isEditingVote`, `tally`); it never
+// derives a NEW business fact, only which JSX shape represents one.
+function buildVoteCategories(
+  votes: ReturnType<typeof useConvocationDetailViewModel>['votes'] & { categoryLabel: string },
+  activeRole: ReturnType<typeof useConvocationDetailViewModel>['activeRole'],
+): VoteCategoryViewModel[] {
+  const icon = <IconTrophy className="size-3.5" aria-hidden />
+
+  // Coach: consultation only, absolute counts, never a ballot (specs/
+  // player-vote.md §2 — "aucun contrôle de saisie rendu"). AC-PV-13 — zero
+  // votes yet is an explicit empty state, never a zero-filled list.
+  if (activeRole === 'coach') {
+    const candidates = votes.tally?.candidates ?? []
+    return [
+      {
+        id: votes.categoryId,
+        icon,
+        label: votes.categoryLabel,
+        body:
+          candidates.length === 0
+            ? { kind: 'empty', emptyMessage: 'Aucun vote enregistré pour cette catégorie.' }
+            : {
+                kind: 'results',
+                unit: 'absolute',
+                candidates: candidates.map((c) => ({ id: c.candidateId, name: c.candidateDisplayName, value: c.voteCount })),
+              },
+      },
+    ]
+  }
+
+  // Player: ballot until a vote is cast, or while "Changer mon vote" has
+  // reopened it — never both at once for the same category (UI design,
+  // "jamais les deux à la fois").
+  if (!votes.myVote || votes.isEditingVote) {
+    return [
+      {
+        id: votes.categoryId,
+        icon,
+        label: votes.categoryLabel,
+        statusBadge: (
+          <Badge className={cn('rounded-full border px-2.5 py-1 text-[11px] font-bold', 'border-white/12 bg-white/8 text-white/60')}>
+            Résultats masqués
+          </Badge>
+        ),
+        body: {
+          kind: 'ballot',
+          candidates: votes.candidates.map((c) => ({ id: c.userId, name: c.displayName })),
+          selectedCandidateId: votes.selectedCandidateId,
+          onSelectCandidate: votes.onSelectCandidate,
+          onSubmit: votes.onSubmit,
+          isSubmitting: votes.isSubmitting,
+          submitErrorMessage: votes.submitError?.message ?? null,
+        },
+      },
+    ]
+  }
+
+  // Player, already voted: percentages, "Ton choix" on their own row
+  // (VoteCategoryCard resolves that from `myCandidateId`), "Changer mon
+  // vote" while PO-PV-06's voting window stays unresolved (always present
+  // once voted — no "votes closed" state is composed yet).
+  const tallyCandidates = votes.tally?.candidates ?? []
+  const totalVotes = tallyCandidates.reduce((sum, c) => sum + c.voteCount, 0)
+  const totalEligible = votes.tally?.totalEligibleVoters ?? 0
+  return [
+    {
+      id: votes.categoryId,
+      icon,
+      label: votes.categoryLabel,
+      statusBadge: (
+        <Badge
+          className={cn(
+            'rounded-full border px-2.5 py-1 text-[11px] font-bold',
+            'border-coach-green/35 bg-coach-green/15 text-coach-green-text',
+          )}
+        >
+          Vote enregistré
+        </Badge>
+      ),
+      body: {
+        kind: 'results',
+        unit: 'percentage',
+        candidates: tallyCandidates.map((c) => ({
+          id: c.candidateId,
+          name: c.candidateDisplayName,
+          value: totalVotes > 0 ? Math.round((c.voteCount / totalVotes) * 100) : 0,
+        })),
+        myCandidateId: votes.myVote?.candidateId ?? null,
+        voteCountLabel: `${totalVotes} vote${totalVotes > 1 ? 's' : ''} sur ${totalEligible} joueur${totalEligible > 1 ? 's' : ''}`,
+        onChangeVote: votes.onChangeVote,
+      },
+    },
+  ]
+}
 
 // Zero business logic (ARCHITECTURE.md §6, same rule as CoachDashboardPage/
 // PlayerDashboardPage) — every branch below is an isLoading/notFound/error
@@ -126,29 +232,56 @@ export function ConvocationDetailPage() {
             meetingDetails={vm.meetingDetails}
           />
 
-          {/* Two tabs only (UI design: "Compo", "Votes", "Messagerie" removed
-              entirely — correction #2, no domain support for any of them).
-              Overridden onto the dark theme the same way every other shadcn
-              primitive on this screen is (CLAUDE.md §2) — the default
-              bg-muted/bg-background tokens would render as light-on-dark
-              otherwise. `w-full`/`px-5.5` (not shadcn's own `w-auto`) so the
-              bar spans edge-to-edge like the rest of this sticky group.
-              `bg-transparent` (not `bg-coach-bg`) so the group's own
-              image+tint background above shows through here too, instead of
-              a flat block breaking the image right at the tab titles. */}
+          {/* Three tabs (UI design §"Barre d'onglets à trois entrées",
+              resolving PO-PV-14): "Compo"/"Disposition"/"Stats"/
+              "Messagerie" removed entirely — correction #2, no domain
+              support for any of them — but "Votes" is added back
+              (specs/player-vote.md), reopening the decision
+              specs/match_details_page.md originally made for lack of
+              support. TabsTrigger's own base class already carries
+              `flex-1` (shared/components/ui/tabs.tsx), so three equal-width
+              labels fit a 360-430px viewport without the horizontal
+              scroll/truncation the six-tab mockup export shows — no
+              className change needed here to get that, just one more
+              TabsTrigger. Overridden onto the dark theme the same way every
+              other shadcn primitive on this screen is (CLAUDE.md §2) — the
+              default bg-muted/bg-background tokens would render as
+              light-on-dark otherwise. `w-full`/`px-5.5` (not shadcn's own
+              `w-auto`) so the bar spans edge-to-edge like the rest of this
+              sticky group. `bg-transparent` (not `bg-coach-bg`) so the
+              group's own image+tint background above shows through here
+              too, instead of a flat block breaking the image right at the
+              tab titles.
+
+              "Votes" itself is further gated to `type === 'match'`
+              (specs/player-vote.md PO-PV-08: "restreindre au type match en
+              v1 est le choix conservateur et réversible" — the three
+              mockups only ever show a match, and a vote on a training or
+              meeting has no defined meaning). Two tabs for a
+              training/meeting convocation, three for a match — absent, not
+              disabled, same "moindre privilège" rule as every other
+              role-gated control on this screen. */}
           <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-b border-white/10 bg-transparent p-0 px-5.5">
             <TabsTrigger
               value="infos"
-              className="rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               Infos
             </TabsTrigger>
             <TabsTrigger
               value="effectif"
-              className="rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               Effectif
             </TabsTrigger>
+            {convocation.type === 'match' && (
+              <TabsTrigger
+                value="votes"
+                className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Votes
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -186,6 +319,23 @@ export function ConvocationDetailPage() {
             />
           )}
         </TabsContent>
+
+        {/* PO-PV-08 — mirrors the TabsTrigger gate above: no "votes" TabsContent
+            at all for a non-match convocation, not an empty/disabled one. */}
+        {convocation.type === 'match' && (
+          <TabsContent value="votes">
+            {/* specs/player-vote.md — AC-PV-16/PO-PV-02: only the positive
+                category is ever built here, never a second hardcoded row for
+                the negative one — buildVoteCategories always returns a
+                single-entry array. PO-PV-06 (voting window) stays
+                unresolved: no "votes closed" state is composed. */}
+            {vm.votes.categoryLabel === null ? (
+              <p>Chargement…</p>
+            ) : (
+              <VotesTab categories={buildVoteCategories({ ...vm.votes, categoryLabel: vm.votes.categoryLabel }, vm.activeRole)} />
+            )}
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Same inline-alert placeholder as PlayerDashboardPage — no generic

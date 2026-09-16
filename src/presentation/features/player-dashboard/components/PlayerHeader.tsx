@@ -45,10 +45,7 @@ export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, 
             not this click handler. Same decision as coach
             (specs/coach-dashboard.md PO-2), not reopened here. */}
         <Pill onClick={onRoleClick}>
-          <span
-            aria-hidden
-            className="size-5.5 shrink-0 rounded-full bg-[conic-gradient(var(--color-coach-green)_0deg_180deg,var(--color-coach-red)_180deg_360deg)]"
-          />
+          <img src="/icons/icon-512.png" alt="" aria-hidden className="size-5.5 shrink-0 rounded-full object-cover" />
           {formatRole('player')}
           {hasMultipleRoles && <span className="text-white/60">▾</span>}
         </Pill>

@@ -14,7 +14,18 @@ import {
   type CreateTrainingConvocationInput,
 } from './CreateConvocationUseCase'
 
-const FUTURE_DATE = '2026-09-05T15:00:00.000Z'
+// Relative to Date.now(), not a fixed calendar date — a hardcoded future
+// date eventually becomes past and these tests start failing on the
+// isPastDate guard for reasons unrelated to what they're testing.
+const FUTURE_KICKOFF = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+FUTURE_KICKOFF.setUTCHours(15, 0, 0, 0)
+const FUTURE_DATE = FUTURE_KICKOFF.toISOString()
+
+function timeOnFutureDate(hours: number, minutes = 0): string {
+  const d = new Date(FUTURE_KICKOFF)
+  d.setUTCHours(hours, minutes, 0, 0)
+  return d.toISOString()
+}
 
 function coachUser(teamIds: string[]): User {
   return {
@@ -111,7 +122,7 @@ function matchInput(overrides: Partial<CreateMatchConvocationInput> = {}): Creat
     location: 'Stade municipal',
     opponentId: 'opponent-1',
     isHome: true,
-    meetingPointTime: '2026-09-05T13:30:00.000Z',
+    meetingPointTime: timeOnFutureDate(13, 30),
     meetingPointLocation: 'Vestiaires',
     ...overrides,
   }
@@ -183,9 +194,9 @@ describe('CreateConvocationUseCase', () => {
       fakeConvocationRepository(),
     )
 
-    await expect(useCase.execute(matchInput({ meetingPointTime: '2026-09-05T16:00:00.000Z' }))).rejects.toThrow(
-      InvalidScheduleError,
-    )
+    await expect(
+      useCase.execute(matchInput({ meetingPointTime: timeOnFutureDate(16, 0) })),
+    ).rejects.toThrow(InvalidScheduleError)
   })
 
   it('creates a training convocation via ConvocationRepository.createTraining', async () => {

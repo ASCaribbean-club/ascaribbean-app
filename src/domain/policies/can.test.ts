@@ -78,4 +78,59 @@ describe('can', () => {
     const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
     expect(can(user, 'news:write')).toBe(false)
   })
+
+  // specs/section-and-teams.md §3/AC-ST-10 — 'section:write'/'team:write'
+  // are accorded to admin and refused to section-manager REGARDLESS of the
+  // sectionId passed in context: unlike 'section:manage', these two actions
+  // have no scope check in can.ts (the default branch returns true for any
+  // role in rbacMatrix, and rbacMatrix only lists 'admin' for both).
+  it('allows an admin to write sections and teams', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'section:write')).toBe(true)
+    expect(can(user, 'team:write')).toBe(true)
+  })
+
+  it('denies a section-manager from writing sections, even for their own sectionId in context', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'section:write', { sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('denies a section-manager from writing teams, even for their own sectionId in context', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'team:write', { sectionId: 'section-a' })).toBe(false)
+  })
+
+  // specs/section-and-teams.md §3/AC-ST-39 — 'role:assign-coach' is granted
+  // to admin only, refused to every one of the other seven roles, in
+  // particular coach (a coach must not be able to self-assign) and
+  // section-manager (no widening by analogy with 'section:manage'),
+  // regardless of teamId/sectionId in context.
+  it('allows an admin to assign a coach to a team', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'role:assign-coach', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from assigning themself (or anyone) to a team', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'role:assign-coach', { teamId: 'team-1' })).toBe(false)
+  })
+
+  it('denies a section-manager from assigning a coach, even for a team in their own section', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'role:assign-coach', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('denies every non-admin role from assigning a coach', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'role:assign-coach')).toBe(false)
+    }
+  })
 })

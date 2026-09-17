@@ -88,4 +88,33 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // seasons_update_admin) — see
   // supabase/migrations/20260917122358_web_seasons_write_policies.sql.
   'season:write': ['admin'],
+
+  // specs/section-and-teams.md §3 — "['admin'] pour les deux actions,
+  // l'élargissement de la seule action 'team:write' au Responsable de
+  // section restant un arbitrage produit à trancher (PO-ST-05)". Club-wide
+  // by construction (the 'admin' RoleAssignment carries no scope field), so
+  // no matching scope check is needed in can.ts — same shape as
+  // 'season:write'/'news:write' above. If PO-ST-05 ever widens 'team:write'
+  // to 'section-manager', can.ts's 'section-manager' branch must be
+  // extended in the SAME change (§3) — adding the role only here would let
+  // a section-manager create/modify a team in ANY section, same trap as
+  // 'convocation:create'.
+  // Mirrors 4 RLS policies on public.sections/public.teams
+  // (sections_insert_admin, sections_update_admin, teams_insert_admin,
+  // teams_update_admin) — see
+  // supabase/migrations/20260917140000_section_team_write_policies.sql.
+  'section:write': ['admin'],
+  'team:write': ['admin'],
+
+  // specs/section-and-teams.md §3 — "['admin'] n'est pas discutable" (CDC
+  // "Gérer comptes, rôles, paramétrage" — ❌ for the seven other roles).
+  // Club-wide by construction, same shape as the rows above — no scope
+  // check needed in can.ts. The RLS `with check` clause is where the REAL
+  // scope limit lives: not "any write to user_roles", only role='coach'
+  // rows with team_id set and section_id null (AC-ST-33) — this matrix
+  // entry alone does not and cannot express that column-level restriction.
+  // Mirrors the single policy on public.user_roles
+  // (user_roles_insert_assign_coach) — see
+  // supabase/migrations/20260917140500_role_assign_coach_write_policy.sql.
+  'role:assign-coach': ['admin'],
 }

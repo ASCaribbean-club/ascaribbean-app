@@ -101,4 +101,25 @@ export const queryKeys = {
   // category row backs every convocation's Votes tab, so this key isn't
   // nested under `['votes', convocationId, ...]` like the two above.
   voteCategory: (categoryId: string) => ['voteCategories', categoryId] as const,
+
+  // specs/web-seasons.md AC-WS-13/AC-WS-22 — the backoffice /admin/seasons
+  // admin list (findAll(), every row, any status). Distinct resource key
+  // from every team/convocation/profile key above, even though several of
+  // those compose SeasonRepository.findCurrent() internally — see
+  // seasonCurrent below for that one.
+  seasonsAdminList: () => ['seasons', 'admin', 'list'] as const,
+
+  // specs/web-seasons.md §4/AC-WS-22 — reserved for SeasonRepository.
+  // findCurrent(): no ViewModel today wraps that call directly in its own
+  // useQuery — it's composed INSIDE other use cases (GetProfileMembershipUseCase,
+  // GetProfileRoleScopesUseCase, TeamRepositoryImpl), each cached under ITS
+  // OWN key (profileMembership, profileRoleScopes, coachTeams, playerTeam,
+  // team, ...). This key exists so useSeasonFormDialogViewModel's
+  // invalidation literally "covers the key serving findCurrent(), if it is
+  // cached" (AC-WS-22) without enumerating every one of those unrelated
+  // feature keys, none of which this feature should know about or couple
+  // itself to. If a future screen ever wraps findCurrent() directly in a
+  // useQuery of its own, it must use THIS key rather than inventing a new
+  // one, so this invalidation keeps doing its job.
+  seasonCurrent: () => ['seasons', 'current'] as const,
 }

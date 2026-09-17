@@ -27,3 +27,13 @@ export type Action =
   // criterion this file's own matrix (rbac-matrix.ts) documents at its top
   // for when an action earns a row instead of staying RLS-only.
   | 'backoffice:access'
+  // specs/web-actus.md §3 — "Entrée de matrice proposée": presentation/ must
+  // decide whether to render "+ Nouvelle actu" and the per-row edit pencil,
+  // independently of 'backoffice:access'. Deliberately a SEPARATE action
+  // rather than reusing 'backoffice:access' for this decision too: the two
+  // populations coincide today only "by calendar accident" (per that spec),
+  // and PO-WE-01 may widen 'backoffice:access' without the Bureau ever
+  // having validated that the same roles should write club_news — a
+  // distinct action keeps that a two-step decision instead of a silent
+  // side effect of the first one.
+  | 'news:write'

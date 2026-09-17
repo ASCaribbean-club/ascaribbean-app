@@ -60,4 +60,17 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // club-wide nav, so admitting it would need a new scope check, not just
   // this row.
   'backoffice:access': ['admin'],
+
+  // specs/web-actus.md §3 — "Position retenue quand même : créer l'action."
+  // Narrowest position, same reasoning as 'backoffice:access' above
+  // ("moindre privilège", no other matrix row is exclusive to club-wide
+  // administration of club_news). Club-wide by construction (the 'admin'
+  // RoleAssignment carries no scope field) — no matching scope check is
+  // needed in can.ts, same as 'backoffice:access'.
+  // Mirrors 3 RLS policies on public.club_news (club_news_select_admin,
+  // club_news_insert_admin, club_news_update_admin) — see
+  // supabase/migrations/<timestamp>_web_actus_news_write_policies.sql.
+  // PO-WA-08 stays open: widening beyond 'admin' is a product decision, not
+  // made here.
+  'news:write': ['admin'],
 }

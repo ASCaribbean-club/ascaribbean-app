@@ -65,4 +65,17 @@ describe('can', () => {
     const user = userWith([{ role: 'player', teamId: 'team-1' }])
     expect(can(user, 'vote:cast', { teamId: 'team-2' })).toBe(false)
   })
+
+  // specs/web-actus.md §3 — AC-WA-08: 'news:write' is a brand-new, admin-only
+  // action, deliberately distinct from 'backoffice:access' (see the comment
+  // on both entries) so this pair proves it's actually checked on its own.
+  it('allows an admin to write club news', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'news:write')).toBe(true)
+  })
+
+  it('denies a non-admin role from writing club news, even one with a "Envoyer une communication ciblée" ✅ on the CDC matrix', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'news:write')).toBe(false)
+  })
 })

@@ -1,15 +1,20 @@
 import { Outlet } from 'react-router-dom'
-import { BackofficePageHeader } from '@presentation/features/backoffice/components/BackofficePageHeader'
 import { BackofficeSidebar } from '@presentation/features/backoffice/components/BackofficeSidebar'
 import { BackofficeTopBar } from '@presentation/features/backoffice/components/BackofficeTopBar'
 import { useBackofficeDashboardViewModel } from './useBackofficeDashboardViewModel'
 
-// The dashboard shell (`/admin`): top bar + sidebar + page header are fixed
-// chrome, <Outlet/> renders whichever of the 5 sub-routes (users/sections/
+// The dashboard shell (`/admin`): top bar + sidebar are fixed chrome,
+// <Outlet/> renders whichever of the 6 sub-routes (overview/users/sections/
 // seasons/memberships/news) is currently active — the same "layout route
 // wraps an Outlet" shape as the mobile AppShell
 // (presentation/shared/layout/AppShell.tsx), a sidebar standing in for the
 // bottom nav.
+//
+// 2026-09-17 developer decision: BackofficePageHeader ("Bonjour, {prénom}")
+// used to render here unconditionally, above every <Outlet/> content — so it
+// showed on Actus/Utilisateurs/etc. too, not just a dashboard-shaped screen.
+// Moved into BackofficeOverviewPage itself, the new 'overview' nav
+// destination — this layout no longer knows about that header at all.
 //
 // `dark` class here (and reused verbatim on BackofficeLoginPage/
 // BackofficeAccessDeniedPage/BackofficeDesktopOnlyPage): shadcn's `.dark`
@@ -31,7 +36,6 @@ export function BackofficeDashboardLayout() {
       <div className="flex flex-1">
         <BackofficeSidebar />
         <main className="flex flex-1 flex-col gap-6 p-8">
-          <BackofficePageHeader firstName={vm.firstName} />
           <Outlet />
         </main>
       </div>

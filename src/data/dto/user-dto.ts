@@ -21,3 +21,13 @@ export interface UserRoleRow {
   team_id: string | null
   section_id: string | null
 }
+
+// specs/section-and-teams.md §2.11/PO-ST-12b — minimal projection of
+// public.users backing UserRepositoryImpl.findAll(), the AssignCoachDialog's
+// `UTILISATEUR` dropdown. Narrower select than UserRow above: this read
+// never needs position/charter_accepted_at (PO-ST-12b leaves what the list
+// should be filtered by open, "all users" is the position taken here).
+export interface UserSummaryRow {
+  id: string
+  full_name: string
+}

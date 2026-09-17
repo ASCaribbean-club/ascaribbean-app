@@ -1,6 +1,14 @@
-import { IconCalendarStats, IconCreditCard, IconNews, IconUsers, IconUsersGroup, type Icon } from '@tabler/icons-react'
+import {
+  IconCalendarStats,
+  IconCreditCard,
+  IconLayoutDashboard,
+  IconNews,
+  IconUsers,
+  IconUsersGroup,
+  type Icon,
+} from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'users' | 'sections' | 'seasons' | 'memberships' | 'news'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'seasons' | 'memberships' | 'news'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -10,10 +18,11 @@ export interface BackofficeNavItem {
   emptyStateTitle: string
 }
 
-// The 5 sidebar destinations (specs/web-empty-state.md, "Navigation
-// latérale (Dashboard-3), 5 entrées") — centralized once so
-// BackofficeSidebar (renders the links) and each of the 5 screens (need the
-// same icon/label to describe their own empty state, per the spec's "un
+// The sidebar destinations — originally the 5 of specs/web-empty-state.md
+// ("Navigation latérale (Dashboard-3), 5 entrées"), plus 'overview' added
+// 2026-09-17 (see its own comment below) — centralized once so
+// BackofficeSidebar (renders the links) and each screen (needs the
+// same icon/label to describe its own empty state, per the spec's "un
 // seul composant, paramétré... pas 5 composants dupliqués") don't duplicate
 // this list. Not a queryKey, but the same "decide the shape once, reuse
 // everywhere" reasoning as presentation/shared/query-keys.ts.
@@ -26,6 +35,19 @@ export interface BackofficeNavItem {
 // 'users'/'memberships' — a count is invented data until PO-WE-11 says what
 // it counts (AC-WE-13, specs/web-empty-state.md §5).
 export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
+  {
+    // 2026-09-17 developer decision: 6th sidebar entry, first in order —
+    // the only nav destination that carries the "Bonjour, {prénom}" greeting
+    // header (BackofficePageHeader), previously rendered unconditionally by
+    // BackofficeDashboardLayout on every backoffice screen. Moved here so
+    // the greeting reads as "the dashboard's own header", not chrome shared
+    // by unrelated screens like Actus or Utilisateurs.
+    id: 'overview',
+    label: 'Vue d’ensemble',
+    path: '/admin/overview',
+    icon: IconLayoutDashboard,
+    emptyStateTitle: 'Aucune vue d’ensemble à afficher pour l’instant',
+  },
   {
     id: 'users',
     label: 'Utilisateurs',

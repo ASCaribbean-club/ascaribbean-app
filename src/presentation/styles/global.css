@@ -39,7 +39,7 @@
 
   /* specs/web-empty-state.md — backoffice screens (presentation/features/
      backoffice/) are dark-only, no light variant in their mockups, same
-     "fixed-palette screen" shape as auth-*/coach-* above. Unlike those two,
+     "fixed-palette screen" shape as auth-* /coach-* above. Unlike those two,
      this doesn't get its OWN --color-backoffice-* set: it scopes shadcn's
      already-fully-defined `.dark` palette (see the `.dark` block below)
      via a `dark` class at each screen's root instead, reusing coach-green/

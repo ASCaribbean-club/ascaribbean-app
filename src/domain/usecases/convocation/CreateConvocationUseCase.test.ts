@@ -57,6 +57,7 @@ function fakeUserRepository(user: User | null): UserRepository {
   return {
     findById: async () => user,
     acceptCharter: async () => {},
+    findAll: async () => [],
   }
 }
 
@@ -65,6 +66,13 @@ function fakeTeamRepository(teams: Team[]): TeamRepository {
     findByIds: async () => teams,
     countActiveMembers: async () => 0,
     findById: async () => teams[0] ?? null,
+    findAllForAdmin: async () => teams,
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
   }
 }
 

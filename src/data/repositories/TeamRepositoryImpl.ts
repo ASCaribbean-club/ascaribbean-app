@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Team } from '@domain/entities/team'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
-import type { TeamRepository } from '@domain/repositories/team-repository'
+import type { CreateTeamInput, TeamRepository, UpdateTeamInput } from '@domain/repositories/team-repository'
 import type { TeamRow } from '../dto/team-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { toTeam } from '../mappers/team-mapper'
+import { toTeam, toTeamInsertRow, toTeamUpdateRow } from '../mappers/team-mapper'
+
+const TEAM_COLUMNS = 'id, name, section_id, season_id'
 
 export class TeamRepositoryImpl implements TeamRepository {
   private readonly client: SupabaseClient
@@ -65,5 +67,49 @@ export class TeamRepositoryImpl implements TeamRepository {
 
     if (error) throw mapSupabaseError(error)
     return data?.headcount ?? 0
+  }
+
+  // specs/section-and-teams.md §2.7/AC-ST-13 — the /admin/teams and
+  // /admin/sections admin lists. Deliberately NO season filter and NO call
+  // to seasonRepository.findCurrent() (unlike findById/findByIds above):
+  // backed by teams_select_team_scoped's `or private.is_admin()` branch,
+  // which stays unrestricted by season on purpose (AC-ST-02) — returns
+  // every team, every season, including during a summer gap where
+  // current_season() resolves to nothing (a valid state, not an error,
+  // AC-ST-13).
+  async findAllForAdmin(): Promise<Team[]> {
+    const { data, error } = await this.client.from('teams').select(TEAM_COLUMNS).overrideTypes<TeamRow[]>()
+
+    if (error) throw mapSupabaseError(error)
+    return (data ?? []).map(toTeam)
+  }
+
+  // teams_insert_admin (RLS) — mirrors 'team:write'.
+  async create(input: CreateTeamInput): Promise<Team> {
+    const { data, error } = await this.client
+      .from('teams')
+      .insert(toTeamInsertRow(input))
+      .select(TEAM_COLUMNS)
+      .single()
+      .overrideTypes<TeamRow>()
+
+    if (error) throw mapSupabaseError(error)
+    return toTeam(data)
+  }
+
+  // teams_update_admin (RLS) — mirrors 'team:write'. No "which rows are
+  // modifiable" restriction (§2.6) — this repository doesn't pre-filter by
+  // row state either.
+  async update(id: string, input: UpdateTeamInput): Promise<Team> {
+    const { data, error } = await this.client
+      .from('teams')
+      .update(toTeamUpdateRow(input))
+      .eq('id', id)
+      .select(TEAM_COLUMNS)
+      .single()
+      .overrideTypes<TeamRow>()
+
+    if (error) throw mapSupabaseError(error)
+    return toTeam(data)
   }
 }

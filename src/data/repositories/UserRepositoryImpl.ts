@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { User } from '@domain/entities/user'
-import type { UserRepository } from '@domain/repositories/user-repository'
-import type { UserRoleRow, UserRow } from '../dto/user-dto'
+import type { UserRepository, UserSummary } from '@domain/repositories/user-repository'
+import type { UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { toUser } from '../mappers/user-mapper'
+import { toUser, toUserSummary } from '../mappers/user-mapper'
 
 export class UserRepositoryImpl implements UserRepository {
   private readonly client: SupabaseClient
@@ -43,5 +43,16 @@ export class UserRepositoryImpl implements UserRepository {
   async acceptCharter(): Promise<void> {
     const { error } = await this.client.rpc('accept_charter')
     if (error) throw mapSupabaseError(error)
+  }
+
+  // specs/section-and-teams.md §2.11/PO-ST-12b — admin-only directory read,
+  // backed by users_select_own's existing `or private.is_admin()` branch
+  // (no new RLS policy). For a non-admin caller this silently narrows to
+  // their own single row — never called from a non-admin screen.
+  async findAll(): Promise<UserSummary[]> {
+    const { data, error } = await this.client.from('users').select('id, full_name').overrideTypes<UserSummaryRow[]>()
+
+    if (error) throw mapSupabaseError(error)
+    return (data ?? []).map(toUserSummary)
   }
 }

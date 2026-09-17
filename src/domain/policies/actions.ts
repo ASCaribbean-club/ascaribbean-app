@@ -46,3 +46,28 @@ export type Action =
   // §3/§4). Covers both create and update: no document distinguishes a role
   // that could do one without the other (§3).
   | 'season:write'
+  // specs/section-and-teams.md §3 — two SEPARATE actions, not one generic
+  // 'structure:write': creating a section is club-wide paramétrage
+  // (Administrateur), while creating a team "in one's own section" is
+  // exactly what PO-ST-05 leaves open for the Responsable de section — a
+  // single action would make that future widening also open 'section:write'
+  // by accident (same reasoning as 'news:write'/'season:write' staying
+  // distinct from 'backoffice:access', §3 "Pourquoi deux actions et non une
+  // seule"). Deliberately NOT reusing 'section:manage': its can.ts scope
+  // check compares assignment.sectionId to context.sectionId, which has no
+  // meaning on a CREATE (the section doesn't exist yet) — see §3 "à écarter
+  // explicitement".
+  | 'section:write'
+  | 'team:write'
+  // specs/section-and-teams.md §2.9/§3 — the resource actually WRITTEN by
+  // this action is public.user_roles, never public.teams/public.sections
+  // (assigning a coach inserts a user_roles row, §2.9). Named
+  // 'role:assign-coach' rather than the generic 'role:assign'/'user:write'
+  // (which would silently cover assigning 'admin' itself — elevation of
+  // privilege, and the six other roles, none of which this screen's "+
+  // Coach" entry point offers) and rather than 'team:assign-coach' (which
+  // would name the WRONG resource and invite a future contributor to fold
+  // it into 'team:write' by prefix proximity — §3, "Retenu —
+  // 'role:assign-coach'"). The 'coach' suffix is the only scope an RLS
+  // `with check` can verify literally (`role = 'coach'`, AC-ST-33).
+  | 'role:assign-coach'

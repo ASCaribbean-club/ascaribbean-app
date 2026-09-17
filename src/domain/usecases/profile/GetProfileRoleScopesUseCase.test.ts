@@ -29,7 +29,19 @@ function fakeCoachRepository(coachesByTeam: Record<string, TeamCoach[]>): CoachR
 }
 
 function fakeSeasonRepository(label: string | null = '2026-2027'): SeasonRepository {
-  return { findCurrent: async () => (label ? { id: 'season-1', label: label as `${number}-${number}`, startDate: '2026-08-01', endDate: '2027-06-30' } : null) }
+  return {
+    findCurrent: async () => (label ? { id: 'season-1', label: label as `${number}-${number}`, startDate: '2026-08-01', endDate: '2027-06-30' } : null),
+    // Not exercised by this use case (it only ever calls findCurrent) —
+    // specs/web-seasons.md §2.6 extended SeasonRepository with these three
+    // methods, unrelated to this test's own concern.
+    findAll: async () => [],
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
+  }
 }
 
 describe('GetProfileRoleScopesUseCase', () => {

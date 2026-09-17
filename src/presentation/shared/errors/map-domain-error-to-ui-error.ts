@@ -4,6 +4,7 @@ import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-erro
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import type { UiError } from './ui-error'
@@ -59,6 +60,22 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // fires on the rarer race the use case is the real authority for.
     return {
       message: 'Le titre, le contenu et la date sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidSeasonInputError) {
+    // specs/web-seasons.md §2.4/AC-WS-10, UI design "États du dialogue" —
+    // the text this spec itself flags as missing ("le texte du message
+    // n'est pas encore écrit dans mapDomainErrorToUiError"). Covers the
+    // three domain-level rejections CreateSeasonUseCase/UpdateSeasonUseCase
+    // can throw: empty label, a missing date, and startDate after endDate —
+    // generic copy rather than a field-specific one, same reasoning as
+    // InvalidNewsInputError above (the dialog's own `required` attributes
+    // already prevent the common empty-field case client-side).
+    return {
+      message: 'Le libellé et les deux dates sont obligatoires, et la date de début doit précéder ou être égale à la date de fin.',
       variant: 'inline',
       retryable: true,
     }

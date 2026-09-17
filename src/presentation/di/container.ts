@@ -9,6 +9,7 @@ import { createConvocationContainer, type ConvocationContainer } from './contain
 import { createNewsContainer, type NewsContainer } from './containers/news-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
+import { createSeasonsContainer, type SeasonsContainer } from './containers/seasons-container'
 
 export interface Container {
   auth: AuthContainer
@@ -18,6 +19,7 @@ export interface Container {
   news: NewsContainer
   playerDashboard: PlayerDashboardContainer
   profile: ProfileContainer
+  seasons: SeasonsContainer
 }
 
 export function createContainer(): Container {
@@ -29,5 +31,6 @@ export function createContainer(): Container {
     news: createNewsContainer(supabaseClient),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),
+    seasons: createSeasonsContainer(supabaseClient),
   }
 }

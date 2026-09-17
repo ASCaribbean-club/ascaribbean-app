@@ -73,4 +73,19 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // PO-WA-08 stays open: widening beyond 'admin' is a product decision, not
   // made here.
   'news:write': ['admin'],
+
+  // specs/web-seasons.md §3 — "le cas le mieux étayé du dépôt à ce jour":
+  // roles-personas-as-caribbean.md lists "saisons" literally in the
+  // Administrateur role's own description, and no other role. Narrowest
+  // position ("moindre privilège"), same shape as 'backoffice:access' and
+  // 'news:write' above — club-wide by construction (the 'admin'
+  // RoleAssignment carries no scope field), so no matching scope check is
+  // needed in can.ts. Deliberately NOT extending 'section:manage' to cover
+  // this (§3, "à écarter explicitement") — a section-manager must never be
+  // able to create or modify a season, which is unscoped club-wide reference
+  // data that drives current_season() for every other role.
+  // Mirrors 2 RLS policies on public.seasons (seasons_insert_admin,
+  // seasons_update_admin) — see
+  // supabase/migrations/20260917122358_web_seasons_write_policies.sql.
+  'season:write': ['admin'],
 }

@@ -37,3 +37,12 @@ export type Action =
   // distinct action keeps that a two-step decision instead of a silent
   // side effect of the first one.
   | 'news:write'
+  // specs/web-seasons.md §3 — "Entrée de matrice proposée": presentation/
+  // must decide whether to render "+ Nouvelle saison" and the per-row edit
+  // pencil, independently of 'backoffice:access' AND of 'section:manage'
+  // (reusing the latter would silently let a section-manager, who is bounded
+  // to their own section, create/modify a CLUB-WIDE reference row that
+  // controls every other role's team visibility via current_season() —
+  // §3/§4). Covers both create and update: no document distinguishes a role
+  // that could do one without the other (§3).
+  | 'season:write'

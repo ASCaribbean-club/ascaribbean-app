@@ -1,6 +1,7 @@
 import { DomainError } from '@domain/errors/domain-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -49,6 +50,16 @@ describe('mapDomainErrorToUiError', () => {
 
     expect(result).toEqual({
       message: 'Le rendez-vous doit précéder le coup d’envoi, le même jour.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  it('maps InvalidNewsInputError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new InvalidNewsInputError('title is required'))
+
+    expect(result).toEqual({
+      message: 'Le titre, le contenu et la date sont obligatoires.',
       variant: 'inline',
       retryable: true,
     })

@@ -12,6 +12,7 @@ import { ConvocationDetailPage } from '../features/convocation/ConvocationDetail
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
 import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
+import { BackofficeOverviewPage } from '../features/backoffice/overview/BackofficeOverviewPage'
 import { BackofficeUsersPage } from '../features/backoffice/users/BackofficeUsersPage'
 import { BackofficeSectionsPage } from '../features/backoffice/sections/BackofficeSectionsPage'
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
@@ -64,7 +65,8 @@ export const router = createBrowserRouter([
                 // account has no reason to see on this surface.
                 element: <BackofficeDashboardLayout />,
                 children: [
-                  { index: true, element: <Navigate to="users" replace /> },
+                  { index: true, element: <Navigate to="overview" replace /> },
+                  { path: 'overview', element: <BackofficeOverviewPage /> },
                   { path: 'users', element: <BackofficeUsersPage /> },
                   { path: 'sections', element: <BackofficeSectionsPage /> },
                   { path: 'seasons', element: <BackofficeSeasonsPage /> },

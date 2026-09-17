@@ -44,6 +44,7 @@ function fakeUserRepository(user: User | null): UserRepository {
   return {
     findById: async () => user,
     acceptCharter: async () => {},
+    findAll: async () => [],
   }
 }
 

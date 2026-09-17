@@ -1,6 +1,7 @@
 import { DomainError } from '@domain/errors/domain-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -45,6 +46,19 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // for this error — now the shared default instead of a one-off.
     return {
       message: 'Le rendez-vous doit précéder le coup d’envoi, le même jour.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidNewsInputError) {
+    // specs/web-actus.md AC-WA-11/AC-WA-20 — generic French copy for the
+    // domain's title/details/publishedAt validation, shown at the top of
+    // NewsFormDialog. Not field-specific: the dialog's own `required`
+    // attributes already prevent the common case client-side, this only
+    // fires on the rarer race the use case is the real authority for.
+    return {
+      message: 'Le titre, le contenu et la date sont obligatoires.',
       variant: 'inline',
       retryable: true,
     }

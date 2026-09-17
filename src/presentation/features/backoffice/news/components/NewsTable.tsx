@@ -22,16 +22,6 @@ interface NewsTableProps {
 // z-index kept BELOW BackofficeTopBar's z-10 (spec: "z-index inférieur à
 // celui de BackofficeTopBar pour que les deux se superposent dans le bon
 // ordre") — both were previously z-10, which let them tie/overlap on scroll.
-//
-// 2026-09-17 bugfix: `sticky` was originally on <TableHeader> (<thead>).
-// <thead> is a `table-header-group` box, and `position: sticky` on that
-// element doesn't reliably reserve its own space across browsers — the row
-// visually "stuck" at top-16 while <tbody> laid out as if it hadn't,
-// painting the header ON TOP of (not above) the first data row and hiding
-// it. Fix: sticky lives on each <TableHead> (<th>, a real table-cell box)
-// instead — the standard, robust pattern for sticky table headers.
-const STICKY_HEADER_CELL = 'sticky top-16 z-10 bg-background'
-
 export function NewsTable({ rows, canWrite, onEdit, onDelete }: NewsTableProps) {
   return (
     <Table>

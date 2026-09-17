@@ -8,7 +8,19 @@ import { GetProfileMembershipUseCase } from './GetProfileMembershipUseCase'
 // In-memory fakes, same pattern as sibling use case tests — no Supabase
 // mock needed, domain/ is plain TypeScript.
 function fakeSeasonRepository(season: Season | null): SeasonRepository {
-  return { findCurrent: async () => season }
+  return {
+    findCurrent: async () => season,
+    // Not exercised by this use case (it only ever calls findCurrent) —
+    // specs/web-seasons.md §2.6 extended SeasonRepository with these three
+    // methods, unrelated to this test's own concern.
+    findAll: async () => [],
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
+  }
 }
 
 function fakeMembershipRepository(membership: Membership | null): MembershipRepository {

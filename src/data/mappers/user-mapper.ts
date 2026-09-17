@@ -1,5 +1,6 @@
 import type { PlayerPosition, RoleAssignment, User } from '@domain/entities/user'
-import type { UserRoleRow, UserRow } from '../dto/user-dto'
+import type { UserSummary } from '@domain/repositories/user-repository'
+import type { UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
 
 // user_roles has one row per team for a coach, but User.roles collapses
 // those into a single { role: 'coach', teamIds: [...] } entry — see the
@@ -15,6 +16,15 @@ export function toUser(row: UserRow, roleRows: UserRoleRow[]): User {
     position: row.position as PlayerPosition | null,
     charterAcceptedAt: row.charter_accepted_at ? new Date(row.charter_accepted_at) : null,
     roles: toRoleAssignments(roleRows),
+  }
+}
+
+// specs/section-and-teams.md §2.11/PO-ST-12b — backs UserRepositoryImpl.findAll(),
+// the AssignCoachDialog's `UTILISATEUR` dropdown.
+export function toUserSummary(row: UserSummaryRow): UserSummary {
+  return {
+    id: row.id,
+    fullName: row.full_name,
   }
 }
 

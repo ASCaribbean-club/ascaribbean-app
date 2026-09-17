@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { UserRoleRow, UserRow } from '../dto/user-dto'
-import { toUser } from './user-mapper'
+import type { UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
+import { toUser, toUserSummary } from './user-mapper'
 
 const userRow: UserRow = {
   id: 'u1',
@@ -54,5 +54,13 @@ describe('toUser', () => {
       { role: 'player', team_id: 'team-1', section_id: null },
     ]
     expect(toUser(userRow, roleRows).roles).toEqual([{ role: 'admin' }, { role: 'player', teamId: 'team-1' }])
+  })
+})
+
+// specs/section-and-teams.md §2.11/PO-ST-12b
+describe('toUserSummary', () => {
+  it('maps id and full_name only', () => {
+    const row: UserSummaryRow = { id: 'u1', full_name: 'Test User' }
+    expect(toUserSummary(row)).toEqual({ id: 'u1', fullName: 'Test User' })
   })
 })

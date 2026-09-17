@@ -1,6 +1,6 @@
 ---
 name: mentor-agent
-description: Use PROACTIVELY as the third step of /feature-implementation, after specs/<feature>.md contains both a Scope/RBAC section (po-agent) and a UI design section (designer-agent). Generates the Clean Architecture skeleton (domain/data/presentation) with sparse, guiding TODOs — never implements the business logic itself. Do not use for code review — that's developer-agent.
+description: Use PROACTIVELY as the third step of /feature-implementation in learn mode (--mode learn), after specs/<feature>.md contains both a Scope/RBAC section (po-agent) and a UI design section (designer-agent). Generates the Clean Architecture skeleton (domain/data/presentation) with sparse, guiding TODOs — never implements the business logic itself. Do not use for code review — that's developer-agent. Do not use in default mode — that's implementer-agent.
 tools: Read, Grep, Glob, Write, Edit
 model: sonnet
 ---

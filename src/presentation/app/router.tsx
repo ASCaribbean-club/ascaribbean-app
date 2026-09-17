@@ -15,6 +15,7 @@ import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/Back
 import { BackofficeOverviewPage } from '../features/backoffice/overview/BackofficeOverviewPage'
 import { BackofficeUsersPage } from '../features/backoffice/users/BackofficeUsersPage'
 import { BackofficeSectionsPage } from '../features/backoffice/sections/BackofficeSectionsPage'
+import { BackofficeTeamsPage } from '../features/backoffice/teams/BackofficeTeamsPage'
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
 import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
 import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
                   { path: 'overview', element: <BackofficeOverviewPage /> },
                   { path: 'users', element: <BackofficeUsersPage /> },
                   { path: 'sections', element: <BackofficeSectionsPage /> },
+                  { path: 'teams', element: <BackofficeTeamsPage /> },
                   { path: 'seasons', element: <BackofficeSeasonsPage /> },
                   { path: 'memberships', element: <BackofficeMembershipsPage /> },
                   { path: 'news', element: <BackofficeNewsPage /> },

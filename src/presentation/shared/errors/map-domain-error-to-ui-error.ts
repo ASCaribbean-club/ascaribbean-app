@@ -1,10 +1,13 @@
 import { DomainError } from '@domain/errors/domain-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
+import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
+import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import type { UiError } from './ui-error'
@@ -84,6 +87,41 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   if (error instanceof OverlappingSeasonError) {
     return {
       message: 'Les dates de cette saison chevauchent une saison existante.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidSectionInputError) {
+    // specs/section-and-teams.md §2.5/AC-ST-11 — generic copy, same
+    // reasoning as InvalidNewsInputError/InvalidSeasonInputError above: the
+    // dialog's own `required` attributes already prevent the common empty
+    // case client-side, this only fires on the rarer race the use case is
+    // the real authority for.
+    return {
+      message: 'Le nom et le type de sport sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidTeamInputError) {
+    // specs/section-and-teams.md §2.2 — the mockup's own italic copy
+    // ("Section et saison sont obligatoires : une équipe est propre à une
+    // saison et n'est jamais réutilisée d'une saison à l'autre"), reused
+    // verbatim as the failure message rather than a generic one.
+    return {
+      message: 'Le nom, la section et la saison sont obligatoires : une équipe est propre à une saison.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidCoachAssignmentInputError) {
+    // specs/section-and-teams.md §2.10/AC-ST-40/AC-ST-47 — fires when the
+    // dialog is submitted with no team checked.
+    return {
+      message: 'Choisissez un utilisateur et au moins une équipe.',
       variant: 'inline',
       retryable: true,
     }

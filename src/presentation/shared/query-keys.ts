@@ -122,4 +122,26 @@ export const queryKeys = {
   // useQuery of its own, it must use THIS key rather than inventing a new
   // one, so this invalidation keeps doing its job.
   seasonCurrent: () => ['seasons', 'current'] as const,
+
+  // specs/section-and-teams.md §2.7/AC-ST-22/AC-ST-41 — the /admin/sections
+  // and /admin/teams admin lists (findAll()/findAllForAdmin(), unfiltered
+  // by season). Deliberately DISTINCT from `coachTeams`/`playerTeam`/`team`/
+  // `section` above: those back mobile screens filtered to the CURRENT
+  // season (or to one specific id); sharing a cache entry with this
+  // unfiltered admin read would leak out-of-season teams into a coach or
+  // player screen for an admin+coach/player multi-role account (same
+  // reasoning as `newsAdminList` vs `newsFeed`).
+  sectionsAdminList: () => ['sections', 'admin', 'list'] as const,
+  teamsAdminList: () => ['teams', 'admin', 'list'] as const,
+
+  // The admin-only COACH(S) read (CoachRepository.listAllAssignments()) —
+  // distinct from `coachTeams` (a specific coach's own, season-scoped team
+  // list) and from nothing else today: no other screen reads every
+  // user_roles 'coach' row unfiltered.
+  coachAssignmentsAdminList: () => ['userRoles', 'admin', 'coach', 'list'] as const,
+
+  // The AssignCoachDialog's `UTILISATEUR` dropdown (UserRepository.findAll(),
+  // PO-ST-12b) — distinct from `profileRoleScopes`/`profileMembership`
+  // above, neither of which returns a directory of every account.
+  usersAdminList: () => ['users', 'admin', 'list'] as const,
 }

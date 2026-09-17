@@ -10,6 +10,7 @@ import { createNewsContainer, type NewsContainer } from './containers/news-conta
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
 import { createSeasonsContainer, type SeasonsContainer } from './containers/seasons-container'
+import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from './containers/section-and-teams-container'
 
 export interface Container {
   auth: AuthContainer
@@ -20,6 +21,7 @@ export interface Container {
   playerDashboard: PlayerDashboardContainer
   profile: ProfileContainer
   seasons: SeasonsContainer
+  sectionAndTeams: SectionAndTeamsContainer
 }
 
 export function createContainer(): Container {
@@ -32,5 +34,6 @@ export function createContainer(): Container {
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),
     seasons: createSeasonsContainer(supabaseClient),
+    sectionAndTeams: createSectionAndTeamsContainer(supabaseClient),
   }
 }

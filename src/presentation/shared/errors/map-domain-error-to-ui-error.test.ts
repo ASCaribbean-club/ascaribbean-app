@@ -4,6 +4,7 @@ import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-erro
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { describe, expect, it } from 'vitest'
@@ -60,6 +61,16 @@ describe('mapDomainErrorToUiError', () => {
 
     expect(result).toEqual({
       message: 'Le titre, le contenu et la date sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  it('maps InvalidSeasonInputError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new InvalidSeasonInputError('startDate must not be after endDate'))
+
+    expect(result).toEqual({
+      message: 'Le libellé et les deux dates sont obligatoires, et la date de début doit précéder ou être égale à la date de fin.',
       variant: 'inline',
       retryable: true,
     })

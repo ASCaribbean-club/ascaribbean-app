@@ -75,6 +75,15 @@ export const queryKeys = {
   // beyond the resource name itself (no userId/teamId — nothing to scope by).
   newsFeed: () => ['news', 'feed'] as const,
 
+  // specs/web-actus.md AC-WA-19 — the backoffice /admin/news admin list
+  // (listAll(), every status/expiry). Deliberately a DISTINCT key from
+  // newsFeed above even though both back a ClubNews[]: different repository
+  // method, different RLS policy, different row set (admin sees draft/
+  // archived/expired rows the mobile feed never does) — sharing one cache
+  // entry between the two would leak backoffice-only rows into the mobile
+  // feed's query cache for an admin+player multi-role account.
+  newsAdminList: () => ['news', 'admin', 'list'] as const,
+
   // specs/player-vote.md — third tab on ConvocationDetailPage. Two distinct
   // keys, same "shape differs, don't share a cache entry" reasoning as
   // convocationDetail/convocationRosterForCoach above: voteMyBallot returns

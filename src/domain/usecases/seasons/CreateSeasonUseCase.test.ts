@@ -26,6 +26,10 @@ function fakeUserRepository(user: User | null): UserRepository {
   return {
     findById: async () => user,
     acceptCharter: async () => {},
+    // specs/section-and-teams.md §2.11/PO-ST-12b — added by that feature to
+    // UserRepository, unrelated to this test's own assertions; stubbed so
+    // the mock keeps satisfying the interface.
+    findAll: () => Promise.resolve([]),
   }
 }
 

@@ -14,6 +14,13 @@ function fakeTeamRepository(teams: Record<string, { name: string; sectionId?: st
     findByIds: async (ids) => ids.filter((id) => id in teams).map(toTeam),
     findById: async (id) => (id in teams ? toTeam(id) : null),
     countActiveMembers: async () => 0,
+    findAllForAdmin: async () => Object.keys(teams).map(toTeam),
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
   }
 }
 
@@ -21,11 +28,21 @@ function fakeSectionRepository(names: Record<string, string>): SectionRepository
   return {
     findById: async (id) => (id in names ? { id, name: names[id], type: 'football', createdAt: '2026-01-01' } : null),
     findAll: async () => [],
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
   }
 }
 
 function fakeCoachRepository(coachesByTeam: Record<string, TeamCoach[]>): CoachRepository {
-  return { listForTeam: async (teamId) => coachesByTeam[teamId] ?? [] }
+  return {
+    listForTeam: async (teamId) => coachesByTeam[teamId] ?? [],
+    listAllAssignments: async () =>
+      Object.entries(coachesByTeam).flatMap(([teamId, coaches]) => coaches.map((coach) => ({ teamId, coach }))),
+  }
 }
 
 function fakeSeasonRepository(label: string | null = '2026-2027'): SeasonRepository {
@@ -101,6 +118,10 @@ describe('GetProfileRoleScopesUseCase', () => {
         coachRepositoryCalled = true
         return []
       },
+      // specs/section-and-teams.md §2.11 — added by that feature to
+      // CoachRepository, unrelated to this test's own assertions; stubbed
+      // so the mock keeps satisfying the interface.
+      listAllAssignments: () => Promise.resolve([]),
     }
     const useCase = new GetProfileRoleScopesUseCase(
       fakeTeamRepository({ 'team-1': { name: 'U15 Garçons' } }),

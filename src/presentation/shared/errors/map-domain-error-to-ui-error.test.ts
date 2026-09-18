@@ -70,7 +70,8 @@ describe('mapDomainErrorToUiError', () => {
     const result = mapDomainErrorToUiError(new InvalidSeasonInputError('startDate must not be after endDate'))
 
     expect(result).toEqual({
-      message: 'Le libellé et les deux dates sont obligatoires, et la date de début doit précéder ou être égale à la date de fin.',
+      message:
+        'Le libellé et les deux dates sont obligatoires, la date de début doit précéder ou être égale à la date de fin, et la cotisation, si renseignée, doit être un montant positif.',
       variant: 'inline',
       retryable: true,
     })

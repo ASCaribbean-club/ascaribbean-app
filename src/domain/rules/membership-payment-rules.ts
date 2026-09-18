@@ -24,10 +24,17 @@ export function sumPaymentsCents(payments: Payment[]): number {
 // fourth state exists and is not itself an arbitration of PO-WM-01/PO-WM-02.
 export type MembershipPaymentStatus = 'unpaid' | 'partial' | 'paid' | 'undefined'
 
-// AC-WM-12/AC-WM-13 — the ONE place this is computed. The COTISATION column,
+// AC-WM-12/AC-WM-13 — the ONE place this is computed; the COTISATION column,
 // the "cotisation" filter AND the activation rule (AC-WM-35, see
-// canSetMembershipActive below) all call this function with the exact same
-// two numbers, never a separate calculation.
+// canSetMembershipActive below) never run a second calculation of their own.
+// They do NOT always pass the same amountDueCents, though (a developer
+// decision, unrelated to AC-WM-13 itself): the column/filter pass an
+// "effective" amount that falls back to the season's own reference tarif
+// when this membership has none of its own yet (see
+// MembershipAdminRow.effectiveAmountDueCents), while canSetMembershipActive
+// is only ever called with the membership's OWN stored amountDueCents — a
+// season-derived default intentionally does not count toward activation
+// (PO-WM-02/PO-WM-08, still open).
 //
 // amountDueCents: amendement du 2026-09-17, PO-WM-01 RESOLVED — `memberships`
 // now carries a real `amount_due_cents` column (§2.1/AC-WM-34). This

@@ -5,7 +5,7 @@ import type { SeasonRow } from '../dto/season-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
 import { toSeason, toSeasonInsertRow, toSeasonUpdateRow } from '../mappers/season-mapper'
 
-const SEASON_COLUMNS = 'id, label, start_date, end_date'
+const SEASON_COLUMNS = 'id, label, start_date, end_date, cotisation_amount'
 
 export class SeasonRepositoryImpl implements SeasonRepository {
   private readonly client: SupabaseClient

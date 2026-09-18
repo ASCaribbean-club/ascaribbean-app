@@ -5,7 +5,7 @@ import type { SeasonRepository } from '../../repositories/season-repository'
 import { CountMembershipsRequiringAttentionUseCase } from './CountMembershipsRequiringAttentionUseCase'
 
 function currentSeason(): Season {
-  return { id: 'season-1', label: '2025-2026', startDate: '2025-09-01', endDate: '2026-06-30' }
+  return { id: 'season-1', label: '2025-2026', startDate: '2025-09-01', endDate: '2026-06-30', cotisationAmount: null }
 }
 
 function fakeSeasonRepository(overrides: Partial<SeasonRepository> = {}): SeasonRepository {

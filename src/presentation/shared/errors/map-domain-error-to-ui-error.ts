@@ -76,14 +76,16 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   if (error instanceof InvalidSeasonInputError) {
     // specs/web-seasons.md §2.4/AC-WS-10, UI design "États du dialogue" —
     // the text this spec itself flags as missing ("le texte du message
-    // n'est pas encore écrit dans mapDomainErrorToUiError"). Covers the
-    // three domain-level rejections CreateSeasonUseCase/UpdateSeasonUseCase
-    // can throw: empty label, a missing date, and startDate after endDate —
-    // generic copy rather than a field-specific one, same reasoning as
-    // InvalidNewsInputError above (the dialog's own `required` attributes
-    // already prevent the common empty-field case client-side).
+    // n'est pas encore écrit dans mapDomainErrorToUiError"). Covers every
+    // domain-level rejection CreateSeasonUseCase/UpdateSeasonUseCase can
+    // throw: empty label, a missing date, startDate after endDate, and
+    // (AC-WS-34, amendement du 2026-09-17 (2)) an invalid cotisation amount
+    // — generic copy rather than a field-specific one, same reasoning as
+    // InvalidNewsInputError above (the dialog's own `required`/`min`
+    // attributes already prevent the common cases client-side).
     return {
-      message: 'Le libellé et les deux dates sont obligatoires, et la date de début doit précéder ou être égale à la date de fin.',
+      message:
+        'Le libellé et les deux dates sont obligatoires, la date de début doit précéder ou être égale à la date de fin, et la cotisation, si renseignée, doit être un montant positif.',
       variant: 'inline',
       retryable: true,
     }

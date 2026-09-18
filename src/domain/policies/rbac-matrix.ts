@@ -117,4 +117,23 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // (user_roles_insert_assign_coach) — see
   // supabase/migrations/20260917140500_role_assign_coach_write_policy.sql.
   'role:assign-coach': ['admin'],
+
+  // specs/web-memberships.md §3 — "Position retenue pour cette passe —
+  // ['admin'], et pourquoi c'est un pis-aller assumé": 'backoffice:access'
+  // already narrows /admin/* to 'admin' only (PO-WE-01, still open), so
+  // granting 'payment:record' to 'treasurer' or 'membership:write' to
+  // 'authorized-officer' here would build a right neither role could reach
+  // through any route today. Both club-wide by construction (the 'admin'
+  // RoleAssignment carries no scope field) — no matching scope check is
+  // needed in can.ts, same shape as 'season:write'/'section:write' above.
+  // PO-WM-08 stays open, explicitly flagged as "à trancher avant mise en
+  // production" (not before conception): the CDC names Dirigeant habilité
+  // and Trésorier for this module, and this ['admin']-only position is a
+  // deliberate, acknowledged departure from that, not a reading of it.
+  // Mirrors 2 RLS policies on public.memberships (memberships_insert_admin,
+  // memberships_update_admin) and 1 on public.membership_payments
+  // (membership_payments_insert_admin) — see
+  // supabase/migrations/20260917174652_web_memberships_write_policies.sql.
+  'membership:write': ['admin'],
+  'payment:record': ['admin'],
 }

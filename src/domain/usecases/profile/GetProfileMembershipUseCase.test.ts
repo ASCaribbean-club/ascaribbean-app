@@ -24,7 +24,28 @@ function fakeSeasonRepository(season: Season | null): SeasonRepository {
 }
 
 function fakeMembershipRepository(membership: Membership | null): MembershipRepository {
-  return { findForUserAndSeason: async () => membership }
+  return {
+    findForUserAndSeason: async () => membership,
+    // Not exercised by this use case (it only ever calls
+    // findForUserAndSeason) — specs/web-memberships.md §2.10 extended
+    // MembershipRepository with these methods, unrelated to this test's own
+    // concern.
+    findAllForAdmin: async () => [],
+    findArchivedForUserAndSeason: async () => null,
+    create: async () => {
+      throw new Error('not implemented')
+    },
+    update: async () => {
+      throw new Error('not implemented')
+    },
+    replaceArchived: async () => {
+      throw new Error('not implemented')
+    },
+    archive: async () => {
+      throw new Error('not implemented')
+    },
+    countPendingForSeason: async () => 0,
+  }
 }
 
 const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-08-01', endDate: '2027-06-30' }
@@ -38,6 +59,7 @@ describe('GetProfileMembershipUseCase', () => {
       status: 'active',
       seasonId: 'season-1',
       validUntil: '2027-06-30',
+      amountDueCents: null,
     }
     const useCase = new GetProfileMembershipUseCase(fakeMembershipRepository(membership), fakeSeasonRepository(season))
 
@@ -63,6 +85,21 @@ describe('GetProfileMembershipUseCase', () => {
         membershipRepositoryCalled = true
         return null
       },
+      findAllForAdmin: async () => [],
+      findArchivedForUserAndSeason: async () => null,
+      create: async () => {
+        throw new Error('not implemented')
+      },
+      update: async () => {
+        throw new Error('not implemented')
+      },
+      replaceArchived: async () => {
+        throw new Error('not implemented')
+      },
+      archive: async () => {
+        throw new Error('not implemented')
+      },
+      countPendingForSeason: async () => 0,
     }
     const useCase = new GetProfileMembershipUseCase(membershipRepository, fakeSeasonRepository(null))
 

@@ -144,4 +144,38 @@ export const queryKeys = {
   // PO-ST-12b) — distinct from `profileRoleScopes`/`profileMembership`
   // above, neither of which returns a directory of every account.
   usersAdminList: () => ['users', 'admin', 'list'] as const,
+
+  // specs/web-memberships.md §2.10/AC-WM-19 — the /admin/memberships admin
+  // list (findAllForAdmin(), every non-archived row, any season). Distinct
+  // from `profileMembership` above: that key backs the mobile profile's own
+  // single-row-for-the-current-season read — sharing a cache entry between
+  // the two would leak every member's adhésion into an admin+player
+  // multi-role account's own profile screen (same reasoning as
+  // `newsAdminList` vs `newsFeed`).
+  membershipsAdminList: () => ['memberships', 'admin', 'list'] as const,
+
+  // specs/web-memberships.md §2.2/UI design "RecordPaymentDialog" — one
+  // membership's payment history, most-recent-first. Scoped per membership
+  // (not a flat 'payments' list) — shared by RecordPaymentDialog AND
+  // MembershipEditRow's own "HISTORIQUE DES VERSEMENTS" panel (both read
+  // the SAME membership's history via useMembershipsDependencies), reused
+  // as-is rather than forked per screen (amendement du 2026-09-17).
+  membershipPayments: (membershipId: string) => ['memberships', membershipId, 'payments'] as const,
+
+  // specs/web-memberships.md §2.10 (amendement du 2026-09-17) — EVERY
+  // payment across every membership, one request, backing the admin list's
+  // COTISATION column/filter (PaymentRepository.findAllForAdmin()).
+  // Deliberately distinct from `membershipPayments` above: that key is
+  // scoped to ONE membership's own history list, this one is the flat,
+  // unscoped read the list screen groups client-side — sharing a cache
+  // entry between the two would be wrong the moment either shape changes.
+  membershipPaymentsAdminList: () => ['memberships', 'admin', 'payments'] as const,
+
+  // specs/web-memberships.md §2.8/AC-WM-24 — the nav badge on "Adhésions".
+  // Its own DEDICATED, light count read (CountMembershipsRequiringAttentionUseCase),
+  // never the full `membershipsAdminList` counted client-side (§2.8 point
+  // 1) — invalidated alongside `membershipsAdminList` on every
+  // create/update/archive/payment mutation so the badge and the list never
+  // drift apart.
+  membershipsBadgeCount: () => ['memberships', 'badge', 'count'] as const,
 }

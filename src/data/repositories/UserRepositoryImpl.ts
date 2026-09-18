@@ -50,7 +50,7 @@ export class UserRepositoryImpl implements UserRepository {
   // (no new RLS policy). For a non-admin caller this silently narrows to
   // their own single row — never called from a non-admin screen.
   async findAll(): Promise<UserSummary[]> {
-    const { data, error } = await this.client.from('users').select('id, full_name').overrideTypes<UserSummaryRow[]>()
+    const { data, error } = await this.client.from('users').select('id, full_name, email').overrideTypes<UserSummaryRow[]>()
 
     if (error) throw mapSupabaseError(error)
     return (data ?? []).map(toUserSummary)

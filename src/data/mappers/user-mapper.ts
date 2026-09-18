@@ -25,6 +25,7 @@ export function toUserSummary(row: UserSummaryRow): UserSummary {
   return {
     id: row.id,
     fullName: row.full_name,
+    email: row.email,
   }
 }
 

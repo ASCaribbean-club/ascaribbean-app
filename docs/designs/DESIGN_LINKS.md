@@ -31,6 +31,7 @@ Deux niveaux de référence, dans cet ordre de préférence :
 | web-actus — **backoffice desktop : console de rédaction des actus** (`[Admin] Web - Actus`, `[Admin] Web - Actus-{2,3}`) | — aucun lien fourni | 2026-09-17 | `docs/designs/desktop/actus/[Admin] Web - Actus{,-2,-3}.png` | **instantané seul** |
 | web-seasons — **backoffice desktop : gestion des saisons** (`[Admin] Web - Seasons - 1`) | — aucun lien fourni | 2026-09-17 | `docs/designs/desktop/seasons/[Admin] Web - Seasons - 1.png` | **instantané seul** |
 | section-and-teams — **backoffice desktop : sections & équipes** (`[Admin] Web - Section and team - {1,2}`) | — aucun lien fourni | 2026-09-17 | `docs/designs/desktop/section-and-teams/[Admin] Web - Section and team - {1,2}.png` | **instantané seul** |
+| web-memberships — **backoffice desktop : adhésions et cotisations** (`[Admin] Web - Membership - {1,2,payment,payment-1}`) | — aucun lien fourni | 2026-09-17 | `docs/designs/desktop/membership/[Admin] Web - Membership - {1,2}.png`, `… - payment.png`, `… - payment-1.png` | **instantané seul** |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 

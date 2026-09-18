@@ -8,6 +8,7 @@ export function toSeason(row: SeasonRow): Season {
     label: row.label as SeasonLabel,
     startDate: row.start_date,
     endDate: row.end_date,
+    cotisationAmount: row.cotisation_amount,
   }
 }
 
@@ -20,6 +21,7 @@ export function toSeasonInsertRow(input: CreateSeasonInput): SeasonInsertRow {
     label: input.label,
     start_date: input.startDate,
     end_date: input.endDate,
+    cotisation_amount: input.cotisationAmount,
   }
 }
 
@@ -29,5 +31,6 @@ export function toSeasonUpdateRow(input: UpdateSeasonInput): SeasonUpdateRow {
     label: input.label,
     start_date: input.startDate,
     end_date: input.endDate,
+    cotisation_amount: input.cotisationAmount,
   }
 }

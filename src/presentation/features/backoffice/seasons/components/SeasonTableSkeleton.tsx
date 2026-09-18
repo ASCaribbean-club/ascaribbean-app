@@ -2,7 +2,7 @@ import { Skeleton } from '@presentation/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
 
 const SKELETON_ROW_COUNT = 4
-const SKELETON_COLUMN_COUNT = 5 // Libellé, Début, Fin, Statut, action
+const SKELETON_COLUMN_COUNT = 6 // Libellé, Début, Fin, Statut, Cotisation, action
 
 // specs/web-seasons.md UI design, "États de l'écran liste" — skeleton rows
 // while findAll() is in flight, never an empty table (which would read as
@@ -17,6 +17,7 @@ export function SeasonTableSkeleton() {
           <TableHead>Début</TableHead>
           <TableHead>Fin</TableHead>
           <TableHead>Statut</TableHead>
+          <TableHead>Cotisation</TableHead>
           <TableHead>
             <span className="sr-only">Actions</span>
           </TableHead>

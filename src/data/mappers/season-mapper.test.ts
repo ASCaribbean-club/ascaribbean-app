@@ -10,6 +10,7 @@ describe('toSeason', () => {
       label: '2026-2027',
       start_date: '2026-08-01',
       end_date: '2027-06-30',
+      cotisation_amount: 30000,
     }
 
     expect(toSeason(row)).toEqual({
@@ -17,6 +18,7 @@ describe('toSeason', () => {
       label: '2026-2027',
       startDate: '2026-08-01',
       endDate: '2027-06-30',
+      cotisationAmount: 30000,
     })
   })
 
@@ -26,6 +28,7 @@ describe('toSeason', () => {
       label: '2025-2026',
       start_date: '2025-09-01',
       end_date: '2026-06-30',
+      cotisation_amount: null,
     }
 
     const result = toSeason(row)
@@ -34,6 +37,7 @@ describe('toSeason', () => {
     expect(result.label).toBe('2025-2026')
     expect(result.startDate).toBe('2025-09-01')
     expect(result.endDate).toBe('2026-06-30')
+    expect(result.cotisationAmount).toBeNull()
   })
 })
 
@@ -43,6 +47,7 @@ describe('toSeasonInsertRow', () => {
       label: '2026-2027',
       startDate: '2026-08-01',
       endDate: '2027-06-30',
+      cotisationAmount: 30000,
     }
 
     const row = toSeasonInsertRow(input)
@@ -51,6 +56,7 @@ describe('toSeasonInsertRow', () => {
       label: '2026-2027',
       start_date: '2026-08-01',
       end_date: '2027-06-30',
+      cotisation_amount: 30000,
     })
     expect(row).not.toHaveProperty('season_range')
     expect(row).not.toHaveProperty('id')
@@ -63,6 +69,7 @@ describe('toSeasonUpdateRow', () => {
       label: '2025-2026',
       startDate: '2025-09-01',
       endDate: '2026-06-30',
+      cotisationAmount: null,
     }
 
     const row = toSeasonUpdateRow(input)
@@ -71,6 +78,7 @@ describe('toSeasonUpdateRow', () => {
       label: '2025-2026',
       start_date: '2025-09-01',
       end_date: '2026-06-30',
+      cotisation_amount: null,
     })
     expect(row).not.toHaveProperty('season_range')
     expect(row).not.toHaveProperty('id')

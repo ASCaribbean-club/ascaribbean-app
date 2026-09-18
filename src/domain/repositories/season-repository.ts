@@ -35,9 +35,13 @@ export interface SeasonRepository {
 // Mirrors the entity minus what the database always derives itself (id).
 // Never carries season_range: it isn't a field on Season either — it's a
 // GENERATED ALWAYS STORED column, not part of the domain entity at all
-// (§2.6, AC-WS-15).
+// (§2.6, AC-WS-15). cotisationAmount (AC-WS-34, amendement du 2026-09-17
+// (2)) is optional in practice — CreateSeasonUseCase/UpdateSeasonUseCase
+// accept it as `number | null` — but not Partial<> here: the use cases
+// always pass it explicitly (null when the dialog's field was left empty),
+// same discipline as label/startDate/endDate.
 export type CreateSeasonInput = Omit<Season, 'id'>
 
-// Same 3 fields as CreateSeasonInput — a season has nothing else to update
+// Same fields as CreateSeasonInput — a season has nothing else to update
 // (§2, no audit columns exist yet, PO-WS-03).
 export type UpdateSeasonInput = Omit<Season, 'id'>

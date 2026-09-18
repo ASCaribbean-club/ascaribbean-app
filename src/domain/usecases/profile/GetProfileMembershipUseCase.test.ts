@@ -48,7 +48,7 @@ function fakeMembershipRepository(membership: Membership | null): MembershipRepo
   }
 }
 
-const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-08-01', endDate: '2027-06-30' }
+const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-08-01', endDate: '2027-06-30', cotisationAmount: null }
 
 describe('GetProfileMembershipUseCase', () => {
   it("returns the user's membership and the current season label when both exist", async () => {

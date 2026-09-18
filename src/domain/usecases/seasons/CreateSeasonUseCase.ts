@@ -10,6 +10,11 @@ export interface CreateSeasonUseCaseInput {
   label: string
   startDate: string // ISO date (yyyy-mm-dd, native <input type="date"> value)
   endDate: string // ISO date
+  // specs/web-seasons.md §2.7/AC-WS-34 — amendement du 2026-09-17 (2), the
+  // dialog's own "Cotisation (€)" field, in euros (a decimal, not integer
+  // cents — a developer call, unlike Membership.amountDueCents). Optional:
+  // null means "tarif non fixé", distinct from 0 ("gratuit").
+  cotisationAmount: number | null
 }
 
 // specs/web-seasons.md §2.4/§3 — same authorization-before-validation
@@ -62,6 +67,13 @@ export class CreateSeasonUseCase {
     if (input.startDate > input.endDate) {
       throw new InvalidSeasonInputError('startDate must not be after endDate')
     }
+    // AC-WS-34 — mirrors the database's own `cotisation_amount >= 0` check
+    // constraint, rejected from the domain first. null is accepted (§2.7,
+    // "tarif non fixé"); 0 is a legitimate "gratuit" value, only a
+    // non-finite or a negative value is rejected.
+    if (input.cotisationAmount !== null && (!Number.isFinite(input.cotisationAmount) || input.cotisationAmount < 0)) {
+      throw new InvalidSeasonInputError('cotisationAmount must be a non-negative number, or null')
+    }
 
     return this.seasonRepository.create({
       // SeasonLabel is a template literal type (`${number}-${number}`), not
@@ -72,6 +84,7 @@ export class CreateSeasonUseCase {
       label: label as SeasonLabel,
       startDate: input.startDate,
       endDate: input.endDate,
+      cotisationAmount: input.cotisationAmount,
     })
   }
 }

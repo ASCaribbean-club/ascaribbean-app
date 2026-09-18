@@ -18,12 +18,25 @@ export interface MembershipEditRowValues {
   amountDueEuros: string
 }
 
+// Developer decision (not spec'd by either web-seasons or web-memberships):
+// when this membership doesn't carry its own amountDueCents yet, the field
+// is pre-filled from the season's own reference cotisationAmount (§2.7)
+// rather than left empty — a DEFAULT, still fully editable (AC-WM-26), never
+// written anywhere until the admin actually submits this form. A membership
+// that already has its own amountDueCents (even 0, "exonérée") always wins:
+// the season's tarif is only ever a suggestion for the unset case.
 function toEditValues(row: MembershipAdminRow): MembershipEditRowValues {
+  const amountDueEuros =
+    row.membership.amountDueCents !== null
+      ? String(row.membership.amountDueCents / 100)
+      : row.seasonCotisationAmount !== null
+        ? String(row.seasonCotisationAmount)
+        : ''
   return {
     licenceNumber: row.membership.licenceNumber ?? '',
     validUntil: row.membership.validUntil,
     status: row.membership.status,
-    amountDueEuros: row.membership.amountDueCents === null ? '' : String(row.membership.amountDueCents / 100),
+    amountDueEuros,
   }
 }
 

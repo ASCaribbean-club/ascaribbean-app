@@ -24,3 +24,13 @@ export function formatEuros(amountCents: number): string {
 export function eurosToCents(amountEuros: number): number {
   return Math.round(amountEuros * 100)
 }
+
+// specs/web-seasons.md §2.7 — Season.cotisationAmount is stored as a plain
+// decimal number of euros (not integer cents, unlike the rest of this file
+// — a developer call), so there's nothing to divide by 100 here. Rounds to
+// 2 decimals first, to strip any float noise on read (e.g. 45.1 - 45 could
+// otherwise reappear as 45.099999999999994), then drops a trailing ".00" so
+// a whole-euro tarif still reads as "300€", not "300.00€".
+export function formatEuroAmount(amount: number): string {
+  return `${Number(amount.toFixed(2))}€`
+}

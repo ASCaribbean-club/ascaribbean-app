@@ -11,6 +11,12 @@ export interface UpdateSeasonUseCaseInput {
   label: string
   startDate: string // ISO date (yyyy-mm-dd)
   endDate: string // ISO date
+  // specs/web-seasons.md §2.7/AC-WS-34 — amendement du 2026-09-17 (2), same
+  // field/validation as CreateSeasonUseCaseInput (euros, a decimal). Writable
+  // here too, but the seasons_update_admin RLS policy freezes it, like every
+  // other column, on a season whose end_date has passed (§2.7 — "le montant
+  // d'une saison terminée est figé").
+  cotisationAmount: number | null
 }
 
 // specs/web-seasons.md §2.3/§3, "La règle « saison terminée non modifiable »
@@ -58,12 +64,17 @@ export class UpdateSeasonUseCase {
     if (input.startDate > input.endDate) {
       throw new InvalidSeasonInputError('startDate must not be after endDate')
     }
+    // AC-WS-34 — same validation as CreateSeasonUseCase.
+    if (input.cotisationAmount !== null && (!Number.isFinite(input.cotisationAmount) || input.cotisationAmount < 0)) {
+      throw new InvalidSeasonInputError('cotisationAmount must be a non-negative number, or null')
+    }
 
     // AC-WS-24 — updates the SAME row, never creates a duplicate.
     return this.seasonRepository.update(input.seasonId, {
       label: label as SeasonLabel,
       startDate: input.startDate,
       endDate: input.endDate,
+      cotisationAmount: input.cotisationAmount,
     })
   }
 }

@@ -52,7 +52,7 @@ function RecordPaymentDialogContent({ target, onClose }: { target: MembershipAdm
             {target.userFullName} · saison {target.seasonLabel}
             {!vm.isLoadingHistory && (
               <div className="mt-1">
-                <MembershipCotisationSummary paidCents={vm.paidCents} amountDueCents={target.membership.amountDueCents} status={vm.paymentStatus} />
+                <MembershipCotisationSummary paidCents={vm.paidCents} amountDueCents={target.effectiveAmountDueCents} status={vm.paymentStatus} />
               </div>
             )}
           </div>

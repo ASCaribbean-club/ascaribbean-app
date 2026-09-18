@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@presentation/shared/lib/utils'
 import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffice-nav'
+import { useMembershipsNavBadge } from '@presentation/features/backoffice/memberships/useMembershipsNavBadge'
 
 // Vertical nav, 5 fixed entries (specs/web-empty-state.md, "Navigation
 // latérale (Dashboard-3), 5 entrées"). `NavLink` (not a plain <a>/<button>
@@ -9,12 +10,12 @@ import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffi
 // (presentation/shared/layout/BottomNav.tsx) uses it instead of hand-rolled
 // state.
 //
-// Two deliberate omissions vs. `[Admin] Web - Dashboard-3.png`, both
-// AC-WE-13/PO-WE-11: no numeric badge on Utilisateurs/Adhésions (a count is
-// invented data until PO-WE-11 says what it counts), and no "ALERTE /
-// Traiter maintenant" block at the bottom of the column — nothing renders
-// in its place, the nav simply ends after the 5th entry, per the spec's own
-// "rien à afficher, ni un bloc vide à sa place."
+// specs/web-memberships.md §2.8 — resolves AC-WE-13/PO-WE-11 PARTIALLY, for
+// the "Adhésions" entry only: it now carries a numeric badge (see
+// MembershipNavBadgeCount below). "Utilisateurs" and the two ALERTE blocks
+// remain deliberately unbuilt (AC-WE-13 reconduced, no invented data for
+// them) — the nav still simply ends after the last entry, no empty block in
+// their place.
 export function BackofficeSidebar() {
   return (
     <nav aria-label="Navigation du backoffice" className="w-64 shrink-0 border-r border-border px-3 py-6">
@@ -36,6 +37,7 @@ export function BackofficeSidebar() {
             >
               <item.icon className="size-4.5 shrink-0" aria-hidden />
               {item.label}
+              {item.id === 'memberships' && <MembershipsNavBadge />}
             </NavLink>
           </li>
         ))}
@@ -43,3 +45,19 @@ export function BackofficeSidebar() {
     </nav>
   )
 }
+
+// specs/web-memberships.md §2.8/UI design "Badge de navigation" — split into
+// its own component (rather than inlined in the loop above) so its query
+// only ever runs once, for the single nav item that needs it — every other
+// BackofficeNavItem never triggers this hook.
+function MembershipsNavBadge() {
+  const { count } = useMembershipsNavBadge()
+  if (count <= 0) return null
+
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">
+      {count}
+    </span>
+  )
+}
+

@@ -59,8 +59,10 @@ describe('toUser', () => {
 
 // specs/section-and-teams.md §2.11/PO-ST-12b
 describe('toUserSummary', () => {
-  it('maps id and full_name only', () => {
-    const row: UserSummaryRow = { id: 'u1', full_name: 'Test User' }
-    expect(toUserSummary(row)).toEqual({ id: 'u1', fullName: 'Test User' })
+  // specs/web-memberships.md §2.10/§4 — email added for MembershipEditRow's
+  // read-only field (amendement du 2026-09-17).
+  it('maps id, full_name and email', () => {
+    const row: UserSummaryRow = { id: 'u1', full_name: 'Test User', email: 'user@example.test' }
+    expect(toUserSummary(row)).toEqual({ id: 'u1', fullName: 'Test User', email: 'user@example.test' })
   })
 })

@@ -10,6 +10,12 @@ import type { User } from '../entities/user'
 export interface UserSummary {
   id: string
   fullName: string
+  // specs/web-memberships.md §2.10/§4 — added for the /admin/memberships
+  // edit row's "INFORMATIONS DU JOUEUR" panel (export payment-1), which
+  // shows the account's e-mail alongside its name, both read-only: "donnée
+  // du compte utilisateur, jamais écrite depuis cet écran". Additive field,
+  // AssignCoachDialog (the other UserSummary consumer) simply ignores it.
+  email: string
 }
 
 export interface UserRepository {

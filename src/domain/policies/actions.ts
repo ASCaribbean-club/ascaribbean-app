@@ -71,3 +71,21 @@ export type Action =
   // 'role:assign-coach'"). The 'coach' suffix is the only scope an RLS
   // `with check` can verify literally (`role = 'coach'`, AC-ST-33).
   | 'role:assign-coach'
+  // specs/web-memberships.md §3 — TWO separate actions, not one generic
+  // 'membership:pay' or similar: the RBAC matrix (CDC) itself splits this
+  // screen's two natures ("dossier d'adhérent" vs. "financier"), and their
+  // candidate populations diverge the moment PO-WE-01/PO-WM-08 are ever
+  // resolved (Dirigeant habilité on the dossier side, Trésorier on the
+  // payment side) — a single action would make that future widening grant
+  // BOTH rights in the same change, exactly the silent side effect
+  // 'section:write'/'team:write' staying distinct was built to avoid.
+  // Named 'membership:write' for the memberships row itself (dossier:
+  // licence, statut, valid_until — create/update/archive, all three share
+  // this one action, §3 "Ce n'est pas de la symétrie décorative").
+  | 'membership:write'
+  // specs/web-memberships.md §3 — names the resource ACTUALLY written (a
+  // row in the new payments child table), never 'membership:pay': the verb
+  // 'record' says what this action really does — constate un encaissement
+  // déjà survenu, jamais encaisser en ligne (§1, P2/CDC "sans encaissement
+  // en ligne").
+  | 'payment:record'

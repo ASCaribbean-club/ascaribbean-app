@@ -1,13 +1,18 @@
+import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
 import { DomainError } from '@domain/errors/domain-error'
+import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
+import { InvalidPaymentInputError } from '@domain/errors/invalid-payment-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
+import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import type { UiError } from './ui-error'
@@ -124,6 +129,65 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
       message: 'Choisissez un utilisateur et au moins une équipe.',
       variant: 'inline',
       retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidMembershipInputError) {
+    // specs/web-memberships.md §2.1/AC-WM-15 — generic copy, same reasoning
+    // as InvalidSeasonInputError/InvalidTeamInputError above: the dialog's
+    // own `required` attributes already prevent the common empty-field case
+    // client-side, this only fires on the rarer race the use case is the
+    // real authority for. Never mentions licenceNumber — that field is
+    // deliberately optional (§2.1) and never the cause of this error.
+    return {
+      message: "L'utilisateur, la saison, le statut et la date de validité sont obligatoires.",
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidPaymentInputError) {
+    // specs/web-memberships.md §2.2/AC-WM-16 — shown at the top of
+    // RecordPaymentDialog.
+    return {
+      message: 'Le montant doit être strictement positif et la date de paiement est obligatoire.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof MembershipActivationRequirementsNotMetError) {
+    // specs/web-memberships.md §2.4/AC-WM-35/AC-WM-36 (amendement du
+    // 2026-09-17) — shown in the edit row's own Alert (or the create
+    // dialog's), same reasoning as AC-WM-25/AC-WM-36's own "reconduction":
+    // the saisies stay, only this message appears.
+    return {
+      message: 'Le statut « Active » exige une licence renseignée et une cotisation intégralement réglée.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof DuplicateMembershipError) {
+    // specs/web-memberships.md §2.7/AC-WM-07 — memberships_user_season_active_idx.
+    return {
+      message: 'Une adhésion existe déjà pour cet utilisateur sur cette saison.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof ArchivedMembershipHasPaymentsError) {
+    // specs/web-memberships.md §2.7/PO-WM-03 — genuinely blocking, not
+    // guessed at: this is the exact case this pass leaves unimplemented
+    // (an archived membership for this (user, season) pair already carries
+    // recorded payments). The copy says so plainly rather than pretending
+    // it's a validation error the admin can just fix by retyping.
+    return {
+      message:
+        'Une adhésion archivée existe déjà pour cet utilisateur sur cette saison et porte des paiements enregistrés — ce cas n’est pas encore pris en charge, contactez un administrateur technique.',
+      variant: 'inline',
+      retryable: false,
     }
   }
 

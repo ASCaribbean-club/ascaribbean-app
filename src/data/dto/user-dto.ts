@@ -30,4 +30,7 @@ export interface UserRoleRow {
 export interface UserSummaryRow {
   id: string
   full_name: string
+  // specs/web-memberships.md §2.10/§4 — added for MembershipEditRow's
+  // read-only e-mail field (amendement du 2026-09-17).
+  email: string
 }

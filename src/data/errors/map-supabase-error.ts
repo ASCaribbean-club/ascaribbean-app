@@ -1,5 +1,6 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { DomainError } from '@domain/errors/domain-error'
+import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -32,6 +33,16 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // see the seasons_no_overlap constraint in
       // supabase/migrations/20260819153918_season_scoping_correction.sql.
       return new OverlappingSeasonError(error.message)
+    case '23505':
+      // unique_violation on memberships_user_season_active_idx means the
+      // caller tried to create a SECOND live membership for a
+      // (user_id, season_id) pair that already has one — see
+      // supabase/migrations/20260917174652_web_memberships_write_policies.sql,
+      // AC-WM-07.
+      if (error.message.includes('memberships_user_season_active_idx')) {
+        return new DuplicateMembershipError(error.message)
+      }
+      return new NotFoundError(error.message)
     default:
       return new NotFoundError(error.message)
   }

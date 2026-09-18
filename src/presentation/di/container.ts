@@ -6,6 +6,7 @@ import { createAuthContainer, type AuthContainer } from './containers/auth-conta
 import { createCalendarContainer, type CalendarContainer } from './containers/calendar-container'
 import { createCoachDashboardContainer, type CoachDashboardContainer } from './containers/coach-dashboard-container'
 import { createConvocationContainer, type ConvocationContainer } from './containers/convocation-container'
+import { createMembershipsContainer, type MembershipsContainer } from './containers/memberships-container'
 import { createNewsContainer, type NewsContainer } from './containers/news-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
@@ -17,6 +18,7 @@ export interface Container {
   calendar: CalendarContainer
   coachDashboard: CoachDashboardContainer
   convocation: ConvocationContainer
+  memberships: MembershipsContainer
   news: NewsContainer
   playerDashboard: PlayerDashboardContainer
   profile: ProfileContainer
@@ -30,6 +32,7 @@ export function createContainer(): Container {
     calendar: createCalendarContainer(supabaseClient),
     coachDashboard: createCoachDashboardContainer(supabaseClient),
     convocation: createConvocationContainer(supabaseClient),
+    memberships: createMembershipsContainer(supabaseClient),
     news: createNewsContainer(supabaseClient),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),

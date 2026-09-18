@@ -137,6 +137,32 @@ function SeasonFormDialogContent({ dialog, onClose }: SeasonFormDialogProps & { 
             </div>
           </div>
 
+          {/* specs/web-seasons.md §2.7/AC-WS-35 — amendement du 2026-09-17
+              (2), a field with no visual reference (no mockup shows it):
+              placed last, the only optional field and the only one that
+              isn't part of the season's own temporal identity. Never
+              `required` — a season can exist before its tarif is voted. */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="season-cotisation-amount" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              Cotisation (€)
+            </Label>
+            <div className="relative">
+              <Input
+                id="season-cotisation-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                inputMode="decimal"
+                disabled={vm.isSubmitting}
+                value={vm.values.cotisationAmountEuros}
+                onChange={(event) => vm.setCotisationAmountEuros(event.target.value)}
+                className="h-11 rounded-xl pr-8"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Montant de référence appliqué aux adhésions de cette saison.</p>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"

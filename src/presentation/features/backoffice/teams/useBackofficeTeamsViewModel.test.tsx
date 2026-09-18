@@ -24,7 +24,7 @@ const SECTION_1 = { id: 'section-1', name: 'Senior masculin', type: 'football' a
 // machine's real wall-clock date — the point under test is the mapping
 // (season lookup → seasonStatus()), not seasonStatus()'s own boundary
 // behavior (already covered by season-scope.test.ts).
-const SEASON_CURRENT = { id: 'season-1', label: '2025-2026' as const, startDate: '2000-01-01', endDate: '2999-12-31' }
+const SEASON_CURRENT = { id: 'season-1', label: '2025-2026' as const, startDate: '2000-01-01', endDate: '2999-12-31', cotisationAmount: null }
 
 function buildTeam(overrides: Partial<Team> = {}): Team {
   return { id: 'team-1', name: 'Groupe A', sectionId: SECTION_1.id, seasonId: SEASON_CURRENT.id, ...overrides }

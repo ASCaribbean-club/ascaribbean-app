@@ -12,9 +12,14 @@ export interface SeasonFormValues {
   label: string
   startDate: string // yyyy-mm-dd, native <input type="date"> value
   endDate: string // yyyy-mm-dd
+  // specs/web-seasons.md §2.7/AC-WS-35 — amendement du 2026-09-17 (2), kept
+  // as a string at the presentation boundary (the input's own unit, euros)
+  // — parsed to a number only at submit time, below. Empty string means
+  // "tarif non fixé" (null), never pre-filled to "0" (AC-WS-35).
+  cotisationAmountEuros: string
 }
 
-const EMPTY_VALUES: SeasonFormValues = { label: '', startDate: '', endDate: '' }
+const EMPTY_VALUES: SeasonFormValues = { label: '', startDate: '', endDate: '', cotisationAmountEuros: '' }
 
 // AC-WS-24 — pre-filled from the edited row. season.startDate/endDate are
 // used AS-IS, deliberately without routing them through
@@ -34,6 +39,9 @@ function toFormValues(season: Season | null): SeasonFormValues {
     label: season.label,
     startDate: season.startDate,
     endDate: season.endDate,
+    // AC-WS-35 — left empty when null ("tarif non fixé"), never pre-filled
+    // to "0" (0 means "gratuit", a distinct, real value).
+    cotisationAmountEuros: season.cotisationAmount === null ? '' : String(season.cotisationAmount),
   }
 }
 
@@ -63,6 +71,11 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
     setValues((current) => ({ ...current, [key]: value }))
   }
 
+  // AC-WS-35 — euros -> the domain's own euros field, no ×100/÷100 anywhere
+  // (cotisationAmount is a decimal, unlike Membership.amountDueCents). An
+  // empty input means "tarif non fixé" (null), never 0.
+  const cotisationAmount = values.cotisationAmountEuros.trim() === '' ? null : Number(values.cotisationAmountEuros)
+
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) {
@@ -78,6 +91,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
           label: values.label,
           startDate: values.startDate,
           endDate: values.endDate,
+          cotisationAmount,
         })
       }
 
@@ -89,6 +103,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
         label: values.label,
         startDate: values.startDate,
         endDate: values.endDate,
+        cotisationAmount,
       })
     },
     onSuccess: () => {
@@ -104,7 +119,12 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
     },
   })
 
-  const canSubmit = !!values.label.trim() && !!values.startDate && !!values.endDate && !mutation.isPending
+  // AC-WS-35 — the field is never required (a season can exist before its
+  // tarif is voted); the amount is only checked for validity when present,
+  // mirroring the domain's own rejection (AC-WS-34) so the button disables
+  // before a doomed submit.
+  const hasValidCotisationAmount = cotisationAmount === null || (Number.isFinite(cotisationAmount) && cotisationAmount >= 0)
+  const canSubmit = !!values.label.trim() && !!values.startDate && !!values.endDate && hasValidCotisationAmount && !mutation.isPending
 
   // AC-WS-23 — on failure the dialog stays open with the typed values
   // untouched (no reset happens anywhere on error, only on the successful
@@ -120,6 +140,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
     setLabel: (value: string) => setField('label', value),
     setStartDate: (value: string) => setField('startDate', value),
     setEndDate: (value: string) => setField('endDate', value),
+    setCotisationAmountEuros: (value: string) => setField('cotisationAmountEuros', value),
 
     canSubmit,
     isSubmitting: mutation.isPending,

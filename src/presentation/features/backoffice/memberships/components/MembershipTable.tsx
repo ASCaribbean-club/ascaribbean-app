@@ -83,8 +83,12 @@ export function MembershipTable({
                 <TableCell>
                   {/* AC-WM-12/AC-WM-13 — the real per-row sum (amendement du
                       2026-09-17, PO-WM-01 resolved), computed once in the
-                      ViewModel from the bulk payments read. */}
-                  <MembershipCotisationSummary paidCents={row.paidCents} amountDueCents={row.membership.amountDueCents} status={row.paymentStatus} />
+                      ViewModel from the bulk payments read.
+                      effectiveAmountDueCents (not the raw membership field)
+                      — falls back to the season's own tarif when this
+                      membership has no amount of its own yet, see that
+                      field's own comment on MembershipAdminRow. */}
+                  <MembershipCotisationSummary paidCents={row.paidCents} amountDueCents={row.effectiveAmountDueCents} status={row.paymentStatus} />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

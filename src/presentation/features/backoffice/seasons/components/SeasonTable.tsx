@@ -2,6 +2,7 @@ import { IconPencil } from '@tabler/icons-react'
 import type { Season } from '@domain/entities/season'
 import { Button } from '@presentation/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
+import { formatEuroAmount } from '@presentation/shared/formatters/currency'
 import type { SeasonRow } from '../useBackofficeSeasonsViewModel'
 import { SeasonStatusBadge } from './SeasonStatusBadge'
 
@@ -20,6 +21,10 @@ export function SeasonTable({ rows, canWrite, onEdit }: SeasonTableProps) {
           <TableHead>Début</TableHead>
           <TableHead>Fin</TableHead>
           <TableHead>Statut</TableHead>
+          {/* specs/web-seasons.md §2.7/PO-WS-12 — added on request; the spec
+              itself left this open ("aucune colonne de montant n'y est
+              ajoutée par cet amendement"), the developer chose otherwise. */}
+          <TableHead>Cotisation</TableHead>
           {/* No visible label in the mockup for this column (§0) — sr-only
               text lives on an inner <span>, not the <th> itself: sr-only
               sets `position: absolute`, which on the <th> directly would
@@ -55,6 +60,16 @@ export function SeasonTable({ rows, canWrite, onEdit }: SeasonTableProps) {
               {/* AC-WS-18 — status is the ALREADY-COMPUTED prop, never
                   re-derived here. */}
               <SeasonStatusBadge status={status} />
+            </TableCell>
+            <TableCell>
+              {/* AC-WM-33-style discipline (never a color-only state): a
+                  season with no tarif set shows neutral muted text, never a
+                  blank cell or a misleading "0€". */}
+              {season.cotisationAmount === null ? (
+                <span className="text-muted-foreground">Non définie</span>
+              ) : (
+                formatEuroAmount(season.cotisationAmount)
+              )}
             </TableCell>
             <TableCell>
               {/* AC-WS-19/AC-WS-20 — rendered only if canWrite AND the

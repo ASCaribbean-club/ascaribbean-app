@@ -39,7 +39,10 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
   // and this hook renders the context line from its own live data rather
   // than from a snapshot taken before the dialog opened.
   const paidCents = sumPaymentsCents(payments)
-  const paymentStatus = membershipPaymentStatus(paidCents, target.membership.amountDueCents)
+  // effectiveAmountDueCents, not the raw membership field — same fallback to
+  // the season's own tarif as the COTISATION column, see that field's own
+  // comment on MembershipAdminRow (display only, never the activation rule).
+  const paymentStatus = membershipPaymentStatus(paidCents, target.effectiveAmountDueCents)
 
   const [amountEuros, setAmountEuros] = useState('')
   const [paidAt, setPaidAt] = useState(() => toDateInputValue(new Date()))

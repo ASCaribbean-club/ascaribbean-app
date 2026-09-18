@@ -3,7 +3,7 @@ import type { Season } from '../entities/season'
 import { isCurrentSeason, seasonStatus } from './season-scope'
 
 function seasonWith(startDate: string, endDate: string): Season {
-  return { id: 's1', label: '2026-2027', startDate, endDate }
+  return { id: 's1', label: '2026-2027', startDate, endDate, cotisationAmount: null }
 }
 
 describe('isCurrentSeason', () => {

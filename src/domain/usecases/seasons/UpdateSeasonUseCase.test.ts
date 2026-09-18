@@ -52,6 +52,7 @@ function validInput(overrides: Partial<UpdateSeasonUseCaseInput> = {}): UpdateSe
     label: '2026-2027',
     startDate: '2026-08-01',
     endDate: '2027-06-30',
+    cotisationAmount: null,
     ...overrides,
   }
 }
@@ -111,6 +112,38 @@ describe('UpdateSeasonUseCase', () => {
       label: '2026-2027',
       startDate: '2026-08-01',
       endDate: '2027-06-30',
+      cotisationAmount: null,
+    })
+  })
+
+  // specs/web-seasons.md §2.7/AC-WS-34 — amendement du 2026-09-17 (2).
+  describe('cotisationAmount validation (AC-WS-34)', () => {
+    it('writes a decimal cotisationAmount through to the repository, unconverted', async () => {
+      const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+
+      await useCase.execute(validInput({ cotisationAmount: 45.5 }))
+
+      expect(update).toHaveBeenCalledWith('season-1', expect.objectContaining({ cotisationAmount: 45.5 }))
+    })
+
+    it('accepts a null cotisationAmount (clearing a previously-set amount)', async () => {
+      const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+
+      await useCase.execute(validInput({ cotisationAmount: null }))
+
+      expect(update).toHaveBeenCalledWith('season-1', expect.objectContaining({ cotisationAmount: null }))
+    })
+
+    it('throws InvalidSeasonInputError when cotisationAmount is negative', async () => {
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+      await expect(useCase.execute(validInput({ cotisationAmount: -1 }))).rejects.toThrow(InvalidSeasonInputError)
+    })
+
+    it('throws InvalidSeasonInputError when cotisationAmount is not finite', async () => {
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+      await expect(useCase.execute(validInput({ cotisationAmount: Number.NaN }))).rejects.toThrow(InvalidSeasonInputError)
     })
   })
 

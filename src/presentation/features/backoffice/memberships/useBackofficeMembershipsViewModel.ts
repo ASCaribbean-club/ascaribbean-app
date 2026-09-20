@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import type { Membership, MembershipStatus } from '@domain/entities/membership'
 import { membershipPaymentStatus, sumPaymentsCents, type MembershipPaymentStatus } from '@domain/rules/membership-payment-rules'
 import { seasonStatus } from '@domain/policies/season-scope'
@@ -68,6 +69,15 @@ export function useBackofficeMembershipsViewModel() {
   const canWriteMembership = usePermission('membership:write')
   const canRecordPayment = usePermission('payment:record')
 
+  // specs/web-users-membership-column.md §2.3a/AC-WU-58 — the ?user= URL
+  // param branched onto the existing filter chain below, read via
+  // useSearchParams (already the project's routing dependency, no library
+  // added). Absent, `userFilter` is null and every branch below behaves
+  // exactly as it did before this amendment (§2.3a's own non-negotiable
+  // regression requirement).
+  const [searchParams, setSearchParams] = useSearchParams()
+  const userFilter = searchParams.get('user')
+
   const [statusFilter, setStatusFilter] = useState<MembershipStatusFilterValue>('all')
   const [cotisationFilter, setCotisationFilter] = useState<MembershipCotisationFilterValue>('all')
   // null = "follow the current-season default" (§2.6b) — becomes a concrete
@@ -98,6 +108,18 @@ export function useBackofficeMembershipsViewModel() {
   // phrase (no separate per-target read needed anymore).
   const allPaymentsQuery = useQuery({ queryKey: queryKeys.membershipPaymentsAdminList(), queryFn: () => paymentRepository.findAllForAdmin() })
 
+  // specs/web-users-membership-column.md §2.3b/PO-WU-18 — the filter-applied
+  // banner's own account-name lookup, gated on `userFilter` being present.
+  // The already-loaded membership list can't be relied on for this name
+  // (the nominal landing case is zero rows for this account, §2.3c) — this
+  // is the ONE small new read this amendment introduces, everything else
+  // reuses already-loaded data.
+  const filteredUserQuery = useQuery({
+    queryKey: queryKeys.user(userFilter ?? ''),
+    queryFn: () => userRepository.findById(userFilter as string),
+    enabled: !!userFilter,
+  })
+
   const archiveMutation = useMutation({
     mutationFn: (membershipId: string) => {
       if (!user) {
@@ -112,6 +134,12 @@ export function useBackofficeMembershipsViewModel() {
       // disappears and the badge updates without a manual reload.
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() })
+      // specs/web-users-membership-column.md §2.5/AC-WU-59 — archiving the
+      // only current-season membership flips criterion 2 of /admin/users'
+      // own completeness read: invalidate its two keys too, so the ADHÉSION
+      // SAISON column and its nav badge never drift stale.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
       setPendingArchive(null)
     },
   })
@@ -167,6 +195,11 @@ export function useBackofficeMembershipsViewModel() {
     if (effectiveSeasonFilter !== 'all' && row.membership.seasonId !== effectiveSeasonFilter) return false
     if (statusFilter !== 'all' && row.membership.status !== statusFilter) return false
     if (cotisationFilter !== 'all' && row.paymentStatus !== cotisationFilter) return false
+    // specs/web-users-membership-column.md §2.3a/AC-WU-58 — one filter line
+    // more, same shape as the three above: the ?user= URL param, applied
+    // client-side to the SAME already-loaded list (no new read, no new
+    // queryKey, MembershipRepository untouched).
+    if (userFilter && row.membership.userId !== userFilter) return false
     return true
   })
 
@@ -175,8 +208,10 @@ export function useBackofficeMembershipsViewModel() {
   // the admin has explicitly touched the season select (or the status/
   // cotisation ones) — merely landing on the current-season default must
   // never itself read as "a filter is applied" (that default IS the normal
-  // state, §2.6b).
-  const isFilterActive = seasonFilter !== null || statusFilter !== 'all' || cotisationFilter !== 'all'
+  // state, §2.6b). §2.3a of the amendment/AC-WU-58 — `userFilter` counts
+  // too, so the empty state reads "Aucune adhésion ne correspond à ces
+  // filtres" (AC-WM-25), never the club-startup empty state.
+  const isFilterActive = seasonFilter !== null || statusFilter !== 'all' || cotisationFilter !== 'all' || !!userFilter
 
   const now = new Date()
   const seasonOptions = seasons.map((season) => ({
@@ -185,6 +220,23 @@ export function useBackofficeMembershipsViewModel() {
     // second inline test, for the "(en cours)" suffix.
     label: seasonStatus(season, now) === 'current' ? `${season.label} (en cours)` : season.label,
   }))
+
+  // specs/web-users-membership-column.md §2.3b — the filter-applied
+  // banner's own one-gesture cancel: removes `user` from the URL itself
+  // (never just local state, §2.3b — a reload must not re-apply a cleared
+  // filter) and returns the screen to its default state (current season, no
+  // status/cotisation filter) — never an invented "toutes les saisons"
+  // state.
+  function clearUserFilter() {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      next.delete('user')
+      return next
+    })
+    setSeasonFilter(null)
+    setStatusFilter('all')
+    setCotisationFilter('all')
+  }
 
   return {
     isLoading,
@@ -204,6 +256,17 @@ export function useBackofficeMembershipsViewModel() {
     setStatusFilter,
     cotisationFilter,
     setCotisationFilter,
+
+    // specs/web-users-membership-column.md §2.3a/§2.3b — the
+    // filter-applied banner: `userFilter` is the raw id from the URL (null
+    // when absent, the SAME value the filter chain above already reads),
+    // `filteredUserName` is the account's display name for the banner's
+    // copy (null while loading or if the account can't be resolved —
+    // the banner falls back to a generic phrase in that case, PO-WU-18
+    // option (a)).
+    userFilter,
+    filteredUserName: filteredUserQuery.data?.fullName ?? null,
+    clearUserFilter,
 
     isCreateDialogOpen,
     openCreateDialog: () => setIsCreateDialogOpen(true),

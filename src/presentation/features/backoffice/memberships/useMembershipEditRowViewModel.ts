@@ -106,6 +106,12 @@ export function useMembershipEditRowViewModel({ row, onSuccess }: UseMembershipE
       // queryKeys.membershipPayments is left alone.
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() })
+      // specs/web-users-membership-column.md §2.5/AC-WU-59 — the licence
+      // number is editable here, so criterion 3 of /admin/users' own
+      // completeness read can flip too (not just criterion 2): invalidate
+      // its two keys in addition to this screen's own.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
       onSuccess()
     },
   })

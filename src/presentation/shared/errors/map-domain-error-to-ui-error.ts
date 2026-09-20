@@ -1,20 +1,26 @@
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
 import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
+import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidPaymentInputError } from '@domain/errors/invalid-payment-input-error'
+import { InvalidFullNameInputError } from '@domain/errors/invalid-full-name-input-error'
+import { InvalidRoleAssignmentInputError } from '@domain/errors/invalid-role-assignment-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
+import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
+import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
+import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
 import type { UiError } from './ui-error'
 
 // Next hop after data/errors/map-supabase-error.ts: that file stops at
@@ -200,6 +206,75 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     return {
       message: 'Une erreur technique est survenue. Contactez un administrateur si cela persiste.',
       variant: 'toast',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof InvalidUserInputError) {
+    // specs/web-users.md §2.5/AC-WU-33 — shown at the top of
+    // InviteUserDialog. The dialog's own `required` attributes already
+    // prevent the common empty case client-side, this only fires on the
+    // rarer race the use case is the real authority for.
+    return {
+      message: 'Le nom complet et l’adresse e-mail sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidFullNameInputError) {
+    // specs/web-users.md §2.7/AC-WU-38 — shown at the top of
+    // UserEditDialog.
+    return {
+      message: 'Le nom complet est obligatoire.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidRoleAssignmentInputError) {
+    // specs/web-users.md §2.6c/AC-WU-35 — shown at the top of
+    // AssignRoleDialog: rejected from the domain, before any network call,
+    // when the role-specific scope (team/section) is missing.
+    return {
+      message: 'La portée requise (équipe, section, ou aucune) dépend du rôle choisi et doit être renseignée.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof DuplicateRoleAssignmentError) {
+    // specs/web-users-role-edit-remove.md §2.2 rule 4/AC-WU-51 — shown at
+    // the top of EditRoleAssignmentDialog: moving a scope onto a
+    // team/section the same account already holds the same role on, never
+    // absorbed in silence (unlike the coach-reconciliation INSERT case).
+    return {
+      message: 'Ce compte porte déjà ce rôle sur cette équipe ou cette section.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof UserAlreadyRegisteredError) {
+    // specs/web-users.md §2.5/AC-WU-34 — covers both "adresse déjà
+    // invitée" and "adresse déjà inscrite" (see that error class' own
+    // comment on why the two share one message).
+    return {
+      message: 'Cette adresse e-mail est déjà invitée ou déjà inscrite au club.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof UserDirectoryInsertFailedError) {
+    // specs/web-users.md §2.5/AC-WU-34 — the rarer, explicitly-named case:
+    // the invitation itself went out, but the public.users row that should
+    // back it wasn't created. Not a "retry the same form" situation — an
+    // administrator needs to look at it.
+    return {
+      message:
+        'L’invitation a été envoyée mais la fiche du compte n’a pas pu être créée — contactez un administrateur technique.',
+      variant: 'inline',
       retryable: false,
     }
   }

@@ -1,6 +1,7 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
+import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -41,6 +42,15 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // AC-WM-07.
       if (error.message.includes('memberships_user_season_active_idx')) {
         return new DuplicateMembershipError(error.message)
+      }
+      // specs/web-users-role-edit-remove.md §2.2 rule 4/AC-WU-51 — a scope
+      // edit landing on a team/section the same account already holds the
+      // same role on. Surfaced here, never absorbed — unlike the
+      // coach-reconciliation INSERT case, which RoleAssignmentRepositoryImpl
+      // still catches its own 23505 directly and never lets reach this
+      // function (see that class's own comment on why).
+      if (error.message.includes('user_roles_team_scoped_idx') || error.message.includes('user_roles_section_scoped_idx')) {
+        return new DuplicateRoleAssignmentError(error.message)
       }
       return new NotFoundError(error.message)
     default:

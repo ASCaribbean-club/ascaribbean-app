@@ -89,3 +89,61 @@ export type Action =
   // déjà survenu, jamais encaisser en ligne (§1, P2/CDC "sans encaissement
   // en ligne").
   | 'payment:record'
+  // specs/web-users.md §2.5/§3 (amendement du 2026-09-18, PO-WU-01 résolu) —
+  // names the actual privileged operation ("inviter un compte"), never
+  // 'user:write' below (which names an UPDATE on public.users, a different
+  // right on the same table — same "two separate actions" reasoning as
+  // 'section:write'/'team:write' and 'membership:write'/'payment:record'
+  // above). presentation/ needs this to decide whether to render "+
+  // Inviter un utilisateur" BEFORE any query, same criterion as
+  // 'backoffice:access'. Mirrors the invite-user Edge Function's own
+  // server-side admin check (§2.5, AC-WU-32) — the RLS side of this action
+  // is "no INSERT policy exists on public.users at all" (AC-WU-04): the
+  // Edge Function's service_role client is the only writer.
+  | 'user:invite'
+  // specs/web-users.md §2.7/§3 (PO-WU-02 résolu) — the "Modifier
+  // l'utilisateur" pencil/dialog. Names public.users, the table actually
+  // written (full_name only, AC-WU-38) — never 'role:assign' below, which
+  // writes a DIFFERENT table (public.user_roles). Mirrors the
+  // users_update_admin RLS policy (supabase/migrations, "web_users" write
+  // policies) — column-restricted to full_name at the grant level, §2.7.
+  | 'user:write'
+  // specs/web-users.md §2.6/§3 (PO-WU-03 résolu) — the generalized "+ Rôle"
+  // dialog on /admin/users, offering seven roles, 'admin' EXCLUDED always
+  // (AC-WU-05/AC-WU-06). A brand-new action, NOT an elargissement of
+  // 'role:assign-coach' above: that action's own comment ("the 'coach'
+  // suffix is the only scope an RLS `with check` can verify literally")
+  // would become false if 'role:assign-coach' started covering every role,
+  // and AssignCoachDialog/`/admin/teams` must keep consuming
+  // 'role:assign-coach' completely unchanged (AC-WU-31) — two actions, two
+  // RLS policies (user_roles_insert_assign_coach unchanged,
+  // user_roles_insert_assign_role added as a SIBLING, §2.6b), never one
+  // widened in place. Names the resource actually written
+  // (public.user_roles), same naming reasoning as 'role:assign-coach'
+  // itself, never 'user:write' (a different table, §2.7 above).
+  //
+  // specs/web-users-role-edit-remove.md §2.5a/AC-WU-45 (amendement du
+  // 2026-09-18) — EXTENDED, not renamed, not duplicated: this action now
+  // mirrors TWO RLS policies, user_roles_insert_assign_role (create,
+  // unchanged) AND user_roles_update_assign_role (scope edit, new). Same
+  // precedent already applied twice in this repo — 'membership:write'
+  // covers memberships_insert_admin AND memberships_update_admin,
+  // 'season:write' covers create and update with the same "no document
+  // distinguishes a role that could do one without the other" reasoning.
+  // No document distinguishes a role that could assign a role without also
+  // being able to correct its scope, so a second 'role:edit-scope' action
+  // would invent a distinction nothing supports.
+  | 'role:assign'
+  // specs/web-users-role-edit-remove.md §2.5b/AC-WU-45 (amendement du
+  // 2026-09-18) — a NEW, distinct action for REMOVAL, not folded into
+  // 'role:assign' above despite the 'membership:write' precedent just cited:
+  // this is a genuine DELETE, the first one this codebase opens to a
+  // client at all (public.user_roles carries no archived_at/timestamp/
+  // author, PO-WU-08 — nothing survives it, unlike an archived membership,
+  // which keeps its payment history). The two rights could also widen
+  // separately one day (PO-WE-01) — exactly the effect
+  // 'section:write'/'team:write' and 'membership:write'/'payment:record'
+  // stay split to avoid. Names the resource actually written
+  // (public.user_roles), same reasoning as 'role:assign'/'role:assign-coach'
+  // — never 'user:write' (a different table, §2.7 of web-users.md).
+  | 'role:remove'

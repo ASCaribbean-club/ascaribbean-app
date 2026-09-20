@@ -30,6 +30,13 @@ function fakeUserRepository(user: User | null): UserRepository {
     // UserRepository, unrelated to this test's own assertions; stubbed so
     // the mock keeps satisfying the interface.
     findAll: () => Promise.resolve([]),
+    // specs/web-users.md §2.10 — added by that feature to UserRepository,
+    // unrelated to this test's own assertions; stubbed so the fake keeps
+    // satisfying the interface.
+    findAdminDirectory: async () => [],
+    findMissingElementFacts: async () => [],
+    updateFullName: async () => {},
+    invite: async () => {},
   }
 }
 

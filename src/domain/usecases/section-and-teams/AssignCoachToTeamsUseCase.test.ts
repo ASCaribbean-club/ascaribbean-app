@@ -37,12 +37,26 @@ function fakeUserRepository(user: User | null): UserRepository {
     findById: async () => user,
     acceptCharter: async () => {},
     findAll: async () => [],
+    // specs/web-users.md §2.10 — added by that feature to UserRepository,
+    // unrelated to this test's own assertions; stubbed so the fake keeps
+    // satisfying the interface.
+    findAdminDirectory: async () => [],
+    findMissingElementFacts: async () => [],
+    updateFullName: async () => {},
+    invite: async () => {},
   }
 }
 
 function fakeRoleAssignmentRepository(overrides: Partial<RoleAssignmentRepository> = {}): RoleAssignmentRepository {
   return {
     assignCoachToTeams: vi.fn(async () => {}),
+    // specs/web-users.md §2.6 and
+    // specs/web-users-role-edit-remove.md §2.7 — added by those features to
+    // RoleAssignmentRepository, unrelated to this test's own assertions;
+    // stubbed so the fake keeps satisfying the interface.
+    assignRole: vi.fn(async () => {}),
+    editRoleAssignmentScope: vi.fn(async () => {}),
+    removeRoleAssignment: vi.fn(async () => {}),
     ...overrides,
   }
 }

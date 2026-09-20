@@ -1,6 +1,7 @@
 import type { PlayerPosition, RoleAssignment, User } from '@domain/entities/user'
-import type { UserSummary } from '@domain/repositories/user-repository'
-import type { UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
+import type { MissingElementFacts } from '@domain/policies/user-completeness'
+import type { AdminUserDirectoryEntry, UserSummary } from '@domain/repositories/user-repository'
+import type { AdminUserRow, MembershipCompletenessFactRow, UserCharterFactRow, UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
 
 // user_roles has one row per team for a coach, but User.roles collapses
 // those into a single { role: 'coach', teamIds: [...] } entry — see the
@@ -26,6 +27,44 @@ export function toUserSummary(row: UserSummaryRow): UserSummary {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
+  }
+}
+
+// specs/web-users.md §2.2/§2.10 — /admin/users' own table row. `roleRows`
+// is this ONE account's slice of AdminUserRoleRow[] (already grouped by
+// user_id by the repository, per its own comment on why that grouping
+// lives there); `facts` is computed by toMissingElementFacts below, shared
+// verbatim with the badge count's own read (AC-WU-17).
+export function toAdminUserDirectoryEntry(row: AdminUserRow, roleRows: UserRoleRow[], facts: MissingElementFacts): AdminUserDirectoryEntry {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    email: row.email,
+    charterAcceptedAt: row.charter_accepted_at ? new Date(row.charter_accepted_at) : null,
+    roles: toRoleAssignments(roleRows),
+    missingElementFacts: facts,
+  }
+}
+
+// specs/web-users.md §2.3/AC-WU-37 — assembles the four completeness facts
+// from three raw, independently-queried pieces (never a fourth
+// computation): the user's own charter_accepted_at (criterion 4), whether
+// ANY user_roles row exists for them (criterion 1, passed in as a plain
+// boolean the repository already reduced from a Set), and their
+// current-season membership row if one exists (criteria 2/3). `currentSeasonId
+// === null` forces criteria 2/3 to false — §2.3 "repli", never an error.
+export function toMissingElementFacts(
+  userRow: UserCharterFactRow,
+  hasRole: boolean,
+  membershipRow: MembershipCompletenessFactRow | undefined,
+  currentSeasonId: string | null,
+): MissingElementFacts {
+  const hasMembershipForCurrentSeason = currentSeasonId !== null && membershipRow !== undefined
+  return {
+    hasRole,
+    hasMembershipForCurrentSeason,
+    hasLicenceNumberForCurrentSeason: hasMembershipForCurrentSeason && !!membershipRow?.licence_number,
+    charterAccepted: userRow.charter_accepted_at !== null,
   }
 }
 

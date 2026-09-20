@@ -115,6 +115,14 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
       // key is enumerated here individually.
       void queryClient.invalidateQueries({ queryKey: queryKeys.seasonsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.seasonCurrent() })
+      // specs/web-users-membership-column.md — /admin/users' ADHÉSION SAISON
+      // column and nav badge are both computed against the current season
+      // server-side (findAdminDirectory()'s own currentSeasonId), so a
+      // season create/edit that changes which season is current must
+      // invalidate these too, not just the composed use cases that read
+      // findCurrent() internally.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
       onSuccess()
     },
   })

@@ -91,6 +91,12 @@ export function useAssignCoachDialogViewModel({ targetTeam, onSuccess }: UseAssi
       void queryClient.invalidateQueries({ queryKey: queryKeys.coachAssignmentsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.teamsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.sectionsAdminList() })
+      // This writes the same user_roles rows /admin/users' RÔLES column and
+      // nav badge read — every other role-writing path invalidates these
+      // two, this one must too or a coach assigned from here shows stale on
+      // /admin/users.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
       // AC-ST-46 — admin+coach cumul: if the operator assigned THEMSELVES,
       // their own cached User.roles is stale the instant this succeeds and
       // must be re-read, not left until the next reload.

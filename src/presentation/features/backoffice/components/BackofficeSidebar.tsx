@@ -2,20 +2,23 @@ import { NavLink } from 'react-router-dom'
 import { cn } from '@presentation/shared/lib/utils'
 import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffice-nav'
 import { useMembershipsNavBadge } from '@presentation/features/backoffice/memberships/useMembershipsNavBadge'
+import { useUsersNavBadge } from '@presentation/features/backoffice/users/useUsersNavBadge'
 
-// Vertical nav, 5 fixed entries (specs/web-empty-state.md, "Navigation
-// latérale (Dashboard-3), 5 entrées"). `NavLink` (not a plain <a>/<button>
-// with manually-tracked state) so "active" comes from the router matching
-// the current path — same reason the mobile BottomNav
+// Vertical nav, 7 fixed entries (specs/web-empty-state.md, "Navigation
+// latérale (Dashboard-3), 5 entrées", grown since by web-seasons/
+// web-memberships/web-actus). `NavLink` (not a plain <a>/<button> with
+// manually-tracked state) so "active" comes from the router matching the
+// current path — same reason the mobile BottomNav
 // (presentation/shared/layout/BottomNav.tsx) uses it instead of hand-rolled
 // state.
 //
 // specs/web-memberships.md §2.8 — resolves AC-WE-13/PO-WE-11 PARTIALLY, for
-// the "Adhésions" entry only: it now carries a numeric badge (see
-// MembershipNavBadgeCount below). "Utilisateurs" and the two ALERTE blocks
-// remain deliberately unbuilt (AC-WE-13 reconduced, no invented data for
-// them) — the nav still simply ends after the last entry, no empty block in
-// their place.
+// the "Adhésions" entry (MembershipsNavBadge below). specs/web-users.md
+// §2.8/AC-WU-16 — closes PO-WE-11 for the SECOND and LAST numeric badge,
+// "Utilisateurs" (UsersNavBadge below), on the four-criteria completeness
+// predicate (§2.3). The two ALERTE blocks remain deliberately unbuilt
+// (AC-WE-13 reconduced, no invented data for them) — the nav still simply
+// ends after the last entry, no empty block in their place.
 export function BackofficeSidebar() {
   return (
     <nav aria-label="Navigation du backoffice" className="w-64 shrink-0 border-r border-border px-3 py-6">
@@ -38,6 +41,7 @@ export function BackofficeSidebar() {
               <item.icon className="size-4.5 shrink-0" aria-hidden />
               {item.label}
               {item.id === 'memberships' && <MembershipsNavBadge />}
+              {item.id === 'users' && <UsersNavBadge />}
             </NavLink>
           </li>
         ))}
@@ -52,6 +56,22 @@ export function BackofficeSidebar() {
 // BackofficeNavItem never triggers this hook.
 function MembershipsNavBadge() {
   const { count } = useMembershipsNavBadge()
+  if (count <= 0) return null
+
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">
+      {count}
+    </span>
+  )
+}
+
+// specs/web-users.md §2.8/UI design "Badge de navigation" — twin of
+// MembershipsNavBadge above, copied not generalized into a `badge` field on
+// BackofficeNavItem (§2.8's own instruction, backoffice-nav.ts's own comment
+// on why that field doesn't exist). Its own isolated child component so its
+// query only ever runs for THIS nav item.
+function UsersNavBadge() {
+  const { count } = useUsersNavBadge()
   if (count <= 0) return null
 
   return (

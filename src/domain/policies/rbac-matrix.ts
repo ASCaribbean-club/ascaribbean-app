@@ -136,4 +136,69 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // supabase/migrations/20260917174652_web_memberships_write_policies.sql.
   'membership:write': ['admin'],
   'payment:record': ['admin'],
+
+  // specs/web-users.md §3 (amendement du 2026-09-18, PO-WU-01/02/03
+  // résolus) — "le cas le plus simple du backoffice à ce jour": the CDC's
+  // "Gérer comptes, rôles, paramétrage" row is ['admin'] with ❌ for the
+  // seven other roles, no qualifier, the same shape as
+  // 'backoffice:access'/'season:write' above (which 'backoffice:access'
+  // already narrows to admin-only, PO-WE-01 still open). Club-wide by
+  // construction (the 'admin' RoleAssignment carries no scope field) — no
+  // matching scope check is needed in can.ts for 'user:invite'/'user:write'.
+  //
+  // Mirrors: NO RLS policy at all — public.users has no INSERT policy for
+  // 'authenticated' (AC-WU-04); the invite-user Edge Function's own
+  // server-side admin check (built from the caller's JWT under RLS, §2.5)
+  // is the actual gate, this matrix entry only decides whether
+  // presentation/ renders "+ Inviter un utilisateur" (AC-WU-19).
+  'user:invite': ['admin'],
+
+  // Mirrors users_update_admin (RLS UPDATE on public.users, `grant update
+  // (full_name)` — column-restricted at the Postgres privilege level, never
+  // able to touch email/charter_accepted_at/id/created_at/position, §2.7) —
+  // see supabase/migrations/<timestamp>_web_users_write_policies.sql.
+  'user:write': ['admin'],
+
+  // §2.6d — a NEW action, sibling to 'role:assign-coach' above, NOT an
+  // elargissement of it (see that action's own comment in actions.ts).
+  // Mirrors user_roles_insert_assign_role (RLS INSERT on public.user_roles,
+  // `with check`: private.is_admin() AND role IN the seven non-admin roles
+  // — an explicit allow-list rather than `role <> 'admin'`, so a future
+  // ninth role added to the table's own CHECK constraint isn't assignable
+  // by default, §2.6b) — see
+  // supabase/migrations/<timestamp>_web_users_write_policies.sql.
+  // user_roles_insert_assign_coach itself is UNCHANGED — the two policies
+  // are permissive and compose by OR, AssignCoachDialog/`/admin/teams` keep
+  // consuming 'role:assign-coach' exactly as before (AC-WU-31).
+  //
+  // §2.6e/AC-WU-36 — 'role:assign' is a SCOPED action (targets a team or a
+  // section), unlike every club-wide row above: see can.ts's
+  // 'section-manager' branch, extended in THIS SAME change to compare
+  // context.sectionId, even though today's ['admin']-only value means the
+  // default branch (admin is club-wide by construction) is what actually
+  // fires — written now so a future PO-WE-01 widening doesn't silently ship
+  // without it, the exact gap already fixed three times for
+  // 'convocation:create'/'attendance:validate'/'vote:cast'.
+  //
+  // specs/web-users-role-edit-remove.md §2.5a/AC-WU-45 (amendement du
+  // 2026-09-18) — this entry now mirrors TWO RLS policies, NOT one:
+  // user_roles_insert_assign_role (create, above) AND
+  // user_roles_update_assign_role (scope edit — `using`/`with check`:
+  // private.is_admin() AND the same seven-role whitelist; column-restricted
+  // to team_id/section_id by `grant update (team_id, section_id)`, role/
+  // user_id structurally unwritable) — see
+  // supabase/migrations/<timestamp>_web_users_role_edit_remove_write_policies.sql.
+  'role:assign': ['admin'],
+
+  // specs/web-users-role-edit-remove.md §2.5b/AC-WU-45 (amendement du
+  // 2026-09-18) — a NEW action, sibling to 'role:assign' above, not a
+  // widening of it (see that action's own comment in actions.ts). Mirrors
+  // user_roles_delete_remove_role (RLS DELETE on public.user_roles, `using`:
+  // private.is_admin() AND the same seven-role whitelist as the UPDATE
+  // policy above — a DELETE has no `with check`) — see
+  // supabase/migrations/<timestamp>_web_users_role_edit_remove_write_policies.sql.
+  //
+  // §2.5c/AC-WU-47 — also a SCOPED action, jumeau exact of 'role:assign':
+  // see can.ts's 'section-manager' branch, extended in THIS SAME change.
+  'role:remove': ['admin'],
 }

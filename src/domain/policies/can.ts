@@ -43,8 +43,22 @@ function grants(
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':
-      if (action === 'section:manage' || action === 'convocation:create') {
-        // The use case resolves the target team's sectionId via TeamRepository
+      // specs/web-users.md §2.6e/AC-WU-36 — 'role:assign' added to this
+      // list in the SAME change as its rbac-matrix.ts entry, even though
+      // that entry is ['admin']-only today (an admin's own RoleAssignment
+      // carries no scope field, so it never reaches this branch at all —
+      // it's caught by the `default` case below). Written now so a future
+      // PO-WE-01 widening to 'section-manager' can't silently assign a
+      // role outside that manager's own section with no can.ts guard in
+      // place — the same gap already closed for 'convocation:create'.
+      //
+      // specs/web-users-role-edit-remove.md §2.5c/AC-WU-47 — 'role:remove'
+      // added in the SAME change as ITS OWN rbac-matrix.ts entry, jumeau
+      // exact of the 'role:assign' addition above, same "written now so a
+      // future widening doesn't silently ship without it" reasoning.
+      if (action === 'section:manage' || action === 'convocation:create' || action === 'role:assign' || action === 'role:remove') {
+        // The use case resolves the target's sectionId (via TeamRepository
+        // for a team-scoped target, or directly for a section-scoped one)
         // *before* calling can() — this policy only compares values it's given.
         return assignment.sectionId === context.sectionId
       }

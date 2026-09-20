@@ -28,15 +28,20 @@ interface MembershipFormDialogProps {
 }
 
 // specs/web-memberships.md §1/UI design (amendement du 2026-09-17) — the
-// mockup's own 5 fields for "Nouvelle adhésion" ONLY: UTILISATEUR, SAISON,
-// NUMÉRO DE LICENCE, STATUT, VALIDE JUSQU'AU. Modification no longer goes
-// through this component (or any dialog) — it's the inline expandable row,
-// MembershipEditRow, which is why there is no "mode"/edited-row prop here
-// anymore and no "Cotisation totale (€)" field (§2.1 — that field is
-// deliberately absent from this dialog, only the edit row carries it).
-// Modeled on TeamFormDialog.tsx/AssignCoachDialog.tsx (dropdowns populated
-// from admin directory reads). Remounted (via `key` in the parent) rather
-// than reset by a useEffect, each time it's reopened.
+// mockup's own 5 fields for "Nouvelle adhésion": UTILISATEUR, SAISON,
+// NUMÉRO DE LICENCE, STATUT, VALIDE JUSQU'AU. /admin/memberships is this
+// component's ONLY caller (specs/web-users-membership-column.md §2.6 — the
+// "Créer / renouveler l'adhésion" entry point on /admin/users' own row,
+// which used to reuse this component minus its UTILISATEUR field, is
+// retired: that screen never writes a membership any more). Modification of
+// an EXISTING membership still never goes through this component (or any
+// dialog) — it's the inline expandable row, MembershipEditRow — which is
+// why there is no "mode"/edited-row prop here and no "Cotisation totale
+// (€)" field (§2.1 — deliberately absent from this dialog, only the edit
+// row carries it). Modeled on TeamFormDialog.tsx/AssignCoachDialog.tsx
+// (dropdowns populated from admin directory reads). Remounted (via `key` in
+// the parent, or via `isOpen` unmounting entirely) rather than reset by a
+// useEffect, each time it's reopened.
 export function MembershipFormDialog({ isOpen, onClose }: MembershipFormDialogProps) {
   if (!isOpen) return null
 

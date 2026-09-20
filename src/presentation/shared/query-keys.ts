@@ -178,4 +178,31 @@ export const queryKeys = {
   // create/update/archive/payment mutation so the badge and the list never
   // drift apart.
   membershipsBadgeCount: () => ['memberships', 'badge', 'count'] as const,
+
+  // specs/web-users.md §2.2/§2.10/AC-WU-20 — /admin/users' own table read
+  // (UserRepository.findAdminDirectory()). Deliberately DISTINCT from
+  // `usersAdminList` above: that key backs AssignCoachDialog/MembershipFormDialog's
+  // `UTILISATEUR` dropdown (UserSummary — id/fullName/email only), this one
+  // backs a richer shape (AdminUserDirectoryEntry — roles + completeness
+  // facts) that no other screen needs — sharing one cache entry between the
+  // two would be wrong the moment either shape changes (same reasoning as
+  // `newsAdminList` vs `newsFeed`).
+  usersAdminDirectory: () => ['users', 'admin', 'directory'] as const,
+
+  // specs/web-users.md §2.3/§2.8/AC-WU-17 — the nav badge on "Utilisateurs".
+  // Its own dedicated, LIGHT count read (CountUsersRequiringAttentionUseCase),
+  // never the full `usersAdminDirectory` above counted client-side —
+  // invalidated alongside `usersAdminDirectory` on every invite/rename/
+  // role-assignment/membership-creation mutation so the badge and the row
+  // icons never drift apart (same twin pattern as `membershipsBadgeCount`).
+  usersBadgeCount: () => ['users', 'badge', 'count'] as const,
+
+  // specs/web-users-membership-column.md §2.3b/PO-WU-18 — the
+  // /admin/memberships filter-applied banner's own account-name lookup
+  // (UserRepository.findById(), the "one small new read this amendment
+  // introduces"), gated on the ?user= URL param being present. Same
+  // "generic single-resource-by-id lookup" shape as `team`/`section` above
+  // — distinct from `usersAdminDirectory`/`usersAdminList`, neither of
+  // which backs a single-account-by-id read.
+  user: (userId: string) => ['users', userId] as const,
 }

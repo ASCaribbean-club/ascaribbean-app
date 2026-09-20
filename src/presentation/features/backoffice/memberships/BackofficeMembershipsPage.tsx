@@ -8,6 +8,7 @@ import { ArchiveMembershipDialog } from './components/ArchiveMembershipDialog'
 import { MembershipFormDialog } from './components/MembershipFormDialog'
 import { MembershipTable } from './components/MembershipTable'
 import { MembershipTableSkeleton } from './components/MembershipTableSkeleton'
+import { MembershipUserFilterBanner } from './components/MembershipUserFilterBanner'
 import { RecordPaymentDialog } from './components/RecordPaymentDialog'
 import { useBackofficeMembershipsViewModel } from './useBackofficeMembershipsViewModel'
 
@@ -102,6 +103,11 @@ export function BackofficeMembershipsPage() {
           </Select>
         </div>
       </div>
+
+      {/* specs/web-users-membership-column.md §2.3b — rendered ONLY when
+          the ?user= URL param is present; absent, nothing here changes
+          from before this amendment (AC-WU-58). */}
+      {vm.userFilter && <MembershipUserFilterBanner accountName={vm.filteredUserName} onReset={vm.clearUserFilter} />}
 
       {/* §2.6c/AC-WM-21 — explicit fallback banner, never a silently empty
           list, when no season is currently in progress. */}

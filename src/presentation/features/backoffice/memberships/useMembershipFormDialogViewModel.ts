@@ -20,11 +20,14 @@ interface UseMembershipFormDialogViewModelParams {
   onSuccess: () => void
 }
 
-// specs/web-memberships.md UI design (amendement du 2026-09-17) — backs
-// ONLY the "Nouvelle adhésion" dialog now: modification moved to the inline
-// expandable row (useMembershipEditRowViewModel), which is why this hook no
-// longer takes a mode/membership pair the way the earlier pass's shared
-// create/edit hook did. Same remount-via-`key` pattern as
+// specs/web-memberships.md UI design (amendement du 2026-09-17) — backs the
+// "Nouvelle adhésion" dialog, /admin/memberships' ONLY caller
+// (specs/web-users-membership-column.md §2.6 retires the "Créer / renouveler
+// l'adhésion" entry point that used to also call this hook with a
+// presetUserId — that parameter is gone, there's nothing left to
+// pre-select). Modification of an EXISTING membership stays on the inline
+// expandable row (useMembershipEditRowViewModel), which is why this hook
+// still takes no mode/membership pair. Same remount-via-`key` pattern as
 // useSeasonFormDialogViewModel/useTeamFormDialogViewModel (see
 // MembershipFormDialog.tsx). The UTILISATEUR/SAISON dropdowns read the SAME
 // centralized queryKeys already warmed by useBackofficeMembershipsViewModel
@@ -34,7 +37,7 @@ export function useMembershipFormDialogViewModel({ onSuccess }: UseMembershipFor
   const queryClient = useQueryClient()
   const { userRepository, seasonRepository, createMembershipUseCase } = useMembershipsDependencies()
 
-  const [values, setValues] = useState<MembershipFormValues>(EMPTY_VALUES)
+  const [values, setValues] = useState<MembershipFormValues>(() => ({ ...EMPTY_VALUES }))
 
   function setField<K extends keyof MembershipFormValues>(key: K, value: MembershipFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -76,6 +79,14 @@ export function useMembershipFormDialogViewModel({ onSuccess }: UseMembershipFor
       // nav badge reflect the change without a manual reload.
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() })
+      // specs/web-users-membership-column.md §2.5/AC-WU-59 — the sense
+      // inverts from before this amendment: creating a membership here now
+      // also invalidates /admin/users' own two keys (criteria 2 AND 3 of
+      // its completeness read), so its ADHÉSION SAISON column and nav badge
+      // never go stale after an admin follows the redirect, creates the
+      // membership, then comes back via the sidebar.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
       onSuccess()
     },
   })

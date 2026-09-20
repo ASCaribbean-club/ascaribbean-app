@@ -32,9 +32,14 @@ export interface BackofficeNavItem {
 // (`BACKOFFICE_NAV_ITEMS.find((item) => item.id === 'users')`) instead of a
 // fragile array index that would silently break if this list gets reordered.
 //
-// Deliberately missing vs. the mockup: no numeric badge count field on
-// 'users'/'memberships' — a count is invented data until PO-WE-11 says what
-// it counts (AC-WE-13, specs/web-empty-state.md §5).
+// Deliberately missing vs. the mockup: no generic numeric `badge` field
+// here. 'memberships' (web-memberships) and 'users' (specs/web-users.md
+// §2.8, PO-WE-11 now fully resolved for both) each carry a count, but each
+// through its OWN dedicated twin (use case + hook + queryKey + isolated
+// child component, e.g. MembershipsNavBadge/UsersNavBadge in
+// BackofficeSidebar.tsx) — never a shared field on this type, so a count is
+// never invented generic UI ahead of a spec that's actually defined what it
+// counts (AC-WE-13, specs/web-empty-state.md §5).
 export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
   {
     // 2026-09-17 developer decision: 6th sidebar entry, first in order —

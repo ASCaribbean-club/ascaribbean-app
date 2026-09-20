@@ -1,4 +1,5 @@
 import { DomainError } from '@domain/errors/domain-error'
+import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
@@ -94,6 +95,19 @@ describe('mapDomainErrorToUiError', () => {
       message: 'Une erreur technique est survenue. Contactez un administrateur si cela persiste.',
       variant: 'toast',
       retryable: false,
+    })
+  })
+
+  // specs/web-users-role-edit-remove.md §2.2 rule 4/AC-WU-51 — a scope edit
+  // landing on a team/section the same account already holds the same role
+  // on, surfaced as a retryable inline error (never absorbed in silence).
+  it('maps DuplicateRoleAssignmentError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new DuplicateRoleAssignmentError('duplicate'))
+
+    expect(result).toEqual({
+      message: 'Ce compte porte déjà ce rôle sur cette équipe ou cette section.',
+      variant: 'inline',
+      retryable: true,
     })
   })
 

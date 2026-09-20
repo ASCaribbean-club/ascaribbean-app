@@ -133,4 +133,57 @@ describe('can', () => {
       expect(can(user, 'role:assign-coach')).toBe(false)
     }
   })
+
+  // specs/web-users.md §2.6d/AC-WU-05/AC-WU-06 — 'role:assign' is the NEW,
+  // generalized action ('role:assign-coach' above stays untouched, both
+  // exist side by side). ['admin']-only in the matrix, mirroring the CDC's
+  // "Gérer comptes, rôles, paramétrage" row.
+  it('allows an admin to assign a (non-admin) role, regardless of the targeted scope', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'role:assign', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'role:assign', { sectionId: 'section-a' })).toBe(true)
+    expect(can(user, 'role:assign')).toBe(true)
+  })
+
+  it('denies every non-admin role from assigning a role, including a section-manager acting inside their own section', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'role:assign', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    }
+  })
+
+  // specs/web-users-role-edit-remove.md §2.5b/AC-WU-45 — the amendment's
+  // new action, jumeau exact of 'role:assign' above. ['admin']-only in the
+  // matrix, mirroring the CDC's "Gérer comptes, rôles, paramétrage" row.
+  it('allows an admin to remove a role assignment, regardless of the targeted scope', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'role:remove', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'role:remove', { sectionId: 'section-a' })).toBe(true)
+    expect(can(user, 'role:remove')).toBe(true)
+  })
+
+  it('denies every non-admin role from removing a role assignment, including a section-manager acting inside their own section', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'role:remove', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    }
+  })
 })

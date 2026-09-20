@@ -42,6 +42,21 @@ export function isSectionManager(assignment: RoleAssignment): assignment is Extr
   return assignment.role === 'section-manager'
 }
 
+// specs/web-users.md §2.6/AC-WU-06 — the "Assigner un rôle" dialog offers
+// exactly the seven non-admin roles, never 'admin'. This type makes that
+// exclusion STRUCTURAL at every call site that needs it (AssignRoleUseCase's
+// own input, RoleAssignmentRepository.assignRole, the dialog's ViewModel) —
+// the same "the type documents the guarantee instead of merely a runtime
+// check" reasoning already used for CoachAssignmentInsertRow
+// (data/dto/role-assignment-dto.ts). Excludes the 'admin' member of
+// RoleAssignment only; every other branch (and its scope shape) is
+// untouched.
+export type AssignableRoleAssignment = Exclude<RoleAssignment, { role: 'admin' }>
+
+export function isAssignableRole(role: Role): role is AssignableRoleAssignment['role'] {
+  return role !== 'admin'
+}
+
 // specs/match_details_page.md correction #10 originally removed the
 // Effectif roster's position sub-label ("Gardienne", "Milieu"...) for lack
 // of domain support — this is that support, added back deliberately rather

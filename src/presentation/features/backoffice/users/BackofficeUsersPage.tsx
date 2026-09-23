@@ -122,10 +122,12 @@ export function BackofficeUsersPage() {
           onGoToMembership={vm.goToMembership}
           onEdit={vm.openEditDialog}
           onSelectRoleAssignment={vm.openEditRoleAssignmentDialog}
+          canReissueInvitation={vm.canInviteUser}
+          onReissueInvitation={vm.openReissueInvitationDialog}
         />
       )}
 
-      <InviteUserDialog isOpen={vm.isInviteDialogOpen} onClose={vm.closeInviteDialog} />
+      <InviteUserDialog target={vm.inviteDialogTarget} onClose={vm.closeInviteDialog} />
       <UserEditDialog target={vm.editTarget} onClose={vm.closeEditDialog} />
       <AssignRoleDialog target={vm.assignRoleTarget} onClose={vm.closeAssignRoleDialog} />
       <EditRoleAssignmentDialog

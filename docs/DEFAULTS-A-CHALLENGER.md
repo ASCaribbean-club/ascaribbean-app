@@ -212,4 +212,34 @@ export interface Team {
 
 ---
 
+## Canal de remise manuel (WhatsApp/SMS/en personne)
+
+**Où** : `InviteUserDialog`/`useInviteUserDialogViewModel` (Copier/Partager) — remplace l'envoi d'email automatique (CDC §3.1, amendement du 2026-09-18).
+
+**Valeur actuelle** : l'admin copie ou partage lui-même le message contenant le lien, via un canal hors du contrôle de l'application (WhatsApp, SMS, en personne). La réinitialisation de mot de passe (CDC §3.1) continue, elle, de passer par email — ce canal-là reste inchangé et non résolu par cette tranche (Brevo/SMTP toujours pas configuré, `docs/GOUVERNANCE.md` §3).
+
+**Ce qu'il faudrait challenger** :
+- La confidentialité du canal manuel n'est ni vérifiable ni garantie par l'application (un lien collé dans le mauvais fil de discussion, un téléphone partagé…) — le seul garde-fou actuel est l'avertissement textuel de la boîte de dialogue ("jamais dans une conversation de groupe").
+- À revisiter une fois l'envoi transactionnel (Brevo) configuré : faut-il alors réintroduire une option d'envoi automatique par email EN PLUS du lien manuel, plutôt que de forcer systématiquement la remise manuelle ?
+
+**Priorité de revisite** : après premiers retours réels.
+
+---
+
+## Balises Open Graph statiques — une seule prévisualisation pour toute l'app
+
+**Où** : `index.html` (`<meta property="og:*">`).
+
+**Valeur actuelle** : titre/description/image fixes, identiques pour n'importe quelle URL de l'application partagée dans un aperçu de lien — pas seulement `/activation`.
+
+**Pourquoi cette valeur, provisoirement** : `/activation` est aujourd'hui le seul lien effectivement partagé hors de l'application (WhatsApp/SMS) — une prévisualisation par route n'a pas de second cas d'usage pour la justifier.
+
+**Ce qu'il faudrait challenger** :
+- Si un futur lien profond (autre qu'`/activation`) est un jour partagé de la même façon, cette prévisualisation générique redeviendra trompeuse (même image/titre quel que soit le contenu réel derrière le lien) — prévoir alors des balises par route.
+- `og:image` pointe actuellement vers un domaine placeholder (`REPLACE-WITH-PRODUCTION-DOMAIN.example`) — doit être corrigé vers le domaine de production réel avant toute mise en service (un `og:image` doit être une URL absolue pour qu'un robot de prévisualisation externe puisse la résoudre).
+
+**Priorité de revisite** : basse — sauf le domaine placeholder, à corriger avant mise en prod.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

@@ -16,6 +16,8 @@ import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-err
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
 import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
+import { InvitationLinkInvalidError } from '@domain/errors/invitation-link-invalid-error'
+import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-target-not-invited-error'
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
@@ -262,6 +264,29 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     return {
       message: 'Cette adresse e-mail est déjà invitée ou déjà inscrite au club.',
       variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof InvitationTargetNotInvitedError) {
+    // specs/web-users-invitation-links.md §2 — ReissueInvitationLinkUseCase's
+    // own guard firing. The row action's own visibility already prevents
+    // this in the normal case (UserTable, userStatus(row.charterAcceptedAt)
+    // === 'invited') — this only fires on the rarer race the use case is
+    // the real authority for.
+    return {
+      message: 'Ce compte a déjà activé son accès — impossible de régénérer un lien d’invitation.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof InvitationLinkInvalidError) {
+    // specs/web-users-invitation-links.md §5 — ActivationPage's own
+    // verifyOtp() rejection: expired or already-used token.
+    return {
+      message: 'Ce lien n’est plus valide. Contactez un administrateur du club pour en obtenir un nouveau.',
+      variant: 'blocking',
       retryable: false,
     }
   }

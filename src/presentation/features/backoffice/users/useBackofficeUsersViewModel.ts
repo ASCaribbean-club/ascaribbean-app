@@ -9,6 +9,7 @@ import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import type { EditRoleAssignmentTarget } from './components/EditRoleAssignmentDialog'
+import type { InviteUserDialogTarget } from './useInviteUserDialogViewModel'
 
 export type UserRoleFilterValue = Role | 'all'
 export type UserStatusFilterValue = UserStatus | 'all'
@@ -42,7 +43,11 @@ export function useBackofficeUsersViewModel() {
   const [roleFilter, setRoleFilter] = useState<UserRoleFilterValue>('all')
   const [statusFilter, setStatusFilter] = useState<UserStatusFilterValue>('all')
 
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  // specs/web-users-invitation-links.md §4 — one dialog target for both
+  // modes (create from the header button, reissue from a row's "Lien
+  // d'invitation" action) — null closes it, same shape as every other
+  // dialog target in this ViewModel.
+  const [inviteDialogTarget, setInviteDialogTarget] = useState<InviteUserDialogTarget | null>(null)
   const [editTarget, setEditTarget] = useState<AdminUserDirectoryEntry | null>(null)
   const [assignRoleTarget, setAssignRoleTarget] = useState<AdminUserDirectoryEntry | null>(null)
   // specs/web-users-role-edit-remove.md §2.1/UI design "La pastille de rôle
@@ -129,9 +134,17 @@ export function useBackofficeUsersViewModel() {
     statusFilter,
     setStatusFilter,
 
-    isInviteDialogOpen,
-    openInviteDialog: () => setIsInviteDialogOpen(true),
-    closeInviteDialog: () => setIsInviteDialogOpen(false),
+    inviteDialogTarget,
+    openInviteDialog: () => setInviteDialogTarget({ mode: 'create' }),
+    // specs/web-users-invitation-links.md §4 — the row action's own entry
+    // point into the SAME dialog, re-issue mode. The row action's own
+    // rendering condition (userStatus(row.charterAcceptedAt) === 'invited',
+    // UserTable) already keeps this unreachable for a non-'invited' row —
+    // this is just the target constructor, no second check duplicated
+    // here (ARCHITECTURE.md §6, the ViewModel is the one place that
+    // computes this).
+    openReissueInvitationDialog: (row: AdminUserDirectoryEntry) => setInviteDialogTarget({ mode: 'reissue', userId: row.id, fullName: row.fullName }),
+    closeInviteDialog: () => setInviteDialogTarget(null),
 
     editTarget,
     openEditDialog: (row: AdminUserDirectoryEntry) => setEditTarget(row),

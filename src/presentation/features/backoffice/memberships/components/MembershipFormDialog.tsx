@@ -1,4 +1,3 @@
-import type { MembershipStatus } from '@domain/entities/membership'
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
 import { Button } from '@presentation/shared/components/ui/button'
 import {
@@ -13,24 +12,21 @@ import { Label } from '@presentation/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import { useMembershipFormDialogViewModel } from '../useMembershipFormDialogViewModel'
 
-// §2.4 — the demand's three values, mapped to the existing MembershipStatus
-// union and MembershipStatusBadge's own French labels (AC-WM-10: no new
-// value, no relabeling).
-const STATUS_OPTIONS: { value: MembershipStatus; label: string }[] = [
-  { value: 'pending', label: 'En attente' },
-  { value: 'active', label: 'Active' },
-  { value: 'suspended', label: 'Suspendue' },
-]
-
 interface MembershipFormDialogProps {
   isOpen: boolean
   onClose: () => void
 }
 
 // specs/web-memberships.md §1/UI design (amendement du 2026-09-17) — the
-// mockup's own 5 fields for "Nouvelle adhésion": UTILISATEUR, SAISON,
-// NUMÉRO DE LICENCE, STATUT, VALIDE JUSQU'AU. /admin/memberships is this
-// component's ONLY caller (specs/web-users-membership-column.md §2.6 — the
+// mockup's own fields for "Nouvelle adhésion": UTILISATEUR, SAISON, NUMÉRO
+// DE LICENCE, VALIDE JUSQU'AU. The mockup's own STATUT field is deliberately
+// dropped here (developer decision, 2026-09-23): a brand-new membership
+// always starts 'pending' — CreateMembershipUseCase rejects 'active' outright
+// (a new membership can never have a settled cotisation), so offering the
+// full 3-way choice at creation only invited a dead-end pick. Promoting to
+// 'active'/'suspended' stays the edit row's job (MembershipEditRow, unchanged
+// — its own 3-option STATUT selector is untouched). /admin/memberships is
+// this component's ONLY caller (specs/web-users-membership-column.md §2.6 — the
 // "Créer / renouveler l'adhésion" entry point on /admin/users' own row,
 // which used to reuse this component minus its UTILISATEUR field, is
 // retired: that screen never writes a membership any more). Modification of
@@ -78,6 +74,11 @@ function MembershipFormDialogContent({ onClose }: { onClose: () => void }) {
             <Label htmlFor="membership-user" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
               Utilisateur
             </Label>
+            {/* vm.users already excludes accounts holding a live membership
+                for the currently selected season (see the ViewModel) — the
+                DB's own unique index would reject that pair anyway, but
+                surfacing that only after a failed submit is worse UX than
+                not offering the choice. */}
             <Select value={vm.values.userId} onValueChange={vm.setUserId} disabled={vm.isSubmitting || noUsers}>
               <SelectTrigger id="membership-user" className="h-11 rounded-xl">
                 <SelectValue placeholder="Choisir…" />
@@ -90,7 +91,11 @@ function MembershipFormDialogContent({ onClose }: { onClose: () => void }) {
                 ))}
               </SelectContent>
             </Select>
-            {noUsers && <p className="text-xs text-muted-foreground">Aucun compte disponible pour le moment.</p>}
+            {noUsers && (
+              <p className="text-xs text-muted-foreground">
+                {vm.values.seasonId ? 'Tous les comptes ont déjà une adhésion pour cette saison.' : 'Aucun compte disponible pour le moment.'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -131,35 +136,13 @@ function MembershipFormDialogContent({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="membership-status" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-              Statut
-            </Label>
-            <Select
-              value={vm.values.status}
-              onValueChange={(value) => vm.setStatus(value as MembershipStatus)}
-              disabled={vm.isSubmitting}
-            >
-              <SelectTrigger id="membership-status" className="h-11 rounded-xl">
-                <SelectValue placeholder="Choisir…" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="membership-valid-until" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
               Valide jusqu&rsquo;au
             </Label>
-            {/* PO-WM-12 (open, non-blocking) — left fully manual rather than
-                pre-filled from the selected season's own end date: neither
-                the mockup nor any cadrage document settles whether that
-                default is wanted, so this pass doesn't guess at it. */}
+            {/* PO-WM-12 resolved (developer decision, 2026-09-23) — defaults
+                to the selected season's own end date (see the ViewModel's
+                effectiveValidUntil); still a plain editable date input, so
+                typing a different value overrides the default. */}
             <Input
               id="membership-valid-until"
               type="date"

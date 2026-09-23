@@ -29,7 +29,8 @@ function fakeUserRepository(user: User | null): UserRepository {
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
     updateFullName: async () => {},
-    invite: async () => {},
+    invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
+    reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
   }
 }
 

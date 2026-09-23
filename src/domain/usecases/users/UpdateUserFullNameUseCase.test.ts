@@ -28,7 +28,8 @@ function fakeUserRepository(user: User | null, overrides: Partial<UserRepository
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
     updateFullName: vi.fn(async () => {}),
-    invite: async () => {},
+    invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
+    reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
     ...overrides,
   }
 }

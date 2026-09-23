@@ -42,6 +42,14 @@ export async function mapInviteFunctionError(error: unknown): Promise<DomainErro
       return new UserAlreadyRegisteredError(body.message ?? 'This email is already invited or already registered')
     case 'directory_insert_failed':
       return new UserDirectoryInsertFailedError(body.message ?? 'Invitation sent but the public.users row could not be created')
+    case 'server_misconfigured':
+      // A deployment/config problem on the function's own side (missing
+      // env var) — deliberately NOT a ForbiddenError: the caller did
+      // nothing wrong and re-authenticating won't fix it. Falls into the
+      // same generic InviteUserFailedError as an unrecognized error, which
+      // is exactly the right copy here too ("something went wrong, try
+      // later" rather than a false claim about permissions).
+      return new InviteUserFailedError(body.message ?? 'invite-user function is missing its environment configuration')
     default:
       return new InviteUserFailedError(body?.message ?? 'invite-user function returned an unrecognized error')
   }

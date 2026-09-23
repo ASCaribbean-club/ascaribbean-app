@@ -1,7 +1,7 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidUserInputError } from '../../errors/invalid-user-input-error'
 import { can } from '../../policies/can'
-import type { UserRepository } from '../../repositories/user-repository'
+import type { InvitationLink, UserRepository } from '../../repositories/user-repository'
 
 export interface InviteUserUseCaseInput {
   actorId: string
@@ -16,12 +16,14 @@ export interface InviteUserUseCaseInput {
 // team/section scope (§3, 'admin' carries no scope field) — no context
 // object needed here.
 //
-// §2.5/AC-WU-30 — the actual privileged work (calling
-// auth.admin.inviteUserByEmail() with a service_role client, then inserting
-// the public.users row) lives BEHIND UserRepository.invite(), inside
-// data/'s invite-user Edge Function call. This use case carries the
-// INTENT ("inviter un compte") and its business rules; it has no Supabase
-// import of its own (CLAUDE.md §3/§6).
+// specs/web-users-invitation-links.md §2 (amendement du 2026-09-18,
+// remplace l'envoi d'e-mail) — the actual privileged work (calling
+// auth.admin.generateLink() with a service_role client, then inserting the
+// public.users row) lives BEHIND UserRepository.invite(), inside data's
+// invite-user Edge Function call. This use case carries the INTENT
+// ("inviter un compte") and its business rules; it has no Supabase import
+// of its own (CLAUDE.md §3/§6). The activation link itself is returned,
+// never sent — the application no longer emails anyone (§1).
 //
 // §4 "Journal d'audit" — CDC §11.3 names "création/suppression compte"
 // literally as an action to trace. Per CLAUDE.md §6 that belongs here (a
@@ -35,7 +37,7 @@ export interface InviteUserUseCaseInput {
 export class InviteUserUseCase {
   constructor(private readonly userRepository: UserRepository) {}
 
-  async execute(input: InviteUserUseCaseInput): Promise<void> {
+  async execute(input: InviteUserUseCaseInput): Promise<InvitationLink> {
     const actor = await this.userRepository.findById(input.actorId)
     if (!actor) {
       throw new ForbiddenError(`User not found: ${input.actorId}`)
@@ -57,10 +59,12 @@ export class InviteUserUseCase {
       throw new InvalidUserInputError('email is required')
     }
 
-    await this.userRepository.invite({ fullName, email })
+    const link = await this.userRepository.invite({ fullName, email })
 
     // blocked on PO-WU-07 — see this class's own top comment: no audit
     // infrastructure exists to write the required "création de compte"
     // trace to yet.
+
+    return link
   }
 }

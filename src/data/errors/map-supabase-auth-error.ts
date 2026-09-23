@@ -1,6 +1,7 @@
 import type { AuthError } from '@supabase/supabase-js'
 import { DomainError } from '@domain/errors/domain-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvitationLinkInvalidError } from '@domain/errors/invitation-link-invalid-error'
 
 // Distinct from map-supabase-error.ts (PostgrestError, table/RPC calls) —
 // supabase-js's Auth API raises AuthError instead. InvalidCredentialsError
@@ -10,4 +11,14 @@ import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-erro
 // the one realistic failure mode.
 export function mapSupabaseAuthError(error: AuthError): DomainError {
   return new InvalidCredentialsError(error.message)
+}
+
+// specs/web-users-invitation-links.md §5 — AuthRepositoryImpl.verifyInvitationLink's
+// own mapping, distinct from mapSupabaseAuthError above: "wrong password"
+// and "this activation link is expired/already used" need different French
+// copy and a different next step (retry the form vs. "demandez un nouveau
+// lien à un administrateur"), so this gets its own function rather than
+// folding into the generic one and defaulting to InvalidCredentialsError.
+export function mapVerifyInvitationLinkError(error: AuthError): DomainError {
+  return new InvitationLinkInvalidError(error.message)
 }

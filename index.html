@@ -18,6 +18,22 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="AS Caribbean" />
     <meta name="theme-color" content="#030201" />
+    <!--
+      specs/web-users-invitation-links.md §3 "Le logo: via le link preview,
+      pas le texte" — a plain-text clipboard message can't carry an image,
+      and WhatsApp/SMS ignore HTML clipboard content, so the logo reaches
+      the member through the link preview a messaging app builds from these
+      Open Graph tags when unfurling the /activation URL. Static, in the
+      HTML head — a preview crawler never executes the SPA's JavaScript, so
+      tags injected at runtime would be invisible to it. One global preview
+      for every app URL (not scoped to /activation specifically) — see
+      docs/DEFAULTS-A-CHALLENGER.md, acceptable while /activation is the
+      only link ever shared this way.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AS Caribbean" />
+    <meta property="og:description" content="Invitation à rejoindre l'application de l'AS Caribbean." />
+    <meta property="og:image" content="https://as-caribeean-club-app.netlify.app/icons/icon-512.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -3,6 +3,7 @@ import { AppShell } from '../shared/layout/AppShell'
 import { LoginPage } from '../features/auth/login/LoginPage'
 import { ForgotPasswordPage } from '../features/auth/forgot-password/ForgotPasswordPage'
 import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePasswordPage'
+import { ActivationPage } from '../features/auth/activation/ActivationPage'
 import { CharterPage } from '../features/auth/charter/CharterPage'
 import { NewsPage } from '../features/news/NewsPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
@@ -31,6 +32,12 @@ import { RequireBackofficeAccess } from './RequireBackofficeAccess'
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  // specs/web-users-invitation-links.md §5 — public, outside RequireSession:
+  // there is no session until verifyInvitationLink() succeeds (the tap on
+  // "Activer mon compte", never on load — see ActivationPage's own top
+  // comment on why this must never behave like /update-password's
+  // auto-detected session).
+  { path: '/activation', element: <ActivationPage /> },
   // Not behind RequireSession: it must render its own "invalid/expired
   // link" state for a rejected recovery link, which never produces a
   // session for RequireSession to gate on. See useUpdatePasswordViewModel.

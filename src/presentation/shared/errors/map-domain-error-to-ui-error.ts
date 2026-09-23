@@ -23,6 +23,7 @@ import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
+import { WeakPasswordError } from '@domain/errors/weak-password-error'
 import type { UiError } from './ui-error'
 
 // Next hop after data/errors/map-supabase-error.ts: that file stops at
@@ -53,6 +54,20 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   if (error instanceof InvalidCredentialsError) {
     return {
       message: 'Identifiants incorrects. Vérifiez votre saisie et réessayez.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof WeakPasswordError) {
+    // data/errors/map-supabase-auth-error.ts — /activation and
+    // /update-password's own password form. Copy matches the project's
+    // actual configured policy (Dashboard > Authentication > Providers >
+    // Email > Password Requirements) — update this text by hand if that
+    // policy is ever changed there, same manual-mirroring convention as
+    // INVITE_LINK_VALIDITY_HOURS ↔ otp_expiry.
+    return {
+      message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre.',
       variant: 'inline',
       retryable: true,
     }

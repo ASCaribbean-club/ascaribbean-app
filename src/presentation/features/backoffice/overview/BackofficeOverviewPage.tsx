@@ -34,7 +34,7 @@ export function BackofficeOverviewPage() {
           <DashboardActionCard
             icon={IconUserPlus}
             title="Inviter un utilisateur"
-            description="Envoi par e-mail"
+            description="Lien à partager"
             variant="primary"
             onClick={vm.openInviteDialog}
           />
@@ -71,7 +71,7 @@ export function BackofficeOverviewPage() {
         <PendingInvitationsPanel data={vm.pendingInvitations} />
       </div>
 
-      <InviteUserDialog isOpen={vm.isInviteDialogOpen} onClose={vm.closeInviteDialog} />
+      <InviteUserDialog target={vm.inviteDialogTarget} onClose={vm.closeInviteDialog} />
       <TeamFormDialog dialog={vm.teamDialog} onClose={vm.closeTeamDialog} />
       <MembershipFormDialog isOpen={vm.isMembershipDialogOpen} onClose={vm.closeMembershipDialog} />
       <NewsFormDialog dialog={vm.newsDialog} onClose={vm.closeNewsDialog} />

@@ -10,6 +10,7 @@ import { useBackofficeDashboardViewModel } from '@presentation/features/backoffi
 import { assembleMembershipAdminRows, type MembershipAdminRow } from '@presentation/features/backoffice/memberships/membership-admin-row'
 import type { NewsDialogState } from '@presentation/features/backoffice/news/useBackofficeNewsViewModel'
 import type { TeamDialogState } from '@presentation/features/backoffice/teams/useBackofficeTeamsViewModel'
+import type { InviteUserDialogTarget } from '@presentation/features/backoffice/users/useInviteUserDialogViewModel'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
@@ -237,7 +238,7 @@ export function useBackofficeOverviewViewModel() {
   const pendingInvitationsLoading = usersCardLoading
   const pendingInvitationsError = usersCardError
 
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [inviteDialogTarget, setInviteDialogTarget] = useState<InviteUserDialogTarget | null>(null)
   const [teamDialog, setTeamDialog] = useState<TeamDialogState>(null)
   const [isMembershipDialogOpen, setIsMembershipDialogOpen] = useState(false)
   const [newsDialog, setNewsDialog] = useState<NewsDialogState>(null)
@@ -258,9 +259,9 @@ export function useBackofficeOverviewViewModel() {
     // §2.3 — AC-WD-09/AC-WD-10: each opens the EXISTING dialog verbatim,
     // never a new one, never a pre-selection MembershipFormDialog/
     // TeamFormDialog don't already support.
-    isInviteDialogOpen,
-    openInviteDialog: () => setIsInviteDialogOpen(true),
-    closeInviteDialog: () => setIsInviteDialogOpen(false),
+    inviteDialogTarget,
+    openInviteDialog: () => setInviteDialogTarget({ mode: 'create' }),
+    closeInviteDialog: () => setInviteDialogTarget(null),
 
     teamDialog,
     openCreateTeamDialog: () => setTeamDialog({ mode: 'create' }),

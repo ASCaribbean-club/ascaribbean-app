@@ -1,7 +1,8 @@
-import { IconPencil } from '@tabler/icons-react'
+import { IconLink, IconPencil } from '@tabler/icons-react'
 import type { Section } from '@domain/entities/section'
 import type { Team } from '@domain/entities/team'
 import type { AssignableRoleAssignment } from '@domain/entities/user'
+import { userStatus } from '@domain/policies/user-status'
 import type { AdminUserDirectoryEntry } from '@domain/repositories/user-repository'
 import { Button } from '@presentation/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
@@ -31,6 +32,13 @@ interface UserTableProps {
   // devient un contrôle" — a click on a non-admin pastille, the row it
   // belongs to AND the exact assignment (natural key) it targets.
   onSelectRoleAssignment: (row: AdminUserDirectoryEntry, assignment: AssignableRoleAssignment) => void
+  // specs/web-users-invitation-links.md §4 "Users list — new row action" —
+  // a boolean the ViewModel already computed (usePermission('user:invite')),
+  // combined HERE with each row's own userStatus() (the SAME predicate
+  // UserStatusBadge already renders from) — never a stored/passed-in
+  // per-row boolean, so there is exactly one place this rule is expressed.
+  canReissueInvitation: boolean
+  onReissueInvitation: (row: AdminUserDirectoryEntry) => void
 }
 
 // specs/web-users.md §1/UI design "Tableau à six colonnes"
@@ -49,6 +57,8 @@ export function UserTable({
   onGoToMembership,
   onEdit,
   onSelectRoleAssignment,
+  canReissueInvitation,
+  onReissueInvitation,
 }: UserTableProps) {
   return (
     <Table>
@@ -121,6 +131,22 @@ export function UserTable({
                     className="h-11 w-11 rounded-full"
                   >
                     <IconPencil className="size-4" aria-hidden />
+                  </Button>
+                )}
+                {/* specs/web-users-invitation-links.md §4 — rendered only
+                    for a still-'invited' row, never a disabled button for
+                    any other status (least-privilege display rule, same as
+                    every other action in this cell). */}
+                {canReissueInvitation && userStatus(row.charterAcceptedAt) === 'invited' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Lien d’invitation pour « ${row.fullName} »`}
+                    onClick={() => onReissueInvitation(row)}
+                    className="h-11 w-11 rounded-full"
+                  >
+                    <IconLink className="size-4" aria-hidden />
                   </Button>
                 )}
               </div>

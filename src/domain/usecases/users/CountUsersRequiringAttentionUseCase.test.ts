@@ -30,7 +30,8 @@ function fakeUserRepository(overrides: Partial<UserRepository> = {}): UserReposi
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
     updateFullName: async () => {},
-    invite: async () => {},
+    invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
+    reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
     ...overrides,
   }
 }

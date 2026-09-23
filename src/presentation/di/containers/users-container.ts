@@ -13,6 +13,7 @@ import { AssignRoleUseCase } from '@domain/usecases/users/AssignRoleUseCase'
 import { CountUsersRequiringAttentionUseCase } from '@domain/usecases/users/CountUsersRequiringAttentionUseCase'
 import { EditRoleAssignmentScopeUseCase } from '@domain/usecases/users/EditRoleAssignmentScopeUseCase'
 import { InviteUserUseCase } from '@domain/usecases/users/InviteUserUseCase'
+import { ReissueInvitationLinkUseCase } from '@domain/usecases/users/ReissueInvitationLinkUseCase'
 import { RemoveRoleAssignmentUseCase } from '@domain/usecases/users/RemoveRoleAssignmentUseCase'
 import { UpdateUserFullNameUseCase } from '@domain/usecases/users/UpdateUserFullNameUseCase'
 
@@ -33,6 +34,7 @@ export interface UsersContainer {
   seasonRepository: SeasonRepository
 
   inviteUserUseCase: InviteUserUseCase
+  reissueInvitationLinkUseCase: ReissueInvitationLinkUseCase
   updateUserFullNameUseCase: UpdateUserFullNameUseCase
   assignRoleUseCase: AssignRoleUseCase
   editRoleAssignmentScopeUseCase: EditRoleAssignmentScopeUseCase
@@ -54,6 +56,7 @@ export function createUsersContainer(supabaseClient: SupabaseClient): UsersConta
     sectionRepository,
     seasonRepository,
     inviteUserUseCase: new InviteUserUseCase(userRepository),
+    reissueInvitationLinkUseCase: new ReissueInvitationLinkUseCase(userRepository),
     updateUserFullNameUseCase: new UpdateUserFullNameUseCase(userRepository),
     assignRoleUseCase: new AssignRoleUseCase(userRepository, roleAssignmentRepository),
     editRoleAssignmentScopeUseCase: new EditRoleAssignmentScopeUseCase(userRepository, roleAssignmentRepository),

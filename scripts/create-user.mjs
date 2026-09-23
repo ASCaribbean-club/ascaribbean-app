@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 // Provisions one club member account: creates the auth.users row via
-// Supabase's invite-by-email admin API, then upserts the matching
-// public.users profile row.
+// Supabase's admin API (a generated link, never an email — same
+// specs/web-users-invitation-links.md §1 amendement the invite-user Edge
+// Function itself follows, mirrored here by hand since this script talks
+// to Supabase directly with its own service_role client rather than
+// through that function), then upserts the matching public.users profile
+// row.
 //
 // public.users has no INSERT policy for authenticated clients — account
 // provisioning is explicitly left OPEN in
@@ -9,9 +13,10 @@
 // works around that with the service_role key instead of opening the
 // policy, per CLAUDE.md §7 ("don't resolve a point explicitly marked OPEN").
 //
-// Invite emails currently go through Supabase's default email service —
-// Brevo (docs/GOUVERNANCE.md §3, "Envoi des emails de l'application") isn't
-// wired up as custom SMTP yet, so this only works at low volume for now.
+// Prints the /activation link to the terminal — copy it and send it to the
+// member yourself (WhatsApp/SMS/in person), same as the admin UI's own
+// Copier/Partager. Nothing is emailed; this script never logs it anywhere
+// but stdout, and doesn't store it.
 //
 // Usage (Node's --env-file loads .env, no dotenv dependency needed):
 //   npm run create-user -- --email=joueur@example.fr --full-name="Prenom Nom"
@@ -23,11 +28,14 @@
 //     --role=coach --team="U15,U17" --section="Football" --section-type=football \
 //     --season="2026-2027" --season-start=2026-08-01 --season-end=2027-06-30
 //
-// Replay-safe: re-running with the same --email recovers the existing
-// auth user instead of failing once the invite has already been sent or
-// accepted, the public.users upsert only refreshes full_name — no
-// duplicate rows, no duplicate invite emails — and re-running with the same
-// --role/--team/--section never creates duplicate user_roles rows.
+// Replay-safe: re-running with the same --email recovers the existing auth
+// user and generates a FRESH link for it instead of failing (see this
+// file's own top comment on why a fresh link — the exact same "reissue"
+// case the admin UI's row action covers, generateLink({type:'magiclink'})
+// rather than {type:'invite'}, which only works for a brand-new user), the
+// public.users upsert only refreshes full_name — no duplicate rows — and
+// re-running with the same --role/--team/--section never creates duplicate
+// user_roles rows.
 
 import { parseArgs } from 'node:util'
 import { createClient } from '@supabase/supabase-js'
@@ -61,17 +69,30 @@ if (!supabaseUrl || !serviceRoleKey || !siteUrl) {
   process.exit(1)
 }
 
-// Where the invite email's link lands — UpdatePasswordPage is the one screen
-// that handles both "set your first password after an invite" and
-// "complete a password reset" (see AuthRepository.updatePassword's doc
-// comment in src/domain/repositories/auth-repository.ts).
-const redirectTo = `${siteUrl}/update-password`
-
 // service_role bypasses RLS entirely — this client only ever lives in this
 // script, run locally by an admin. Never import it from src/.
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+
+// Mirrors src/presentation/features/backoffice/users/invitation-message.ts's
+// INVITE_LINK_VALIDITY_HOURS by hand (CLAUDE.md §7 — this plain .mjs script
+// has no build step to import a TS file from src/ through). Keep both in
+// sync manually if either changes.
+const INVITE_LINK_VALIDITY_HOURS_REMINDER = 5
+
+// Mirrors the invite-user Edge Function's own buildActivationUrl() by hand
+// (CLAUDE.md §7) — the app's own /activation URL, built from the hashed
+// token, never Supabase's action_link (same link-preview-consumption risk
+// that function's own comment explains, relevant here too since the link
+// is meant to be pasted into WhatsApp/SMS, not emailed).
+function buildActivationUrl(hashedToken, type, name) {
+  const url = new URL('/activation', siteUrl)
+  url.searchParams.set('token_hash', hashedToken)
+  url.searchParams.set('type', type)
+  if (name) url.searchParams.set('name', name)
+  return url.toString()
+}
 
 // supabase-js has no "get user by email" admin call — page through
 // listUsers instead. Fine at club scale (a handful of accounts).
@@ -90,17 +111,27 @@ async function main() {
   const roleContext = await resolveRoleContext(supabase, values.role, values)
 
   let userId
-  const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
+  let activationUrl
+  const { data: invited, error: inviteError } = await supabase.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { data: { full_name: fullName } },
   })
 
-  if (invited?.user) {
+  if (invited?.user && invited.properties?.hashed_token) {
     userId = invited.user.id
-    console.log(`Invitation envoyee a ${email}.`)
+    activationUrl = buildActivationUrl(invited.properties.hashed_token, 'invite', fullName)
   } else if (inviteError?.message.toLowerCase().includes('already registered')) {
     userId = await findExistingAuthUserId(email)
     if (!userId) throw inviteError
-    console.log(`${email} a deja un compte auth — pas de nouvel email envoye.`)
+    // Same "existing, not yet confirmed user" case the admin UI's row
+    // action covers — 'invite' only works for a brand-new auth user.
+    const { data: reissued, error: reissueError } = await supabase.auth.admin.generateLink({ type: 'magiclink', email })
+    if (reissueError || !reissued?.properties?.hashed_token) throw reissueError ?? new Error('generateLink failed.')
+    // Reuses the --full-name this run was called with rather than reading
+    // it back from public.users (unlike the Edge Function's reissue
+    // branch, which has no --full-name flag of its own to fall back on).
+    activationUrl = buildActivationUrl(reissued.properties.hashed_token, 'magiclink', fullName)
   } else {
     throw inviteError
   }
@@ -116,6 +147,9 @@ async function main() {
   if (values.role) {
     await assignRole(supabase, userId, values.role, roleContext)
   }
+
+  console.log(`\nLien d'activation pour ${fullName} <${email}> :\n${activationUrl}\n`)
+  console.log(`Personnel, valable ${INVITE_LINK_VALIDITY_HOURS_REMINDER}h — envoyez-le vous-meme (WhatsApp/SMS/en personne).`)
 }
 
 main().catch((error) => {

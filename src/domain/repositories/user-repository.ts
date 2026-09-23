@@ -58,6 +58,15 @@ export interface InviteUserInput {
   email: string
 }
 
+// specs/web-users-invitation-links.md §2 — what invite()/reissueInvitationLink()
+// hand back: the app's own /activation URL (never Supabase's action_link,
+// see the invite-user Edge Function's own comment on why), built from the
+// hashed OTP token. Extended only if the function genuinely returns more —
+// no speculative fields.
+export interface InvitationLink {
+  url: string
+}
+
 export interface UserRepository {
   findById(id: string): Promise<User | null>
   // CDC §3.1 charter-acceptance gate — idempotent, see accept_charter() in
@@ -93,14 +102,25 @@ export interface UserRepository {
   // `grant update (full_name)`).
   updateFullName(userId: string, fullName: string): Promise<void>
 
-  // specs/web-users.md §2.5/AC-WU-03/AC-WU-33 — InviteUserUseCase is the
-  // only caller. Invokes the invite-user Edge Function
-  // (supabase.functions.invoke) — the ONLY place in this codebase's
-  // client-reachable code that talks to that function, and it never sees
-  // a service_role key (that key lives exclusively inside the function's
-  // own server-side environment, §2.5). The public.users row this creates
-  // is NOT returned here — a successful call means "go re-fetch the
-  // directory", the same "invalidate, don't thread the new row through"
-  // shape every other write in this screen already uses.
-  invite(input: InviteUserInput): Promise<void>
+  // specs/web-users-invitation-links.md §2/§4 (replaces the CDC §3.1
+  // email-invitation flow — amendement du 2026-09-18) — InviteUserUseCase
+  // is the only caller. Invokes the invite-user Edge Function
+  // (supabase.functions.invoke, mode 'create') — the ONLY place in this
+  // codebase's client-reachable code that talks to that function, and it
+  // never sees a service_role key (that key lives exclusively inside the
+  // function's own server-side environment). The public.users row this
+  // creates is NOT returned here — a successful call still means "go
+  // re-fetch the directory" for the row itself (same "invalidate, don't
+  // thread the new row through" shape every other write in this screen
+  // already uses); the ONLY thing threaded back to the caller is the
+  // activation link, which exists nowhere else to be re-fetched from (it
+  // is never stored, §1.6).
+  invite(input: InviteUserInput): Promise<InvitationLink>
+
+  // specs/web-users-invitation-links.md §2/§4 — ReissueInvitationLinkUseCase
+  // is the only caller. Same Edge Function, mode 'reissue': a fresh link
+  // for an EXISTING, still-'invited' auth user (no new public.users row,
+  // no directory re-fetch needed — nothing in AdminUserDirectoryEntry
+  // changes when a link is re-issued).
+  reissueInvitationLink(userId: string): Promise<InvitationLink>
 }

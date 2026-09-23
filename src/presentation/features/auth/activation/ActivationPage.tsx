@@ -99,6 +99,12 @@ export function ActivationPage() {
             onChange={(event) => vm.setNewPassword(event.target.value)}
             className={fieldInputClass}
           />
+          {/* Matches the project's actual configured password policy
+              (Dashboard > Authentication > Providers > Email > Password
+              Requirements) — caught here client-side so the member doesn't
+              need a round trip to WeakPasswordError's own message to learn
+              this. */}
+          <p className="px-1 text-[11px] text-auth-text-muted">Au moins 8 caractères, avec une minuscule, une majuscule et un chiffre.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">

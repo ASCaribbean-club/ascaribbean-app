@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AuthRepository, AuthSession } from '@domain/repositories/auth-repository'
-import { mapSupabaseAuthError } from '../errors/map-supabase-auth-error'
+import type { AuthRepository, AuthSession, InvitationLinkType } from '@domain/repositories/auth-repository'
+import { mapSupabaseAuthError, mapVerifyInvitationLinkError } from '../errors/map-supabase-auth-error'
 
 export class AuthRepositoryImpl implements AuthRepository {
   private readonly client: SupabaseClient
@@ -34,6 +34,16 @@ export class AuthRepositoryImpl implements AuthRepository {
   async requestPasswordReset(email: string): Promise<void> {
     const { error } = await this.client.auth.resetPasswordForEmail(email)
     if (error) throw mapSupabaseAuthError(error)
+  }
+
+  // specs/web-users-invitation-links.md §5 — ActivationPage's "Activer mon
+  // compte" tap, PKCE-style token exchange (never the implicit-flow
+  // action_link getSession()/onAuthStateChange auto-detects, see this
+  // class's own hasRecoveryLinkError comment for why that path stays
+  // reserved for the still-email-delivered password-reset case).
+  async verifyInvitationLink(tokenHash: string, type: InvitationLinkType): Promise<void> {
+    const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type })
+    if (error) throw mapVerifyInvitationLinkError(error)
   }
 
   hasRecoveryLinkError(): boolean {

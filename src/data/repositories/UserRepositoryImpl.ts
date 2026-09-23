@@ -3,12 +3,13 @@ import type { User } from '@domain/entities/user'
 import type { MissingElementFacts } from '@domain/policies/user-completeness'
 import type {
   AdminUserDirectoryEntry,
+  InvitationLink,
   InviteUserInput,
   UserMissingElementFactsEntry,
   UserRepository,
   UserSummary,
 } from '@domain/repositories/user-repository'
-import type { InviteUserRequestDto } from '../dto/invite-user-dto'
+import type { InviteUserRequestDto, InviteUserResponseDto } from '../dto/invite-user-dto'
 import type {
   AdminUserRoleRow,
   AdminUserRow,
@@ -172,17 +173,30 @@ export class UserRepositoryImpl implements UserRepository {
     if (error) throw mapSupabaseError(error)
   }
 
-  // specs/web-users.md §2.5/AC-WU-03/AC-WU-33/AC-WU-34 — the ONLY place in
-  // this codebase's client-reachable code that talks to the invite-user
-  // Edge Function; it never sees a service_role key (that key lives
-  // exclusively inside the function's own server-side environment).
+  // specs/web-users-invitation-links.md §2/AC-WU-03/AC-WU-34 — the ONLY
+  // place in this codebase's client-reachable code that talks to the
+  // invite-user Edge Function; it never sees a service_role key (that key
+  // lives exclusively inside the function's own server-side environment).
   // mapInviteFunctionError() reads the function's own JSON error body — see
   // that file's own comment on why supabase.functions.invoke()'s thrown
   // error needs its own translation path, distinct from mapSupabaseError().
-  async invite(input: InviteUserInput): Promise<void> {
-    const body: InviteUserRequestDto = { fullName: input.fullName, email: input.email }
-    const { error } = await this.client.functions.invoke('invite-user', { body })
+  // Returns the activation link — never stored, never logged, handed
+  // straight back to the ViewModel for Copier/Partager (§1.6/§4).
+  async invite(input: InviteUserInput): Promise<InvitationLink> {
+    const body: InviteUserRequestDto = { mode: 'create', fullName: input.fullName, email: input.email }
+    const { data, error } = await this.client.functions.invoke<InviteUserResponseDto>('invite-user', { body })
     if (error) throw await mapInviteFunctionError(error)
+    return { url: data!.url }
+  }
+
+  // specs/web-users-invitation-links.md §2 — ReissueInvitationLinkUseCase
+  // is the only caller. Same function, mode 'reissue': no public.users row
+  // to create, the account already exists.
+  async reissueInvitationLink(userId: string): Promise<InvitationLink> {
+    const body: InviteUserRequestDto = { mode: 'reissue', userId }
+    const { data, error } = await this.client.functions.invoke<InviteUserResponseDto>('invite-user', { body })
+    if (error) throw await mapInviteFunctionError(error)
+    return { url: data!.url }
   }
 }
 

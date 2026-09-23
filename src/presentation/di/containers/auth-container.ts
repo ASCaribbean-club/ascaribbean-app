@@ -11,6 +11,7 @@ import { RequestPasswordResetUseCase } from '@domain/usecases/auth/RequestPasswo
 import { SignInWithPasswordUseCase } from '@domain/usecases/auth/SignInWithPasswordUseCase'
 import { SignOutUseCase } from '@domain/usecases/auth/SignOutUseCase'
 import { UpdatePasswordUseCase } from '@domain/usecases/auth/UpdatePasswordUseCase'
+import { VerifyInvitationLinkUseCase } from '@domain/usecases/auth/VerifyInvitationLinkUseCase'
 
 export interface AuthContainer {
   authRepository: AuthRepository
@@ -20,6 +21,7 @@ export interface AuthContainer {
   requestPasswordResetUseCase: RequestPasswordResetUseCase
   checkRecoveryLinkUseCase: CheckRecoveryLinkUseCase
   updatePasswordUseCase: UpdatePasswordUseCase
+  verifyInvitationLinkUseCase: VerifyInvitationLinkUseCase
   signOutUseCase: SignOutUseCase
   getCurrentUserUseCase: GetCurrentUserUseCase
   acceptCharterUseCase: AcceptCharterUseCase
@@ -37,6 +39,7 @@ export function createAuthContainer(supabaseClient: SupabaseClient): AuthContain
     requestPasswordResetUseCase: new RequestPasswordResetUseCase(authRepository),
     checkRecoveryLinkUseCase: new CheckRecoveryLinkUseCase(authRepository),
     updatePasswordUseCase: new UpdatePasswordUseCase(authRepository),
+    verifyInvitationLinkUseCase: new VerifyInvitationLinkUseCase(authRepository),
     signOutUseCase: new SignOutUseCase(authRepository),
     getCurrentUserUseCase: new GetCurrentUserUseCase(userRepository),
     acceptCharterUseCase: new AcceptCharterUseCase(userRepository),

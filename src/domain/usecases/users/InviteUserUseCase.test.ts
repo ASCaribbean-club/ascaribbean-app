@@ -28,7 +28,8 @@ function fakeUserRepository(user: User | null, overrides: Partial<UserRepository
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
     updateFullName: async () => {},
-    invite: vi.fn(async () => {}),
+    invite: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' })),
+    reissueInvitationLink: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=xyz&type=magiclink' })),
     ...overrides,
   }
 }
@@ -59,12 +60,21 @@ describe('InviteUserUseCase', () => {
   })
 
   it('invites with the trimmed fullName and email', async () => {
-    const invite = vi.fn(async () => {})
+    const invite = vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' }))
     const useCase = new InviteUserUseCase(fakeUserRepository(adminUser(), { invite }))
 
     await useCase.execute(validInput({ fullName: '  Nouveau membre  ', email: '  nouveau@example.com  ' }))
 
     expect(invite).toHaveBeenCalledWith({ fullName: 'Nouveau membre', email: 'nouveau@example.com' })
+  })
+
+  it('returns the activation link the repository produced', async () => {
+    const invite = vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' }))
+    const useCase = new InviteUserUseCase(fakeUserRepository(adminUser(), { invite }))
+
+    const result = await useCase.execute(validInput())
+
+    expect(result).toEqual({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' })
   })
 
   it('propagates whatever error the repository throws, without swallowing or rewrapping it', async () => {

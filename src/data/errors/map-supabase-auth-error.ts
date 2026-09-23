@@ -1,15 +1,23 @@
-import type { AuthError } from '@supabase/supabase-js'
+import { isAuthWeakPasswordError, type AuthError } from '@supabase/supabase-js'
 import { DomainError } from '@domain/errors/domain-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvitationLinkInvalidError } from '@domain/errors/invitation-link-invalid-error'
+import { WeakPasswordError } from '@domain/errors/weak-password-error'
 
 // Distinct from map-supabase-error.ts (PostgrestError, table/RPC calls) —
-// supabase-js's Auth API raises AuthError instead. InvalidCredentialsError
-// is the only auth failure the domain models today (see AuthRepository's
-// doc comment), so every AuthError defaults to it: this is only called from
-// AuthRepositoryImpl.signInWithPassword, where "wrong email/password" is
-// the one realistic failure mode.
+// supabase-js's Auth API raises AuthError instead. Shared by every
+// AuthRepositoryImpl method that doesn't need its own dedicated mapping
+// (signInWithPassword, requestMagicLink, requestPasswordReset,
+// updatePassword, signOut) — most of those really do only ever fail with
+// "wrong credentials", but updatePassword() can ALSO reject with a
+// password-policy violation (isAuthWeakPasswordError — GoTrue's own
+// dedicated error class for this, not string-matched), which is a
+// different failure a caller needs to tell apart: "choose a different
+// password" is not the same fix as "retry your email/password".
 export function mapSupabaseAuthError(error: AuthError): DomainError {
+  if (isAuthWeakPasswordError(error)) {
+    return new WeakPasswordError(error.message)
+  }
   return new InvalidCredentialsError(error.message)
 }
 

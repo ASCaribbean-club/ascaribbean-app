@@ -8,6 +8,8 @@ export function toMatchDetails(row: MatchDetailsRow): MatchDetails {
     isHome: row.is_home,
     meetingPointTime: row.meeting_point_time,
     meetingPointLocation: row.meeting_point_location,
+    goalsFor: row.goals_for,
+    goalsAgainst: row.goals_against,
   }
 }
 
@@ -18,5 +20,7 @@ export function toMatchDetailsRow(details: MatchDetails): MatchDetailsRow {
     is_home: details.isHome,
     meeting_point_time: details.meetingPointTime,
     meeting_point_location: details.meetingPointLocation,
+    goals_for: details.goalsFor,
+    goals_against: details.goalsAgainst,
   }
 }

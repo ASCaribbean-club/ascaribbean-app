@@ -205,4 +205,14 @@ export const queryKeys = {
   // — distinct from `usersAdminDirectory`/`usersAdminList`, neither of
   // which backs a single-account-by-id read.
   user: (userId: string) => ['users', userId] as const,
+
+  // specs/match-stats.md — the "Résultats" tab's own event log read.
+  // Deliberately no separate `matchDetails` key: the score itself
+  // (goalsFor/goalsAgainst) is part of MatchDetails, already resolved by
+  // `convocationDetail` above (useConvocationDetailViewModel.ts) — a
+  // second key for the exact same read would just cache it twice. The
+  // scorer/card picker's eligible-roster shape is the SAME
+  // ConvocationRosterForCoach the Effectif tab already caches under
+  // `convocationRosterForCoach` — reused as-is, not forked here.
+  matchEvents: (convocationId: string) => ['convocations', convocationId, 'matchEvents'] as const,
 }

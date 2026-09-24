@@ -1,20 +1,17 @@
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
 import { Button } from '@presentation/shared/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@presentation/shared/components/ui/card'
+import { Card, CardContent } from '@presentation/shared/components/ui/card'
 import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
 import { BackofficeBrandMark } from '@presentation/features/backoffice/components/BackofficeBrandMark'
 import { useBackofficeLoginViewModel } from './useBackofficeLoginViewModel'
 
 // `[Admin] Web - Connexion-1.png`, reproduced closely with ONE deliberate
-// omission: the mockup's "Mot de passe oublié ?" link, sitting right under
-// the submit button, is NOT rendered — not even as a disabled/inert
-// placeholder (AC-WE-03). specs/web-empty-state.md is explicit about why:
-// "Cette zone de la maquette n'a aucune destination dans cette feature" —
-// unlike the header's two action buttons below (BackofficePageHeader),
-// which the spec explicitly asks to render-but-disable instead of omit.
-// PO-WE-07 (report vs. permanent decision for this gap) stays open —
-// nothing to build here either way in this pass.
+// omission: the mockup's "Mot de passe oublié ?" link is NOT rendered — not
+// even as a disabled/inert placeholder (AC-WE-03). specs/web-empty-state.md
+// is explicit about why: "Cette zone de la maquette n'a aucune destination
+// dans cette feature". PO-WE-07 (report vs. permanent decision for this gap)
+// stays open — nothing to build here either way in this pass.
 //
 // `dark` class on the wrapper (not a route-level/global toggle): scopes
 // shadcn's already-defined `.dark` palette (global.css) to just this
@@ -31,9 +28,6 @@ export function BackofficeLoginPage() {
       <BackofficeBrandMark />
 
       <Card className="w-full max-w-[420px] gap-5 rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold">Connexion</CardTitle>
-        </CardHeader>
         <CardContent>
           <form
             className="flex flex-col gap-4"

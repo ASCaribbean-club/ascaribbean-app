@@ -3,11 +3,12 @@
 // mirrored manually on both sides (CLAUDE.md §7: never generated from one
 // direction to the other). Not a table/view row (no `XxxRow`) and not a
 // Postgres RPC return value either — an external-ish payload to a Deno
-// function, hence `XxxDto` per CLAUDE.md §4. Two modes, one shape:
-// 'create' uses fullName/email, 'reissue' uses userId — the function
-// itself validates which fields a given mode actually needs.
+// function, hence `XxxDto` per CLAUDE.md §4. Three modes, one shape:
+// 'create' uses fullName/email, 'reissue' and 'reset-password' both use
+// userId — the function itself validates which fields a given mode
+// actually needs.
 export interface InviteUserRequestDto {
-  mode: 'create' | 'reissue'
+  mode: 'create' | 'reissue' | 'reset-password'
   fullName?: string
   email?: string
   userId?: string

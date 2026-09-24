@@ -1,20 +1,24 @@
 import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import type { InvitationLinkType } from '@domain/repositories/auth-repository'
+import type { AuthLinkType } from '@domain/repositories/auth-repository'
 import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 
 export type ActivationStatus = 'invalid' | 'ready' | 'verifying' | 'form'
 
-function parseType(value: string | null): InvitationLinkType | null {
+// Activation only ever hands out 'invite'/'magiclink' links (invite-user
+// Edge Function) — 'recovery' is UpdatePasswordPage's own link type, not a
+// valid /activation one, so a stray recovery link opened here still lands
+// on 'invalid' rather than being silently accepted.
+function parseType(value: string | null): AuthLinkType | null {
   return value === 'invite' || value === 'magiclink' ? value : null
 }
 
 // specs/web-users-invitation-links.md §5 — public /activation route
 // (router.tsx, outside RequireSession — there is no session until
-// verifyInvitationLink succeeds). Deliberately does NOT verify on load
+// verifyAuthLink succeeds). Deliberately does NOT verify on load
 // (point 1): the token is single-use, and a link-preview crawler's GET
 // (WhatsApp/SMS building a preview before the member ever taps the link)
 // must never be the thing that consumes it — only the member's own tap on
@@ -22,13 +26,13 @@ function parseType(value: string | null): InvitationLinkType | null {
 export function useActivationViewModel() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { verifyInvitationLinkUseCase, updatePasswordUseCase } = useAuthDependencies()
+  const { verifyAuthLinkUseCase, updatePasswordUseCase } = useAuthDependencies()
   const { user } = useAuth()
 
   const tokenHash = searchParams.get('token_hash')
   const type = useMemo(() => parseType(searchParams.get('type')), [searchParams])
   // §5 (amendement) — display-only, read straight from the URL (never
-  // verified, never used by verifyInvitationLinkUseCase itself): lets the
+  // verified, never used by verifyAuthLinkUseCase itself): lets the
   // member confirm the link is really theirs BEFORE tapping "Activer mon
   // compte", same reasoning as buildActivationUrl's own comment in the
   // invite-user Edge Function. Absent on an older link generated before
@@ -41,7 +45,7 @@ export function useActivationViewModel() {
   const verify = useMutation({
     mutationFn: () => {
       if (!tokenHash || !type) throw new Error('Missing token_hash/type — unreachable, the button is not rendered without them.')
-      return verifyInvitationLinkUseCase.execute({ tokenHash, type })
+      return verifyAuthLinkUseCase.execute({ tokenHash, type })
     },
   })
 

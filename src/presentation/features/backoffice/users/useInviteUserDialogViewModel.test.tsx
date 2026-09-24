@@ -17,10 +17,12 @@ function renderViewModel({
   target,
   invite = vi.fn().mockResolvedValue({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' }),
   reissueInvitationLink = vi.fn().mockResolvedValue({ url: 'https://app.example.com/activation?token_hash=xyz&type=magiclink' }),
+  generatePasswordResetLink = vi.fn().mockResolvedValue({ url: 'https://app.example.com/update-password?token_hash=xyz&type=recovery' }),
 }: {
   target: InviteUserDialogTarget
   invite?: ReturnType<typeof vi.fn>
   reissueInvitationLink?: ReturnType<typeof vi.fn>
+  generatePasswordResetLink?: ReturnType<typeof vi.fn>
 }) {
   mockedUseAuth.mockReturnValue({
     user: { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: new Date() },
@@ -30,13 +32,14 @@ function renderViewModel({
   mockedUseUsersDependencies.mockReturnValue({
     inviteUserUseCase: { execute: invite },
     reissueInvitationLinkUseCase: { execute: reissueInvitationLink },
+    generatePasswordResetLinkUseCase: { execute: generatePasswordResetLink },
   } as never)
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   const onClose = vi.fn()
   const rendered = renderHook(() => useInviteUserDialogViewModel({ target, onClose }), { wrapper })
-  return { ...rendered, onClose, invite, reissueInvitationLink }
+  return { ...rendered, onClose, invite, reissueInvitationLink, generatePasswordResetLink }
 }
 
 describe('useInviteUserDialogViewModel', () => {
@@ -82,6 +85,21 @@ describe('useInviteUserDialogViewModel', () => {
     await waitFor(() => expect(result.current.link).not.toBeNull())
     expect(reissueInvitationLink).toHaveBeenCalledWith({ actorId: 'admin-1', targetUserId: 'member-1' })
     expect(result.current.message).toContain('Bonjour Membre 👋')
+  })
+
+  it('reset-password mode calls GeneratePasswordResetLinkUseCase with the target user id, no form required', async () => {
+    const generatePasswordResetLink = vi.fn().mockResolvedValue({ url: 'https://app.example.com/update-password?token_hash=xyz&type=recovery' })
+    const target: InviteUserDialogTarget = { mode: 'reset-password', userId: 'member-2', fullName: 'Membre Actif' }
+    const { result } = renderViewModel({ target, generatePasswordResetLink })
+
+    expect(result.current.canSubmit).toBe(true)
+
+    act(() => result.current.generate())
+
+    await waitFor(() => expect(result.current.link).not.toBeNull())
+    expect(generatePasswordResetLink).toHaveBeenCalledWith({ actorId: 'admin-1', targetUserId: 'member-2' })
+    expect(result.current.message).toContain('Bonjour Membre 👋')
+    expect(result.current.message).toContain('réinitialisation de mot de passe')
   })
 
   it('surfaces a domain error from the use case as a French message', async () => {

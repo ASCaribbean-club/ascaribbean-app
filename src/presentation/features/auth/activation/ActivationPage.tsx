@@ -15,14 +15,14 @@ const submitButtonClass =
   'h-auto w-full rounded-full bg-auth-primary py-3.5 text-sm font-bold text-white hover:bg-auth-primary-hover disabled:bg-auth-disabled-bg disabled:text-auth-disabled-text'
 
 // specs/web-users-invitation-links.md §5 — replaces the e-mail-delivered
-// invite flow /update-password used to double as (see this feature's own
-// findings): that page's welcome step relies on Supabase's automatic
-// hash-token session detection from action_link, which a WhatsApp/SMS
-// link-preview crawler would silently consume before the member ever taps
-// anything. This screen never verifies on load (point 1) — only the tap on
-// "Activer mon compte" calls verifyOtp(). /update-password itself is
-// untouched: it still serves the still-email-delivered password-reset case
-// (CDC §3.1, docs/DEFAULTS-A-CHALLENGER.md "Manual delivery channel").
+// invite flow /update-password used to double as: that page's old welcome
+// step relied on Supabase's automatic hash-token session detection from
+// action_link, which a WhatsApp/SMS link-preview crawler would silently
+// consume before the member ever taps anything. This screen never verifies
+// on load (point 1) — only the tap on "Activer mon compte" calls
+// verifyOtp(). /update-password's own password-reset flow (CDC §3.1,
+// docs/DEFAULTS-A-CHALLENGER.md "Canal de remise manuel") was later aligned
+// on the same explicit-tap verifyOtp() mechanism — see its own top comment.
 export function ActivationPage() {
   const vm = useActivationViewModel()
 

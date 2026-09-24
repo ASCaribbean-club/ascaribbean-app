@@ -21,16 +21,11 @@
 -- would only ever include the querying user's own membership row —
 -- undercounting every other team member. Running as the view owner lets
 -- the join see every member's row for the aggregate, same trade-off the
--- private.* SECURITY DEFINER helpers below already make.
---
--- Access to the view itself is club-wide for any authenticated user
--- (docs/DEFAULTS-A-CHALLENGER.md, entry "Vue team_active_headcount —
--- visibilité de l'effectif"): headcount is an aggregate, non-nominative
--- number (a plain integer count, no member-level data), unlike row-level
--- data such as team rosters or member records, which stay restricted to
--- own-team-or-admin elsewhere (e.g. teams_select_team_scoped). So this
--- view does not repeat that boundary in its `where` clause — the grant
--- below is the only gate, and it's "authenticated", not team-scoped.
+-- private.* SECURITY DEFINER helpers below already make. Access to the
+-- view itself is gated explicitly in the `where` clause instead, mirroring
+-- teams_select_team_scoped (private.is_team_member / private.is_admin) so
+-- the same "own team or admin" boundary still holds — just enforced here
+-- rather than inherited from the underlying tables' RLS.
 -- =========================================================================
 
 create view public.team_active_headcount
@@ -49,6 +44,7 @@ join public.memberships m
 where
   m.status = 'active'
   and m.valid_until >= current_date
+  and (private.is_team_member(t.id) or private.is_admin())
 group by t.id;
 
 revoke all on public.team_active_headcount from public;

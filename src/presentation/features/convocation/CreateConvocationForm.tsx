@@ -7,7 +7,7 @@ import { FIELD_CLASSNAME } from './components/field-style'
 import { FormField } from './components/FormField'
 import { MeetingAgendaField } from './components/MeetingAgendaField'
 import { RecipientsCard } from './components/RecipientsCard'
-import { SegmentedToggle } from './components/SegmentedToggle'
+import { SegmentedToggle } from '@presentation/shared/components/SegmentedToggle'
 import { TypeSelector } from './components/TypeSelector'
 import { TRAINING_LOCATIONS } from './training-locations'
 import { useCreateConvocationViewModel, type ConvocationFormValues } from './useCreateConvocationViewModel'
@@ -89,6 +89,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
                 falseLabel="Extérieur"
                 trueColor="coach-green"
                 falseColor="coach-red"
+                ariaLabel="Lieu de la rencontre"
               />
             </FormField>
 

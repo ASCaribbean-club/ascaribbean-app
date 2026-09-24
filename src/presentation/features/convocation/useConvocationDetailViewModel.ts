@@ -2,8 +2,17 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { ActualStatus, DeclaredStatus } from '@domain/entities/convocation'
+import type { MatchEventType } from '@domain/entities/match-event'
 import { hasActiveRoleForConvocation } from '@domain/rules/active-role-scope'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
+// specs/match-stats.md — "Résultat" tab, third pass on this screen (PO-MS-09
+// resolved 2026-09-24, real tab). getMatchOutcome/isEligibleScorer/
+// isMatchResultRecordable are pure domain/policies functions, called
+// directly from this ViewModel the same way canPlayerRespond already is
+// above (CLAUDE.md §6 — never inside a useQuery, only around one).
+import { getMatchOutcome } from '@domain/policies/match-outcome-rules'
+import { isEligibleScorer } from '@domain/policies/match-scorer-rules'
+import { isMatchResultRecordable } from '@domain/policies/match-result-timing-rules'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
@@ -12,7 +21,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 
-export type ConvocationDetailTab = 'infos' | 'effectif' | 'votes'
+export type ConvocationDetailTab = 'infos' | 'effectif' | 'votes' | 'resultat'
 
 // specs/match_details_page.md §7 — this hook is the "câblage presentation/"
 // the correction pass explicitly deferred (docs/convocation_visibility_rls_correction.md
@@ -36,6 +45,10 @@ export function useConvocationDetailViewModel() {
     getMyVoteUseCase,
     getVoteTallyUseCase,
     getVoteCategoryUseCase,
+    recordMatchScoreUseCase,
+    addMatchEventUseCase,
+    deleteMatchEventUseCase,
+    getMatchEventsUseCase,
   } = useConvocationDependencies()
 
   // UI design §"Structure de l'écran" — "deux onglets seulement", local UI
@@ -50,6 +63,7 @@ export function useConvocationDetailViewModel() {
   })
 
   const convocation = detailedConvocationQuery.data?.convocation
+  const matchDetails = detailedConvocationQuery.data?.matchDetails ?? null
 
   const teamQuery = useQuery({
     queryKey: queryKeys.team(convocation?.teamId ?? ''),
@@ -93,7 +107,10 @@ export function useConvocationDetailViewModel() {
     // Effectif tab is also the vote ballot's candidate set, so the votes
     // tab needs this query enabled too rather than adding a second read
     // path for the same "who's convoked" data.
-    enabled: !!convocationId && activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes'),
+    // specs/match-stats.md — same reuse for the player-facing Résultat tab's
+    // scorer name lookup (`nameByUserId` below): no second "who's on this
+    // team" read exists just to label goal events.
+    enabled: !!convocationId && activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes' || activeTab === 'resultat'),
   })
 
   const playerResponseQuery = useQuery({
@@ -105,7 +122,13 @@ export function useConvocationDetailViewModel() {
   const rosterForCoachQuery = useQuery({
     queryKey: queryKeys.convocationRosterForCoach(convocationId ?? ''),
     queryFn: () => getConvocationRosterForCoachUseCase.execute(convocationId!),
-    enabled: !!convocationId && activeRole === 'coach' && activeTab === 'effectif',
+    // specs/match-stats.md query-keys.ts comment — this is deliberately the
+    // SAME read the Effectif tab already caches: `actualStatus`/`status` on
+    // each roster item is exactly what MS-13's soft eligibility rule
+    // (isEligibleScorer below) needs for the Résultat tab's scorer/carded-
+    // player picker, and its displayName doubles as the coach variant's own
+    // `nameByUserId` lookup. No second, forked read for the same roster.
+    enabled: !!convocationId && activeRole === 'coach' && (activeTab === 'effectif' || activeTab === 'resultat'),
   })
 
   // Same minute-tick pattern as usePlayerDashboardViewModel, so canRespond
@@ -366,6 +389,228 @@ export function useConvocationDetailViewModel() {
     castVoteMutation.mutate(voteSelectedCandidateId)
   }
 
+  // --- specs/match-stats.md — fourth tab, net-new in this pass (PO-MS-09
+  // resolved 2026-09-24: a real tab of this screen, not a separate route) ---
+  //
+  // `match_goals:view` is granted to BOTH roles (MS-09) — its only job here
+  // is deciding whether the tab itself exists at all (mirrors `canRespond`'s
+  // own `usePermission` call above), since the goal/staff-event SPLIT within
+  // the tab is a structural per-block gate, not a per-tab one (§2's own
+  // note on match_staff_events:view — "bloc absent, jamais grisé").
+  const hasMatchGoalsViewPermission = usePermission('match_goals:view', { teamId: convocation?.teamId })
+  const hasMatchResultRecordPermission = usePermission('match_result:record', { teamId: convocation?.teamId })
+  const hasMatchStaffEventsViewPermission = usePermission('match_staff_events:view', { teamId: convocation?.teamId })
+
+  // AC-MS-09/MS-10 — same activeRole-gate reasoning as canRespond/
+  // canCastVote above: a coach+player multi-role account with "Joueur"
+  // active must see neither the write form nor the CARTONS block just
+  // because can() would allow them as a coach.
+  const canRecordMatchResult = activeRole === 'coach' && hasMatchResultRecordPermission
+  const canViewStaffEvents = activeRole === 'coach' && hasMatchStaffEventsViewPermission
+
+  const matchEventsQuery = useQuery({
+    queryKey: queryKeys.matchEvents(convocationId ?? ''),
+    queryFn: () => getMatchEventsUseCase.execute(convocationId!),
+    enabled: !!convocationId && activeTab === 'resultat',
+  })
+  const matchEvents = matchEventsQuery.data ?? []
+  const goalEvents = matchEvents.filter((event) => event.eventType === 'goal')
+  const cardEvents = matchEvents.filter((event) => event.eventType === 'yellow_card' || event.eventType === 'red_card')
+
+  // Scorer/carded-player display names — reuses whichever roster read is
+  // already enabled for this role above (rosterForCoachQuery for coach,
+  // respondersQuery for player), never a second "who's on this team" call.
+  const nameByUserId: Record<string, string> =
+    activeRole === 'coach'
+      ? Object.fromEntries((rosterForCoachQuery.data?.roster ?? []).map((r) => [r.userId, r.displayName]))
+      : Object.fromEntries((respondersQuery.data ?? []).map((r) => [r.userId, r.displayName]))
+
+  const goalsFor = matchDetails?.goalsFor ?? null
+  const goalsAgainst = matchDetails?.goalsAgainst ?? null
+  // MS-01 — both null together, never one without the other (mirrored DB
+  // constraint) — `scoreRecorded` reads goalsFor alone, same as the use
+  // cases' own `matchDetails.goalsFor === null` checks.
+  const scoreRecorded = goalsFor !== null && goalsAgainst !== null
+  const outcome = scoreRecorded ? getMatchOutcome(goalsFor!, goalsAgainst!) : null
+
+  const goals = goalEvents.map((event) => ({
+    id: event.id,
+    displayName: nameByUserId[event.userId] ?? '—',
+    isPenalty: event.isPenalty,
+  }))
+
+  // AC-MS-13/MS-12 — reuses the same minute-tick `now` state as
+  // canRespond above, so this re-evaluates once kickoff passes mid-session.
+  const kickoffPassed = !!convocation && isMatchResultRecordable(new Date(convocation.date), now)
+
+  // --- Score form ---
+  const [goalsForInput, setGoalsForInput] = useState('')
+  const [goalsAgainstInput, setGoalsAgainstInput] = useState('')
+  // "Adjusting state when a prop changes" (react.dev) rather than a
+  // useEffect: seeded from the server value whenever it changes (load, or
+  // after a successful RecordMatchScoreUseCase call re-fetches
+  // convocationDetail) — never re-seeded on every render, since typing
+  // itself never changes matchDetails.goalsFor/goalsAgainst until submit
+  // succeeds. `lastSeenScore` is this reconciliation's own bookkeeping, not
+  // business state — nothing else reads it.
+  const [lastSeenScore, setLastSeenScore] = useState<{ goalsFor: number | null; goalsAgainst: number | null }>({
+    goalsFor: null,
+    goalsAgainst: null,
+  })
+  if (lastSeenScore.goalsFor !== goalsFor || lastSeenScore.goalsAgainst !== goalsAgainst) {
+    setLastSeenScore({ goalsFor, goalsAgainst })
+    setGoalsForInput(goalsFor !== null ? String(goalsFor) : '')
+    setGoalsAgainstInput(goalsAgainst !== null ? String(goalsAgainst) : '')
+  }
+
+  const [scoreError, setScoreError] = useState<UiError | null>(null)
+  const canUpdateScore = canRecordMatchResult && kickoffPassed
+
+  const recordScoreMutation = useMutation({
+    mutationFn: () => {
+      if (!convocationId) return Promise.reject(new Error('no convocation to record a score for yet'))
+      return recordMatchScoreUseCase.execute({
+        convocationId,
+        goalsFor: Number(goalsForInput),
+        goalsAgainst: Number(goalsAgainstInput),
+        now: new Date(),
+      })
+    },
+    onMutate: () => setScoreError(null),
+    onSuccess: () => {
+      if (!convocationId) return
+      // Score lives on MatchDetails, itself nested under convocationDetail
+      // (GetConvocationWithDetailsUseCase) — no separate matchDetails key to
+      // invalidate, same reasoning as query-keys.ts's own comment on
+      // `matchEvents` not duplicating that read.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+    },
+    onError: (error) => setScoreError(mapDomainErrorToUiError(error)),
+  })
+
+  function onSubmitScore() {
+    if (!canUpdateScore || recordScoreMutation.isPending) return
+    recordScoreMutation.mutate()
+  }
+
+  // --- Scorer picker (BUTEURS) — MS-13 soft eligibility, coach roster only ---
+  const eligibleScorers = (rosterForCoachQuery.data?.roster ?? [])
+    .filter((r) => isEligibleScorer({ actualStatus: r.actualStatus, status: r.status }))
+    .map((r) => ({ userId: r.userId, displayName: r.displayName }))
+
+  const attributedCount = goalEvents.length
+  const scorerCapReached = goalsFor !== null && attributedCount >= goalsFor
+
+  const [selectedScorerId, setSelectedScorerId] = useState<string | null>(null)
+  const [isPenaltySelected, setIsPenaltySelected] = useState(false)
+  const [addGoalError, setAddGoalError] = useState<UiError | null>(null)
+
+  // AC-MS-15/AC-MS-05 — score recorded, cap not reached, a scorer picked.
+  const canAddGoal = canRecordMatchResult && scoreRecorded && !scorerCapReached && selectedScorerId !== null
+
+  const addGoalMutation = useMutation({
+    mutationFn: () => {
+      if (!convocationId || !user || !selectedScorerId) return Promise.reject(new Error('no goal to add yet'))
+      return addMatchEventUseCase.execute({
+        convocationId,
+        userId: selectedScorerId,
+        eventType: 'goal',
+        isPenalty: isPenaltySelected,
+        createdBy: user.id,
+        now: new Date(),
+      })
+    },
+    onMutate: () => setAddGoalError(null),
+    onSuccess: () => {
+      if (!convocationId) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matchEvents(convocationId) })
+      setSelectedScorerId(null)
+      setIsPenaltySelected(false)
+    },
+    onError: (error) => setAddGoalError(mapDomainErrorToUiError(error)),
+  })
+
+  function onAddGoal() {
+    if (!canAddGoal || addGoalMutation.isPending) return
+    addGoalMutation.mutate()
+  }
+  function onCancelGoal() {
+    setSelectedScorerId(null)
+    setIsPenaltySelected(false)
+    setAddGoalError(null)
+  }
+
+  // --- Card picker (CARTONS) — coach/staff only, same eligible roster,
+  // no cap (unlike BUTEURS, MS-09/UI design "pas de plafond de cartons") ---
+  const [selectedCardPlayerId, setSelectedCardPlayerId] = useState<string | null>(null)
+  const [selectedCardType, setSelectedCardType] = useState<Extract<MatchEventType, 'yellow_card' | 'red_card'>>('yellow_card')
+  const [addCardError, setAddCardError] = useState<UiError | null>(null)
+
+  const canAddCard = canRecordMatchResult && selectedCardPlayerId !== null
+
+  const addCardMutation = useMutation({
+    mutationFn: () => {
+      if (!convocationId || !user || !selectedCardPlayerId) return Promise.reject(new Error('no card to add yet'))
+      return addMatchEventUseCase.execute({
+        convocationId,
+        userId: selectedCardPlayerId,
+        eventType: selectedCardType,
+        isPenalty: false,
+        createdBy: user.id,
+        now: new Date(),
+      })
+    },
+    onMutate: () => setAddCardError(null),
+    onSuccess: () => {
+      if (!convocationId) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matchEvents(convocationId) })
+      setSelectedCardPlayerId(null)
+    },
+    onError: (error) => setAddCardError(mapDomainErrorToUiError(error)),
+  })
+
+  function onAddCard() {
+    if (!canAddCard || addCardMutation.isPending) return
+    addCardMutation.mutate()
+  }
+  function onCancelCard() {
+    setSelectedCardPlayerId(null)
+    setAddCardError(null)
+  }
+
+  // --- Delete (MS-11/AC-MS-12) — shared by both BUTEURS and CARTONS rows,
+  // one event in flight at a time (same "TanStack's own tracked variable"
+  // pattern as `savingUserId` above, just via a plain useState mirror since
+  // the id itself, not just pending-ness, needs to reach two different
+  // lists' `isDeleting` flags). ---
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null)
+  const deleteEventMutation = useMutation({
+    mutationFn: (eventId: string) => deleteMatchEventUseCase.execute(eventId),
+    onMutate: (eventId) => setDeletingEventId(eventId),
+    onSuccess: () => {
+      if (!convocationId) return
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matchEvents(convocationId) })
+    },
+    onSettled: () => setDeletingEventId(null),
+  })
+  function onDeleteEvent(eventId: string) {
+    if (deleteEventMutation.isPending) return
+    deleteEventMutation.mutate(eventId)
+  }
+
+  const recordedGoals = goalEvents.map((event) => ({
+    id: event.id,
+    displayName: nameByUserId[event.userId] ?? '—',
+    isPenalty: event.isPenalty,
+    isDeleting: deletingEventId === event.id,
+  }))
+  const recordedCards = cardEvents.map((event) => ({
+    id: event.id,
+    displayName: nameByUserId[event.userId] ?? '—',
+    cardType: event.eventType as Extract<MatchEventType, 'yellow_card' | 'red_card'>,
+    isDeleting: deletingEventId === event.id,
+  }))
+
   return {
     isLoading: detailedConvocationQuery.isLoading,
     // Merges every query this screen depends on — a failure on any one of
@@ -380,7 +625,8 @@ export function useConvocationDetailViewModel() {
       sectionQuery.error ??
       respondersQuery.error ??
       playerResponseQuery.error ??
-      rosterForCoachQuery.error,
+      rosterForCoachQuery.error ??
+      matchEventsQuery.error,
     // AC-MD-01 — `null` is the one
     // state ConvocationDetailPage renders NotFoundState for; a genuine
     // network/server error stays in `error` above instead.
@@ -391,7 +637,7 @@ export function useConvocationDetailViewModel() {
     convocation,
     teamName: teamQuery.data?.name,
     sectionName: sectionQuery.data?.name,
-    matchDetails: detailedConvocationQuery.data?.matchDetails ?? null,
+    matchDetails,
     opponent: detailedConvocationQuery.data?.opponent ?? null,
     meetingDetails: detailedConvocationQuery.data?.meetingDetails ?? null,
 
@@ -446,6 +692,61 @@ export function useConvocationDetailViewModel() {
       onSubmit: onSubmitVote,
       isSubmitting: castVoteMutation.isPending,
       submitError: voteSubmitError,
+    },
+
+    // specs/match-stats.md — plain data/state only, same split as `votes`
+    // above: ConvocationDetailPage.tsx composes this into the actual JSX
+    // tree (which components render for which role), since that composition
+    // needs JSX and this hook is a .ts file.
+    matchResult: {
+      hasMatchGoalsViewPermission,
+      canRecordMatchResult,
+      canViewStaffEvents,
+      kickoffPassed,
+      isLoading: matchEventsQuery.isLoading,
+
+      goalsFor,
+      goalsAgainst,
+      scoreRecorded,
+      outcome,
+      goals,
+
+      goalsForInput,
+      goalsAgainstInput,
+      onChangeGoalsFor: setGoalsForInput,
+      onChangeGoalsAgainst: setGoalsAgainstInput,
+      canUpdateScore,
+      isSubmittingScore: recordScoreMutation.isPending,
+      scoreError,
+      onSubmitScore,
+
+      attributedCount,
+      scorerCapReached,
+      eligibleScorers,
+      selectedScorerId,
+      onSelectScorer: setSelectedScorerId,
+      isPenaltySelected,
+      onToggleIsPenalty: setIsPenaltySelected,
+      canAddGoal,
+      isSubmittingGoal: addGoalMutation.isPending,
+      addGoalError,
+      onCancelGoal,
+      onAddGoal,
+      recordedGoals,
+
+      eligibleCardPlayers: eligibleScorers,
+      selectedCardPlayerId,
+      onSelectCardPlayer: setSelectedCardPlayerId,
+      selectedCardType,
+      onSelectCardType: setSelectedCardType,
+      canAddCard,
+      isSubmittingCard: addCardMutation.isPending,
+      addCardError,
+      onCancelCard,
+      onAddCard,
+      recordedCards,
+
+      onDeleteEvent,
     },
   }
 }

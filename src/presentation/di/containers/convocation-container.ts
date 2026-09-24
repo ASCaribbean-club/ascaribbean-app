@@ -4,6 +4,8 @@ import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationReposit
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
 import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepositoryImpl'
+// specs/match-stats.md §7/"Forme technique attendue" — net-new in this pass.
+import { MatchEventRepositoryImpl } from '@data/repositories/MatchEventRepositoryImpl'
 import { MeetingDetailsRepositoryImpl } from '@data/repositories/MeetingDetailsRepositoryImpl'
 import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
@@ -21,6 +23,7 @@ import type { ConvocationRepository } from '@domain/repositories/convocation-rep
 import type { ConvocationRespondersRepository } from '@domain/repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
 import type { MatchDetailsRepository } from '@domain/repositories/match-details-repository'
+import type { MatchEventRepository } from '@domain/repositories/match-event-repository'
 import type { MeetingDetailsRepository } from '@domain/repositories/meeting-details-repository'
 import type { OpponentRepository } from '@domain/repositories/opponent-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
@@ -47,6 +50,13 @@ import { GetVoteTallyUseCase } from '@domain/usecases/player-vote/GetVoteTallyUs
 // player-dashboard — same class, a second constructor call here.
 import { RespondToConvocationUseCase } from '@domain/usecases/player-dashboard/RespondToConvocationUseCase'
 import { GetConvocationResponseByUserUseCase } from '@/domain/usecases/convocation/GetConvocationResponseByUserUseCase'
+// specs/match-stats.md — result-entry (Coach) use cases. GetTeamMatchRecordUseCase/
+// GetTeamScorerRankingUseCase are NOT wired here — see this file's own note
+// below on the competition_type block.
+import { AddMatchEventUseCase } from '@domain/usecases/match-statistics/AddMatchEventUseCase'
+import { DeleteMatchEventUseCase } from '@domain/usecases/match-statistics/DeleteMatchEventUseCase'
+import { GetMatchEventsUseCase } from '@domain/usecases/match-statistics/GetMatchEventsUseCase'
+import { RecordMatchScoreUseCase } from '@domain/usecases/match-statistics/RecordMatchScoreUseCase'
 
 export interface ConvocationContainer {
   // Repositories
@@ -60,6 +70,12 @@ export interface ConvocationContainer {
   convocationResponseRepository: ConvocationResponseRepository
   convocationRespondersRepository: ConvocationRespondersRepository
   matchDetailsRepository: MatchDetailsRepository
+  // specs/match-stats.md — net-new. teamStatsRepository/team_match_record/
+  // team_scorer_ranking are NOT wired anywhere in this container — blocked
+  // on the competition_type backfill decision (see the STOP block in
+  // supabase/migrations/20260924100000_match_statistics_schema.sql; no view
+  // exists yet for a repository to call).
+  matchEventRepository: MatchEventRepository
   meetingDetailsRepository: MeetingDetailsRepository
   opponentRepository: OpponentRepository
   // specs/coach-attendance-confirmation.md §1 — net-new, no implementation
@@ -83,6 +99,14 @@ export interface ConvocationContainer {
   getMyVoteUseCase: GetMyVoteUseCase
   getVoteTallyUseCase: GetVoteTallyUseCase
   getVoteCategoryUseCase: GetVoteCategoryUseCase
+  // specs/match-stats.md — result-entry (Coach) use cases, plus the "Résultat"
+  // tab's own read (GetMatchEventsUseCase, both role variants). No
+  // GetTeamMatchRecordUseCase/GetTeamScorerRankingUseCase here (blocked,
+  // see matchEventRepository's own comment above).
+  recordMatchScoreUseCase: RecordMatchScoreUseCase
+  addMatchEventUseCase: AddMatchEventUseCase
+  deleteMatchEventUseCase: DeleteMatchEventUseCase
+  getMatchEventsUseCase: GetMatchEventsUseCase
 }
 
 export function createConvocationContainer(supabaseClient: SupabaseClient): ConvocationContainer {
@@ -94,6 +118,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const convocationResponseRepository = new ConvocationResponseRepositoryImpl(supabaseClient)
   const convocationRespondersRepository = new ConvocationRespondersRepositoryImpl(supabaseClient)
   const matchDetailsRepository = new MatchDetailsRepositoryImpl(supabaseClient)
+  const matchEventRepository = new MatchEventRepositoryImpl(supabaseClient)
   const meetingDetailsRepository = new MeetingDetailsRepositoryImpl(supabaseClient)
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
   const attendanceRecordRepository = new AttendanceRecordRepositoryImpl(supabaseClient)
@@ -121,6 +146,10 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const getMyVoteUseCase = new GetMyVoteUseCase(voteRepository)
   const getVoteTallyUseCase = new GetVoteTallyUseCase(voteTallyRepository)
   const getVoteCategoryUseCase = new GetVoteCategoryUseCase(voteCategoryRepository)
+  const recordMatchScoreUseCase = new RecordMatchScoreUseCase(convocationRepository, matchEventRepository, matchDetailsRepository)
+  const addMatchEventUseCase = new AddMatchEventUseCase(convocationRepository, matchDetailsRepository, matchEventRepository)
+  const deleteMatchEventUseCase = new DeleteMatchEventUseCase(matchEventRepository)
+  const getMatchEventsUseCase = new GetMatchEventsUseCase(matchEventRepository)
 
   return {
     userRepository,
@@ -131,6 +160,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     convocationResponseRepository,
     convocationRespondersRepository,
     matchDetailsRepository,
+    matchEventRepository,
     meetingDetailsRepository,
     opponentRepository,
     attendanceRecordRepository,
@@ -149,5 +179,9 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     getMyVoteUseCase,
     getVoteTallyUseCase,
     getVoteCategoryUseCase,
+    recordMatchScoreUseCase,
+    addMatchEventUseCase,
+    deleteMatchEventUseCase,
+    getMatchEventsUseCase,
   }
 }

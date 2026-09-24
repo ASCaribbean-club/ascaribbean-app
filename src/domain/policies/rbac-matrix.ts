@@ -201,4 +201,21 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // §2.5c/AC-WU-47 — also a SCOPED action, jumeau exact of 'role:assign':
   // see can.ts's 'section-manager' branch, extended in THIS SAME change.
   'role:remove': ['admin'],
+
+  // specs/match-stats.md §2 — exactly the role table that spec's §2 lays
+  // out: Coach/Staff only for recording, Joueur/Joueuse + Coach/Staff for
+  // reading goals, Coach/Staff only for the staff-only event types.
+  // Deliberately NOT granted to 'section-manager'/'authorized-officer'/
+  // 'admin' in this pass, even though the CDC's "dossiers des autres
+  // membres" row would give the first two a ✅ on their own scope — §2's
+  // own table calls this an assumed, bounded gap (PO-MS-01), not an
+  // oversight, same shape as 'attendance:validate' leaving 'admin' out of
+  // its matrix entry despite RLS still granting it there as a statu quo.
+  // Every branch below is team-scoped — see can.ts's 'coach'/'player'
+  // branches, extended in the SAME change to cover these three actions,
+  // same "fix the gap now, not after the fact" reasoning already applied
+  // to 'convocation:create'/'attendance:validate'/'vote:cast'.
+  'match_result:record': ['coach'],
+  'match_goals:view': ['player', 'coach'],
+  'match_staff_events:view': ['coach'],
 }

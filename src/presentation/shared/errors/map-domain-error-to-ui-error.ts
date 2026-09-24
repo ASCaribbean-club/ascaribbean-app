@@ -3,6 +3,7 @@ import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
@@ -18,6 +19,8 @@ import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
 import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
 import { AuthLinkInvalidError } from '@domain/errors/auth-link-invalid-error'
 import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-target-not-invited-error'
+import { MatchNotStartedError } from '@domain/errors/match-not-started-error'
+import { MatchScoreMissingError } from '@domain/errors/match-score-missing-error'
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
@@ -214,6 +217,40 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
         'Une adhésion archivée existe déjà pour cet utilisateur sur cette saison et porte des paiements enregistrés — ce cas n’est pas encore pris en charge, contactez un administrateur technique.',
       variant: 'inline',
       retryable: false,
+    }
+  }
+
+  if (error instanceof MatchNotStartedError) {
+    // specs/match-stats.md MS-12/AC-MS-13 — RecordMatchScoreUseCase/
+    // AddMatchEventUseCase's own timing guard. Shown at the top of the
+    // result-entry screen — retryable because it stops being true on its
+    // own once kickoff passes, no user correction needed.
+    return {
+      message: 'Le score ne peut être saisi qu’après le coup d’envoi.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof MatchScoreMissingError) {
+    // specs/match-stats.md MS-14/AC-MS-15 — a goal was submitted before the
+    // score itself was recorded.
+    return {
+      message: 'Le score doit être enregistré avant d’ajouter un but.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InconsistentMatchScoreError) {
+    // specs/match-stats.md MS-05/AC-MS-05 — either a new goal event would
+    // exceed goals_for, or a revised goals_for would fall below the number
+    // of goal events already recorded. Same copy for both directions, same
+    // reasoning as the two use cases sharing one error class.
+    return {
+      message: 'Le nombre de buts attribués ne correspond plus au score du match.',
+      variant: 'inline',
+      retryable: true,
     }
   }
 

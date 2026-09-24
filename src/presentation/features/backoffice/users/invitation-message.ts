@@ -36,3 +36,27 @@ Pour activer ton compte :
 ⏳ Ce lien est personnel et valable ${validityHours} h. Ne le transfère à personne.
 S'il a expiré, demande un nouveau lien à un administrateur du club.`
 }
+
+export interface BuildPasswordResetMessageParams {
+  firstName: string
+  url: string
+  validityHours: number
+}
+
+// specs/web-users-invitation-links.md §2/§4 (amendement — password reset is
+// admin-mediated, same manual-delivery channel as buildInvitationMessage
+// above). Same otp_expiry-mirroring rule as INVITE_LINK_VALIDITY_HOURS's
+// own comment: never hardcode the number here either.
+export function buildPasswordResetMessage({ firstName, url, validityHours }: BuildPasswordResetMessageParams): string {
+  return `Bonjour ${firstName} 👋
+
+Voici ton lien de réinitialisation de mot de passe pour l'application de l'AS Caribbean.
+
+Pour choisir un nouveau mot de passe :
+1. Ouvre ce lien : ${url}
+2. Appuie sur « Réinitialiser mon mot de passe »
+3. Choisis ton nouveau mot de passe
+
+⏳ Ce lien est personnel et valable ${validityHours} h. Ne le transfère à personne.
+S'il a expiré, demande un nouveau lien à un administrateur du club.`
+}

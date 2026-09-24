@@ -1,4 +1,4 @@
-import { IconLink, IconPencil } from '@tabler/icons-react'
+import { IconKey, IconLink, IconPencil } from '@tabler/icons-react'
 import type { Section } from '@domain/entities/section'
 import type { Team } from '@domain/entities/team'
 import type { AssignableRoleAssignment } from '@domain/entities/user'
@@ -39,6 +39,13 @@ interface UserTableProps {
   // per-row boolean, so there is exactly one place this rule is expressed.
   canReissueInvitation: boolean
   onReissueInvitation: (row: AdminUserDirectoryEntry) => void
+  // specs/web-users-invitation-links.md §4 (amendement — password reset is
+  // admin-mediated) — mirror image of canReissueInvitation/onReissueInvitation
+  // above: same boolean the ViewModel already computed
+  // (usePermission('user:invite')), combined HERE with each row's own
+  // userStatus() being 'active' rather than 'invited'.
+  canGeneratePasswordResetLink: boolean
+  onGeneratePasswordResetLink: (row: AdminUserDirectoryEntry) => void
 }
 
 // specs/web-users.md §1/UI design "Tableau à six colonnes"
@@ -59,6 +66,8 @@ export function UserTable({
   onSelectRoleAssignment,
   canReissueInvitation,
   onReissueInvitation,
+  canGeneratePasswordResetLink,
+  onGeneratePasswordResetLink,
 }: UserTableProps) {
   return (
     <Table>
@@ -147,6 +156,22 @@ export function UserTable({
                     className="h-11 w-11 rounded-full"
                   >
                     <IconLink className="size-4" aria-hidden />
+                  </Button>
+                )}
+                {/* specs/web-users-invitation-links.md §4 (amendement) —
+                    mirror image of the reissue button above: rendered only
+                    for an 'active' row, never a disabled button for a still-
+                    'invited' one (it has no password yet to reset). */}
+                {canGeneratePasswordResetLink && userStatus(row.charterAcceptedAt) === 'active' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Réinitialiser le mot de passe de « ${row.fullName} »`}
+                    onClick={() => onGeneratePasswordResetLink(row)}
+                    className="h-11 w-11 rounded-full"
+                  >
+                    <IconKey className="size-4" aria-hidden />
                   </Button>
                 )}
               </div>

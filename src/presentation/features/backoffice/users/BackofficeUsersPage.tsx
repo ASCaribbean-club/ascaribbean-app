@@ -124,6 +124,8 @@ export function BackofficeUsersPage() {
           onSelectRoleAssignment={vm.openEditRoleAssignmentDialog}
           canReissueInvitation={vm.canInviteUser}
           onReissueInvitation={vm.openReissueInvitationDialog}
+          canGeneratePasswordResetLink={vm.canInviteUser}
+          onGeneratePasswordResetLink={vm.openPasswordResetDialog}
         />
       )}
 

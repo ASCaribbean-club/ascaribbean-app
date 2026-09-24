@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from '../shared/layout/AppShell'
 import { LoginPage } from '../features/auth/login/LoginPage'
-import { ForgotPasswordPage } from '../features/auth/forgot-password/ForgotPasswordPage'
 import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePasswordPage'
 import { ActivationPage } from '../features/auth/activation/ActivationPage'
 import { CharterPage } from '../features/auth/charter/CharterPage'
@@ -31,16 +30,19 @@ import { RequireBackofficeAccess } from './RequireBackofficeAccess'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  { path: '/forgot-password', element: <ForgotPasswordPage /> },
   // specs/web-users-invitation-links.md §5 — public, outside RequireSession:
-  // there is no session until verifyInvitationLink() succeeds (the tap on
+  // there is no session until verifyAuthLink() succeeds (the tap on
   // "Activer mon compte", never on load — see ActivationPage's own top
-  // comment on why this must never behave like /update-password's
-  // auto-detected session).
+  // comment on why a link-preview crawler must never be the thing that
+  // consumes the token).
   { path: '/activation', element: <ActivationPage /> },
-  // Not behind RequireSession: it must render its own "invalid/expired
-  // link" state for a rejected recovery link, which never produces a
-  // session for RequireSession to gate on. See useUpdatePasswordViewModel.
+  // Same reasoning as /activation above, now mirrored for the admin-generated
+  // password-reset link (see UserRepository.generatePasswordResetLink and
+  // useUpdatePasswordViewModel): public, outside RequireSession,
+  // verifyAuthLink() only fires on the member's own "Réinitialiser mon mot
+  // de passe" tap, and a rejected token renders this page's own
+  // "invalid/expired link" state rather than relying on RequireSession to
+  // gate on a session that never gets created.
   { path: '/update-password', element: <UpdatePasswordPage /> },
   {
     // specs/web-empty-state.md — first desktop-only surface in the app

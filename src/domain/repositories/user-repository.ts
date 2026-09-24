@@ -123,4 +123,15 @@ export interface UserRepository {
   // no directory re-fetch needed — nothing in AdminUserDirectoryEntry
   // changes when a link is re-issued).
   reissueInvitationLink(userId: string): Promise<InvitationLink>
+
+  // specs/web-users-invitation-links.md §2/§4 (amendement — password reset
+  // is admin-mediated, not a member-triggered
+  // supabase.auth.resetPasswordForEmail() email: same "no service_role key
+  // reachable client-side" reasoning as invite()/reissueInvitationLink()
+  // above, and the application still never sends mail itself).
+  // GeneratePasswordResetLinkUseCase is the only caller. Same Edge
+  // Function, mode 'reset-password': a fresh /update-password?type=recovery
+  // link for an EXISTING, 'active' auth user — no public.users row change,
+  // no directory re-fetch needed.
+  generatePasswordResetLink(userId: string): Promise<InvitationLink>
 }

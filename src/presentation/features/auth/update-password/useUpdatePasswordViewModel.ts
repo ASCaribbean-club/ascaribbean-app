@@ -1,22 +1,46 @@
 import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { DomainError } from '@domain/errors/domain-error'
-import { useAuth } from '../../../shared/hooks/use-auth'
 import { useAuthDependencies } from '../../../di/hooks/use-auth-dependencies'
 
-export type UpdatePasswordStatus = 'loading' | 'invalid-link' | 'unauthenticated' | 'form'
+export type UpdatePasswordStatus = 'invalid' | 'ready' | 'verifying' | 'form'
 
+// specs/web-users-invitation-links.md §5 — mirrors ActivationPage's own
+// parseType: 'recovery' is the only type the admin-generated password-reset
+// link (UserRepository.generatePasswordResetLink, invite-user Edge
+// Function's own 'reset-password' mode) ever carries — an 'invite'/
+// 'magiclink' link opened here still lands on 'invalid' rather than being
+// accepted.
+function parseType(value: string | null): 'recovery' | null {
+  return value === 'recovery' ? value : null
+}
+
+// specs/web-users-invitation-links.md §5 — public /update-password route
+// (router.tsx, outside RequireSession — there is no session until
+// verifyAuthLink succeeds). Deliberately does NOT verify on load, same
+// reasoning as ActivationPage: the token is single-use, and a link-preview
+// crawler's GET (WhatsApp/SMS/email client building a preview before the
+// member ever taps the link — this link is shared the same manual way as an
+// invitation, see InviteUserDialog) must never be the thing that consumes
+// it — only the member's own tap on "Réinitialiser mon mot de passe" does.
 export function useUpdatePasswordViewModel() {
-  const { updatePasswordUseCase, checkRecoveryLinkUseCase } = useAuthDependencies()
-  const { user, isLoading } = useAuth()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { verifyAuthLinkUseCase, updatePasswordUseCase } = useAuthDependencies()
+
+  const tokenHash = searchParams.get('token_hash')
+  const type = useMemo(() => parseType(searchParams.get('type')), [searchParams])
+
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Not affected by anything that changes during this page's lifetime — the
-  // recovery-link outcome is fixed at the URL the user landed on.
-  const hasRecoveryLinkError = useMemo(() => checkRecoveryLinkUseCase.execute(), [checkRecoveryLinkUseCase])
+  const verify = useMutation({
+    mutationFn: () => {
+      if (!tokenHash || !type) throw new Error('Missing token_hash/type — unreachable, the button is not rendered without them.')
+      return verifyAuthLinkUseCase.execute({ tokenHash, type })
+    },
+  })
 
   const updatePassword = useMutation({
     mutationFn: () => updatePasswordUseCase.execute({ newPassword }),
@@ -25,22 +49,24 @@ export function useUpdatePasswordViewModel() {
 
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword
 
-  const status: UpdatePasswordStatus = isLoading
-    ? 'loading'
-    : user
-      ? 'form'
-      : hasRecoveryLinkError
-        ? 'invalid-link'
-        : 'unauthenticated'
+  // A missing/malformed URL and a rejected verifyOtp() land on the SAME
+  // "invalid/expired" state, never a distinct third state the member would
+  // have to tell apart from the other — same reasoning as ActivationPage's
+  // own status derivation.
+  const status: UpdatePasswordStatus =
+    !tokenHash || !type || verify.isError
+      ? 'invalid'
+      : verify.isSuccess
+        ? 'form'
+        : verify.isPending
+          ? 'verifying'
+          : 'ready'
 
   return {
     status,
-    // Invite-activation welcome header only makes sense before the charter
-    // is accepted — a plain password reset from an already-onboarded member
-    // reaches this same screen with charterAcceptedAt already set.
-    showWelcome: Boolean(user && !user.charterAcceptedAt),
-    fullName: user?.fullName ?? '',
-    roles: user?.roles ?? [],
+
+    verify: () => verify.mutate(),
+
     newPassword,
     setNewPassword,
     confirmPassword,

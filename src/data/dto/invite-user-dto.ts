@@ -24,7 +24,7 @@ export interface InviteUserResponseDto {
 // stable, machine-readable code — never the raw message a future
 // refactor of the function's own wording could silently change underneath
 // mapInviteFunctionError().
-export type InviteUserErrorCode = 'unauthorized' | 'forbidden' | 'invalid_input' | 'already_registered' | 'directory_insert_failed' | 'server_misconfigured'
+export type InviteUserErrorCode = 'unauthorized' | 'forbidden' | 'invalid_input' | 'already_registered' | 'target_not_active' | 'directory_insert_failed' | 'server_misconfigured'
 
 export interface InviteUserErrorDto {
   error: InviteUserErrorCode | string

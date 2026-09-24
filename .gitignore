@@ -16,6 +16,9 @@ dev-dist
 # Environment
 .env
 
+# Database backups (contain member personal/health data)
+backup/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -35,12 +35,32 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
     // wired, but this repository must not throw on it) is a valid `null`.
     const { data, error } = await this.client
       .from('match_details')
-      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
       .eq('convocation_id', convocationId)
       .maybeSingle()
 
     if (error) throw mapSupabaseError(error)
     if (!data) return null
+
+    return toMatchDetails(data as MatchDetailsRow)
+  }
+
+  // specs/match-stats.md MS-01/MS-10 — RecordMatchScoreUseCase's own write
+  // path. `.update`, not `.upsert` above — a coach recording a result must
+  // only ever touch an EXISTING match_details row (the convocation already
+  // created it), and this call deliberately writes ONLY the score columns,
+  // never opponent_id/is_home/meeting_point_* (see this method's own
+  // comment on domain/repositories/match-details-repository.ts). RLS's
+  // match_details_update_record_score is the real authorization boundary.
+  async recordScore(convocationId: string, goalsFor: number, goalsAgainst: number): Promise<MatchDetails> {
+    const { data, error } = await this.client
+      .from('match_details')
+      .update({ goals_for: goalsFor, goals_against: goalsAgainst })
+      .eq('convocation_id', convocationId)
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .single()
+
+    if (error) throw mapSupabaseError(error)
 
     return toMatchDetails(data as MatchDetailsRow)
   }

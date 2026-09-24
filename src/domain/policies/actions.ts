@@ -147,3 +147,17 @@ export type Action =
   // (public.user_roles), same reasoning as 'role:assign'/'role:assign-coach'
   // — never 'user:write' (a different table, §2.7 of web-users.md).
   | 'role:remove'
+  // specs/match-stats.md §2 — exactly three actions, no more. All three are
+  // team-scoped (own team only, AC-01/AC-02). 'match_result:record' clearly
+  // needs a matrix entry (renders/hides the whole saisie form, §2 "Note
+  // structurelle"). 'match_goals:view'/'match_staff_events:view' are here
+  // too even though the spec itself flags that decision as non-blocking
+  // (PO-MS-10) — the whitelist-on-'goal' RLS policy stays the REAL security
+  // either way (match_events_select_scoped,
+  // supabase/migrations/20260924100000_match_statistics_schema.sql); adding
+  // the matrix entries now costs nothing and lets presentation/ structurally
+  // hide the CARTONS block for a player before any query runs (AC-MS-09,
+  // "absent, jamais grisé").
+  | 'match_result:record'
+  | 'match_goals:view'
+  | 'match_staff_events:view'

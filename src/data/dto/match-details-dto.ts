@@ -8,4 +8,10 @@ export interface MatchDetailsRow {
   is_home: boolean
   meeting_point_time: string
   meeting_point_location: string
+  // specs/match-stats.md MS-01 — added by
+  // supabase/migrations/20260924100000_match_statistics_schema.sql. Both
+  // null together (no score recorded yet) or both set — never one without
+  // the other (match_details_goals_both_or_none_check).
+  goals_for: number | null
+  goals_against: number | null
 }

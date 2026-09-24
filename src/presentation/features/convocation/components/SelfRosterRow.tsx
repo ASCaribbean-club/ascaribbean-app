@@ -3,7 +3,7 @@ import type { PlayerPosition } from '@domain/entities/user'
 import { formatPlayerPosition } from '@presentation/shared/formatters/player-position-labels'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { Separator } from '@presentation/shared/components/ui/separator'
-import { InitialsAvatar } from './InitialsAvatar'
+import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { ResponderStatusBadge } from './ResponderStatusBadge'
 
 interface SelfRosterRowProps {

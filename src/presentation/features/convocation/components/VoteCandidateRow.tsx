@@ -1,4 +1,4 @@
-import { InitialsAvatar } from './InitialsAvatar'
+import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { Label } from '@presentation/shared/components/ui/label'
 import { RadioGroupItem } from '@presentation/shared/components/ui/radio-group'
 import { VoteResultBar } from './VoteResultBar'

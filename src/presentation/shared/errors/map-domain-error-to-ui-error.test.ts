@@ -1,11 +1,14 @@
 import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
+import { MatchNotStartedError } from '@domain/errors/match-not-started-error'
+import { MatchScoreMissingError } from '@domain/errors/match-score-missing-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { describe, expect, it } from 'vitest'
@@ -106,6 +109,39 @@ describe('mapDomainErrorToUiError', () => {
 
     expect(result).toEqual({
       message: 'Ce compte porte déjà ce rôle sur cette équipe ou cette section.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  // specs/match-stats.md MS-12/AC-MS-13.
+  it('maps MatchNotStartedError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new MatchNotStartedError('match has not kicked off yet'))
+
+    expect(result).toEqual({
+      message: 'Le score ne peut être saisi qu’après le coup d’envoi.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  // specs/match-stats.md MS-14/AC-MS-15.
+  it('maps MatchScoreMissingError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new MatchScoreMissingError('no score recorded yet'))
+
+    expect(result).toEqual({
+      message: 'Le score doit être enregistré avant d’ajouter un but.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  // specs/match-stats.md MS-05/AC-MS-05.
+  it('maps InconsistentMatchScoreError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new InconsistentMatchScoreError('score no longer consistent'))
+
+    expect(result).toEqual({
+      message: 'Le nombre de buts attribués ne correspond plus au score du match.',
       variant: 'inline',
       retryable: true,
     })

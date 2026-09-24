@@ -1,6 +1,7 @@
-import { IconTrophy } from '@tabler/icons-react'
+import { IconHourglass, IconTrophy } from '@tabler/icons-react'
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
 import { Badge } from '@presentation/shared/components/ui/badge'
+import { EmptyState } from '@presentation/shared/components/EmptyState'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { cn } from '@presentation/shared/lib/utils'
 import { formatConvocationType } from '../../shared/formatters/convocation-labels'
@@ -9,6 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/component
 import { ConvocationHero } from './components/ConvocationHero'
 import { EffectifTab } from './components/EffectifTab'
 import { InfosTab } from './components/InfosTab'
+import { MatchGoalsList } from './components/MatchGoalsList'
+import { MatchOutcomeCard } from './components/MatchOutcomeCard'
+import { MatchResultCardPicker } from './components/MatchResultCardPicker'
+import { MatchResultScoreCard } from './components/MatchResultScoreCard'
+import { MatchResultScorerPicker } from './components/MatchResultScorerPicker'
 import { NotFoundState } from './components/NotFoundState'
 import { RoleMismatchState } from './components/RoleMismatchState'
 import type { VoteCategoryViewModel } from './components/VotesTab'
@@ -282,6 +288,20 @@ export function ConvocationDetailPage() {
                 Votes
               </TabsTrigger>
             )}
+            {/* specs/match-stats.md — fourth tab, PO-MS-09 resolved
+                2026-09-24 as a REAL tab of this same component (not a
+                separate route). Gated on `type === 'match'` exactly like
+                Votes above, plus `match_goals:view` (granted to both roles,
+                MS-09) so the tab itself is absent rather than empty for
+                anyone who somehow fails that check. */}
+            {convocation.type === 'match' && vm.matchResult.hasMatchGoalsViewPermission && (
+              <TabsTrigger
+                value="resultat"
+                className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Résultat
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -333,6 +353,125 @@ export function ConvocationDetailPage() {
               <p>Chargement…</p>
             ) : (
               <VotesTab categories={buildVoteCategories({ ...vm.votes, categoryLabel: vm.votes.categoryLabel }, vm.activeRole)} />
+            )}
+          </TabsContent>
+        )}
+
+        {/* specs/match-stats.md UI design §3/§4 — "Résultat". Same gate as
+            the TabsTrigger above. Zero business logic here beyond which
+            already-computed JSX block to show for which role/state — every
+            boolean read below (`scoreRecorded`, `kickoffPassed`,
+            `canRecordMatchResult`, `canViewStaffEvents`) is already computed
+            by the ViewModel's `matchResult` section. */}
+        {convocation.type === 'match' && vm.matchResult.hasMatchGoalsViewPermission && (
+          <TabsContent value="resultat" className="flex flex-col gap-4 px-5.5 pt-4 pb-8">
+            {vm.activeRole === 'player' ? (
+              // specs/match-stats.md UI design §4 — État A (score pas encore
+              // enregistré) vs État B (issue + buteurs). No CARTONS/penalty
+              // manqué anywhere on this branch — AC-MS-09, absence
+              // structurelle, jamais grisée.
+              !vm.matchResult.scoreRecorded ? (
+                <EmptyState icon={IconHourglass} message="Résultat pas encore disponible." />
+              ) : (
+                <>
+                  <MatchOutcomeCard
+                    outcome={vm.matchResult.outcome!}
+                    teamName={vm.teamName ?? ''}
+                    opponentName={vm.opponent?.name ?? ''}
+                    goalsFor={vm.matchResult.goalsFor!}
+                    goalsAgainst={vm.matchResult.goalsAgainst!}
+                  />
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[11px] font-extrabold tracking-wider text-white/50 uppercase">Buteurs</p>
+                    <MatchGoalsList goals={vm.matchResult.goals} />
+                  </div>
+                </>
+              )
+            ) : (
+              <>
+                {/* specs/match-stats.md UI design §3 — bandeau d'état, copie
+                    verbatim. Le bouton "Simuler le coup d'envoi" du
+                    prototype n'a pas de contrepartie ici : l'état se déduit
+                    uniquement de `convocation.date` comparée à l'heure
+                    courante (MS-12). */}
+                {!vm.matchResult.kickoffPassed ? (
+                  <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[12.5px] text-white/60">
+                    Le score ne peut être saisi qu’après le coup d’envoi.
+                  </p>
+                ) : (
+                  !vm.matchResult.scoreRecorded && (
+                    <Badge className="w-fit rounded-full border border-coach-green/35 bg-coach-green/15 px-3 py-1 text-[12px] font-extrabold text-coach-green-text">
+                      Coup d’envoi donné ✓
+                    </Badge>
+                  )
+                )}
+
+                {vm.matchResult.scoreRecorded && (
+                  <MatchOutcomeCard
+                    outcome={vm.matchResult.outcome!}
+                    teamName={vm.teamName ?? ''}
+                    opponentName={vm.opponent?.name ?? ''}
+                    goalsFor={vm.matchResult.goalsFor!}
+                    goalsAgainst={vm.matchResult.goalsAgainst!}
+                  />
+                )}
+
+                <MatchResultScoreCard
+                  teamName={vm.teamName ?? ''}
+                  opponentName={vm.opponent?.name ?? ''}
+                  goalsForInput={vm.matchResult.goalsForInput}
+                  goalsAgainstInput={vm.matchResult.goalsAgainstInput}
+                  onChangeGoalsFor={vm.matchResult.onChangeGoalsFor}
+                  onChangeGoalsAgainst={vm.matchResult.onChangeGoalsAgainst}
+                  canUpdateScore={vm.matchResult.canUpdateScore}
+                  isSubmitting={vm.matchResult.isSubmittingScore}
+                  onSubmit={vm.matchResult.onSubmitScore}
+                />
+                {vm.matchResult.scoreError && (
+                  <Alert variant="destructive" data-variant={vm.matchResult.scoreError.variant}>
+                    <AlertDescription>{vm.matchResult.scoreError.message}</AlertDescription>
+                  </Alert>
+                )}
+
+                <MatchResultScorerPicker
+                  goalsFor={vm.matchResult.goalsFor}
+                  attributedCount={vm.matchResult.attributedCount}
+                  scorerCapReached={vm.matchResult.scorerCapReached}
+                  scoreRecorded={vm.matchResult.scoreRecorded}
+                  eligibleScorers={vm.matchResult.eligibleScorers}
+                  selectedScorerId={vm.matchResult.selectedScorerId}
+                  onSelectScorer={vm.matchResult.onSelectScorer}
+                  isPenaltySelected={vm.matchResult.isPenaltySelected}
+                  onToggleIsPenalty={vm.matchResult.onToggleIsPenalty}
+                  canAddGoal={vm.matchResult.canAddGoal}
+                  isSubmitting={vm.matchResult.isSubmittingGoal}
+                  error={vm.matchResult.addGoalError}
+                  onCancel={vm.matchResult.onCancelGoal}
+                  onAdd={vm.matchResult.onAddGoal}
+                  recordedGoals={vm.matchResult.recordedGoals}
+                  onDeleteGoal={vm.matchResult.onDeleteEvent}
+                />
+
+                {/* `match_staff_events:view` — AC-MS-09, absent, never
+                    disabled, for anyone this evaluates false for (a player,
+                    structurally, never reaches this branch at all). */}
+                {vm.matchResult.canViewStaffEvents && (
+                  <MatchResultCardPicker
+                    eligiblePlayers={vm.matchResult.eligibleCardPlayers}
+                    selectedCardPlayerId={vm.matchResult.selectedCardPlayerId}
+                    onSelectCardPlayer={vm.matchResult.onSelectCardPlayer}
+                    selectedCardType={vm.matchResult.selectedCardType}
+                    onSelectCardType={vm.matchResult.onSelectCardType}
+                    canAddCard={vm.matchResult.canAddCard}
+                    isSubmitting={vm.matchResult.isSubmittingCard}
+                    error={vm.matchResult.addCardError}
+                    onCancel={vm.matchResult.onCancelCard}
+                    onAdd={vm.matchResult.onAddCard}
+                    recordedCards={vm.matchResult.recordedCards}
+                    onDeleteCard={vm.matchResult.onDeleteEvent}
+                  />
+                )}
+              </>
             )}
           </TabsContent>
         )}

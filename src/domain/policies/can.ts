@@ -25,7 +25,12 @@ function grants(
       // specs/player-vote.md §2/§7 — third occurrence of the same gap already
       // fixed for 'section-manager' and 'coach' above: applying the same
       // shape rather than reinventing one.
-      const requiresTeamScope = action === 'convocation:respond' || action === 'vote:cast'
+      // specs/match-stats.md §2 — 'match_goals:view' added to this same
+      // list, fourth occurrence of the identical gap already fixed for
+      // 'convocation:respond'/'vote:cast'/'attendance:validate': without
+      // this, a player on team A could pass can() for team B's goals just
+      // because 'player' is in match_goals:view's allowed-roles list.
+      const requiresTeamScope = action === 'convocation:respond' || action === 'vote:cast' || action === 'match_goals:view'
       return !requiresTeamScope || assignment.teamId === context.teamId
     }
     case 'coach': {
@@ -39,7 +44,15 @@ function grants(
       // refuse it, but the UI button would render). Same class of gap
       // already fixed for 'section-manager' below, applied here instead of
       // reinvented — see specs/create-convocation.md §3 for that precedent.
-      const requiresTeamScope = action === 'convocation:create' || action === 'attendance:validate'
+      // specs/match-stats.md §2 — same fix, same reasoning, for all three
+      // new match-statistics actions: each is team-scoped to the coach's
+      // own assigned teams, never club-wide.
+      const requiresTeamScope =
+        action === 'convocation:create' ||
+        action === 'attendance:validate' ||
+        action === 'match_result:record' ||
+        action === 'match_goals:view' ||
+        action === 'match_staff_events:view'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':

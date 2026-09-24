@@ -186,4 +186,57 @@ describe('can', () => {
       expect(can(user, 'role:remove', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
     }
   })
+
+  // specs/match-stats.md §2/AC-01/AC-02 — 'match_result:record' is
+  // Coach/Staff only, team-scoped to the coach's own assigned teams.
+  it('allows a coach to record a match result for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_result:record', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from recording a match result for a team they are not assigned to', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_result:record', { teamId: 'team-2' })).toBe(false)
+  })
+
+  // AC-MS-09/AC-MS-11 — a Joueur/Joueuse must be denied both
+  // 'match_result:record' (no saisie right at all) AND
+  // 'match_staff_events:view' (never the staff-only card/penalty_missed
+  // events, "absent, jamais grisé").
+  it('denies a player from recording a match result', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_result:record', { teamId: 'team-1' })).toBe(false)
+  })
+
+  it('denies a player from viewing staff-only match events (cards, penalty_missed), even for their own team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_staff_events:view', { teamId: 'team-1' })).toBe(false)
+  })
+
+  it('allows a coach to view staff-only match events for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_staff_events:view', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from viewing staff-only match events for a team they are not assigned to', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_staff_events:view', { teamId: 'team-2' })).toBe(false)
+  })
+
+  // 'match_goals:view' — granted to both roles, but still team-scoped for
+  // each.
+  it('allows a player to view goal events for their own team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_goals:view', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a player from viewing goal events for another team (AC-02)', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_goals:view', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('allows a coach to view goal events for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_goals:view', { teamId: 'team-1' })).toBe(true)
+  })
 })

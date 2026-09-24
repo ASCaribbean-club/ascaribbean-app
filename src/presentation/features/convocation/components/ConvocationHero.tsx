@@ -3,9 +3,9 @@ import type { Convocation } from '@domain/entities/convocation'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { Opponent } from '@domain/entities/opponent'
 import { formatConvocationType, getConvocationTypeIcon } from '@presentation/shared/formatters/convocation-labels'
-import { InitialsAvatar } from './InitialsAvatar'
+import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
+import { TeamCrestAvatar } from '@presentation/shared/components/TeamCrestAvatar'
 import { StatusBadge } from './StatusBadge'
-import { TeamCrestAvatar } from './TeamCrestAvatar'
 
 interface ConvocationHeroProps {
   convocation: Convocation

@@ -5,7 +5,7 @@ import { formatPlayerPosition } from '@presentation/shared/formatters/player-pos
 import { Button } from '@presentation/shared/components/ui/button'
 import { Separator } from '@presentation/shared/components/ui/separator'
 import { cn } from '@presentation/shared/lib/utils'
-import { InitialsAvatar } from './InitialsAvatar'
+import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { ResponderStatusBadge } from './ResponderStatusBadge'
 
 interface AttendanceConfirmRowProps {

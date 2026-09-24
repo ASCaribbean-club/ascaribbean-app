@@ -3,6 +3,7 @@ import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
@@ -26,6 +27,22 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // in supabase/migrations/20260811171754_initial_schema.sql.
       if (error.message.includes('user_roles_scope_check')) {
         return new InvalidRoleScopeError(error.message)
+      }
+      // specs/match-stats.md — two named backstops, added alongside the
+      // branch above rather than replacing its own `NotFoundError` fallback
+      // for any OTHER, still-unnamed 23514 violation (CLAUDE.md's "add
+      // named branches, don't override the existing blanket/other
+      // mappings"). Both should only ever fire from a bug bypassing
+      // RecordMatchScoreUseCase/AddMatchEventUseCase — those use cases
+      // already reject the same two situations from domain/ before any
+      // network call (AC-MS-05/AC-MS-16); this is the defense-in-depth
+      // translation if a check constraint fires anyway (see
+      // supabase/migrations/20260924100000_match_statistics_schema.sql).
+      if (error.message.includes('match_details_goals_both_or_none_check')) {
+        return new InconsistentMatchScoreError(error.message)
+      }
+      if (error.message.includes('match_events_penalty_requires_goal_check')) {
+        return new InconsistentMatchScoreError(error.message)
       }
       return new NotFoundError(error.message)
     case '23P01':

@@ -36,6 +36,7 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
   return {
     upsert: async (details) => details,
     findByConvocationId: async () => record,
+    recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...(record as MatchDetails), convocationId, goalsFor, goalsAgainst }),
   }
 }
 
@@ -57,6 +58,8 @@ describe('GetConvocationDetailsUseCase', () => {
       isHome: true,
       meetingPointTime: '2026-09-01T16:30:00.000Z',
       meetingPointLocation: 'Vestiaires',
+      goalsFor: null,
+      goalsAgainst: null,
     }
     const useCase = new GetConvocationDetailsUseCase(
       fakeMeetingDetailsRepository(null),

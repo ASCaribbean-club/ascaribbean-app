@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PlayerPosition } from '@domain/entities/user'
 import { formatPlayerPosition } from '../../../shared/formatters/player-position-labels'
-import { InitialsAvatar } from './InitialsAvatar'
+import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 
 interface RosterRowProps {
   name: string

@@ -53,7 +53,7 @@ function responderWith(overrides: Partial<ConvocationResponderStatus>): Convocat
 // loadMatchInfo's early return) — these stand in as no-op collaborators for
 // tests that aren't about match resolution.
 function noopMatchDetailsRepository(): MatchDetailsRepository {
-  return { upsert: vi.fn(), findByConvocationId: vi.fn() }
+  return { upsert: vi.fn(), findByConvocationId: vi.fn(), recordScore: vi.fn() }
 }
 
 function noopOpponentRepository(): OpponentRepository {
@@ -187,6 +187,8 @@ describe('ListTeamConvocationsUseCase', () => {
       isHome: true,
       meetingPointTime: '2026-08-20T17:00:00.000Z',
       meetingPointLocation: 'Stade municipal',
+      goalsFor: null,
+      goalsAgainst: null,
     }
     const opponent: Opponent = { id: 'opponent-1', name: 'Caribbean Girlz' }
     const findByConvocationId = vi.fn().mockResolvedValue(matchDetails)

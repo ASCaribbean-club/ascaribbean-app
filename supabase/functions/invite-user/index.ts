@@ -71,7 +71,7 @@ const CORS_HEADERS = {
 
 // Mirrors InviteUserErrorDto/InviteUserErrorCode in
 // src/data/dto/invite-user-dto.ts.
-type InviteUserErrorCode = 'unauthorized' | 'forbidden' | 'invalid_input' | 'already_registered' | 'directory_insert_failed' | 'server_misconfigured'
+type InviteUserErrorCode = 'unauthorized' | 'forbidden' | 'invalid_input' | 'already_registered' | 'target_not_active' | 'directory_insert_failed' | 'server_misconfigured'
 
 interface InviteUserRequestBody {
   mode?: unknown
@@ -243,6 +243,19 @@ Deno.serve(async (request: Request) => {
     const { data: targetUser, error: targetUserError } = await serviceRoleClient.auth.admin.getUserById(userId)
     if (targetUserError || !targetUser?.user?.email) {
       return errorResponse('invalid_input', 'No such user, or the user has no email.', 400)
+    }
+
+    // Server-side mirror of GeneratePasswordResetLinkUseCase's own 'active'
+    // guard — CLAUDE.md §6 "la policy front n'est jamais la sécurité"
+    // applies here to this function's own service_role boundary exactly as
+    // it does to RLS elsewhere: a caller with a valid admin JWT hitting
+    // this function directly (bypassing the use case) must not be able to
+    // generate a recovery link for a still-'invited' account, which has no
+    // password yet and never went through the charter-acceptance-gated
+    // /activation flow.
+    const { data: targetProfile } = await serviceRoleClient.from('users').select('charter_accepted_at').eq('id', userId).single()
+    if (!targetProfile?.charter_accepted_at) {
+      return errorResponse('target_not_active', 'This account has not activated its access yet.', 409)
     }
 
     const { data: recovery, error: recoveryError } = await serviceRoleClient.auth.admin.generateLink({

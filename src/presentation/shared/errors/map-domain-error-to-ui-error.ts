@@ -21,6 +21,7 @@ import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-targe
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
+import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
 import { WeakPasswordError } from '@domain/errors/weak-password-error'
@@ -291,6 +292,18 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // the real authority for.
     return {
       message: 'Ce compte a déjà activé son accès — impossible de régénérer un lien d’invitation.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof PasswordResetTargetNotActiveError) {
+    // specs/web-users-invitation-links.md §2 (amendement) — mirror image of
+    // InvitationTargetNotInvitedError above: GeneratePasswordResetLinkUseCase's
+    // own guard firing. Same "row action visibility already prevents this
+    // normally, this only fires on the rarer race" reasoning.
+    return {
+      message: 'Ce compte n’a pas encore activé son accès — impossible de générer un lien de réinitialisation.',
       variant: 'inline',
       retryable: false,
     }

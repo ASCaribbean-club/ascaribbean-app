@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AuthRepository, AuthSession, InvitationLinkType } from '@domain/repositories/auth-repository'
-import { mapSupabaseAuthError, mapVerifyInvitationLinkError } from '../errors/map-supabase-auth-error'
+import type { AuthLinkType, AuthRepository, AuthSession } from '@domain/repositories/auth-repository'
+import { mapSupabaseAuthError, mapVerifyAuthLinkError } from '../errors/map-supabase-auth-error'
 
 export class AuthRepositoryImpl implements AuthRepository {
   private readonly client: SupabaseClient
@@ -26,34 +26,17 @@ export class AuthRepositoryImpl implements AuthRepository {
     if (error) throw mapSupabaseAuthError(error)
   }
 
-  async requestMagicLink(email: string): Promise<void> {
-    const { error } = await this.client.auth.signInWithOtp({ email })
-    if (error) throw mapSupabaseAuthError(error)
-  }
-
-  async requestPasswordReset(email: string): Promise<void> {
-    const { error } = await this.client.auth.resetPasswordForEmail(email)
-    if (error) throw mapSupabaseAuthError(error)
-  }
-
   // specs/web-users-invitation-links.md §5 — ActivationPage's "Activer mon
-  // compte" tap, PKCE-style token exchange (never the implicit-flow
-  // action_link getSession()/onAuthStateChange auto-detects, see this
-  // class's own hasRecoveryLinkError comment for why that path stays
-  // reserved for the still-email-delivered password-reset case).
-  async verifyInvitationLink(tokenHash: string, type: InvitationLinkType): Promise<void> {
+  // compte" tap and UpdatePasswordPage's "Réinitialiser mon mot de passe"
+  // tap, both PKCE-style token exchange on an explicit user action — never
+  // the implicit-flow action_link that getSession()/onAuthStateChange would
+  // auto-detect from the URL on page load. Every link this method ever
+  // consumes (invite/magiclink/recovery alike) is built by the invite-user
+  // Edge Function from a bare token_hash, manually shared by an admin
+  // (InviteUserDialog) — never Supabase's own action_link/mailer.
+  async verifyAuthLink(tokenHash: string, type: AuthLinkType): Promise<void> {
     const { error } = await this.client.auth.verifyOtp({ token_hash: tokenHash, type })
-    if (error) throw mapVerifyInvitationLinkError(error)
-  }
-
-  hasRecoveryLinkError(): boolean {
-    // Supabase redirects a rejected invite/recovery link back with the
-    // failure in the URL instead of raising a JS error — hash fragment for
-    // the implicit flow, query string for PKCE. No session ever gets
-    // created, so this is the only signal available.
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
-    const queryParams = new URLSearchParams(window.location.search)
-    return hashParams.get('error_code') === 'otp_expired' || queryParams.get('error_code') === 'otp_expired'
+    if (error) throw mapVerifyAuthLinkError(error)
   }
 
   async updatePassword(newPassword: string): Promise<void> {

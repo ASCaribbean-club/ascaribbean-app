@@ -12,10 +12,11 @@ interface InviteUserDialogProps {
 }
 
 // specs/web-users-invitation-links.md §4 — replaces the e-mail-invitation
-// dialog (CLAUDE.md §7: no second dialog component for the reissue mode,
-// this one is reused as-is). No email is sent by the application anymore —
-// the dialog produces a ready-to-share French message with Copier/Partager,
-// which the admin sends themselves via WhatsApp/SMS/in person.
+// dialog (CLAUDE.md §7: no second dialog component for the reissue or
+// reset-password modes, this one is reused as-is). No email is sent by the
+// application anymore — the dialog produces a ready-to-share French message
+// with Copier/Partager, which the admin sends themselves via WhatsApp/SMS/in
+// person.
 export function InviteUserDialog({ target, onClose }: InviteUserDialogProps) {
   if (!target) return null
 
@@ -25,11 +26,13 @@ export function InviteUserDialog({ target, onClose }: InviteUserDialogProps) {
 function InviteUserDialogContent({ target, onClose }: { target: InviteUserDialogTarget; onClose: () => void }) {
   const vm = useInviteUserDialogViewModel({ target, onClose: onClose })
 
+  const dialogTitle = vm.mode === 'create' ? 'Inviter un utilisateur' : vm.mode === 'reissue' ? 'Lien d’invitation' : 'Réinitialiser le mot de passe'
+
   return (
     <Dialog open onOpenChange={(open) => !open && vm.close()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{vm.mode === 'create' ? 'Inviter un utilisateur' : 'Lien d’invitation'}</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
 
         {!vm.link && target.mode === 'create' && (
@@ -91,18 +94,22 @@ function InviteUserDialogContent({ target, onClose }: { target: InviteUserDialog
         )}
 
         {/* specs/web-users-invitation-links.md §4 "Users list — new row
-            action" — re-issue mode's own FIRST step: nothing is generated
-            until this button is tapped (never on dialog open), the same
-            "no one-click generate-and-copy" rule as below applied to the
-            generation itself. */}
-        {!vm.link && target.mode === 'reissue' && (
+            action" — re-issue/reset-password mode's own FIRST step: nothing
+            is generated until this button is tapped (never on dialog open),
+            the same "no one-click generate-and-copy" rule as below applied
+            to the generation itself. */}
+        {!vm.link && (target.mode === 'reissue' || target.mode === 'reset-password') && (
           <div className="flex min-w-0 flex-col gap-4">
             {vm.generateErrorMessage && (
               <Alert variant="destructive" role="alert">
                 <AlertDescription>{vm.generateErrorMessage}</AlertDescription>
               </Alert>
             )}
-            <p className="text-sm text-muted-foreground">Génère un nouveau lien d’activation pour {target.fullName}.</p>
+            <p className="text-sm text-muted-foreground">
+              {target.mode === 'reissue'
+                ? `Génère un nouveau lien d’activation pour ${target.fullName}.`
+                : `Génère un lien de réinitialisation de mot de passe pour ${target.fullName}.`}
+            </p>
             <DialogFooter>
               <Button type="button" variant="outline" disabled={vm.isGenerating} onClick={vm.close} className="h-11 rounded-full">
                 Annuler
@@ -113,7 +120,7 @@ function InviteUserDialogContent({ target, onClose }: { target: InviteUserDialog
                 onClick={vm.generate}
                 className="h-11 rounded-full bg-coach-green font-bold text-white hover:bg-coach-green disabled:opacity-60"
               >
-                {vm.isGenerating ? 'Génération…' : 'Générer un nouveau lien'}
+                {vm.isGenerating ? 'Génération…' : target.mode === 'reissue' ? 'Générer un nouveau lien' : 'Générer le lien'}
               </Button>
             </DialogFooter>
           </div>
@@ -121,12 +128,12 @@ function InviteUserDialogContent({ target, onClose }: { target: InviteUserDialog
 
         {vm.link && (
           <div className="flex min-w-0 flex-col gap-4">
-            {/* §1.5 — shown only for a re-issued link: generating a new one
-                is understood (per GoTrue's documented one-token-per-type
-                storage, not verified against a live test — see this
-                feature's own findings) to invalidate whichever link was
-                previously sent to this member. */}
-            {vm.mode === 'reissue' && (
+            {/* §1.5 — shown for a re-issued or reset-password link:
+                generating a new one is understood (per GoTrue's documented
+                one-token-per-type storage, not verified against a live test
+                — see this feature's own findings) to invalidate whichever
+                link was previously sent to this member. */}
+            {vm.mode !== 'create' && (
               <Alert role="status">
                 <AlertDescription>L’ancien lien envoyé à ce membre ne fonctionnera plus.</AlertDescription>
               </Alert>

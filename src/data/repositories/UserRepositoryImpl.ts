@@ -198,6 +198,17 @@ export class UserRepositoryImpl implements UserRepository {
     if (error) throw await mapInviteFunctionError(error)
     return { url: data!.url }
   }
+
+  // specs/web-users-invitation-links.md §2 (amendement — password reset is
+  // admin-mediated) — GeneratePasswordResetLinkUseCase is the only caller.
+  // Same function, mode 'reset-password': no public.users row to create,
+  // the account already exists.
+  async generatePasswordResetLink(userId: string): Promise<InvitationLink> {
+    const body: InviteUserRequestDto = { mode: 'reset-password', userId }
+    const { data, error } = await this.client.functions.invoke<InviteUserResponseDto>('invite-user', { body })
+    if (error) throw await mapInviteFunctionError(error)
+    return { url: data!.url }
+  }
 }
 
 // specs/web-users.md §2.3 "repli" — the facts an account gets when it has

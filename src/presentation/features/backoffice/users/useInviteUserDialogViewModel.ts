@@ -6,14 +6,19 @@ import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { queryKeys } from '@presentation/shared/query-keys'
-import { buildInvitationMessage, INVITE_LINK_VALIDITY_HOURS } from './invitation-message'
+import { buildInvitationMessage, buildPasswordResetMessage, INVITE_LINK_VALIDITY_HOURS } from './invitation-message'
 
-// specs/web-users-invitation-links.md §4 — one dialog, two modes: a brand
+// specs/web-users-invitation-links.md §4 — one dialog, three modes: a brand
 // new invite from the "+ Inviter un utilisateur" button (form fields,
-// AC-WU-30), or a fresh link for an already-'invited' row's "Lien
-// d'invitation" action (no form — the account already exists). Never a
-// second dialog component for the second mode.
-export type InviteUserDialogTarget = { mode: 'create' } | { mode: 'reissue'; userId: string; fullName: string }
+// AC-WU-30), a fresh link for an already-'invited' row's "Lien
+// d'invitation" action, or a password-reset link for an 'active' row's
+// "Réinitialiser le mot de passe" action (no form in either of the last two
+// — the account already exists). Never a second dialog component for
+// either.
+export type InviteUserDialogTarget =
+  | { mode: 'create' }
+  | { mode: 'reissue'; userId: string; fullName: string }
+  | { mode: 'reset-password'; userId: string; fullName: string }
 
 interface UseInviteUserDialogViewModelParams {
   target: InviteUserDialogTarget
@@ -33,7 +38,7 @@ function firstNameOf(fullName: string): string {
 export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserDialogViewModelParams) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const { inviteUserUseCase, reissueInvitationLinkUseCase } = useUsersDependencies()
+  const { inviteUserUseCase, reissueInvitationLinkUseCase, generatePasswordResetLinkUseCase } = useUsersDependencies()
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -51,22 +56,27 @@ export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserD
       if (target.mode === 'create') {
         return inviteUserUseCase.execute({ actorId: user.id, fullName, email })
       }
-      return reissueInvitationLinkUseCase.execute({ actorId: user.id, targetUserId: target.userId })
+      if (target.mode === 'reissue') {
+        return reissueInvitationLinkUseCase.execute({ actorId: user.id, targetUserId: target.userId })
+      }
+      return generatePasswordResetLinkUseCase.execute({ actorId: user.id, targetUserId: target.userId })
     },
     onSuccess: (result) => {
       setLink(result)
       // AC-WU-21/AC-WU-33 — a freshly-created account appears in the list,
-      // at status "Invité", without a manual reload. A re-issue changes no
-      // row (§2 — reissueInvitationLink() creates nothing), so this
-      // invalidation is a harmless no-op for that mode rather than a
-      // second, mode-specific code path.
+      // at status "Invité", without a manual reload. A re-issue or a
+      // password-reset link changes no row (§2 — neither
+      // reissueInvitationLink() nor generatePasswordResetLink() creates
+      // anything), so this invalidation is a harmless no-op for those modes
+      // rather than a second, mode-specific code path.
       void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
     },
   })
 
   const displayFullName = target.mode === 'create' ? fullName : target.fullName
-  const message = link ? buildInvitationMessage({ firstName: firstNameOf(displayFullName), url: link.url, validityHours: INVITE_LINK_VALIDITY_HOURS }) : null
+  const buildMessage = target.mode === 'reset-password' ? buildPasswordResetMessage : buildInvitationMessage
+  const message = link ? buildMessage({ firstName: firstNameOf(displayFullName), url: link.url, validityHours: INVITE_LINK_VALIDITY_HOURS }) : null
 
   async function copyMessage() {
     if (!message) return

@@ -26,11 +26,15 @@
 //        an existing one (no local Supabase stack was available to test
 //        this — Docker was not running); 'magiclink' is Supabase's own
 //        documented mechanism for generating a sign-in link for "a new or
-//        existing" email and is already used elsewhere in this codebase
-//        for the exact same "existing, not yet confirmed" case
-//        (AuthRepository.requestMagicLink). Flagged here rather than
-//        silently assumed: confirm this against the real project before
-//        depending on it operationally.
+//        existing" email — the exact same "existing, not yet confirmed"
+//        case. Flagged here rather than silently assumed: confirm this
+//        against the real project before depending on it operationally.
+//      - 'reset-password' (amendement — replaces a member-triggered
+//        `resetPasswordForEmail()`, same reasoning as the original
+//        email-invitation removal above): calls
+//        `generateLink({ type: 'recovery', ... })` for an EXISTING,
+//        'active' user. Never sends mail itself — same as every other mode
+//        here, the admin shares the returned URL manually.
 //   3. 'create' only: inserts the `public.users` row itself (`id` from the
 //      generated link, `full_name`/`email` as submitted,
 //      `charter_accepted_at` null) — the `service_role` client bypasses
@@ -39,18 +43,19 @@
 //      at GENERATE time, not at acceptance (§2's own "c'est l'affichage
 //      qui fait foi") — `charter_accepted_at` staying null is exactly what
 //      makes the row render "Invité" the instant the caller's cache is
-//      invalidated (AC-WU-33). 'reissue' touches no row: the account
-//      already exists, nothing about it changes.
-//   4. Builds and returns the app's OWN /activation URL, built from
-//      `data.properties.hashed_token` — NEVER Supabase's own `action_link`.
-//      A messaging app (WhatsApp, SMS, iMessage…) fetches a URL to build a
-//      link preview before the member ever taps it; `action_link` performs
-//      the OTP verification on that plain GET, so the preview fetch alone
-//      would burn the single-use token before the member sees the link.
-//      An app URL only serves static HTML (index.html's own <meta
-//      property="og:*"> tags) to the preview crawler — the token itself is
-//      only consumed when the member taps "Activer mon compte" on
-//      /activation, which calls verifyOtp() explicitly (§5).
+//      invalidated (AC-WU-33). 'reissue'/'reset-password' touch no row: the
+//      account already exists, nothing about it changes.
+//   4. Builds and returns the app's OWN /activation or /update-password URL
+//      (mode-dependent), built from `data.properties.hashed_token` — NEVER
+//      Supabase's own `action_link`. A messaging app (WhatsApp, SMS,
+//      iMessage…) fetches a URL to build a link preview before the member
+//      ever taps it; `action_link` performs the OTP verification on that
+//      plain GET, so the preview fetch alone would burn the single-use
+//      token before the member sees the link. An app URL only serves
+//      static HTML (index.html's own <meta property="og:*"> tags) to the
+//      preview crawler — the token itself is only consumed when the member
+//      taps "Activer mon compte"/"Réinitialiser mon mot de passe", which
+//      calls verifyOtp() explicitly (§5).
 //
 // Request/response contract mirrored BY HAND (never generated, CLAUDE.md
 // §7) with src/data/dto/invite-user-dto.ts — keep the two files in sync
@@ -105,6 +110,18 @@ function buildActivationUrl(siteUrl: string, hashedToken: string, type: 'invite'
   url.searchParams.set('token_hash', hashedToken)
   url.searchParams.set('type', type)
   if (name) url.searchParams.set('name', name)
+  return url.toString()
+}
+
+// specs/web-users-invitation-links.md §5 (amendement — password reset is
+// admin-mediated, not a member-triggered email) — the app's own
+// /update-password URL, same reasoning as buildActivationUrl above: no
+// `name` param (UpdatePasswordPage shows none, the admin's own dialog
+// already has the target's fullName for its Copier/Partager message).
+function buildRecoveryUrl(siteUrl: string, hashedToken: string): string {
+  const url = new URL('/update-password', siteUrl)
+  url.searchParams.set('token_hash', hashedToken)
+  url.searchParams.set('type', 'recovery')
   return url.toString()
 }
 
@@ -177,7 +194,7 @@ Deno.serve(async (request: Request) => {
     return errorResponse('invalid_input', 'Malformed JSON body.', 400)
   }
 
-  const mode = body.mode === 'reissue' ? 'reissue' : 'create'
+  const mode = body.mode === 'reissue' ? 'reissue' : body.mode === 'reset-password' ? 'reset-password' : 'create'
 
   // §1 point 2 — the ONLY place in this codebase that reads
   // SUPABASE_SERVICE_ROLE_KEY, built HERE from this function's own
@@ -215,6 +232,29 @@ Deno.serve(async (request: Request) => {
     }
 
     return jsonResponse({ url: buildActivationUrl(siteUrl, reissued.properties.hashed_token, 'magiclink', profileRow?.full_name ?? '') }, 200)
+  }
+
+  if (mode === 'reset-password') {
+    const userId = typeof body.userId === 'string' ? body.userId.trim() : ''
+    if (!userId) {
+      return errorResponse('invalid_input', 'userId is required.', 400)
+    }
+
+    const { data: targetUser, error: targetUserError } = await serviceRoleClient.auth.admin.getUserById(userId)
+    if (targetUserError || !targetUser?.user?.email) {
+      return errorResponse('invalid_input', 'No such user, or the user has no email.', 400)
+    }
+
+    const { data: recovery, error: recoveryError } = await serviceRoleClient.auth.admin.generateLink({
+      type: 'recovery',
+      email: targetUser.user.email,
+    })
+
+    if (recoveryError || !recovery?.properties?.hashed_token) {
+      return jsonResponse({ error: 'invite_failed', message: recoveryError?.message ?? 'generateLink failed.' }, 502)
+    }
+
+    return jsonResponse({ url: buildRecoveryUrl(siteUrl, recovery.properties.hashed_token) }, 200)
   }
 
   // Defence in depth only — InviteUserUseCase already validates both

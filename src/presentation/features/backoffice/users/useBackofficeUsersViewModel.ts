@@ -144,6 +144,11 @@ export function useBackofficeUsersViewModel() {
     // here (ARCHITECTURE.md §6, the ViewModel is the one place that
     // computes this).
     openReissueInvitationDialog: (row: AdminUserDirectoryEntry) => setInviteDialogTarget({ mode: 'reissue', userId: row.id, fullName: row.fullName }),
+    // specs/web-users-invitation-links.md §4 (amendement) — mirror image of
+    // openReissueInvitationDialog above, same SAME dialog, reset-password
+    // mode. UserTable's own rendering condition (userStatus === 'active')
+    // already keeps this unreachable for a still-'invited' row.
+    openPasswordResetDialog: (row: AdminUserDirectoryEntry) => setInviteDialogTarget({ mode: 'reset-password', userId: row.id, fullName: row.fullName }),
     closeInviteDialog: () => setInviteDialogTarget(null),
 
     editTarget,

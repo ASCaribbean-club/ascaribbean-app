@@ -1,14 +1,9 @@
-import { Link, Navigate } from 'react-router-dom'
 import { AuthCard } from '../components/AuthCard'
-import { formatRole } from '../../../shared/formatters/role-labels'
 import { Alert, AlertDescription } from '../../../shared/components/ui/alert'
-import { Badge } from '../../../shared/components/ui/badge'
-import { Button, buttonVariants } from '../../../shared/components/ui/button'
+import { Button } from '../../../shared/components/ui/button'
 import { CardDescription, CardTitle } from '../../../shared/components/ui/card'
 import { Input } from '../../../shared/components/ui/input'
 import { Label } from '../../../shared/components/ui/label'
-import { Separator } from '../../../shared/components/ui/separator'
-import { cn } from '../../../shared/lib/utils'
 import { useUpdatePasswordViewModel } from './useUpdatePasswordViewModel'
 
 const fieldInputClass =
@@ -19,10 +14,7 @@ const submitButtonClass =
 export function UpdatePasswordPage() {
   const vm = useUpdatePasswordViewModel()
 
-  if (vm.status === 'loading') return null
-  if (vm.status === 'unauthenticated') return <Navigate to="/login" replace />
-
-  if (vm.status === 'invalid-link') {
+  if (vm.status === 'invalid') {
     return (
       <AuthCard>
         <span className="mx-auto flex size-12 items-center justify-center rounded-full border-2 border-auth-primary text-xl font-extrabold text-auth-primary">
@@ -30,43 +22,29 @@ export function UpdatePasswordPage() {
         </span>
         <CardTitle className="text-center text-[19px] font-extrabold text-auth-text">Lien invalide ou expiré</CardTitle>
         <CardDescription className="text-center text-[12.5px] leading-relaxed text-auth-text-muted">
-          Ce lien n'est plus valide. Demandez-en un nouveau.
+          Ce lien n'est plus valide. Demandez-en un nouveau depuis l'écran de connexion.
         </CardDescription>
-        <Link to="/forgot-password" className={cn(buttonVariants(), submitButtonClass)}>
-          Retour
-        </Link>
+      </AuthCard>
+    )
+  }
+
+  if (vm.status === 'ready' || vm.status === 'verifying') {
+    return (
+      <AuthCard brand>
+        <CardTitle className="text-center text-[19px] font-extrabold text-auth-text">Réinitialiser votre mot de passe</CardTitle>
+        <CardDescription className="text-center text-[12.5px] leading-relaxed text-auth-text-muted">
+          Ce lien est personnel. Appuyez sur le bouton ci-dessous pour continuer.
+        </CardDescription>
+        <Button type="button" disabled={vm.status === 'verifying'} onClick={vm.verify} className={submitButtonClass}>
+          {vm.status === 'verifying' ? 'Vérification…' : 'Réinitialiser mon mot de passe'}
+        </Button>
       </AuthCard>
     )
   }
 
   return (
     <AuthCard>
-      {vm.showWelcome && (
-        <>
-          <div className="flex flex-col gap-3">
-            <CardTitle className="text-[19px] font-extrabold text-auth-text">Bonjour, {vm.fullName}</CardTitle>
-            <CardDescription className="text-[12.5px] leading-relaxed text-auth-text-muted">
-              Vous avez été invité(e) sur AS Caribbean en tant que :
-            </CardDescription>
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {vm.roles.map((assignment) => (
-                <Badge
-                  key={assignment.role}
-                  variant="outline"
-                  className="rounded-full border-[1.3px] border-auth-primary px-2.75 py-1 text-[11.5px] font-bold text-auth-primary"
-                >
-                  {formatRole(assignment.role)}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <Separator className="bg-auth-border" />
-        </>
-      )}
-
-      <CardTitle className="text-[19px] font-extrabold text-auth-text">
-        {vm.showWelcome ? 'Définir votre mot de passe' : 'Nouveau mot de passe'}
-      </CardTitle>
+      <CardTitle className="text-[19px] font-extrabold text-auth-text">Nouveau mot de passe</CardTitle>
 
       <form
         className="flex flex-col gap-3"
@@ -90,6 +68,7 @@ export function UpdatePasswordPage() {
             onChange={(event) => vm.setNewPassword(event.target.value)}
             className={fieldInputClass}
           />
+          <p className="px-1 text-[11px] text-auth-text-muted">Au moins 8 caractères, avec une minuscule, une majuscule et un chiffre.</p>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -123,7 +102,7 @@ export function UpdatePasswordPage() {
         )}
 
         <Button type="submit" disabled={!vm.passwordsMatch || vm.isSubmitting} className={submitButtonClass}>
-          {vm.isSubmitting ? 'Enregistrement…' : vm.showWelcome ? 'Continuer' : 'Réinitialiser le mot de passe'}
+          {vm.isSubmitting ? 'Enregistrement…' : 'Réinitialiser le mot de passe'}
         </Button>
       </form>
     </AuthCard>

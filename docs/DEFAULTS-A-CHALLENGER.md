@@ -214,9 +214,9 @@ export interface Team {
 
 ## Canal de remise manuel (WhatsApp/SMS/en personne)
 
-**Où** : `InviteUserDialog`/`useInviteUserDialogViewModel` (Copier/Partager) — remplace l'envoi d'email automatique (CDC §3.1, amendement du 2026-09-18).
+**Où** : `InviteUserDialog`/`useInviteUserDialogViewModel` (Copier/Partager) — remplace l'envoi d'email automatique (CDC §3.1, amendement du 2026-09-18). Depuis le 2026-09-23, la réinitialisation de mot de passe (CDC §3.1) suit exactement le même mécanisme (mode `reset-password` de la même Edge Function, même dialog) — elle ne passe plus par `supabase.auth.resetPasswordForEmail()` ni par aucun email envoyé par l'application.
 
-**Valeur actuelle** : l'admin copie ou partage lui-même le message contenant le lien, via un canal hors du contrôle de l'application (WhatsApp, SMS, en personne). La réinitialisation de mot de passe (CDC §3.1) continue, elle, de passer par email — ce canal-là reste inchangé et non résolu par cette tranche (Brevo/SMTP toujours pas configuré, `docs/GOUVERNANCE.md` §3).
+**Valeur actuelle** : l'admin copie ou partage lui-même le message contenant le lien, via un canal hors du contrôle de l'application (WhatsApp, SMS, en personne) — que ce soit pour inviter un compte, réémettre un lien d'activation, ou réinitialiser un mot de passe. `/forgot-password` (self-service, email envoyé par Supabase) a été retiré : un membre qui a oublié son mot de passe contacte un administrateur, qui génère le lien depuis `/admin/users` (action « Réinitialiser le mot de passe » sur une ligne au statut Actif).
 
 **Ce qu'il faudrait challenger** :
 - La confidentialité du canal manuel n'est ni vérifiable ni garantie par l'application (un lien collé dans le mauvais fil de discussion, un téléphone partagé…) — le seul garde-fou actuel est l'avertissement textuel de la boîte de dialogue ("jamais dans une conversation de groupe").

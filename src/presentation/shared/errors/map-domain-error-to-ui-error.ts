@@ -16,7 +16,7 @@ import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-err
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
 import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
-import { InvitationLinkInvalidError } from '@domain/errors/invitation-link-invalid-error'
+import { AuthLinkInvalidError } from '@domain/errors/auth-link-invalid-error'
 import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-target-not-invited-error'
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -296,9 +296,10 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     }
   }
 
-  if (error instanceof InvitationLinkInvalidError) {
-    // specs/web-users-invitation-links.md §5 — ActivationPage's own
-    // verifyOtp() rejection: expired or already-used token.
+  if (error instanceof AuthLinkInvalidError) {
+    // specs/web-users-invitation-links.md §5 — ActivationPage's or
+    // UpdatePasswordPage's own verifyOtp() rejection: expired or
+    // already-used token.
     return {
       message: 'Ce lien n’est plus valide. Contactez un administrateur du club pour en obtenir un nouveau.',
       variant: 'blocking',

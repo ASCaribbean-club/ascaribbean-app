@@ -3,6 +3,7 @@ import { DomainError } from '@domain/errors/domain-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
 import { InviteUserFailedError } from '@domain/errors/invite-user-failed-error'
+import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
 import type { InviteUserErrorDto } from '@data/dto/invite-user-dto'
@@ -40,6 +41,13 @@ export async function mapInviteFunctionError(error: unknown): Promise<DomainErro
       return new InvalidUserInputError(body.message ?? 'fullName and email are required')
     case 'already_registered':
       return new UserAlreadyRegisteredError(body.message ?? 'This email is already invited or already registered')
+    case 'target_not_active':
+      // Server-side mirror of GeneratePasswordResetLinkUseCase's own
+      // guard (defence in depth, same reasoning as 'invalid_input' above) —
+      // the row action's own visibility already prevents this in the
+      // normal case (UserTable, userStatus(row.charterAcceptedAt) ===
+      // 'active').
+      return new PasswordResetTargetNotActiveError(body.message ?? 'This account has not activated its access yet')
     case 'directory_insert_failed':
       return new UserDirectoryInsertFailedError(body.message ?? 'Invitation sent but the public.users row could not be created')
     case 'server_misconfigured':

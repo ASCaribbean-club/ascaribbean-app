@@ -22,6 +22,16 @@ export interface Convocation {
   createdBy: string
 }
 
+// specs/edit-match-details.md, developer decision (2026-09-25) widening
+// that spec's original scope: the coach may also correct the match's own
+// kickoff (`date`) and venue (`location`) — not just MatchDetails'
+// logistics — as long as the match hasn't begun yet. `Pick<>`, same
+// reasoning as MatchArrangements (domain/entities/match-details.ts): makes
+// writing any OTHER Convocation field (type, teamId, status, closedBy,
+// cancelledBy, createdBy, ...) through this path a compile error, not a
+// runtime guard someone has to remember to keep enforcing.
+export type ConvocationArrangements = Pick<Convocation, 'date' | 'location'>
+
 // --- Player-declared intent, submitted before the event ---
 
 export type DeclaredStatus = 'pending' | 'present' | 'absent'

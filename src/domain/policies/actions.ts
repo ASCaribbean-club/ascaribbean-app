@@ -161,3 +161,30 @@ export type Action =
   | 'match_result:record'
   | 'match_goals:view'
   | 'match_staff_events:view'
+  // specs/edit-match-details.md §2 — names the resource ACTUALLY written
+  // (public.match_details), never 'convocation:update': that name would
+  // designate public.convocations, a table this action never touches (no
+  // UPDATE policy exists on it, and this feature doesn't add one —
+  // UpdateConvocationUseCase stays a reserved name, §1/§8). Also
+  // deliberately NOT a widening of 'convocation:create': the two actions'
+  // candidate populations coincide today but their time windows are
+  // opposite (create = future date required; update = before an EXISTING
+  // convocation's kickoff) and, more importantly, their column surfaces
+  // differ — 'convocation:create' writes six match fields, this one three
+  // — merging them would make the column restriction inexpressible as a
+  // single action name (§2, "Délibérément pas un élargissement de
+  // 'convocation:create'").
+  | 'match_details:update'
+  // specs/edit-match-details.md, developer decision (2026-09-25) — widens
+  // that spec's original scope, which deliberately left this name
+  // "reserved, not implemented" (§7/§8 of that spec, and of
+  // specs/create-convocation.md §7 before it): the coach may now also
+  // correct a MATCH convocation's own `date` (kickoff) and `location`
+  // (venue), not just MatchDetails' logistics, as long as the match hasn't
+  // begun yet. Names the resource actually written (public.convocations),
+  // same convention as 'match_details:update' — kept a SEPARATE action
+  // rather than folded into 'match_details:update', for the same reason
+  // 'membership:write'/'payment:record' and 'role:assign'/'role:assign-coach'
+  // stay split: different resource, different column surface (`date`,
+  // `location` vs `is_home`, `meeting_point_time`, `meeting_point_location`).
+  | 'convocation:update'

@@ -47,12 +47,25 @@ function grants(
       // specs/match-stats.md §2 — same fix, same reasoning, for all three
       // new match-statistics actions: each is team-scoped to the coach's
       // own assigned teams, never club-wide.
+      // specs/edit-match-details.md §2 — fourth/fifth occurrence of this
+      // exact gap (after 'convocation:create', 'attendance:validate',
+      // 'vote:cast'): 'match_details:update' added HERE, not just to
+      // rbacMatrix, so a coach can't see the edit control on another team's
+      // match — RLS would still refuse the write, but the button would
+      // wrongly render (moindre privilège, "jamais grisé" — the control
+      // must be ABSENT, not merely blocked at write time).
+      // specs/edit-match-details.md, developer decision (2026-09-25) —
+      // 'convocation:update' added in the SAME change as its
+      // rbac-matrix.ts entry, jumeau exact of 'match_details:update' just
+      // above (same team, same window, same reasoning).
       const requiresTeamScope =
         action === 'convocation:create' ||
         action === 'attendance:validate' ||
         action === 'match_result:record' ||
         action === 'match_goals:view' ||
-        action === 'match_staff_events:view'
+        action === 'match_staff_events:view' ||
+        action === 'match_details:update' ||
+        action === 'convocation:update'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':
@@ -69,7 +82,31 @@ function grants(
       // added in the SAME change as ITS OWN rbac-matrix.ts entry, jumeau
       // exact of the 'role:assign' addition above, same "written now so a
       // future widening doesn't silently ship without it" reasoning.
-      if (action === 'section:manage' || action === 'convocation:create' || action === 'role:assign' || action === 'role:remove') {
+      //
+      // specs/edit-match-details.md §2 — 'match_details:update' added in the
+      // SAME change as its rbac-matrix.ts entry, even though that entry is
+      // ['coach']-only today: the CDC matrix explicitly names
+      // section-manager (their own section) on the "Créer/modifier une
+      // convocation" row, so PO-EM-01 has a real, matrix-backed chance of
+      // widening this — stronger grounds than the purely hypothetical
+      // widenings 'role:assign'/'role:remove' were pre-wired for above.
+      // Currently inert (rbacMatrix['match_details:update'] is
+      // ['coach']-only, so a section-manager's assignment never reaches
+      // this branch at all — caught earlier by `grants()`'s
+      // `allowedRoles.includes` check), same "written now so a future
+      // widening doesn't silently ship without it" reasoning.
+      // specs/edit-match-details.md, developer decision (2026-09-25) —
+      // 'convocation:update' added in the SAME change as its own
+      // rbac-matrix.ts entry, jumeau exact of the 'match_details:update'
+      // addition above (also inert today, same reasoning).
+      if (
+        action === 'section:manage' ||
+        action === 'convocation:create' ||
+        action === 'role:assign' ||
+        action === 'role:remove' ||
+        action === 'match_details:update' ||
+        action === 'convocation:update'
+      ) {
         // The use case resolves the target's sectionId (via TeamRepository
         // for a team-scoped target, or directly for a section-scoped one)
         // *before* calling can() — this policy only compares values it's given.

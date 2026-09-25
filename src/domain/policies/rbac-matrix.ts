@@ -218,4 +218,42 @@ export const rbacMatrix: Record<Action, Role[]> = {
   'match_result:record': ['coach'],
   'match_goals:view': ['player', 'coach'],
   'match_staff_events:view': ['coach'],
+
+  // specs/edit-match-details.md §2 — "Décision de cadrage — ['coach'], et
+  // pourquoi c'est un écart assumé": the CDC matrix row ("Créer/modifier une
+  // convocation") actually grants ✅ to section-manager (their own section),
+  // authorized-officer and admin too, unlike every other row this file
+  // restricts by reading the matrix literally — this entry is a DELIBERATE,
+  // documented NARROWING relative to the CDC, not a reading of it. Reasons
+  // (all three, not just one): (1) the developer's own request names the
+  // coach only; (2) none of the other three roles has any UI path to this
+  // screen today — ConvocationDetailPage's variant switch
+  // (useActiveRole()/hasActiveRoleForConvocation) only knows 'player' and
+  // 'coach', so granting the write now would build a right nobody could
+  // exercise; (3) moindre privilège — widening later costs one line, an
+  // early over-grant costs a data correction. Widening to the other three
+  // roles is PO-EM-01, explicitly open and explicitly NOT resolved here.
+  //
+  // Mirrors match_details_update_arrangements (RLS UPDATE on
+  // public.match_details, `using`/`with check`: private.is_coach_of_team via
+  // the parent convocation, c.date > now(), c.status = 'open') plus
+  // `grant update (is_home, meeting_point_time, meeting_point_location)` —
+  // see supabase/migrations/<timestamp>_edit_match_details_write_policy.sql.
+  // Reading MatchDetails stays RLS-only, no matrix entry (unchanged,
+  // match_details_select_team_scoped already exists) — this entry exists
+  // only because presentation/ must decide whether to render the edit
+  // control BEFORE any write is attempted (§2, "l'onglet Infos ne change pas
+  // de structure selon le rôle, seul le contrôle d'édition apparaît ou
+  // non").
+  'match_details:update': ['coach'],
+
+  // specs/edit-match-details.md, developer decision (2026-09-25) — same
+  // scope as 'match_details:update' above (coach of the convocation's own
+  // team, before kickoff): the coach may also correct the match's own
+  // `date`/`location`. Mirrors convocations_update_arrangements (RLS UPDATE
+  // on public.convocations, `using`/`with check`: private.is_coach_of_team
+  // via team_id, c.date > now(), c.status = 'open') plus `grant update
+  // (date, location)` — see
+  // supabase/migrations/20260925150603_edit_match_details_write_policy.sql.
+  'convocation:update': ['coach'],
 }

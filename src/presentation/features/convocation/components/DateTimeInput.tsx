@@ -10,15 +10,17 @@ interface DateTimeInputProps {
   onChange: (value: string) => void
   // `date` fields only — see useCreateConvocationViewModel's `minDate`.
   min?: string
-  // Overrides FIELD_CLASSNAME's box styling (height/border/radius/padding/
-  // text size) on BOTH the invisible native input and its visible display
-  // sibling — the two must always match, since the visible one is what
-  // determines this control's actual on-screen box. Used by
-  // MatchDetailsEditForm (docs/designs/coach-match-details/...) to render
-  // the same taller, pill-shaped (`rounded-full`) field box the rest of
-  // that form uses, distinct from CreateConvocationForm's own `rounded-lg`
-  // fields. Omitted, CreateConvocationForm's rendering is byte-for-byte
-  // unchanged (falls back to FIELD_CLASSNAME).
+  // Overrides FIELD_CLASSNAME's colors/height (border/bg/text/h-11) on BOTH
+  // the invisible native input and its visible display sibling — the two
+  // must always match, since the visible one is what determines this
+  // control's actual on-screen box. Structural box classes (flex/items-center/
+  // rounded/border-width/padding/text-size) live as defaults on the display
+  // div itself, so a `className` that only overrides colors (like
+  // FIELD_CLASSNAME) doesn't need to repeat them — only MatchDetailsEditForm's
+  // own `rounded-full`/`px-4` need to be specified since they conflict with
+  // the defaults. Used by MatchDetailsEditForm (docs/designs/coach-match-details/...)
+  // to render the same taller, pill-shaped field box the rest of that form
+  // uses, distinct from CreateConvocationForm's own `rounded-lg` fields.
   className?: string
 }
 
@@ -87,7 +89,15 @@ export function DateTimeInput({ id, type, value, onChange, min, className }: Dat
         onClick={openPicker}
         className="absolute inset-0 h-full w-full cursor-pointer overflow-hidden opacity-0"
       />
-      <div aria-hidden className={cn(boxClassName, 'pointer-events-none', !value && 'text-white/35')}>
+      <div
+        aria-hidden
+        className={cn(
+          'flex w-full min-w-0 items-center overflow-hidden rounded-lg border px-2.5 text-base whitespace-nowrap md:text-sm',
+          boxClassName,
+          'pointer-events-none',
+          !value && 'text-white/35',
+        )}
+      >
         {formatDisplayValue(type, value)}
       </div>
     </div>

@@ -63,6 +63,7 @@ function fakeConvocationRepository(convocation: Convocation | null): Convocation
     createTraining: async () => convocation as Convocation,
     createMatch: async () => convocation as Convocation,
     createMeeting: async () => convocation as Convocation,
+    updateArrangements: async () => convocation as Convocation,
   }
 }
 

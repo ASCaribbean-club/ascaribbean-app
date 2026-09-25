@@ -42,6 +42,7 @@ function fakeConvocationRepository(record: Convocation | null): ConvocationRepos
     createTraining: async () => { throw new Error('not used in this test') },
     createMatch: async () => { throw new Error('not used in this test') },
     createMeeting: async () => { throw new Error('not used in this test') },
+    updateArrangements: async () => { throw new Error('not used in this test') },
   }
 }
 
@@ -57,6 +58,9 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     upsert: async (details) => details,
     findByConvocationId: async () => record,
     recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...(record as MatchDetails), convocationId, goalsFor, goalsAgainst }),
+    // Not exercised by GetConvocationWithDetailsUseCase (a read-only use
+    // case) — present only to satisfy the interface.
+    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', ...arrangements }),
   }
 }
 

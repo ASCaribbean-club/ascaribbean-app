@@ -114,6 +114,7 @@ function fakeConvocationRepository(overrides: Partial<ConvocationRepository> = {
     createTraining: async (input) => convocationFrom(input),
     createMatch: async (input) => convocationFrom(input),
     createMeeting: async (input) => convocationFrom(input),
+    updateArrangements: async () => { throw new Error('not used in this test') },
     ...overrides,
   }
 }
@@ -240,6 +241,25 @@ describe('CreateConvocationUseCase', () => {
     const result = await useCase.execute(matchInput())
 
     expect(createMatch).toHaveBeenCalledTimes(1)
+    expect(result.type).toBe('match')
+  })
+
+  // Coach feedback (2026-09-25) — RDV (meeting point) is optional: a coach
+  // may create a match without knowing it yet, and no schedule validation
+  // applies when it's absent.
+  it('creates a match convocation with no RDV set, without running isValidMatchSchedule', async () => {
+    const createMatch = vi.fn(async (input: CreateMatchConvocationInput) => convocationFrom(input))
+    const useCase = new CreateConvocationUseCase(
+      fakeUserRepository(coachUser(['team-1'])),
+      fakeTeamRepository([teamWith('team-1')]),
+      fakeConvocationRepository({ createMatch }),
+    )
+
+    const result = await useCase.execute(matchInput({ meetingPointTime: null, meetingPointLocation: null }))
+
+    expect(createMatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ meetingPointTime: null, meetingPointLocation: null }),
+    )
     expect(result.type).toBe('match')
   })
 

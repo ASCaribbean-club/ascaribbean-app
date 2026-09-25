@@ -23,8 +23,11 @@ export interface CreateMatchConvocationInput extends CreateConvocationBaseInput 
   type: 'match'
   opponentId: string
   isHome: boolean
-  meetingPointTime: string // ISO — the "RDV" time (§5, PO-CV-09)
-  meetingPointLocation: string
+  // Coach feedback (2026-09-25): both optional — a coach may create a match
+  // without knowing the RDV yet. `isValidMatchSchedule` (§5, PO-CV-09) below
+  // only applies when a meeting point time is actually provided.
+  meetingPointTime: string | null // ISO — the "RDV" time
+  meetingPointLocation: string | null
 }
 
 export interface CreateMeetingConvocationInput extends CreateConvocationBaseInput {
@@ -78,11 +81,16 @@ export class CreateConvocationUseCase {
 
     switch (input.type) {
       case 'match': {
-        const meetingDate = new Date(input.meetingPointTime)
-        const matchDate = new Date(input.date)
+        // Only checked when the coach actually provided an RDV time — an
+        // absent one has nothing to be "before kickoff" or not (§5, PO-CV-09
+        // as relaxed by the RDV-optional decision above).
+        if (input.meetingPointTime) {
+          const meetingDate = new Date(input.meetingPointTime)
+          const matchDate = new Date(input.date)
 
-        if (!isValidMatchSchedule(meetingDate, matchDate)) {
-          throw new InvalidScheduleError(`Convocation meeting time is before match start`)
+          if (!isValidMatchSchedule(meetingDate, matchDate)) {
+            throw new InvalidScheduleError(`Convocation meeting time is before match start`)
+          }
         }
         return this.convocationRepository.createMatch(input)
       }

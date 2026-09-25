@@ -37,6 +37,10 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     upsert: async (details) => details,
     findByConvocationId: async () => record,
     recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...(record as MatchDetails), convocationId, goalsFor, goalsAgainst }),
+    // Not exercised by GetConvocationDetailsUseCase (a read-only use case)
+    // — present only to satisfy the interface, same reasoning as the other
+    // fakes in this file.
+    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', ...arrangements }),
   }
 }
 

@@ -1,5 +1,5 @@
-import type { MatchDetails } from '@domain/entities/match-details'
-import type { MatchDetailsRow } from '../dto/match-details-dto'
+import type { MatchArrangements, MatchDetails } from '@domain/entities/match-details'
+import type { MatchArrangementsUpdateRow, MatchDetailsRow } from '../dto/match-details-dto'
 
 export function toMatchDetails(row: MatchDetailsRow): MatchDetails {
   return {
@@ -22,5 +22,16 @@ export function toMatchDetailsRow(details: MatchDetails): MatchDetailsRow {
     meeting_point_location: details.meetingPointLocation,
     goals_for: details.goalsFor,
     goals_against: details.goalsAgainst,
+  }
+}
+
+// specs/edit-match-details.md §5 — mapper for MatchDetailsRepositoryImpl's
+// narrow `updateArrangements` write path. Always present between DTO and
+// entity, even for this 3-field subset (CLAUDE.md §4 — "never skip it").
+export function toMatchArrangementsUpdateRow(arrangements: MatchArrangements): MatchArrangementsUpdateRow {
+  return {
+    is_home: arrangements.isHome,
+    meeting_point_time: arrangements.meetingPointTime,
+    meeting_point_location: arrangements.meetingPointLocation,
   }
 }

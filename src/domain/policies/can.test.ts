@@ -239,4 +239,68 @@ describe('can', () => {
     const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
     expect(can(user, 'match_goals:view', { teamId: 'team-1' })).toBe(true)
   })
+
+  // specs/edit-match-details.md §2/§10 — fourth occurrence of the same
+  // team-scope gap (after 'convocation:create', 'attendance:validate',
+  // 'vote:cast'): this pair proves the 'coach' branch's `requiresTeamScope`
+  // fix actually covers 'match_details:update', not just the three others.
+  it('allows a coach to update match details for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_details:update', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from updating match details for a team they are not assigned to', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_details:update', { teamId: 'team-2' })).toBe(false)
+  })
+
+  // §2 — ['coach'] is the ONLY role granted in rbacMatrix for this action in
+  // this pass (PO-EM-01 left open): every other role must be denied
+  // regardless of any scope passed in context, including a section-manager
+  // acting inside their own section (the pre-wired can.ts branch, §2 "quatrième
+  // occurrence exacte du même écart" for 'section-manager', stays inert
+  // until PO-EM-01 widens the matrix entry).
+  it('denies every non-coach role from updating match details, including a section-manager acting inside their own section', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+      { role: 'admin' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'match_details:update', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    }
+  })
+
+  // specs/edit-match-details.md, developer decision (2026-09-25) — jumeau
+  // exact of the 'match_details:update' pair above, same team-scope gap.
+  it('allows a coach to update a convocation for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation:update', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach from updating a convocation for a team they are not assigned to', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation:update', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('denies every non-coach role from updating a convocation, including a section-manager acting inside their own section', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+      { role: 'admin' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'convocation:update', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    }
+  })
 })

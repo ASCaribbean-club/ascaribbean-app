@@ -18,6 +18,16 @@ export interface ConvocationRow {
   created_by: string
 }
 
+// specs/edit-match-details.md, developer decision (2026-09-25) — the exact
+// 2 columns `grant update (date, location)` restricts a client to (see
+// supabase/migrations/20260925150603_edit_match_details_write_policy.sql).
+// A separate type, not `Partial<ConvocationRow>`: `Partial<>` would still
+// TYPE-ALLOW `status`/`team_id`/etc. to be passed, only an object literal
+// happening to omit them keeps it safe — this type makes including any
+// other column a compile error, same reasoning as MatchArrangementsUpdateRow
+// (match-details-dto.ts).
+export type ConvocationArrangementsUpdateRow = Pick<ConvocationRow, 'date' | 'location'>
+
 // Raw shape of public.convocation_responses — last-value-wins "current
 // state" table, not an append-only log (CLAUDE.md §6).
 export interface ConvocationResponseRow {

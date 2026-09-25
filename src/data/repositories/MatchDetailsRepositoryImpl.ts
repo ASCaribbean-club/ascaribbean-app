@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { MatchDetails } from '@domain/entities/match-details'
+import type { MatchArrangements, MatchDetails } from '@domain/entities/match-details'
 import type { MatchDetailsRepository } from '@domain/repositories/match-details-repository'
 import type { MatchDetailsRow } from '@data/dto/match-details-dto'
-import { toMatchDetails, toMatchDetailsRow } from '@data/mappers/match-details-mapper'
+import { toMatchArrangementsUpdateRow, toMatchDetails, toMatchDetailsRow } from '@data/mappers/match-details-mapper'
 import { mapSupabaseError } from '@data/errors/map-supabase-error'
 
 // `public.match_details` — migration
@@ -56,6 +56,33 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
     const { data, error } = await this.client
       .from('match_details')
       .update({ goals_for: goalsFor, goals_against: goalsAgainst })
+      .eq('convocation_id', convocationId)
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .single()
+
+    if (error) throw mapSupabaseError(error)
+
+    return toMatchDetails(data as MatchDetailsRow)
+  }
+
+  // specs/edit-match-details.md §5/§6 — a plain `.update()`, never
+  // `.upsert()`: an upsert on a missing row would silently CREATE an
+  // incomplete match_details row for a convocation that may not even be a
+  // match (AC-EM-11) — UpdateMatchDetailsUseCase already guarantees the row
+  // exists before this is ever called, so a 0-row result here can only mean
+  // the RLS window closed underneath the caller (match_details_update_arrangements,
+  // §6 — `using`/`with check` on the parent convocation's date/status), not
+  // "create it instead". `grant update (is_home, meeting_point_time,
+  // meeting_point_location)` (same migration) is the column-level backstop
+  // that makes opponent_id structurally unwritable through this call even
+  // from a forged request — this mapper/method never even has the chance to
+  // include it (MatchArrangements is a Pick<>, §5). Select list includes
+  // goals_for/goals_against too (match-stats columns) so the returned
+  // MatchDetails is always the full row, not a partially-undefined one.
+  async updateArrangements(convocationId: string, arrangements: MatchArrangements): Promise<MatchDetails> {
+    const { data, error } = await this.client
+      .from('match_details')
+      .update(toMatchArrangementsUpdateRow(arrangements))
       .eq('convocation_id', convocationId)
       .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
       .single()

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Convocation } from '@domain/entities/convocation'
+import type { Convocation, ConvocationArrangements } from '@domain/entities/convocation'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type {
   CreateMatchConvocationInput,
@@ -8,7 +8,7 @@ import type {
 } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import type { ConvocationRow } from '../dto/convocation-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { toConvocation } from '../mappers/convocation-mapper'
+import { toConvocation, toConvocationArrangementsUpdateRow } from '../mappers/convocation-mapper'
 
 const CONVOCATION_COLUMNS =
   'id, team_id, type, date, location, status, closed_at, closed_by, cancelled_at, cancelled_by, cancellation_reason, created_by'
@@ -93,6 +93,27 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
         p_agenda: input.agenda,
       })
       .single<ConvocationRow>()
+
+    if (error) throw mapSupabaseError(error)
+    return toConvocation(data)
+  }
+
+  // specs/edit-match-details.md, developer decision (2026-09-25) — a plain
+  // `.update()`, limited to `date`/`location` (CONVOCATION_COLUMNS is still
+  // used for `.select()` so the full row comes back). Same reasoning as
+  // MatchDetailsRepositoryImpl.updateArrangements: never a generic upsert,
+  // never a full `update(Convocation)` that could drift into writing
+  // `status`/`type`/`teamId` — `grant update (date, location)` (see the
+  // migration this comment names) makes any other column structurally
+  // unwritable through this path even from a forged request.
+  async updateArrangements(id: string, arrangements: ConvocationArrangements): Promise<Convocation> {
+    const { data, error } = await this.client
+      .from('convocations')
+      .update(toConvocationArrangementsUpdateRow(arrangements))
+      .eq('id', id)
+      .select(CONVOCATION_COLUMNS)
+      .single()
+      .overrideTypes<ConvocationRow>()
 
     if (error) throw mapSupabaseError(error)
     return toConvocation(data)

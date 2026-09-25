@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse, ConvocationStatus } from '@domain/entities/convocation'
+import type { MatchDetails } from '@domain/entities/match-details'
 import type { ActiveDashboardRole } from '@domain/rules/active-role-scope'
 import type { ConvocationResponderStatus } from '@domain/repositories/convocation-responders-repository'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
@@ -63,13 +64,26 @@ function buildResponse(overrides: Partial<ConvocationResponse> = {}): Convocatio
   }
 }
 
+function buildMatchDetails(overrides: Partial<MatchDetails> = {}): MatchDetails {
+  return {
+    convocationId: CONVOCATION_ID,
+    opponentId: 'opponent-1',
+    isHome: true,
+    meetingPointTime: '2026-08-27T16:30:00.000Z',
+    meetingPointLocation: 'Vestiaires',
+    ...overrides,
+  }
+}
+
 function renderViewModel(options: {
   convocation?: Convocation | null
   activeRole?: ActiveDashboardRole
   playerResponse?: ConvocationResponse | null
   responders?: ConvocationResponderStatus[]
+  matchDetails?: MatchDetails | null
 }) {
   const convocation = options.convocation === undefined ? buildConvocation() : options.convocation
+  const matchDetails = options.matchDetails === undefined ? null : options.matchDetails
 
   mockedUseAuth.mockReturnValue({
     user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }, { role: 'coach', teamIds: [TEAM_ID] }], position: null, charterAcceptedAt: null },
@@ -82,7 +96,10 @@ function renderViewModel(options: {
   const listConvocationRespondersUseCase = { execute: vi.fn().mockResolvedValue(options.responders ?? []) }
   const getConvocationRosterForCoachUseCase = { execute: vi.fn().mockResolvedValue({ roster: [], responseCounts: { present: 0, absent: 0, pending: 0 } }) }
   const getConvocationResponseByUserUseCase = { execute: vi.fn().mockResolvedValue(options.playerResponse ?? null) }
-  const getConvocationWithDetailsUseCase = { execute: vi.fn().mockResolvedValue(convocation ? { convocation, matchDetails: null, opponent: null, meetingDetails: null } : null) }
+  const getConvocationWithDetailsUseCase = { execute: vi.fn().mockResolvedValue(convocation ? { convocation, matchDetails, opponent: null, meetingDetails: null } : null) }
+  const updateMatchDetailsUseCase = {
+    execute: vi.fn().mockResolvedValue(buildMatchDetails()),
+  }
   const confirmAttendanceUseCase = {
     execute: vi.fn().mockResolvedValue({
       id: 'attendance-1',
@@ -103,6 +120,7 @@ function renderViewModel(options: {
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
     confirmAttendanceUseCase,
+    updateMatchDetailsUseCase,
   } as never)
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -123,6 +141,7 @@ function renderViewModel(options: {
     getConvocationResponseByUserUseCase,
     getConvocationWithDetailsUseCase,
     confirmAttendanceUseCase,
+    updateMatchDetailsUseCase,
   }
 }
 
@@ -360,5 +379,139 @@ describe('useConvocationDetailViewModel', () => {
 
     await waitFor(() => expect(getConvocationRosterForCoachUseCase.execute).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(getConvocationWithDetailsUseCase.execute).toHaveBeenCalledTimes(2))
+  })
+
+  // specs/edit-match-details.md §2/UI design §2 — the 5-condition
+  // composition, same "absent, never disabled" shape as canRespond/
+  // canValidateAttendance above (activeRole/roleMatchesConvocationTeam
+  // reproduce the exact same multi-role guard, §2 "limite assumée").
+  it.each<[string, ActiveDashboardRole, boolean, 'training' | 'match', ConvocationStatus, number, boolean]>([
+    ['player active, even with the permission granted', 'player', true, 'match', 'open', 30, false],
+    ['RBAC denied', 'coach', false, 'match', 'open', 30, false],
+    ['not a match convocation', 'coach', true, 'training', 'open', 30, false],
+    ['closed', 'coach', true, 'match', 'closed', 30, false],
+    ['cancelled', 'coach', true, 'match', 'cancelled', 30, false],
+    ['kickoff already passed', 'coach', true, 'match', 'open', -30, false],
+    ['authorized coach, match, open, before kickoff', 'coach', true, 'match', 'open', 30, true],
+  ])('canEditMatchDetails — %s', async (_label, activeRole, rbac, type, status, minutesFromNow, expected) => {
+    mockedUsePermission.mockReturnValue(rbac)
+    const date = new Date(Date.now() + minutesFromNow * 60_000).toISOString()
+    const { result } = renderViewModel({
+      convocation: buildConvocation({ type, status, date }),
+      activeRole,
+      matchDetails: buildMatchDetails(),
+    })
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    expect(result.current.canEditMatchDetails).toBe(expected)
+  })
+
+  it('seeds the edit form from the current matchDetails, keeps Enregistrer disabled until a field actually changes, and submits the combined ISO value', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    // Zeroed seconds/ms: kickoffDate/kickoffTime only round-trip at
+    // minute-granularity (native `type="date"`/`type="time"` wire formats),
+    // so an exact-ISO comparison below needs `kickoff` itself to already
+    // sit on a whole minute.
+    const kickoff = new Date(Date.now() + 60 * 60_000)
+    kickoff.setSeconds(0, 0)
+    const meetingPointTime = new Date(kickoff.getTime() - 30 * 60_000)
+    const matchDetails = buildMatchDetails({ isHome: true, meetingPointTime: meetingPointTime.toISOString(), meetingPointLocation: 'Vestiaires' })
+    const { result, updateMatchDetailsUseCase } = renderViewModel({
+      convocation: buildConvocation({ type: 'match', status: 'open', date: kickoff.toISOString() }),
+      activeRole: 'coach',
+      matchDetails,
+    })
+
+    await waitFor(() => expect(result.current.canEditMatchDetails).toBe(true))
+
+    act(() => result.current.onStartEditMatchDetails())
+    expect(result.current.isEditingMatchDetails).toBe(true)
+    expect(result.current.matchDetailsFormValues).toEqual({
+      kickoffDate: expect.any(String),
+      kickoffTime: expect.any(String),
+      matchLocation: 'Stade',
+      isHome: true,
+      meetingPointTime: expect.any(String),
+      meetingPointLocation: 'Vestiaires',
+    })
+    // Freshly seeded from the CURRENT matchDetails/convocation — nothing
+    // edited yet.
+    expect(result.current.canSubmitMatchDetails).toBe(false)
+
+    act(() => result.current.setMatchDetailsMeetingPointLocation('Parking visiteurs'))
+    expect(result.current.canSubmitMatchDetails).toBe(true)
+
+    act(() => result.current.onSubmitMatchDetails())
+    await waitFor(() => expect(updateMatchDetailsUseCase.execute).toHaveBeenCalledTimes(1))
+
+    expect(updateMatchDetailsUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        convocationId: CONVOCATION_ID,
+        arrangements: expect.objectContaining({
+          isHome: true,
+          meetingPointLocation: 'Parking visiteurs',
+        }),
+        // Developer decision (2026-09-25) — every submit now ALSO carries
+        // the convocation's own (here unedited, but still submitted)
+        // date/location, since both writes share the one "Enregistrer" tap.
+        convocationArrangements: { date: kickoff.toISOString(), location: 'Stade' },
+      }),
+    )
+    // No separate RDV date field is exposed (docs/designs/coach-match-details/...
+    // shows only an hour for "RDV ÉQUIPE") — the RDV stays on kickoff's own
+    // calendar day, combined behind the scenes at submit.
+    const call = updateMatchDetailsUseCase.execute.mock.calls[0][0]
+    expect(new Date(call.arrangements.meetingPointTime).toDateString()).toBe(kickoff.toDateString())
+
+    await waitFor(() => expect(result.current.isEditingMatchDetails).toBe(false))
+  })
+
+  // Developer decision (2026-09-25) — widens the original scope: the coach
+  // may also correct the convocation's own kickoff date/time and venue.
+  it('lets the coach correct the kickoff date/time and venue, combined into convocationArrangements at submit', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const kickoff = new Date(Date.now() + 60 * 60_000)
+    const matchDetails = buildMatchDetails({ meetingPointTime: new Date(kickoff.getTime() - 30 * 60_000).toISOString() })
+    const { result, updateMatchDetailsUseCase } = renderViewModel({
+      convocation: buildConvocation({ type: 'match', status: 'open', date: kickoff.toISOString(), location: 'Stade municipal' }),
+      activeRole: 'coach',
+      matchDetails,
+    })
+
+    await waitFor(() => expect(result.current.canEditMatchDetails).toBe(true))
+    act(() => result.current.onStartEditMatchDetails())
+    expect(result.current.canSubmitMatchDetails).toBe(false)
+
+    act(() => result.current.setMatchDetailsMatchLocation('Nouveau stade'))
+    expect(result.current.canSubmitMatchDetails).toBe(true)
+
+    act(() => result.current.onSubmitMatchDetails())
+    await waitFor(() => expect(updateMatchDetailsUseCase.execute).toHaveBeenCalledTimes(1))
+
+    const call = updateMatchDetailsUseCase.execute.mock.calls[0][0]
+    expect(call.convocationArrangements.location).toBe('Nouveau stade')
+    expect(new Date(call.convocationArrangements.date).toDateString()).toBe(kickoff.toDateString())
+  })
+
+  it('onCancelEditMatchDetails discards the in-progress edit without calling the use case', async () => {
+    mockedUsePermission.mockReturnValue(true)
+    const kickoff = new Date(Date.now() + 60 * 60_000)
+    const matchDetails = buildMatchDetails({ meetingPointTime: new Date(kickoff.getTime() - 30 * 60_000).toISOString() })
+    const { result, updateMatchDetailsUseCase } = renderViewModel({
+      convocation: buildConvocation({ type: 'match', status: 'open', date: kickoff.toISOString() }),
+      activeRole: 'coach',
+      matchDetails,
+    })
+
+    await waitFor(() => expect(result.current.canEditMatchDetails).toBe(true))
+
+    act(() => result.current.onStartEditMatchDetails())
+    act(() => result.current.setMatchDetailsMeetingPointLocation('Parking visiteurs'))
+    act(() => result.current.onCancelEditMatchDetails())
+
+    expect(result.current.isEditingMatchDetails).toBe(false)
+    expect(result.current.matchDetailsFormValues).toBeNull()
+    expect(updateMatchDetailsUseCase.execute).not.toHaveBeenCalled()
   })
 })

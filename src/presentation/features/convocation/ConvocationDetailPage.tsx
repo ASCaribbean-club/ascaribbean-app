@@ -306,7 +306,34 @@ export function ConvocationDetailPage() {
         </div>
 
         <TabsContent value="infos">
-          <InfosTab convocation={convocation} matchDetails={vm.matchDetails} meetingDetails={vm.meetingDetails} />
+          {/* specs/edit-match-details.md — bundles the ViewModel's
+              match-details-edit fields into the one prop InfosTab expects;
+              every value here is already computed by the ViewModel, this
+              is only reshaping, never a calculation of its own
+              (ARCHITECTURE.md §6). */}
+          <InfosTab
+            convocation={convocation}
+            matchDetails={vm.matchDetails}
+            meetingDetails={vm.meetingDetails}
+            matchDetailsEdit={{
+              canEdit: vm.canEditMatchDetails,
+              isEditing: vm.isEditingMatchDetails,
+              onStartEdit: vm.onStartEditMatchDetails,
+              onCancel: vm.onCancelEditMatchDetails,
+              formValues: vm.matchDetailsFormValues,
+              onChangeIsHome: vm.setMatchDetailsIsHome,
+              onChangeKickoffDate: vm.setMatchDetailsKickoffDate,
+              onChangeKickoffTime: vm.setMatchDetailsKickoffTime,
+              onChangeMatchLocation: vm.setMatchDetailsMatchLocation,
+              onChangeMeetingPointTime: vm.setMatchDetailsMeetingPointTime,
+              onChangeMeetingPointLocation: vm.setMatchDetailsMeetingPointLocation,
+              canSubmit: vm.canSubmitMatchDetails,
+              isSaving: vm.isSavingMatchDetails,
+              onSubmit: vm.onSubmitMatchDetails,
+              saveError: vm.matchDetailsSaveError,
+              windowClosed: vm.matchDetailsWindowClosed,
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="effectif">

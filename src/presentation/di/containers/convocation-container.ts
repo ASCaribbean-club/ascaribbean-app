@@ -40,6 +40,7 @@ import { GetConvocationDetailsUseCase } from '@domain/usecases/convocation/GetCo
 import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
 import { GetConvocationWithDetailsUseCase } from '@domain/usecases/convocation/GetConvocationWithDetailsUseCase'
 import { ListConvocationRespondersUseCase } from '@domain/usecases/convocation/ListConvocationRespondersUseCase'
+import { UpdateMatchDetailsUseCase } from '@domain/usecases/convocation/UpdateMatchDetailsUseCase'
 import { CastVoteUseCase } from '@domain/usecases/player-vote/CastVoteUseCase'
 import { GetMyVoteUseCase } from '@domain/usecases/player-vote/GetMyVoteUseCase'
 import { GetVoteCategoryUseCase } from '@domain/usecases/player-vote/GetVoteCategoryUseCase'
@@ -95,6 +96,8 @@ export interface ConvocationContainer {
   respondToConvocationUseCase: RespondToConvocationUseCase
   getConvocationResponseByUserUseCase: GetConvocationResponseByUserUseCase
   confirmAttendanceUseCase: ConfirmAttendanceUseCase
+  // specs/edit-match-details.md §5/§7 — net-new, coach-only write path.
+  updateMatchDetailsUseCase: UpdateMatchDetailsUseCase
   castVoteUseCase: CastVoteUseCase
   getMyVoteUseCase: GetMyVoteUseCase
   getVoteTallyUseCase: GetVoteTallyUseCase
@@ -142,6 +145,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   )
   const respondToConvocationUseCase = new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository)
   const confirmAttendanceUseCase = new ConfirmAttendanceUseCase(userRepository, convocationRepository, attendanceRecordRepository)
+  const updateMatchDetailsUseCase = new UpdateMatchDetailsUseCase(convocationRepository, matchDetailsRepository)
   const castVoteUseCase = new CastVoteUseCase(userRepository, convocationRepository, voteRepository)
   const getMyVoteUseCase = new GetMyVoteUseCase(voteRepository)
   const getVoteTallyUseCase = new GetVoteTallyUseCase(voteTallyRepository)
@@ -175,6 +179,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     respondToConvocationUseCase,
     getConvocationResponseByUserUseCase,
     confirmAttendanceUseCase,
+    updateMatchDetailsUseCase,
     castVoteUseCase,
     getMyVoteUseCase,
     getVoteTallyUseCase,

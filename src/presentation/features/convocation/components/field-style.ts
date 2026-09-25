@@ -20,3 +20,14 @@
 // minimum. `cn()`'s twMerge dedupes this against the primitive's own `h-8`.
 export const FIELD_CLASSNAME =
   'scheme-dark h-11 border-white/12 bg-white/5 text-white placeholder:text-white/35 focus-visible:border-white/30 focus-visible:ring-white/15'
+
+// Date/Heure and RDV — heure/lieu rows: 130px is comfortable room for either
+// a plain text field or DateTimeInput's own compact display text. `auto-fit`/
+// `minmax` keeps two columns fitting "côte à côte" (specs/create-convocation.md
+// §8) down to the narrowest supported width (320px) with margin to spare —
+// CLAUDE.md §6, "Mobile touch targets and side-by-side fields". Moved here
+// from CreateConvocationForm.tsx (specs/edit-match-details.md UI design §3
+// — "réutiliser ce vocabulaire plutôt que d'en inventer un second") so
+// MatchDetailsEditForm can import the SAME constant rather than a
+// hand-copied duplicate that could drift from it.
+export const FIELD_ROW_CLASSNAME = 'grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3'

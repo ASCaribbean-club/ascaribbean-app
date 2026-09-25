@@ -1,5 +1,5 @@
-import type { Convocation, ConvocationResponse } from '@domain/entities/convocation'
-import type { ConvocationResponseRow, ConvocationRow } from '../dto/convocation-dto'
+import type { Convocation, ConvocationArrangements, ConvocationResponse } from '@domain/entities/convocation'
+import type { ConvocationArrangementsUpdateRow, ConvocationResponseRow, ConvocationRow } from '../dto/convocation-dto'
 
 export function toConvocation(row: ConvocationRow): Convocation {
   return {
@@ -15,6 +15,17 @@ export function toConvocation(row: ConvocationRow): Convocation {
     cancelledBy: row.cancelled_by,
     cancellationReason: row.cancellation_reason,
     createdBy: row.created_by,
+  }
+}
+
+// specs/edit-match-details.md, developer decision (2026-09-25) — mapper for
+// ConvocationRepositoryImpl's narrow `updateArrangements` write path.
+// Always present between DTO and entity, even for this 2-field subset
+// (CLAUDE.md §4 — "never skip it").
+export function toConvocationArrangementsUpdateRow(arrangements: ConvocationArrangements): ConvocationArrangementsUpdateRow {
+  return {
+    date: arrangements.date,
+    location: arrangements.location,
   }
 }
 

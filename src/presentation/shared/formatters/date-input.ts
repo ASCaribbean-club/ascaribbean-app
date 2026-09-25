@@ -21,3 +21,16 @@ export function toDateInputValue(date: Date): string {
 export function combineDateAndTime(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString()
 }
+
+// specs/edit-match-details.md §3, UI design §3 — the inverse of
+// combineDateAndTime's `time` half: extracts a `type="time"` value
+// (`HH:MM`) from an existing ISO instant (MatchDetails.meetingPointTime), so
+// the edit form's DateTimeInput can be pre-filled with the CURRENT value
+// when entering edit mode. Local getHours/getMinutes (not
+// `.toISOString().slice(11, 16)`), same reasoning as toDateInputValue above
+// — the user's own local time, not UTC.
+export function toTimeInputValue(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}

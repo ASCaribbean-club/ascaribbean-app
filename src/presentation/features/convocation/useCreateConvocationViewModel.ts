@@ -62,18 +62,16 @@ const EMPTY_VALUES: ConvocationFormValues = {
 // subset per `type`, mirrored here for the submit button's disabled state
 // (UI design §"Structure de l'écran", point 5). `isHome` isn't listed: it's
 // a boolean toggle that always carries a value (defaults `true`), never an
-// empty-string case like the fields below.
+// empty-string case like the fields below. Coach feedback (2026-09-25):
+// `meetingPointTime`/`meetingPointLocation` (RDV) are deliberately NOT part
+// of this check anymore — a coach may create a match without knowing the RDV
+// yet (see CreateConvocationUseCase's matching relaxation).
 function isFormComplete(values: ConvocationFormValues): boolean {
   if (!values.date || !values.time) return false
 
   switch (values.type) {
     case 'match':
-      return (
-        !!values.opponentId &&
-        !!values.location &&
-        !!values.meetingPointTime &&
-        !!values.meetingPointLocation
-      )
+      return !!values.opponentId && !!values.location
     case 'training':
       return !!values.location
     case 'meeting':
@@ -173,10 +171,12 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     let input: CreateConvocationUseCaseInput
     switch (values.type) {
       case 'match': {
-        const meetingPointTime = combineDateAndTime(values.date, values.meetingPointTime)
+        // RDV is optional (coach feedback, 2026-09-25) — only combined/
+        // validated when the coach actually filled it in.
+        const meetingPointTime = values.meetingPointTime ? combineDateAndTime(values.date, values.meetingPointTime) : null
         // Mirror of domain/policies/match-scheduling-rules.ts (§5,
         // résolution PO-CV-09) — same reasoning as the past-date check above.
-        if (!isValidMatchSchedule(new Date(meetingPointTime), new Date(isoDate))) {
+        if (meetingPointTime && !isValidMatchSchedule(new Date(meetingPointTime), new Date(isoDate))) {
           setScheduleError('Le rendez-vous doit précéder le coup d’envoi, le même jour.')
           return
         }
@@ -189,7 +189,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
           opponentId: values.opponentId,
           isHome: values.isHome,
           meetingPointTime,
-          meetingPointLocation: values.meetingPointLocation,
+          meetingPointLocation: values.meetingPointLocation || null,
         }
         break
       }

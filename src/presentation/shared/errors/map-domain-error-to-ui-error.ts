@@ -13,6 +13,7 @@ import { InvalidFullNameInputError } from '@domain/errors/invalid-full-name-inpu
 import { InvalidRoleAssignmentInputError } from '@domain/errors/invalid-role-assignment-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { MatchArrangementsWindowClosedError } from '@domain/errors/match-arrangements-window-closed-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
@@ -29,6 +30,16 @@ import { UserAlreadyRegisteredError } from '@domain/errors/user-already-register
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
 import { WeakPasswordError } from '@domain/errors/weak-password-error'
 import type { UiError } from './ui-error'
+
+// specs/edit-match-details.md §3/§5, UI design §4/§5 — the same French
+// copy is needed in TWO places: here (mapping the actual
+// MatchArrangementsWindowClosedError, e.g. the server-side race, AC-EM-06)
+// AND in useConvocationDetailViewModel/MatchDetailsEditForm for the
+// PROACTIVE case (the minute-tick flips `canEditMatchDetails` to false while
+// the form is still open, §5, no error/mutation involved at all). Exported
+// so the second call site reuses this exact string rather than a
+// hand-copied duplicate that could drift from this one.
+export const MATCH_ARRANGEMENTS_WINDOW_CLOSED_MESSAGE = 'Le coup d’envoi est passé, ces informations ne sont plus modifiables.'
 
 // Next hop after data/errors/map-supabase-error.ts: that file stops at
 // DomainError, this one goes from DomainError to what a screen shows.
@@ -84,6 +95,21 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
       message: 'Le rendez-vous doit précéder le coup d’envoi, le même jour.',
       variant: 'inline',
       retryable: true,
+    }
+  }
+
+  if (error instanceof MatchArrangementsWindowClosedError) {
+    // specs/edit-match-details.md §3/§5, UI design §4/§5 (AC-EM-06) — same
+    // copy whether this fires from UpdateMatchDetailsUseCase's own
+    // application-level re-check (the common case, a `now()` computed at
+    // submit time that has already crossed kickoff — AC-EM-04) or from a
+    // genuine server-side race the RLS policy itself catches. `retryable:
+    // false` — resubmitting the same values would be refused again, the
+    // form's own "Fermer" action (not "Annuler") is the only way out.
+    return {
+      message: MATCH_ARRANGEMENTS_WINDOW_CLOSED_MESSAGE,
+      variant: 'inline',
+      retryable: false,
     }
   }
 

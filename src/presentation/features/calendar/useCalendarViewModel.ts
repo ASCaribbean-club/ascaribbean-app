@@ -148,7 +148,11 @@ export function useCalendarViewModel() {
 
   const playerConvocationsQuery = useQuery({
     queryKey: queryKeys.calendarPlayerConvocations(playerTeamId ?? '', user?.id ?? ''),
-    queryFn: () => listConvocationsForPlayerUseCase.execute({ teamId: playerTeamId!, userId: user!.id, now: new Date() }),
+    // specs/calendar.md PO-CA-02 (tranché 2026-09-04): past échéances stay
+    // in the list, read-only, for the player too — same `includePast: true`
+    // as the coach query above. Omitting it here silently dropped every
+    // past convocation (matches included) from the player's calendar.
+    queryFn: () => listConvocationsForPlayerUseCase.execute({ teamId: playerTeamId!, userId: user!.id, now: new Date(), includePast: true }),
     enabled: activeRole === 'player' && !!playerTeamId && !!user,
   })
 

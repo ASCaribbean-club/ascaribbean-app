@@ -3,7 +3,7 @@ import { Button } from '../../shared/components/ui/button'
 import { Input } from '../../shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../shared/components/ui/select'
 import { DateTimeInput } from './components/DateTimeInput'
-import { FIELD_CLASSNAME } from './components/field-style'
+import { FIELD_CLASSNAME, FIELD_ROW_CLASSNAME } from './components/field-style'
 import { FormField } from './components/FormField'
 import { MeetingAgendaField } from './components/MeetingAgendaField'
 import { RecipientsCard } from './components/RecipientsCard'
@@ -11,16 +11,6 @@ import { SegmentedToggle } from '@presentation/shared/components/SegmentedToggle
 import { TypeSelector } from './components/TypeSelector'
 import { TRAINING_LOCATIONS } from './training-locations'
 import { useCreateConvocationViewModel, type ConvocationFormValues } from './useCreateConvocationViewModel'
-
-// Date/Heure and RDV — heure/lieu rows: 130px is comfortable room for either
-// a plain text field or DateTimeInput's own compact display text (see that
-// component — it no longer relies on the native date/time control's actual
-// rendered width, which is what previously forced this column wider or got
-// clipped). `auto-fit`/`minmax` still keeps two columns fitting spec's
-// "côte à côte" (specs/create-convocation.md §8) down to the narrowest
-// supported width (320px) with margin to spare — see CLAUDE.md §6, "Mobile
-// touch targets and side-by-side fields".
-const FIELD_ROW_CLASSNAME = 'grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3'
 
 interface CreateConvocationFormProps {
   // specs/create-convocation.md §1: kept for a future edit screen to reuse
@@ -113,7 +103,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
             </FormField>
 
             <div className={FIELD_ROW_CLASSNAME}>
-              <FormField label="Heure de RDV" htmlFor="meetingPointTime">
+              <FormField label="Heure de RDV (optionnel)" htmlFor="meetingPointTime">
                 <DateTimeInput
                   id="meetingPointTime"
                   type="time"
@@ -121,7 +111,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
                   onChange={vm.setMeetingPointTime}
                 />
               </FormField>
-              <FormField label="Lieu de RDV" htmlFor="meetingPointLocation">
+              <FormField label="Lieu de RDV (optionnel)" htmlFor="meetingPointLocation">
                 <Input
                   id="meetingPointLocation"
                   value={values.meetingPointLocation}

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { ActualStatus, DeclaredStatus } from '@domain/entities/convocation'
+import type { ActualStatus, ConvocationArrangements, DeclaredStatus } from '@domain/entities/convocation'
+import type { MatchArrangements } from '@domain/entities/match-details'
 import type { MatchEventType } from '@domain/entities/match-event'
 import { hasActiveRoleForConvocation } from '@domain/rules/active-role-scope'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { isPastDate } from '@domain/rules/convocation-rules'
 // specs/match-stats.md — "Résultat" tab, third pass on this screen (PO-MS-09
 // resolved 2026-09-24, real tab). getMatchOutcome/isEligibleScorer/
 // isMatchResultRecordable are pure domain/policies functions, called
@@ -15,11 +17,29 @@ import { isEligibleScorer } from '@domain/policies/match-scorer-rules'
 import { isMatchResultRecordable } from '@domain/policies/match-result-timing-rules'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
+import { combineDateAndTime, toDateInputValue, toTimeInputValue } from '@presentation/shared/formatters/date-input'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
+import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
+
+// specs/edit-match-details.md UI design §3, docs/designs/coach-match-details/
+// [v3] [Coach] Mob - Match editing infos.png — the edit form's own local
+// controlled-field state (type imported from MatchDetailsEditForm, the one
+// place its shape is declared). `kickoffDate`/`kickoffTime`/`meetingPointTime`
+// are bare `YYYY-MM-DD`/`HH:MM` (native `type="date"`/`type="time"`
+// values), NOT the full ISO Convocation.date/MatchArrangements.meetingPointTime
+// expect — combined only at submit (onSubmitMatchDetails below).
+//
+// Developer decision (2026-09-25), widening specs/edit-match-details.md's
+// original scope ("Match"/"Lieu match" were read-only there): the coach may
+// now also correct the convocation's own kickoff and venue, as long as the
+// match hasn't begun yet — same window, same "Enregistrer" action. The RDV
+// stays pinned to kickoff's (possibly just-edited) calendar day —
+// `isValidMatchSchedule` (still enforced by UpdateMatchDetailsUseCase,
+// unchanged) requires it.
 
 export type ConvocationDetailTab = 'infos' | 'effectif' | 'votes' | 'resultat'
 
@@ -41,6 +61,7 @@ export function useConvocationDetailViewModel() {
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
     confirmAttendanceUseCase,
+    updateMatchDetailsUseCase,
     castVoteUseCase,
     getMyVoteUseCase,
     getVoteTallyUseCase,
@@ -287,6 +308,185 @@ export function useConvocationDetailViewModel() {
   // filter, not a business rule — kept here rather than in the component
   // per ARCHITECTURE.md §6 ("un composant ne calcule rien").
   const others = (respondersQuery.data ?? []).filter((responder) => responder.userId !== user?.id)
+
+  // --- specs/edit-match-details.md — coach edits a match's logistics from
+  // the Infos tab, in place (no route, no Dialog — §9/UI design §6). ---
+  // `matchDetails` itself is already declared above (specs/match-stats.md's
+  // Résultat tab reads it too) — reused here rather than redeclared.
+
+  const hasMatchDetailsUpdatePermission = usePermission('match_details:update', { teamId: convocation?.teamId })
+  // Developer decision (2026-09-25) — the form now ALSO writes
+  // convocation.date/location, gated on its own action/RLS policy pair
+  // (domain/policies/rbac-matrix.ts 'convocation:update'). Both permissions
+  // are required together: the single "Enregistrer" button submits both
+  // writes at once (onSubmitMatchDetails below), so the control must not
+  // render at all unless the coach can complete the whole thing.
+  const hasConvocationUpdatePermission = usePermission('convocation:update', { teamId: convocation?.teamId })
+  // UI design §2 — the exact 5-condition composition the spec's §2/§3
+  // define, recomputed on every `now` tick (same minute-tick pattern as
+  // canRespond above) so the control disappears on its own once kickoff
+  // passes mid-session (AC-EM-05), without a reload. Absent, never
+  // disabled — `activeRole === 'coach'` AND `roleMatchesConvocationTeam`
+  // reproduce the exact same multi-role guard already applied to
+  // canValidateAttendance/canRespond (a coach+player account with "Joueur"
+  // active must not see this control either, §2 "limite assumée").
+  const canEditMatchDetails =
+    !!convocation &&
+    activeRole === 'coach' &&
+    roleMatchesConvocationTeam &&
+    convocation.type === 'match' &&
+    convocation.status === 'open' &&
+    !isPastDate(convocation.date, now) &&
+    hasMatchDetailsUpdatePermission &&
+    hasConvocationUpdatePermission
+
+  const [isEditingMatchDetails, setIsEditingMatchDetails] = useState(false)
+  const [matchDetailsFormValues, setMatchDetailsFormValues] = useState<MatchDetailsFormValues | null>(null)
+  const [matchDetailsSaveError, setMatchDetailsSaveError] = useState<UiError | null>(null)
+
+  // UI design §5 — the window closing WHILE the form is already open (the
+  // "ouvert à 14h58, coup d'envoi 15h00" case) is distinguished from the
+  // window being closed before the form ever opened purely by this flag:
+  // `canEditMatchDetails` re-evaluates every minute tick regardless of
+  // `isEditingMatchDetails`, so the moment it flips false while a form is
+  // open, this becomes true — the form must stay mounted with its values
+  // intact (never force-closed, §5 "jamais... perte silencieuse de
+  // saisie"), only the copy/button state around it changes.
+  const matchDetailsWindowClosed = isEditingMatchDetails && !canEditMatchDetails
+
+  function onStartEditMatchDetails() {
+    if (!matchDetails || !convocation) return
+    const kickoff = new Date(convocation.date)
+    setMatchDetailsFormValues({
+      kickoffDate: toDateInputValue(kickoff),
+      kickoffTime: toTimeInputValue(kickoff),
+      matchLocation: convocation.location,
+      isHome: matchDetails.isHome,
+      // RDV is optional (coach feedback, 2026-09-25) — falls back to the
+      // form's own "unset" sentinel (empty string), same as
+      // useCreateConvocationViewModel's EMPTY_VALUES.
+      meetingPointTime: matchDetails.meetingPointTime ? toTimeInputValue(new Date(matchDetails.meetingPointTime)) : '',
+      meetingPointLocation: matchDetails.meetingPointLocation ?? '',
+    })
+    setMatchDetailsSaveError(null)
+    setIsEditingMatchDetails(true)
+  }
+
+  // Doubles as "Fermer" once the window has closed mid-edit (UI design §5,
+  // "la seule sortie... au tap, la carte repasse en lecture seule") — same
+  // callback either way, only the button's own label differs, decided by
+  // the component from `matchDetailsWindowClosed`.
+  function onCancelEditMatchDetails() {
+    setIsEditingMatchDetails(false)
+    setMatchDetailsFormValues(null)
+    setMatchDetailsSaveError(null)
+  }
+
+  function setMatchDetailsIsHome(value: boolean) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, isHome: value } : current))
+  }
+  function setMatchDetailsKickoffDate(value: string) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, kickoffDate: value } : current))
+  }
+  function setMatchDetailsKickoffTime(value: string) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, kickoffTime: value } : current))
+  }
+  function setMatchDetailsMatchLocation(value: string) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, matchLocation: value } : current))
+  }
+  function setMatchDetailsMeetingPointTime(value: string) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, meetingPointTime: value } : current))
+  }
+  function setMatchDetailsMeetingPointLocation(value: string) {
+    setMatchDetailsFormValues((current) => (current ? { ...current, meetingPointLocation: value } : current))
+  }
+
+  // "Enregistrer" disabled "tant qu'aucun champ n'a changé" (UI design §3) —
+  // compares against the CURRENT matchDetails/convocation, not the values
+  // the form was opened with (irrelevant here since the two coincide, but
+  // keeps this correct if a background refetch updates either while the
+  // form stays open). Developer decision (2026-09-25) — now also covers the
+  // kickoff date/time/location fields, not just the three MatchDetails ones.
+  const matchDetailsIsDirty =
+    !!matchDetails &&
+    !!convocation &&
+    !!matchDetailsFormValues &&
+    (matchDetailsFormValues.isHome !== matchDetails.isHome ||
+      matchDetailsFormValues.meetingPointLocation !== (matchDetails.meetingPointLocation ?? '') ||
+      matchDetailsFormValues.meetingPointTime !==
+        (matchDetails.meetingPointTime ? toTimeInputValue(new Date(matchDetails.meetingPointTime)) : '') ||
+      matchDetailsFormValues.matchLocation !== convocation.location ||
+      matchDetailsFormValues.kickoffDate !== toDateInputValue(new Date(convocation.date)) ||
+      matchDetailsFormValues.kickoffTime !== toTimeInputValue(new Date(convocation.date)))
+
+  const saveMatchDetailsMutation = useMutation({
+    mutationFn: (input: { arrangements: MatchArrangements; convocationArrangements: ConvocationArrangements }) => {
+      if (!convocationId) {
+        return Promise.reject(new Error('no convocation to update match details for yet'))
+      }
+      return updateMatchDetailsUseCase.execute({
+        convocationId,
+        arrangements: input.arrangements,
+        convocationArrangements: input.convocationArrangements,
+        now: new Date(),
+      })
+    },
+    onMutate: () => setMatchDetailsSaveError(null),
+    onSuccess: () => {
+      setMatchDetailsSaveError(null)
+      setIsEditingMatchDetails(false)
+      setMatchDetailsFormValues(null)
+      // §5/§10 of the spec — the ONLY key invalidated: matchDetails is
+      // already carried by GetConvocationWithDetailsUseCase's own response,
+      // no separate matchDetails query key exists or should be created
+      // (AC-EM-14).
+      if (convocationId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+    },
+    onError: (error) => {
+      setMatchDetailsSaveError(mapDomainErrorToUiError(error))
+      // AC-EM-06, UI design §5 — a server-side race (the window closed
+      // between render and write) must resync the screen so the next render
+      // recomputes canEditMatchDetails as false and drops the control, no
+      // manual reload required.
+      if (convocationId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+    },
+  })
+
+  function onSubmitMatchDetails() {
+    if (!convocation || !matchDetailsFormValues) return
+    if (saveMatchDetailsMutation.isPending || !matchDetailsIsDirty || matchDetailsWindowClosed) return
+
+    // Developer decision (2026-09-25) — the kickoff date/time are now the
+    // FORM's own values (previously always `convocation.date`'s stale day).
+    // The RDV stays pinned to that SAME calendar day — no separate RDV date
+    // field is exposed (docs/designs/coach-match-details/... only shows an
+    // hour for "RDV ÉQUIPE"). Whether the resulting pair is actually valid
+    // (same day as kickoff, strictly before it) is still
+    // UpdateMatchDetailsUseCase's call, via isValidMatchSchedule —
+    // unchanged, not re-implemented here (§3 of the spec: "l'autorité
+    // applicative", not the form).
+    const newKickoffDate = combineDateAndTime(matchDetailsFormValues.kickoffDate, matchDetailsFormValues.kickoffTime)
+    // RDV is optional (coach feedback, 2026-09-25) — same "unset" sentinel
+    // (empty string) as the create form, only combined/sent when filled in.
+    const meetingPointTime = matchDetailsFormValues.meetingPointTime
+      ? combineDateAndTime(matchDetailsFormValues.kickoffDate, matchDetailsFormValues.meetingPointTime)
+      : null
+    saveMatchDetailsMutation.mutate({
+      arrangements: {
+        isHome: matchDetailsFormValues.isHome,
+        meetingPointTime,
+        meetingPointLocation: matchDetailsFormValues.meetingPointLocation || null,
+      },
+      convocationArrangements: {
+        date: newKickoffDate,
+        location: matchDetailsFormValues.matchLocation,
+      },
+    })
+  }
 
   // --- specs/player-vote.md — third tab, net-new in this pass ---
   //
@@ -667,6 +867,26 @@ export function useConvocationDetailViewModel() {
     attendanceErrorByUserId,
     onConfirmAttendancePresent,
     onConfirmAttendanceAbsent,
+
+    // specs/edit-match-details.md — see the block above for the full
+    // reasoning; InfosTab/MatchDetailsInfos only ever branch on these
+    // already-computed booleans (ARCHITECTURE.md §6).
+    canEditMatchDetails,
+    isEditingMatchDetails,
+    onStartEditMatchDetails,
+    onCancelEditMatchDetails,
+    matchDetailsFormValues,
+    setMatchDetailsIsHome,
+    setMatchDetailsKickoffDate,
+    setMatchDetailsKickoffTime,
+    setMatchDetailsMatchLocation,
+    setMatchDetailsMeetingPointTime,
+    setMatchDetailsMeetingPointLocation,
+    canSubmitMatchDetails: matchDetailsIsDirty && !saveMatchDetailsMutation.isPending && !matchDetailsWindowClosed,
+    isSavingMatchDetails: saveMatchDetailsMutation.isPending,
+    onSubmitMatchDetails,
+    matchDetailsSaveError,
+    matchDetailsWindowClosed,
 
     // specs/player-vote.md — plain data/state only; ConvocationDetailPage.tsx
     // composes this into the `VoteCategoryViewModel[]` VotesTab actually

@@ -7,6 +7,7 @@ import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
+import { MatchArrangementsWindowClosedError } from '@domain/errors/match-arrangements-window-closed-error'
 import { MatchNotStartedError } from '@domain/errors/match-not-started-error'
 import { MatchScoreMissingError } from '@domain/errors/match-score-missing-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
@@ -57,6 +58,19 @@ describe('mapDomainErrorToUiError', () => {
       message: 'Le rendez-vous doit précéder le coup d’envoi, le même jour.',
       variant: 'inline',
       retryable: true,
+    })
+  })
+
+  // specs/edit-match-details.md §3/§5, UI design §4/§5 (AC-EM-06) — the
+  // window-closed copy is NON-retryable (resubmitting the same values is
+  // refused again), unlike InvalidScheduleError above.
+  it('maps MatchArrangementsWindowClosedError to a non-retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new MatchArrangementsWindowClosedError('kickoff passed'))
+
+    expect(result).toEqual({
+      message: 'Le coup d’envoi est passé, ces informations ne sont plus modifiables.',
+      variant: 'inline',
+      retryable: false,
     })
   })
 

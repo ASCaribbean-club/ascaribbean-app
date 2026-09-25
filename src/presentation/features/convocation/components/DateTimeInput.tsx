@@ -10,6 +10,16 @@ interface DateTimeInputProps {
   onChange: (value: string) => void
   // `date` fields only — see useCreateConvocationViewModel's `minDate`.
   min?: string
+  // Overrides FIELD_CLASSNAME's box styling (height/border/radius/padding/
+  // text size) on BOTH the invisible native input and its visible display
+  // sibling — the two must always match, since the visible one is what
+  // determines this control's actual on-screen box. Used by
+  // MatchDetailsEditForm (docs/designs/coach-match-details/...) to render
+  // the same taller, pill-shaped (`rounded-full`) field box the rest of
+  // that form uses, distinct from CreateConvocationForm's own `rounded-lg`
+  // fields. Omitted, CreateConvocationForm's rendering is byte-for-byte
+  // unchanged (falls back to FIELD_CLASSNAME).
+  className?: string
 }
 
 // Chromium only opens the native picker overlay when the click lands on the
@@ -51,9 +61,23 @@ function formatDisplayValue(type: 'date' | 'time', value: string): string {
 // custom text *on top of* an otherwise-normal, still-opaque native input,
 // so the native format hint showed through underneath it — two texts, one
 // box. Here the native input contributes no visible text at all.
-export function DateTimeInput({ id, type, value, onChange, min }: DateTimeInputProps) {
+export function DateTimeInput({ id, type, value, onChange, min, className }: DateTimeInputProps) {
+  const boxClassName = className ?? FIELD_CLASSNAME
   return (
-    <div className="relative">
+    <div className="relative w-full">
+      {/* The real, tappable control — sizing/positioning classes ONLY
+          (`absolute inset-0`, so it exactly covers the visible box below,
+          whatever that box's own height/shape is). Deliberately does NOT
+          receive `boxClassName`'s decorative utilities (border/bg/rounded/
+          `flex`/padding/text-size): it's invisible anyway, and putting
+          `display: flex` directly on a native `<input type="date"/"time">`
+          breaks the browser's own internal picker/tap handling on real
+          devices (iOS Safari in particular — the native control's internal
+          layout assumes normal block flow, same class of platform quirk
+          already documented below for the filled-value rendering issue).
+          Fixed here rather than only in MatchDetailsEditForm's own compact
+          box, since CreateConvocationForm's fields carried the same latent
+          bug (FIELD_CLASSNAME also sets `flex items-center`). */}
       <Input
         id={id}
         type={type}
@@ -61,12 +85,9 @@ export function DateTimeInput({ id, type, value, onChange, min }: DateTimeInputP
         min={min}
         onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
         onClick={openPicker}
-        className={cn(FIELD_CLASSNAME, 'absolute inset-0 overflow-hidden opacity-0')}
+        className="absolute inset-0 h-full w-full cursor-pointer overflow-hidden opacity-0"
       />
-      <div
-        aria-hidden
-        className={cn(FIELD_CLASSNAME, 'pointer-events-none flex items-center', !value && 'text-white/35')}
-      >
+      <div aria-hidden className={cn(boxClassName, 'pointer-events-none', !value && 'text-white/35')}>
         {formatDisplayValue(type, value)}
       </div>
     </div>

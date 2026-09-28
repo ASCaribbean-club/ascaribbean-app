@@ -307,6 +307,27 @@ Le domaine étant sans dépendance, ses tests s'écrivent avec de simples objets
 - **Variables d'environnement** : seul le préfixe `VITE_` est exposé au navigateur. La clé `anon` Supabase y a sa place ; une clé `service_role` **jamais** — elle contourne le RLS et se retrouverait dans le bundle public.
 - **Vérification automatisée des frontières** : un outil comme `dependency-cruiser` ou `eslint-plugin-boundaries` en CI, pour interdire les imports interdits entre couches. Sans contrainte outillée, la règle de dépendance se dégrade en quelques semaines — c'est mécanique, pas une question de discipline.
 
+### Environnements dev / prod
+
+Deux projets Supabase distincts, dans la même organisation club (`GOUVERNANCE.md` section 3) :
+
+| | Sert quel mode | Variables | Contenu |
+|---|---|---|---|
+| **Développement** | `npm run dev` (poste du développeur) | `.env.development.local` (non commité, chargé par Vite en mode `development`) | Données de test, expérimentations — jamais copiées vers la production |
+| **Production** | Le site déployé (Netlify) | Variables d'environnement Netlify, jamais un fichier de ce dépôt | Reconstruite uniquement depuis `supabase/migrations/`, jamais depuis une copie de la base de développement |
+
+Le poste du développeur ne connaît que l'environnement de développement. Aucun fichier local ne fait parler l'application à la production — c'est la CLI Supabase, pas l'application elle-même, qui a besoin ponctuellement d'un accès à la production (voir ci-dessous), et uniquement en ligne de commande.
+
+**La CLI Supabase reste liée (`link`) au projet de développement par défaut.** Elle agit sur le projet actuellement lié, quel qu'il soit — `supabase db reset --linked` efface entièrement la base liée, d'où l'importance de toujours savoir lequel est actif. Faire évoluer le schéma de production suit une procédure volontairement manuelle, jamais automatisée dans un script courant :
+
+```
+supabase link --project-ref <PROD_REF>   # bascule temporairement sur prod
+supabase db push                         # applique les migrations non encore présentes
+supabase link --project-ref <DEV_REF>    # revient immédiatement sur dev
+```
+
+**Le schéma de production ne se modifie que par migration, jamais via le dashboard ni via le MCP.** Le serveur MCP Supabase utilisé par l'assistant de développement est lui-même restreint au projet de développement (`GOUVERNANCE.md` section 3) — il n'a donc de toute façon aucun moyen d'écrire sur la production. Toute modification de schéma qui contournerait `supabase/migrations/` casserait l'exigence de réversibilité (CDC sections 12 et 21) : la production doit rester reconstructible à l'identique depuis le seul contenu du dépôt.
+
 ## 10. Cap mobile-only et évolution
 
 La phase actuelle ne produit qu'un rendu mobile. Aucun dossier `mobile/` n'est créé pour l'instant : un dossier à occupant unique est une structure vide qui suggère une symétrie inexistante.

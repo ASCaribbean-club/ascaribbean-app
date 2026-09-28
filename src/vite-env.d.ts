@@ -1,5 +1,13 @@
 /// <reference types="vite/client" />
 
+// Declaration merging: TS merges this interface with the empty ImportMetaEnv
+// declared by vite/client above, so import.meta.env gets typed/autocompleted
+// without redeclaring ImportMeta itself.
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string
+  readonly VITE_SUPABASE_ANON_KEY: string
+}
+
 // Fed by vite.config.ts's `define: { APP_VERSION: ... }` (reads
 // package.json's version directly at build time — this just declares its
 // type for TS). Replaces any hardcoded version string in the UI, e.g.

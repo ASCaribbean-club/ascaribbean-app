@@ -242,4 +242,17 @@ export interface Team {
 
 ---
 
+## Projet Supabase de développement distant vs. Supabase local (Docker, `supabase start`)
+
+**Où** : `docs/ARCHITECTURE.md` section 9 (« Environnements dev / prod »), `.env.development.local`.
+
+**Valeur actuelle** : le développement se fait contre un projet Supabase hébergé distant dédié (voir `GOUVERNANCE.md` section 3), pas contre une instance Supabase locale (Docker, `supabase start`).
+
+**Pourquoi cette valeur, provisoirement** : aucun besoin de Docker sur le poste du développeur, et les données de test déjà accumulées sur ce projet sont conservées telles quelles plutôt que perdues dans une bascule.
+
+**Ce qu'il faudrait challenger** :
+- Supabase local permettrait des resets gratuits et illimités (`supabase db reset --linked` sans risque, puisque local), un travail hors ligne, et l'absence de la mise en pause à 7 jours d'inactivité du plan gratuit — au prix d'une dépendance à Docker sur le poste de développement.
+
+**Priorité de revisite** : basse.
+
 ## (Prochaine entrée à ajouter ici)

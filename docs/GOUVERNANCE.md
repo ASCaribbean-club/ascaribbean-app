@@ -29,10 +29,13 @@ Le club doit pouvoir continuer à faire évoluer et héberger l'application **sa
 |---|---|---|---|---|
 | **GitHub** (organisation du club) | Code source, gestion de projet, CI/CD, documentation versionnée | Président (Owner de l'organisation) | Rôle *Maintain* ou *Admin* sur le dépôt — jamais *Owner* de l'organisation | Oui |
 | **Netlify** | Hébergement de l'application (PWA) | Président (Owner de l'équipe) | Rôle *Developer* | Oui |
-| **Supabase** | Base de données, authentification, stockage fichiers | Président (Owner de l'organisation — facturation) | Rôle *Developer* (accès schéma, déploiement — pas facturation ni suppression d'organisation) | Oui |
+| **Supabase — développement** | Base de données de développement (données de test, expérimentations) | Président (Owner de l'organisation — facturation) | Rôle *Developer* (accès schéma, déploiement — pas facturation ni suppression d'organisation) | Oui |
+| **Supabase — production** | Base de données, authentification, stockage fichiers pour l'application réellement utilisée par le club | Président (Owner de l'organisation — facturation) | Rôle *Developer* (accès schéma, déploiement — pas facturation ni suppression d'organisation) | Oui |
 | **Registrar du nom de domaine** | Propriété du nom de domaine du club | Président (titulaire exclusif) | Aucun accès permanent — sollicité ponctuellement pour le paramétrage DNS initial ou une modification technique | Non |
 | **Brevo** (ou équivalent email transactionnel) | Envoi des emails de l'application (invitations, notifications) | Président (Owner) | Rôle *Membre* | Oui |
 | *(à venir)* Vercel ou hébergeur du site vitrine Next.js | Hébergement du futur site public | Président (Owner) | Rôle développeur | Selon phase |
+
+> **Supabase — deux projets distincts, même organisation.** Le projet de développement et le projet de production appartiennent tous les deux à l'organisation du club (même titulaire, mêmes rôles ci-dessus) ; ce n'est pas un compte séparé. Le serveur MCP Supabase utilisé par l'assistant de développement est volontairement restreint au projet de **développement uniquement** (paramètre `project_ref`) — l'assistant n'a donc jamais d'accès, même en lecture, à la base de production. Le plan gratuit Supabase met en pause un projet après 7 jours d'inactivité : c'est pourquoi le job de ping de maintien en vie (`RETENTION-PURGE.md` section 5) cible exclusivement le projet de **production** ; le projet de développement, moins critique, se restaure manuellement en cas de pause (ouverture du dashboard Supabase).
  
 **Le nom de domaine est le point de vigilance n°1.** C'est l'angle mort le plus fréquent : un domaine acheté « pour aller plus vite » par le développeur devient de fait la clé de voûte du projet. Le domaine doit être enregistré directement par le président, dès le lancement, même avant que l'hébergement définitif soit choisi.
  

@@ -35,6 +35,7 @@ function fakeUserRepository(user: User | null): UserRepository {
     updateFullName: async () => {},
     invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
     reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
+    generatePasswordResetLink: async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' }),
   }
 }
 

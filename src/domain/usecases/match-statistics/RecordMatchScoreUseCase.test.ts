@@ -37,6 +37,7 @@ function fakeConvocationRepository(convocation: Convocation | null): Convocation
     createTraining: async () => convocation as Convocation,
     createMatch: async () => convocation as Convocation,
     createMeeting: async () => convocation as Convocation,
+    updateArrangements: async () => { throw new Error('not used in this test') },
   }
 }
 
@@ -61,6 +62,7 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
       goalsFor,
       goalsAgainst,
     }) as MatchDetails,
+    updateArrangements: async () => { throw new Error('not used in this test') },
     ...overrides,
   }
 }

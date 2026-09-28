@@ -51,9 +51,12 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
   return {
     upsert: async (details) => details,
     findByConvocationId: async () => null,
+    recordScore: async () => { throw new Error('not used in this test') },
     updateArrangements: async (convocationId, arrangements) => ({
       convocationId,
       opponentId: 'opponent-1',
+      goalsFor: null,
+      goalsAgainst: null,
       ...arrangements,
     }),
     ...overrides,
@@ -176,6 +179,8 @@ describe('UpdateMatchDetailsUseCase', () => {
     const updateArrangements = vi.fn(async (convocationId: string, arrangements: MatchArrangements): Promise<MatchDetails> => ({
       convocationId,
       opponentId: 'opponent-1',
+      goalsFor: null,
+      goalsAgainst: null,
       ...arrangements,
     }))
     const useCase = new UpdateMatchDetailsUseCase(
@@ -198,6 +203,8 @@ describe('UpdateMatchDetailsUseCase', () => {
     const updateArrangements = vi.fn(async (convocationId: string, arrangements: MatchArrangements): Promise<MatchDetails> => ({
       convocationId,
       opponentId: 'opponent-1',
+      goalsFor: null,
+      goalsAgainst: null,
       ...arrangements,
     }))
     const useCase = new UpdateMatchDetailsUseCase(
@@ -243,6 +250,8 @@ describe('UpdateMatchDetailsUseCase', () => {
       const updateMatchArrangements = vi.fn(async (convocationId: string, arrangements: MatchArrangements) => ({
         convocationId,
         opponentId: 'opponent-1',
+        goalsFor: null,
+        goalsAgainst: null,
         ...arrangements,
       }))
       const useCase = new UpdateMatchDetailsUseCase(

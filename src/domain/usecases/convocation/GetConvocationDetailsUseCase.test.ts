@@ -40,7 +40,7 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     // Not exercised by GetConvocationDetailsUseCase (a read-only use case)
     // — present only to satisfy the interface, same reasoning as the other
     // fakes in this file.
-    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', ...arrangements }),
+    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', goalsFor: null, goalsAgainst: null, ...arrangements }),
   }
 }
 

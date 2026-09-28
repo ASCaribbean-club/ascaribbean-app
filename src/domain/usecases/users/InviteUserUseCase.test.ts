@@ -30,6 +30,7 @@ function fakeUserRepository(user: User | null, overrides: Partial<UserRepository
     updateFullName: async () => {},
     invite: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' })),
     reissueInvitationLink: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=xyz&type=magiclink' })),
+    generatePasswordResetLink: async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' }),
     ...overrides,
   }
 }

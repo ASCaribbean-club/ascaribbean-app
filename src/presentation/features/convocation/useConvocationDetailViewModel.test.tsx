@@ -71,6 +71,8 @@ function buildMatchDetails(overrides: Partial<MatchDetails> = {}): MatchDetails 
     isHome: true,
     meetingPointTime: '2026-08-27T16:30:00.000Z',
     meetingPointLocation: 'Vestiaires',
+    goalsFor: null,
+    goalsAgainst: null,
     ...overrides,
   }
 }

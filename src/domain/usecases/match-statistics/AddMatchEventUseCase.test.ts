@@ -39,6 +39,7 @@ function fakeConvocationRepository(convocation: Convocation | null): Convocation
     createTraining: async () => convocation as Convocation,
     createMatch: async () => convocation as Convocation,
     createMeeting: async () => convocation as Convocation,
+    updateArrangements: async () => { throw new Error('not used in this test') },
   }
 }
 
@@ -60,6 +61,7 @@ function fakeMatchDetailsRepository(matchDetails: MatchDetails | null): MatchDet
     upsert: async (details) => details,
     findByConvocationId: async () => matchDetails,
     recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...matchDetailsWith(), convocationId, goalsFor, goalsAgainst }),
+    updateArrangements: async () => { throw new Error('not used in this test') },
   }
 }
 

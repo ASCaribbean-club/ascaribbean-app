@@ -11,9 +11,9 @@ import { useTeamStatsViewModel } from './useTeamStatsViewModel'
 // specs/coach-team-stats.md — zero business logic here (CLAUDE.md §4): only
 // the isLoading/error/canX branches the ViewModel already computed.
 //
-// ⚠️ Not wired from the Menu "Statistiques" card in this pass (PO-CTS-06 —
-// specs/menu.md AC-MN-04 still requires that card to stay disabled). Reached
-// directly via its own route for now, per the spec's own instruction.
+// PO-CTS-06 resolved: the Menu's "Statistiques" card now routes here for the
+// coach active role (MenuPage.tsx/useMenuViewModel.ts) rather than always
+// pointing at the player-stats screen.
 export function TeamStatsPage() {
   const vm = useTeamStatsViewModel()
 

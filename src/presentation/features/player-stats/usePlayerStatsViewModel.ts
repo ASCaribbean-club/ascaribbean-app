@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { attendanceRate, responseRate } from '@domain/policies/player-stats-rates'
+import { useCoachDashboardDependencies } from '@presentation/di/hooks/use-coach-dashboard-dependencies'
 import { usePlayerStatsDependencies } from '@presentation/di/hooks/use-player-stats-dependencies'
 import { formatConvocationType } from '@presentation/shared/formatters/convocation-labels'
+import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
+import { useActiveTeam } from '@presentation/shared/hooks/use-active-team'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { queryKeys } from '@presentation/shared/query-keys'
 import type { PlayerStatsCardsCardStatus } from './components/PlayerStatsCardsCard'
@@ -19,6 +22,8 @@ import type { PlayerStatsRateCardStatus } from './components/PlayerStatsRateCard
 export function usePlayerStatsViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { activeRole } = useActiveRole()
+  const { selectedCoachTeamId } = useActiveTeam()
   const {
     getOwnAttendanceSummaryUseCase,
     getOwnAttendanceSummaryByTypeUseCase,
@@ -26,11 +31,35 @@ export function usePlayerStatsViewModel() {
     getOwnGoalsCountUseCase,
     getOwnCardsCountUseCase,
   } = usePlayerStatsDependencies()
+  // Reused only to name the coach's team in the fallback message below —
+  // same shared getCoachTeamsUseCase/queryKeys.coachTeams(user.id) pair
+  // already reused between useCoachDashboardViewModel and
+  // useCalendarViewModel, not a new use case invented for this.
+  const { getCoachTeamsUseCase } = useCoachDashboardDependencies()
+
+  const isCoachViewingThisScreen = activeRole === 'coach'
+  // This screen is person-scoped (auth.uid()-only RPCs, §6.3): a coach
+  // account has no player role behind it, so these four reads would always
+  // resolve to an empty aggregate. Never fired for the coach branch —
+  // rather than let them settle into a confusing "validé par ton coach"
+  // copy that assumes a player audience (see PlayerStatsWrongRoleState
+  // below).
+  const enabledForPlayer = !!user && !isCoachViewingThisScreen
+
+  const coachAssignment = user?.roles.find((assignment) => assignment.role === 'coach')
+  const coachTeamIds = coachAssignment?.role === 'coach' ? coachAssignment.teamIds : []
+
+  const coachTeamsQuery = useQuery({
+    queryKey: queryKeys.coachTeams(user?.id ?? ''),
+    queryFn: () => getCoachTeamsUseCase.execute({ coachTeamIds }),
+    enabled: isCoachViewingThisScreen && coachTeamIds.length > 0,
+  })
+  const currentCoachTeam = coachTeamsQuery.data?.find((summary) => summary.team.id === selectedCoachTeamId) ?? coachTeamsQuery.data?.[0]
 
   const attendanceQuery = useQuery({
     queryKey: queryKeys.playerStatsAttendanceSummary(user?.id ?? ''),
     queryFn: () => getOwnAttendanceSummaryUseCase.execute(),
-    enabled: !!user,
+    enabled: enabledForPlayer,
   })
 
   // Addendum "troisième passage" (PO-PS-12 partiellement tranché) —
@@ -41,19 +70,19 @@ export function usePlayerStatsViewModel() {
   const attendanceByTypeQuery = useQuery({
     queryKey: queryKeys.playerStatsAttendanceSummaryByType(user?.id ?? ''),
     queryFn: () => getOwnAttendanceSummaryByTypeUseCase.execute(),
-    enabled: !!user,
+    enabled: enabledForPlayer,
   })
 
   const responseQuery = useQuery({
     queryKey: queryKeys.playerStatsResponseSummary(user?.id ?? ''),
     queryFn: () => getOwnResponseSummaryUseCase.execute(),
-    enabled: !!user,
+    enabled: enabledForPlayer,
   })
 
   const goalsQuery = useQuery({
     queryKey: queryKeys.playerStatsGoalsCount(user?.id ?? ''),
     queryFn: () => getOwnGoalsCountUseCase.execute(),
-    enabled: !!user,
+    enabled: enabledForPlayer,
   })
 
   // Addendum "PO-PS-03 tranché" — own yellow/red cards, its own independent
@@ -61,7 +90,7 @@ export function usePlayerStatsViewModel() {
   const cardsQuery = useQuery({
     queryKey: queryKeys.playerStatsCardsCount(user?.id ?? ''),
     queryFn: () => getOwnCardsCountUseCase.execute(),
-    enabled: !!user,
+    enabled: enabledForPlayer,
   })
 
   // AC-PS-17 — attendanceRate/responseRate return `null` on a zero
@@ -111,6 +140,14 @@ export function usePlayerStatsViewModel() {
     cardsQuery.data?.redCount === 0
 
   return {
+    // Checked before isFullyEmpty in PlayerStatsPage.tsx: this screen was
+    // built for the player role only (§6.3, person-scoped RPCs). A coach
+    // reaching it — direct URL, browser back — sees a message naming their
+    // own team instead of copy written for a player ("validé par ton
+    // coach"), which makes no sense read from a coach account.
+    isCoachViewingThisScreen,
+    coachTeamName: currentCoachTeam?.team.name,
+
     isFullyEmpty,
 
     responseCard: {

@@ -4,6 +4,7 @@ import type { User } from '../../entities/user'
 import type { Vote } from '../../entities/vote'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { NotFoundError } from '../../errors/not-found-error'
+import { VotingNotOpenError } from '../../errors/voting-not-open-error'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 import type { VoteRepository } from '../../repositories/vote-repository'
@@ -91,6 +92,20 @@ describe('CastVoteUseCase', () => {
     await expect(
       useCase.execute({ convocationId: 'convocation-1', categoryId: 'positive', voterId: 'player-1', candidateId: 'player-2', now: NOW }),
     ).rejects.toThrow(NotFoundError)
+  })
+
+  // PO-PV-06(d), resolved 2026-09-29: voting opens only once the match has
+  // kicked off.
+  it('throws VotingNotOpenError when the match has not kicked off yet', async () => {
+    const useCase = new CastVoteUseCase(
+      fakeUserRepository(playerUser('team-1')),
+      fakeConvocationRepository(convocationWith({ date: '2026-09-20T18:00:00.000Z' })),
+      fakeVoteRepository(),
+    )
+
+    await expect(
+      useCase.execute({ convocationId: 'convocation-1', categoryId: 'positive', voterId: 'player-1', candidateId: 'player-2', now: NOW }),
+    ).rejects.toThrow(VotingNotOpenError)
   })
 
   // AC-02, same class of gap the can.ts team-scope fix closes for

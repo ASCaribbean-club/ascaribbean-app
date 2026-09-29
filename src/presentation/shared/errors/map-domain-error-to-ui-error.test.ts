@@ -12,6 +12,7 @@ import { MatchNotStartedError } from '@domain/errors/match-not-started-error'
 import { MatchScoreMissingError } from '@domain/errors/match-score-missing-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
+import { VotingNotOpenError } from '@domain/errors/voting-not-open-error'
 import { describe, expect, it } from 'vitest'
 import { mapDomainErrorToUiError } from './map-domain-error-to-ui-error'
 
@@ -134,6 +135,17 @@ describe('mapDomainErrorToUiError', () => {
 
     expect(result).toEqual({
       message: 'Le score ne peut être saisi qu’après le coup d’envoi.',
+      variant: 'inline',
+      retryable: true,
+    })
+  })
+
+  // specs/player-vote.md PO-PV-06(d).
+  it('maps VotingNotOpenError to a retryable inline error', () => {
+    const result = mapDomainErrorToUiError(new VotingNotOpenError('voting is not open yet'))
+
+    expect(result).toEqual({
+      message: 'Le vote ne peut être enregistré qu’après le coup d’envoi du match.',
       variant: 'inline',
       retryable: true,
     })

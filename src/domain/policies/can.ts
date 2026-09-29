@@ -76,6 +76,11 @@ function grants(
       // 'convocation:update' added in the SAME change as its
       // rbac-matrix.ts entry, jumeau exact of 'match_details:update' just
       // above (same team, same window, same reasoning).
+      // specs/coach-team-stats.md §2 ("le piège déjà corrigé cinq fois") —
+      // 'team_stats:view' added here in the SAME change as its
+      // rbac-matrix.ts entry: without this, a coach of team A would pass
+      // can(user, 'team_stats:view', { teamId: 'team-B' }) just because
+      // 'coach' is in that action's allowed-roles list (AC-CTS-03/AC-02).
       const requiresTeamScope =
         action === 'convocation:create' ||
         action === 'attendance:validate' ||
@@ -83,7 +88,8 @@ function grants(
         action === 'match_goals:view' ||
         action === 'match_staff_events:view' ||
         action === 'match_details:update' ||
-        action === 'convocation:update'
+        action === 'convocation:update' ||
+        action === 'team_stats:view'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':

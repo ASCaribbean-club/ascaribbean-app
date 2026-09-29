@@ -28,6 +28,7 @@ import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
+import { VotingNotOpenError } from '@domain/errors/voting-not-open-error'
 import { WeakPasswordError } from '@domain/errors/weak-password-error'
 import type { UiError } from './ui-error'
 
@@ -253,6 +254,19 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // own once kickoff passes, no user correction needed.
     return {
       message: 'Le score ne peut être saisi qu’après le coup d’envoi.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof VotingNotOpenError) {
+    // specs/player-vote.md PO-PV-06(d) — CastVoteUseCase's own timing guard.
+    // The ballot itself is absent before kickoff (ConvocationDetailPage's
+    // buildVoteCategories), so this only fires on the rarer race where
+    // `now` crosses kickoff between render and submit — retryable because
+    // it stops being true on its own once kickoff passes.
+    return {
+      message: 'Le vote ne peut être enregistré qu’après le coup d’envoi du match.',
       variant: 'inline',
       retryable: true,
     }

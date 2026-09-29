@@ -241,4 +241,14 @@ export const queryKeys = {
   // yellow/red card counts (get_my_cards_count()). Its own key, same
   // reasoning as the others above.
   playerStatsCardsCount: (userId: string) => ['playerStats', userId, 'cardsCount'] as const,
+
+  // specs/coach-team-stats.md §6 point 5 — "les discriminants incluent au
+  // minimum l'équipe et la saison". The season discriminant is folded into
+  // `teamId` itself rather than added as a separate parameter: a Team row IS
+  // per-season (teams.season_id not null, PO-CTS-03), so a different
+  // season's team already has a different id — reusing `coachTeams` above
+  // isn't possible here (that key returns CoachTeamSummary[], this one
+  // returns the whole TeamStats shape: roster + attendance + goals + cards,
+  // a different read entirely).
+  teamStats: (teamId: string) => ['teams', teamId, 'stats'] as const,
 }

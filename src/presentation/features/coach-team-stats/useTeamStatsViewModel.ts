@@ -78,7 +78,7 @@ export function useTeamStatsViewModel() {
       // Missing from either map means zero — a real, legitimate value for a
       // COUNT (unlike the attendance rate above, "no goal recorded" and "no
       // AttendanceRecord recorded" are not the same kind of absence).
-      goalsCount: teamStatsQuery.data?.goalsByPlayer[player.userId] ?? 0,
+      goalsCount: teamStatsQuery.data?.goals.byPlayer[player.userId] ?? 0,
       cards: teamStatsQuery.data?.cards.byPlayer[player.userId] ?? { yellowCount: 0, redCount: 0 },
     }))
 
@@ -101,6 +101,9 @@ export function useTeamStatsViewModel() {
 
     /// --- Présence de l'équipe (agrégat, §4.3) ---
     teamAttendance: teamStatsQuery.data?.attendance.team,
+
+    /// --- Buts (agrégat d'équipe, §3, statique) ---
+    teamGoals: teamStatsQuery.data?.goals.team,
 
     /// --- Cartons (agrégat d'équipe, §3, statique) ---
     teamCards: teamStatsQuery.data?.cards.team,

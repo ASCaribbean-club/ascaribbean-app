@@ -9,6 +9,7 @@ import {
   tallyCardsByPlayer,
   tallyGoalsByPlayer,
   tallyTeamCards,
+  tallyTeamGoals,
   type AttendanceTally,
   type CardTally,
 } from '../../policies/team-stats-rules'
@@ -34,11 +35,14 @@ export interface TeamStats {
     // an explicit "no data" state for any roster entry missing from this map.
     byPlayer: Record<string, TeamAttendanceSummary>
   }
-  // Keyed by userId, total goals scored — §4.1, the segmented control's
-  // "Buts" headline. Deliberately NOT the "Meilleurs buteurs" ranking
-  // (TeamScorerRankingCard, PO-CTS-02, not built in this pass) — see this
-  // use case's own note below.
-  goalsByPlayer: Record<string, number>
+  goals: {
+    team: number
+    // Keyed by userId, total goals scored — §4.1, the segmented control's
+    // "Buts" headline. Deliberately NOT the "Meilleurs buteurs" ranking
+    // (TeamScorerRankingCard, PO-CTS-02, not built in this pass) — see this
+    // use case's own note below.
+    byPlayer: Record<string, number>
+  }
   cards: {
     team: CardTally
     byPlayer: Record<string, CardTally>
@@ -116,7 +120,10 @@ export class GetTeamStatsUseCase {
           Object.entries(attendanceByPlayerTally).map(([userId, tally]) => [userId, { tally, rate: attendanceRate(tally) }]),
         ),
       },
-      goalsByPlayer: tallyGoalsByPlayer(matchEvents),
+      goals: {
+        team: tallyTeamGoals(matchEvents),
+        byPlayer: tallyGoalsByPlayer(matchEvents),
+      },
       cards: {
         team: tallyTeamCards(matchEvents),
         byPlayer: tallyCardsByPlayer(matchEvents),

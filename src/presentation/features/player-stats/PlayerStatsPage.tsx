@@ -3,6 +3,7 @@ import { PlayerStatsCardsCard } from './components/PlayerStatsCardsCard'
 import { PlayerStatsEmptyState } from './components/PlayerStatsEmptyState'
 import { PlayerStatsGoalsCard } from './components/PlayerStatsGoalsCard'
 import { PlayerStatsRateCard } from './components/PlayerStatsRateCard'
+import { PlayerStatsWrongRoleState } from './components/PlayerStatsWrongRoleState'
 import { usePlayerStatsViewModel } from './usePlayerStatsViewModel'
 
 // specs/player-stats.md UI design §1/§4 — pushed route from Menu's
@@ -28,7 +29,9 @@ export function PlayerStatsPage() {
     <div className="flex flex-col text-white">
       <BackHeader title="Mes statistiques" onBack={vm.goBack} />
 
-      {vm.isFullyEmpty ? (
+      {vm.isCoachViewingThisScreen ? (
+        <PlayerStatsWrongRoleState teamName={vm.coachTeamName} />
+      ) : vm.isFullyEmpty ? (
         <PlayerStatsEmptyState />
       ) : (
         <div className="flex flex-col gap-3 px-5.5 pb-8">

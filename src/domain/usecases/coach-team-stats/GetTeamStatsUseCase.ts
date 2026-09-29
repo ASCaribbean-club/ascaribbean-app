@@ -59,14 +59,14 @@ export interface TeamStats {
 //   - The "Meilleurs buteurs" ranking (TeamScorerRankingCard, PO-CTS-02) —
 //     needs `team_scorer_ranking`, which doesn't exist yet either.
 //   - The mockup's "X,X / 18 en moyenne par séance" team-wide average
-//     (PO-CTS-04(a)/(b)/(d)) — that figure needs a reference headcount
-//     ("who's actually expected to attend a session") this use case never
-//     computes. `attendance.team` below is instead the literal
-//     present/total ratio across every AttendanceRecord that actually
-//     exists for the team's convocations this season — it answers none of
-//     PO-CTS-04's four sub-questions by picking a convocation subset or an
-//     "expected attendees" figure, it only reports what was actually
-//     recorded (see team-stats-rules.ts's own comment on tallyAttendance).
+//     (PO-CTS-04(b)) — that figure needs a reference headcount ("who's
+//     actually expected to attend a session") this use case never computes.
+//     `attendance.team` below is instead present-count-across-every-player
+//     over open-convocation-count — PO-CTS-04(a)/(d) are now partially
+//     tranché (développeuse, 2026-09-29: only `status === 'open'`
+//     convocations count), PO-CTS-04(b)/(c) remain open — see
+//     team-stats-rules.ts's own comment on tallyAttendance for the exact
+//     shape and its accepted unit mismatch.
 export class GetTeamStatsUseCase {
   constructor(
     private readonly teamRosterRepository: TeamRosterRepository,
@@ -85,7 +85,14 @@ export class GetTeamStatsUseCase {
     // — "une nouvelle ligne Team est créée chaque saison"), so
     // listForTeam(input.teamId) is already scoped to the current season by
     // construction: no separate season filter is applied here.
-    const convocationIds = convocations.map((convocation) => convocation.id)
+    //
+    // PO-CTS-04(d) partiellement tranché (développeuse, 2026-09-29): a
+    // cancelled convocation never took place, so its attendance rows (if any
+    // exist) never count — only `status === 'open'` convocations feed the
+    // attendance read below. See team-stats-rules.ts's tallyAttendance for
+    // why this is also what `totalCount` now counts.
+    const openConvocations = convocations.filter((convocation) => convocation.status === 'open')
+    const convocationIds = openConvocations.map((convocation) => convocation.id)
     // match_events.convocation_id references match_details(convocation_id),
     // which is itself convocations.id (1:1) — restricting to 'match'
     // convocations before the bulk read avoids asking for events on
@@ -98,7 +105,7 @@ export class GetTeamStatsUseCase {
       this.matchEventRepository.findByConvocations(matchConvocationIds),
     ])
 
-    const teamAttendanceTally = tallyAttendance(attendanceRecords)
+    const teamAttendanceTally = tallyAttendance(attendanceRecords, openConvocations.length)
     const attendanceByPlayerTally = tallyAttendanceByPlayer(attendanceRecords)
 
     return {

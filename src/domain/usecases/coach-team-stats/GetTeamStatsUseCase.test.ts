@@ -104,11 +104,12 @@ describe('GetTeamStatsUseCase', () => {
   })
 
   // AC-CTS-16 — "aucune séance constatée" is a valid empty state: the team
-  // rate must be null, not a fabricated 0%.
-  it('returns a null team attendance rate when there are no AttendanceRecord rows at all', async () => {
+  // rate must be null, not a fabricated 0%. With no OPEN convocation at all,
+  // openConvocations.length is 0 regardless of AttendanceRecord rows.
+  it('returns a null team attendance rate when there is no open convocation at all', async () => {
     const useCase = new GetTeamStatsUseCase(
       fakeTeamRosterRepository(),
-      fakeConvocationRepository([convocationWith({ id: 'c1', type: 'training' })]),
+      fakeConvocationRepository([convocationWith({ id: 'c1', type: 'training', status: 'cancelled' })]),
       fakeAttendanceRecordRepository([]),
       fakeMatchEventRepository(),
     )
@@ -119,6 +120,29 @@ describe('GetTeamStatsUseCase', () => {
     expect(result.attendance.byPlayer).toEqual({})
   })
 
+  // PO-CTS-04(a)/(d) tranché (développeuse, 2026-09-29) — a cancelled
+  // convocation never took place and is excluded from both the attendance
+  // read and the total. This is now a REAL 0%, not the AC-CTS-16 empty
+  // state above: an open convocation exists, it simply has no recorded
+  // attendance yet — an accepted, known edge case of counting
+  // openConvocations.length rather than "convocations with at least one
+  // recorded row".
+  it('counts an open convocation toward the total even with zero AttendanceRecord rows for it', async () => {
+    const useCase = new GetTeamStatsUseCase(
+      fakeTeamRosterRepository(),
+      fakeConvocationRepository([
+        convocationWith({ id: 'c1', type: 'training', status: 'open' }),
+        convocationWith({ id: 'c2', type: 'training', status: 'cancelled' }),
+      ]),
+      fakeAttendanceRecordRepository([]),
+      fakeMatchEventRepository(),
+    )
+
+    const result = await useCase.execute({ teamId: 'team-1' })
+
+    expect(result.attendance.team).toEqual({ tally: { presentCount: 0, totalCount: 1 }, rate: 0 })
+  })
+
   it('aggregates attendance across every player, keeping a player with no record entirely out of byPlayer (AC-CTS-07)', async () => {
     const roster: TeamRosterPlayer[] = [
       { userId: 'player-1', displayName: 'Joueur 1' },
@@ -127,14 +151,27 @@ describe('GetTeamStatsUseCase', () => {
     const records = [attendanceRecord('player-1', 'present'), attendanceRecord('player-1', 'absent')]
     const useCase = new GetTeamStatsUseCase(
       fakeTeamRosterRepository(roster),
-      fakeConvocationRepository([convocationWith({ id: 'c1', type: 'training' })]),
+      fakeConvocationRepository([
+        convocationWith({ id: 'c1', type: 'training' }),
+        convocationWith({ id: 'c2', type: 'training' }),
+        // Third open convocation with NO AttendanceRecord row at all —
+        // proves totalCount tracks convocation count (3), not records.length
+        // (2): the two would otherwise coincide and this test would pass
+        // for the wrong reason.
+        convocationWith({ id: 'c3', type: 'training' }),
+      ]),
       fakeAttendanceRecordRepository(records),
       fakeMatchEventRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
-    expect(result.attendance.team).toEqual({ tally: { presentCount: 1, totalCount: 2 }, rate: 50 })
+    // PO-CTS-04(a)/(d) tranché — team totalCount is the OPEN CONVOCATION
+    // count (3 here), never records.length (2).
+    expect(result.attendance.team).toEqual({ tally: { presentCount: 1, totalCount: 3 }, rate: 33 })
+    // Per-player totalCount is unaffected by this change: records.length
+    // still matches 1:1 with "convocations this player has a row for",
+    // since the use case only ever fetches rows for open convocations now.
     expect(result.attendance.byPlayer).toEqual({ 'player-1': { tally: { presentCount: 1, totalCount: 2 }, rate: 50 } })
     expect(Object.hasOwn(result.attendance.byPlayer, 'player-2')).toBe(false)
   })

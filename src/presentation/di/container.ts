@@ -9,6 +9,7 @@ import { createConvocationContainer, type ConvocationContainer } from './contain
 import { createMembershipsContainer, type MembershipsContainer } from './containers/memberships-container'
 import { createNewsContainer, type NewsContainer } from './containers/news-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
+import { createPlayerStatsContainer, type PlayerStatsContainer } from './containers/player-stats-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
 import { createSeasonsContainer, type SeasonsContainer } from './containers/seasons-container'
 import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from './containers/section-and-teams-container'
@@ -22,6 +23,7 @@ export interface Container {
   memberships: MembershipsContainer
   news: NewsContainer
   playerDashboard: PlayerDashboardContainer
+  playerStats: PlayerStatsContainer
   profile: ProfileContainer
   seasons: SeasonsContainer
   sectionAndTeams: SectionAndTeamsContainer
@@ -37,6 +39,7 @@ export function createContainer(): Container {
     memberships: createMembershipsContainer(supabaseClient),
     news: createNewsContainer(supabaseClient),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
+    playerStats: createPlayerStatsContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),
     seasons: createSeasonsContainer(supabaseClient),
     sectionAndTeams: createSectionAndTeamsContainer(supabaseClient),

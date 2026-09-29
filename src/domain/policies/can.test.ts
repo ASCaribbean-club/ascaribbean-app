@@ -303,4 +303,34 @@ describe('can', () => {
       expect(can(user, 'convocation:update', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
     }
   })
+
+  // specs/player-stats.md §2, AC-PS-20 — the two new actions are
+  // PERSON-scoped (auth.uid() inside the RPC), never team-scoped: this pair
+  // proves can() grants them to a player with NO teamId in context at all,
+  // unlike every other 'player' action tested above (convocation:respond,
+  // vote:cast, match_goals:view) which all REQUIRE a matching teamId. If a
+  // future change accidentally adds these to can.ts's `requiresTeamScope`,
+  // this test starts failing (both would wrongly return false with no
+  // context.teamId supplied) — that's the point.
+  it('allows a player to read their own attendance/response summaries with no teamId in context (AC-PS-20)', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'attendance:read-own-summary', {})).toBe(true)
+    expect(can(user, 'response:read-own-summary', {})).toBe(true)
+  })
+
+  it('allows a player with zero roles worth of team context to still read their own summaries', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    // Deliberately passing a teamId that matches NOTHING — proves the check
+    // isn't silently comparing against it either.
+    expect(can(user, 'attendance:read-own-summary', { teamId: 'some-other-team' })).toBe(true)
+    expect(can(user, 'response:read-own-summary', { teamId: 'some-other-team' })).toBe(true)
+  })
+
+  // specs/player-stats.md addendum "PO-PS-03 tranché" — third person-scoped
+  // action, same shape as the pair above (AC-PS-20's reasoning extended).
+  it('allows a player to read their own card counts with no teamId in context (PO-PS-03 tranché)', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_cards:view-own', {})).toBe(true)
+    expect(can(user, 'match_cards:view-own', { teamId: 'some-other-team' })).toBe(true)
+  })
 })

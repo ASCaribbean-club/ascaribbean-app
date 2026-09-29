@@ -30,6 +30,24 @@ function grants(
       // 'convocation:respond'/'vote:cast'/'attendance:validate': without
       // this, a player on team A could pass can() for team B's goals just
       // because 'player' is in match_goals:view's allowed-roles list.
+      //
+      // specs/player-stats.md §2, AC-PS-20 — 'attendance:read-own-summary'
+      // and 'response:read-own-summary' are DELIBERATELY NOT added here,
+      // even though every action added to rbacMatrix for 'player' so far
+      // has ended up in this list (the repo has fixed that exact omission
+      // five times). Those two actions aren't team-scoped, they're
+      // PERSON-scoped: the RPCs behind them (get_my_attendance_summary/
+      // get_my_response_summary) filter on auth.uid() internally and take
+      // no team parameter at all, so there is no context.teamId to compare
+      // — adding them to requiresTeamScope would make can() fail for every
+      // caller, since a person-scoped read is never called with a teamId in
+      // context. They fall through to this switch's own `return true`
+      // below, on purpose. Do not "fix" this by adding them here.
+      //
+      // specs/player-stats.md addendum "PO-PS-03 tranché" — same reasoning,
+      // third person-scoped action: 'match_cards:view-own' is bounded by
+      // get_my_cards_count()'s own auth.uid() filter, not by a team. Also
+      // deliberately NOT here.
       const requiresTeamScope = action === 'convocation:respond' || action === 'vote:cast' || action === 'match_goals:view'
       return !requiresTeamScope || assignment.teamId === context.teamId
     }

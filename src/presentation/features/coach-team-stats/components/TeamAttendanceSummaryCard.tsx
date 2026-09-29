@@ -13,12 +13,15 @@ interface TeamAttendanceSummaryCardProps {
 // 0-100 fill / "never color alone" rule.
 //
 // ⚠️ PO-CTS-04 ("quel est le dénominateur de l'assiduité ?") — `summary.rate`
-// is already the degrade-gracefully value domain/policies/team-stats-rules.ts
-// computes (literal present/total across whatever AttendanceRecord rows
-// exist, never a roster-derived "expected attendees" figure). This component
-// does not attempt the mockup's separate "15,2 / 18 en moyenne par séance"
-// average — that figure needs a reference headcount PO-CTS-04(b) leaves
-// open, and is left out of this pass rather than guessed at.
+// is the value domain/policies/team-stats-rules.ts computes: present count
+// across every player, over the number of OPEN convocations (PO-CTS-04(a)/
+// (d) tranché, développeuse 2026-09-29) — never a roster-derived "expected
+// attendees" figure (PO-CTS-04(b), still open, is why this component does
+// not attempt the mockup's separate "15,2 / 18 en moyenne par séance"
+// average). Known edge case, accepted by the developer: an open convocation
+// with ZERO AttendanceRecord rows still counts toward the denominator, so
+// "séance constatée" below can read as 0% for a session whose attendance
+// simply hasn't been recorded yet, not one where everyone was absent.
 //
 // ⚠️ UI-CTS-B (seuils de couleur de la barre) is left OPEN by the spec — no
 // numeric threshold is documented anywhere in the CDC. Rather than invent a

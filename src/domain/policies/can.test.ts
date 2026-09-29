@@ -333,4 +333,39 @@ describe('can', () => {
     expect(can(user, 'match_cards:view-own', {})).toBe(true)
     expect(can(user, 'match_cards:view-own', { teamId: 'some-other-team' })).toBe(true)
   })
+
+  // specs/coach-team-stats.md §2/AC-CTS-03 — 'team_stats:view' is the
+  // feature's only new action, Coach/Staff only, scoped to the coach's own
+  // assigned teams. This pair proves the 'coach' branch's `requiresTeamScope`
+  // fix actually covers it, not just the six actions already listed there.
+  it('allows a coach to view team stats for one of their assigned teams', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'team_stats:view', { teamId: 'team-1' })).toBe(true)
+  })
+
+  // AC-CTS-03's own explicit example: "un coach de l'équipe A obtient false
+  // pour can(user, 'team_stats:view', { teamId: B })".
+  it('denies a coach from viewing team stats for a team they are not assigned to (AC-CTS-03)', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'team_stats:view', { teamId: 'team-2' })).toBe(false)
+  })
+
+  // AC-CTS-02 — for every other role, the screen and its entry point are
+  // ABSENT, never merely grayed out: this proves can() actually returns
+  // false for each of them, regardless of any scope passed in context.
+  it('denies every non-coach role from viewing team stats, including a section-manager acting inside their own section (PO-CTS-05, assumed gap)', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+      { role: 'admin' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'team_stats:view', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    }
+  })
 })

@@ -31,6 +31,7 @@ function fakeAttendanceRecordRepository(records: AttendanceRecord[] = []): Atten
     findByConvocation: async () => records,
     getOwnAttendanceSummary: async () => ({ validatedCount: 0, presentCount: 0 }),
     getOwnAttendanceSummaryByType: async () => [],
+    findByConvocations: async () => records,
   }
 }
 

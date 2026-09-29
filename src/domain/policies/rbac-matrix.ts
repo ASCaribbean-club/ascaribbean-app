@@ -281,4 +281,21 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // Person-scoped like the two entries above, not team-scoped — see
   // can.ts's 'player' branch.
   'match_cards:view-own': ['player'],
+
+  // specs/coach-team-stats.md §2 — "Seul rôle servi par cette passe.
+  // Lecture, son équipe uniquement." Deliberately NOT extended to
+  // section-manager/authorized-officer/admin in this pass, even though the
+  // CDC's "Voir les dossiers des autres membres" row would give the first
+  // two a ✅ on their own scope — an assumed, bounded gap (PO-CTS-05), same
+  // shape as 'match_result:record'/'match_goals:view'/'match_staff_events:view'
+  // leaving those three roles out despite a similar CDC reading. RLS is
+  // unchanged either way (attendance_records_select_coach_admin already
+  // grants admin, match_events_select_scoped is role-blind) — this row only
+  // controls whether presentation/ renders the screen's entry point.
+  // Mirrors NO new RLS policy (§2, "Aucune politique RLS nouvelle n'est
+  // attendue de cette feature") — every read behind this screen reuses
+  // attendance_records_select_coach_admin, match_events_select_scoped and
+  // get_team_roster (this feature's own narrow SECURITY DEFINER RPC, scoped
+  // the same way get_team_coaches already is).
+  'team_stats:view': ['coach'],
 }

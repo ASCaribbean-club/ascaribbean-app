@@ -1,7 +1,7 @@
 import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { Label } from '@presentation/shared/components/ui/label'
 import { RadioGroupItem } from '@presentation/shared/components/ui/radio-group'
-import { VoteResultBar } from './VoteResultBar'
+import { VoteResultBar } from '@presentation/shared/components/VoteResultBar'
 import { cn } from '@presentation/shared/lib/utils'
 
 // Discriminated union, same reasoning as ResponderStatusBadge/RosterList

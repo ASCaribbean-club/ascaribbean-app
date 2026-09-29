@@ -11,6 +11,7 @@ import { CreateConvocationForm } from '../features/convocation/CreateConvocation
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
 import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
 import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
 import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
 import { BackofficeOverviewPage } from '../features/backoffice/overview/BackofficeOverviewPage'
@@ -169,6 +170,14 @@ export const router = createBrowserRouter([
               // itself never reads useActiveRole() (§2/§3 of the spec: one
               // screen, no role variant).
               { path: 'stats', element: <PlayerStatsPage /> },
+              // specs/coach-team-stats.md §1/UI design §1 — "route poussée
+              // (sticky back header, pas un onglet supplémentaire)", same
+              // full-screen-over-tabs group as profile/convocations above.
+              // ⚠️ NOT wired from the Menu "Statistiques" card yet (PO-CTS-06,
+              // specs/menu.md AC-MN-04 still requires that card disabled) —
+              // reachable only by direct URL for now, exactly like
+              // convocations/:id's own "reachable only by direct URL" note.
+              { path: 'team-stats', element: <TeamStatsPage /> },
               // specs/create-convocation.md UI design, "Emplacement dans la
               // nav": a full-screen route pushed OVER one of the 4 tabs, no
               // bottom-nav chrome — deliberately NOT nested under AppShell

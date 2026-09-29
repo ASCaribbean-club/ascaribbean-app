@@ -20,4 +20,15 @@ export interface AttendanceRecordRepository {
   // ConvocationResponseRepository (the response rate stays a single global
   // aggregate in this pass).
   getOwnAttendanceSummaryByType(): Promise<AttendanceTypeBreakdown[]>
+
+  // specs/coach-team-stats.md §1/§6 — the team-stats screen's own Présence
+  // read: every AttendanceRecord across a WHOLE season's worth of the team's
+  // convocations, in one round trip, rather than one findByConvocation() call
+  // per convocation. Same RLS boundary as findByConvocation() above
+  // (attendance_records_select_coach_admin) — no new policy, this is a bulk
+  // form of the exact same read. An empty `convocationIds` array must resolve
+  // to an empty array without a network call (see the implementation) —
+  // never treated as "no filter" the way an empty Postgres `in ()` could be
+  // misread.
+  findByConvocations(convocationIds: string[]): Promise<AttendanceRecord[]>
 }

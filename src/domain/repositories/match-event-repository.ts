@@ -37,4 +37,14 @@ export interface MatchEventRepository {
   // AC-MS-10 (no teammate's card ever visible to a player) are UNCHANGED:
   // the new RLS branch only ever matches the row's own user_id.
   getOwnCardsCountForCurrentSeason(): Promise<CardsSummary>
+
+  // specs/coach-team-stats.md §1/§6 — the team-stats screen's own Buts/
+  // Cartons read: every match_events row across a whole season's worth of
+  // the team's MATCH convocations, in one round trip, rather than one
+  // findByConvocation() call per match. Same RLS boundary as
+  // findByConvocation() above (match_events_select_scoped) — no new policy,
+  // this is a bulk form of the exact same read. An empty `convocationIds`
+  // array must resolve to an empty array without a network call (see the
+  // implementation).
+  findByConvocations(convocationIds: string[]): Promise<MatchEvent[]>
 }

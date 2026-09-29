@@ -210,3 +210,17 @@ export type Action =
   // can.ts's 'player' branch for the matching deliberate absence from
   // `requiresTeamScope`.
   | 'match_cards:view-own'
+  // specs/coach-team-stats.md §2 — the ONLY new action this feature adds.
+  // Names the SCREEN, not a table: presentation/ must decide whether to
+  // render the entire team-stats screen BEFORE any query runs (same
+  // criterion as 'backoffice:access', per rbac-matrix.ts's own header comment
+  // — "an entry only belongs here if presentation/ must decide something
+  // before or independently of the query result"). The three data blocks
+  // behind it (Présence/Buts/Cartons) are NOT given their own actions —
+  // Présence stays RLS-only (attendance_records_select_coach_admin, already
+  // the read boundary for coach-attendance-confirmation), and Buts/Cartons
+  // reuse 'match_goals:view'/'match_staff_events:view' from match-stats.md
+  // unchanged. Creating 'team_goals:view'/'team_cards:view' would be a
+  // second source of truth for the same rule — exactly the divergence risk
+  // this file's own header warns against.
+  | 'team_stats:view'

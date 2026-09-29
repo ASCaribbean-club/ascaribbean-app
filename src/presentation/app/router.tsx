@@ -9,6 +9,7 @@ import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
+import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
 import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
@@ -159,6 +160,15 @@ export const router = createBrowserRouter([
               // group's placement stays uniform, not because the screen
               // needs that context.
               { path: 'profile', element: <ProfilePage /> },
+              // specs/player-stats.md UI design §1/§2, PO-PS-01/AC-PS-15
+              // (résolu 2026-09-28) — reached from Menu's "Statistiques"
+              // card (MenuPage.tsx), same full-screen/no-bottom-nav group as
+              // 'profile' above: a pushed route, not a 5th BottomNav
+              // destination. Inside ActiveRoleProvider's scope like its
+              // siblings, purely for placement uniformity — this screen
+              // itself never reads useActiveRole() (§2/§3 of the spec: one
+              // screen, no role variant).
+              { path: 'stats', element: <PlayerStatsPage /> },
               // specs/create-convocation.md UI design, "Emplacement dans la
               // nav": a full-screen route pushed OVER one of the 4 tabs, no
               // bottom-nav chrome — deliberately NOT nested under AppShell

@@ -18,6 +18,7 @@ function fakeConvocationResponseRepository(responses: ConvocationResponse[]): Co
     upsert: async (response) => ({ id: 'r1', ...response }),
     findByConvocationAndUser: async () => null,
     findByConvocation: async () => responses,
+    getOwnResponseSummary: async () => ({ convocatedCount: 0, respondedCount: 0 }),
   }
 }
 
@@ -28,6 +29,8 @@ function fakeAttendanceRecordRepository(records: AttendanceRecord[] = []): Atten
   return {
     upsert: async (record) => ({ id: 'a1', ...record }),
     findByConvocation: async () => records,
+    getOwnAttendanceSummary: async () => ({ validatedCount: 0, presentCount: 0 }),
+    getOwnAttendanceSummaryByType: async () => [],
   }
 }
 

@@ -75,4 +75,22 @@ export class MatchEventRepositoryImpl implements MatchEventRepository {
 
     return toCardsSummary(data as CardsSummaryDto)
   }
+
+  // specs/coach-team-stats.md §1/§6 — bulk form of findByConvocation() above,
+  // same RLS policy (match_events_select_scoped), same columns. Short-
+  // circuits on an empty array, same reasoning as
+  // AttendanceRecordRepositoryImpl.findByConvocations.
+  async findByConvocations(convocationIds: string[]): Promise<MatchEvent[]> {
+    if (convocationIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('match_events')
+      .select(MATCH_EVENT_COLUMNS)
+      .in('convocation_id', convocationIds)
+      .order('created_at', { ascending: true })
+
+    if (error) throw mapSupabaseError(error)
+
+    return (data as MatchEventRow[]).map(toMatchEvent)
+  }
 }

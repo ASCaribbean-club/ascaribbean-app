@@ -74,4 +74,22 @@ export class AttendanceRecordRepositoryImpl implements AttendanceRecordRepositor
 
     return ((data ?? []) as AttendanceSummaryByTypeDto[]).map(toAttendanceTypeBreakdown)
   }
+
+  // specs/coach-team-stats.md §1/§6 — bulk form of findByConvocation() above,
+  // same RLS policy (attendance_records_select_coach_admin), same columns.
+  // Short-circuits on an empty array: a Postgres `in ()` with no values is
+  // valid SQL (always false, empty result), but skipping the round trip
+  // entirely is both cheaper and avoids relying on that edge-case behavior.
+  async findByConvocations(convocationIds: string[]): Promise<AttendanceRecord[]> {
+    if (convocationIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('attendance_records')
+      .select('id, convocation_id, user_id, actual_status, absence_validity, note, validated_by, validated_at')
+      .in('convocation_id', convocationIds)
+      .overrideTypes<AttendanceRecordRow[]>()
+
+    if (error) throw mapSupabaseError(error)
+    return (data ?? []).map(toAttendanceRecord)
+  }
 }

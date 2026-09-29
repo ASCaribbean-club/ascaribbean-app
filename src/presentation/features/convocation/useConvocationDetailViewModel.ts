@@ -6,6 +6,7 @@ import type { MatchArrangements } from '@domain/entities/match-details'
 import type { MatchEventType } from '@domain/entities/match-event'
 import { hasActiveRoleForConvocation } from '@domain/rules/active-role-scope'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { isVotingOpen } from '@domain/policies/player-vote-rules'
 import { isPastDate } from '@domain/rules/convocation-rules'
 // specs/match-stats.md — "Résultat" tab, third pass on this screen (PO-MS-09
 // resolved 2026-09-24, real tab). getMatchOutcome/isEligibleScorer/
@@ -520,6 +521,17 @@ export function useConvocationDetailViewModel() {
   // désactivation").
   const canCastVote = activeRole === 'player' && hasVoteCastPermission
 
+  // specs/player-vote.md PO-PV-06(d), resolved 2026-09-29: no ballot before
+  // kickoff. Same predicate/`now` source as matchResult.kickoffPassed below
+  // (isMatchResultRecordable) — the two happen to share the exact same
+  // boolean value for a given convocation, but are kept as separate
+  // feature-owned rules (isVotingOpen vs isMatchResultRecordable) rather
+  // than one shared helper, same reasoning as isPastDate/
+  // isMatchResultRecordable already being distinct despite an identical
+  // shape (CLAUDE.md §7 — mirror, don't merge two specs' rules just because
+  // they read the same today).
+  const votingOpen = !!convocation && isVotingOpen(new Date(convocation.date), now)
+
   const myVoteQuery = useQuery({
     queryKey: queryKeys.voteMyBallot(convocationId ?? '', POSITIVE_VOTE_CATEGORY_ID, user?.id ?? ''),
     queryFn: () => getMyVoteUseCase.execute({ convocationId: convocationId!, categoryId: POSITIVE_VOTE_CATEGORY_ID, voterId: user!.id }),
@@ -900,6 +912,7 @@ export function useConvocationDetailViewModel() {
       // branch on `isLoading` below before rendering this.
       categoryLabel: voteCategoryQuery.data?.label ?? null,
       canCastVote,
+      votingOpen,
       candidates: voteCandidates,
       myVote: myVoteQuery.data ?? null,
       tally: voteTallyQuery.data ?? null,

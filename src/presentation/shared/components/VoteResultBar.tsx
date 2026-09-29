@@ -1,5 +1,14 @@
 import { cn } from '@presentation/shared/lib/utils'
 
+// Promoted from features/convocation/components/VoteResultBar.tsx during the
+// coach-team-stats build — same "component used by a second feature moves up
+// to shared/components/, never imported feature-to-feature" precedent
+// InitialsAvatar already documents on itself (ARCHITECTURE.md §13.5).
+// specs/coach-team-stats.md UI design §5 — TeamRosterStatRow's "headline =
+// Présence" sub-case reuses this exact bar unchanged (same h-1.5, same
+// bounded 0-100 fill, same "never color alone" rule); TeamAttendanceSummaryCard
+// does NOT reuse it as-is (needs a full-width headline bar, built as its own
+// component instead). Content/behavior unchanged by this move.
 interface VoteResultBarProps {
   // 0-100 — already a percentage of the CATEGORY's own max, not of 100
   // votes: a candidate at the top of a 4-way split showing "43%" fills most

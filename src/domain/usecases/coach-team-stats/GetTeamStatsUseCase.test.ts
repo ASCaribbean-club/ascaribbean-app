@@ -191,7 +191,8 @@ describe('GetTeamStatsUseCase', () => {
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
-    expect(result.goalsByPlayer).toEqual({ 'player-1': 1 })
+    expect(result.goals.team).toBe(1)
+    expect(result.goals.byPlayer).toEqual({ 'player-1': 1 })
     expect(result.cards.byPlayer).toEqual({ 'player-1': { yellowCount: 1, redCount: 0 }, 'player-2': { yellowCount: 0, redCount: 1 } })
     expect(result.cards.team).toEqual({ yellowCount: 1, redCount: 1 })
   })

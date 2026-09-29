@@ -3,9 +3,9 @@ import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { CompetitionFilterPlaceholder } from './components/CompetitionFilterPlaceholder'
 import { CurrentSeasonSelect } from './components/CurrentSeasonSelect'
 import { TeamAttendanceSummaryCard } from './components/TeamAttendanceSummaryCard'
-import { TeamCardsSummaryRow } from './components/TeamCardsSummaryRow'
 import { TeamIdentityRow } from './components/TeamIdentityRow'
 import { TeamRosterSection } from './components/TeamRosterSection'
+import { TeamStatsSummaryRow } from './components/TeamStatsSummaryRow'
 import { useTeamStatsViewModel } from './useTeamStatsViewModel'
 
 // specs/coach-team-stats.md — zero business logic here (CLAUDE.md §4): only
@@ -41,8 +41,8 @@ export function TeamStatsPage() {
             <CurrentSeasonSelect seasonLabel={vm.seasonLabel} />
             <CompetitionFilterPlaceholder />
             <TeamAttendanceSummaryCard summary={vm.teamAttendance} />
+            <TeamStatsSummaryRow goals={vm.teamGoals} cards={vm.teamCards} />
             <TeamRosterSection roster={vm.roster} filter={vm.filter} onFilterChange={vm.onFilterChange} />
-            <TeamCardsSummaryRow cards={vm.teamCards} />
           </>
         )}
       </div>

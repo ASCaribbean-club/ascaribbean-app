@@ -81,6 +81,14 @@ export function tallyGoalsByPlayer(events: MatchEvent[]): Record<string, number>
   return byPlayer
 }
 
+// UI design §3, "Bloc Buts" — team-wide total, same shape/reasoning as
+// tallyTeamCards below (summed directly from `events`, not from
+// tallyGoalsByPlayer's own output, so a goal whose userId doesn't resolve to
+// a current roster entry still counts toward the team total).
+export function tallyTeamGoals(events: MatchEvent[]): number {
+  return events.filter((event) => event.eventType === 'goal').length
+}
+
 // Staff-only by construction (§1/§3 — the events themselves are only ever
 // readable by a coach/staff token, per match_events_select_scoped's second
 // branch; this function doesn't re-derive that boundary, it just tallies

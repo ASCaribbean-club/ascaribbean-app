@@ -73,6 +73,8 @@ function fakeAttendanceRecordRepository(
   return {
     upsert: async (record) => ({ id: 'attendance-1', ...record }),
     findByConvocation: async () => [],
+    getOwnAttendanceSummary: async () => ({ validatedCount: 0, presentCount: 0 }),
+    getOwnAttendanceSummaryByType: async () => [],
     ...overrides,
   }
 }

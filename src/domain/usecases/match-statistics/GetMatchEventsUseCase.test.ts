@@ -8,6 +8,8 @@ function fakeMatchEventRepository(overrides: Partial<MatchEventRepository> = {})
     add: async (event) => ({ id: 'event-new', createdAt: new Date().toISOString(), ...event }) as MatchEvent,
     delete: async () => {},
     findByConvocation: async () => [],
+    getOwnGoalsCountForCurrentSeason: async () => 0,
+    getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
     ...overrides,
   }
 }

@@ -17,9 +17,10 @@ import { useMenuViewModel } from './useMenuViewModel'
 // point 1).
 //
 // No `isLoading`/`error` branch here unlike ProfilePage/ConvocationDetailPage:
-// per AC-MN-17, this screen renders identically for every account shape
-// (no team, no season, no role) — the addendum removed the only query this
-// screen used to make.
+// per AC-MN-17, this screen makes no query of its own — the addendum removed
+// the only one it used to make. It does read the dashboard's active role
+// (already resolved synchronously by ActiveRoleProvider) to branch the
+// "Statistiques" card's destination — see useMenuViewModel.ts.
 export function MenuPage() {
   const vm = useMenuViewModel()
 
@@ -29,17 +30,20 @@ export function MenuPage() {
 
 
       {/* "SUIVI DE L'ÉQUIPE" — specs/player-stats.md §1/PO-PS-01 (tranché
-          2026-09-28): "Statistiques" is now a real nav card to the
-          player-stats screen (AC-PS-15) — subtitle "Présence, buts", NOT
-          the mockup's "Présence, buts, forme" ("forme" has no fondement
-          construit, AC-PS-09). "Classement" is UNCHANGED — still a
-          DisabledMenuCard (no CDC-grounded module behind it, PO-MN-04/
-          PO-PD-07 still open). Neutral subtitle, not the mockup's fabricated
-          "4e · 11 pts · J6" (AC-MN-04, now restricted to this card only). */}
+          2026-09-28): "Statistiques" is now a real nav card — subtitle
+          "Présence, buts", NOT the mockup's "Présence, buts, forme" ("forme"
+          has no fondement construit, AC-PS-09). specs/coach-team-stats.md
+          PO-CTS-06: its destination now branches on the active dashboard
+          role (vm.statisticsHref) rather than pointing at the player screen
+          for everyone — a coach lands on /team-stats, not /stats.
+          "Classement" is UNCHANGED — still a DisabledMenuCard (no
+          CDC-grounded module behind it, PO-MN-04/PO-PD-07 still open).
+          Neutral subtitle, not the mockup's fabricated "4e · 11 pts · J6"
+          (AC-MN-04, now restricted to this card only). */}
       <section className="flex flex-col gap-2.5">
         <MenuSectionTitle>Suivi de l'équipe</MenuSectionTitle>
         <div className="grid grid-cols-2 gap-3">
-          <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to="/stats" />
+          <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
           <DisabledMenuCard icon={IconTrophy} title="Classement" subtitle="Bientôt disponible" />
         </div>
       </section>

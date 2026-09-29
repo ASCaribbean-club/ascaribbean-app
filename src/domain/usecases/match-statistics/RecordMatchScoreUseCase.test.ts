@@ -46,6 +46,8 @@ function fakeMatchEventRepository(events: MatchEvent[] = []): MatchEventReposito
     add: async (event) => ({ id: 'event-new', createdAt: NOW.toISOString(), ...event }),
     delete: async () => {},
     findByConvocation: async () => events,
+    getOwnGoalsCountForCurrentSeason: async () => 0,
+    getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
   }
 }
 

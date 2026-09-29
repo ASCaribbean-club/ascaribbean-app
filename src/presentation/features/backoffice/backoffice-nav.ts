@@ -62,18 +62,11 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     emptyStateTitle: 'Aucun utilisateur à afficher pour l’instant',
   },
   {
-    // specs/section-and-teams.md §1 "Note de cadrage"/UI design "Décision de
-    // routage" — split into two destinations rather than tabs on one page,
-    // following the Assign-coach mockup's own sidebar (two separate
-    // entries, "Équipes" selected) and this backoffice's existing
-    // convention (one nav entry = one resource = one page, no tabs.tsx used
-    // anywhere else here). Label/emptyStateTitle narrowed from "Sections &
-    // Équipes" now that 'teams' below is its own destination.
-    id: 'sections',
-    label: 'Sections',
-    path: '/admin/sections',
-    icon: IconUsersGroup,
-    emptyStateTitle: 'Aucune section à afficher pour l’instant',
+    id: 'memberships',
+    label: 'Adhésions',
+    path: '/admin/memberships',
+    icon: IconCreditCard,
+    emptyStateTitle: 'Aucune adhésion à afficher pour l’instant',
   },
   {
     id: 'teams',
@@ -83,18 +76,25 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     emptyStateTitle: 'Aucune équipe à afficher pour l’instant',
   },
   {
+    // specs/section-and-teams.md §1 "Note de cadrage"/UI design "Décision de
+    // routage" — split into two destinations rather than tabs on one page,
+    // following the Assign-coach mockup's own sidebar (two separate
+    // entries, "Équipes" selected) and this backoffice's existing
+    // convention (one nav entry = one resource = one page, no tabs.tsx used
+    // anywhere else here). Label/emptyStateTitle narrowed from "Sections &
+    // Équipes" now that 'teams' above is its own destination.
+    id: 'sections',
+    label: 'Sections',
+    path: '/admin/sections',
+    icon: IconUsersGroup,
+    emptyStateTitle: 'Aucune section à afficher pour l’instant',
+  },
+  {
     id: 'seasons',
     label: 'Saisons',
     path: '/admin/seasons',
     icon: IconCalendarStats,
     emptyStateTitle: 'Aucune saison à afficher pour l’instant',
-  },
-  {
-    id: 'memberships',
-    label: 'Adhésions',
-    path: '/admin/memberships',
-    icon: IconCreditCard,
-    emptyStateTitle: 'Aucune adhésion à afficher pour l’instant',
   },
   {
     id: 'news',

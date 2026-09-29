@@ -72,6 +72,8 @@ function fakeAttendanceRecordRepository(records: AttendanceRecord[] = []): Atten
     upsert: async (record) => ({ id: 'a1', ...record }),
     findByConvocation: async () => records,
     findByConvocations: async () => records,
+    getOwnAttendanceSummary: async () => ({ validatedCount: 0, presentCount: 0 }),
+    getOwnAttendanceSummaryByType: async () => [],
   }
 }
 
@@ -81,6 +83,8 @@ function fakeMatchEventRepository(events: MatchEvent[] = []): MatchEventReposito
     delete: async () => {},
     findByConvocation: async () => events,
     findByConvocations: async () => events,
+    getOwnGoalsCountForCurrentSeason: async () => 0,
+    getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
   }
 }
 
@@ -170,6 +174,8 @@ describe('GetTeamStatsUseCase', () => {
       delete: vi.fn(),
       findByConvocation: vi.fn(),
       findByConvocations,
+      getOwnGoalsCountForCurrentSeason: vi.fn(),
+      getOwnCardsCountForCurrentSeason: vi.fn(),
     }
     const useCase = new GetTeamStatsUseCase(
       fakeTeamRosterRepository(),
@@ -194,6 +200,8 @@ describe('GetTeamStatsUseCase', () => {
       upsert: vi.fn(),
       findByConvocation: vi.fn(),
       findByConvocations,
+      getOwnAttendanceSummary: vi.fn(),
+      getOwnAttendanceSummaryByType: vi.fn(),
     }
     const useCase = new GetTeamStatsUseCase(
       fakeTeamRosterRepository(),

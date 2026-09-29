@@ -9,6 +9,7 @@ function fakeAttendanceRecordRepository(overrides: Partial<AttendanceRecordRepos
     findByConvocation: async () => [],
     getOwnAttendanceSummary: async () => ({ validatedCount: 0, presentCount: 0 }),
     getOwnAttendanceSummaryByType: async () => [],
+    findByConvocations: async () => [],
     ...overrides,
   }
 }

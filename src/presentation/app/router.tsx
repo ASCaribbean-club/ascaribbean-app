@@ -163,20 +163,20 @@ export const router = createBrowserRouter([
               { path: 'profile', element: <ProfilePage /> },
               // specs/player-stats.md UI design §1/§2, PO-PS-01/AC-PS-15
               // (résolu 2026-09-28) — reached from Menu's "Statistiques"
-              // card (MenuPage.tsx), same full-screen/no-bottom-nav group as
-              // 'profile' above: a pushed route, not a 5th BottomNav
-              // destination. Inside ActiveRoleProvider's scope like its
-              // siblings, purely for placement uniformity — this screen
-              // itself never reads useActiveRole() (§2/§3 of the spec: one
-              // screen, no role variant).
+              // card for the player active role (MenuPage.tsx now branches
+              // that card's destination by role, PO-CTS-06), same
+              // full-screen/no-bottom-nav group as 'profile' above: a pushed
+              // route, not a 5th BottomNav destination. Inside
+              // ActiveRoleProvider's scope like its siblings — this screen
+              // now DOES read useActiveRole() (PlayerStatsWrongRoleState),
+              // to catch a coach reaching this URL directly rather than via
+              // the Menu card.
               { path: 'stats', element: <PlayerStatsPage /> },
               // specs/coach-team-stats.md §1/UI design §1 — "route poussée
               // (sticky back header, pas un onglet supplémentaire)", same
               // full-screen-over-tabs group as profile/convocations above.
-              // ⚠️ NOT wired from the Menu "Statistiques" card yet (PO-CTS-06,
-              // specs/menu.md AC-MN-04 still requires that card disabled) —
-              // reachable only by direct URL for now, exactly like
-              // convocations/:id's own "reachable only by direct URL" note.
+              // PO-CTS-06 resolved — reached from the Menu "Statistiques"
+              // card for the coach active role (MenuPage.tsx).
               { path: 'team-stats', element: <TeamStatsPage /> },
               // specs/create-convocation.md UI design, "Emplacement dans la
               // nav": a full-screen route pushed OVER one of the 4 tabs, no

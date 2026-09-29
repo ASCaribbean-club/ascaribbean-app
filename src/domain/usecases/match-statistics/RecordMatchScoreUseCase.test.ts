@@ -48,6 +48,7 @@ function fakeMatchEventRepository(events: MatchEvent[] = []): MatchEventReposito
     findByConvocation: async () => events,
     getOwnGoalsCountForCurrentSeason: async () => 0,
     getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
+    findByConvocations: async () => events,
   }
 }
 

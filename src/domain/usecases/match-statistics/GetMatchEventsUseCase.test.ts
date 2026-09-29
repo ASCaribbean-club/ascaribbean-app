@@ -10,6 +10,7 @@ function fakeMatchEventRepository(overrides: Partial<MatchEventRepository> = {})
     findByConvocation: async () => [],
     getOwnGoalsCountForCurrentSeason: async () => 0,
     getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
+    findByConvocations: async () => [],
     ...overrides,
   }
 }

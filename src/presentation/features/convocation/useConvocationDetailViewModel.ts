@@ -904,8 +904,9 @@ export function useConvocationDetailViewModel() {
     // composes this into the `VoteCategoryViewModel[]` VotesTab actually
     // renders (icon JSX, `Badge` elements), since that composition needs
     // JSX and this hook is a .ts file (see the comment above
-    // POSITIVE_VOTE_CATEGORY_ID). PO-PV-06 (voting window/closed state)
-    // stays unresolved — no "votes closed" state is composed anywhere yet.
+    // POSITIVE_VOTE_CATEGORY_ID). PO-PV-06(d) (opening) is resolved —
+    // `votingOpen` above; the CLOSING half stays unresolved — no "votes
+    // closed" state is composed anywhere yet.
     votes: {
       categoryId: POSITIVE_VOTE_CATEGORY_ID,
       // `null` while voteCategoryQuery hasn't resolved yet — callers already

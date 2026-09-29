@@ -57,6 +57,22 @@ function buildVoteCategories(
     ]
   }
 
+  // Player, before kickoff: no ballot at all (specs/player-vote.md
+  // PO-PV-06(d), resolved 2026-09-29) — absence, not a disabled control,
+  // same principle AC-PV-12 already applies to the CLOSING half of the
+  // same window. A vote can't exist yet either (the base refuses one
+  // before kickoff), so this check can't wrongly hide an already-cast vote.
+  if (!votes.votingOpen) {
+    return [
+      {
+        id: votes.categoryId,
+        icon,
+        label: votes.categoryLabel,
+        body: { kind: 'empty', emptyMessage: 'Le vote s’ouvre après le coup d’envoi du match.' },
+      },
+    ]
+  }
+
   // Player: ballot until a vote is cast, or while "Changer mon vote" has
   // reopened it — never both at once for the same category (UI design,
   // "jamais les deux à la fois").

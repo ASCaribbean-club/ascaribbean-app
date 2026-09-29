@@ -17,20 +17,24 @@ export interface AttendanceTally {
 // and `note` are never read off `record`: this function's own return shape
 // has no field for either, so there is nothing to accidentally surface.
 //
-// ⚠️ PO-CTS-04 ("quel est le dénominateur de l'assiduité ?") is deliberately
-// NOT resolved here — none of its four sub-questions (which convocations
-// count, which reference headcount, how an unrecorded player counts,
-// whether a cancelled/unclosed convocation counts) is answered by this
-// function. `totalCount` is simply the number of AttendanceRecord rows that
-// actually exist (present + absent) for whatever set of records the caller
-// passes in — never a roster-derived "expected attendees" figure. See
-// GetTeamStatsUseCase's own comment for why the mockup's "15,2 / 18 en
-// moyenne par séance" figure is deliberately NOT built on top of this: that
-// figure needs a reference headcount PO-CTS-04(b) leaves open, this tally
-// doesn't need one.
-export function tallyAttendance(records: AttendanceRecord[]): AttendanceTally {
+// PO-CTS-04(a)/(d) partiellement tranché (développeuse, 2026-09-29): only
+// `status === 'open'` convocations count toward the team-wide total — a
+// cancelled convocation never happened, and GetTeamStatsUseCase filters
+// `records` to open convocations' rows before calling this function.
+// `totalCount` is the number of QUALIFYING CONVOCATIONS (`openCount`), not
+// `records.length` — with several players on a roster, summing every
+// player's individual AttendanceRecord rows produced a number with no
+// intuitive meaning (e.g. "27/90" for 3 sessions × ~10 players), whereas
+// this reads as "how many of the open sessions". `presentCount` stays the
+// raw count of 'present' rows across every player, which is a KNOWN,
+// ACCEPTED unit mismatch (developer decision) — the resulting rate can
+// exceed 100% for a multi-player roster; nothing here should be read as an
+// attendance percentage in the strict sense. PO-CTS-04(b)/(c) (reference
+// headcount, how an unrecorded player counts) remain OPEN — this still
+// never derives a roster-based "expected attendees" figure.
+export function tallyAttendance(records: AttendanceRecord[], openCount: number): AttendanceTally {
   const presentCount = records.filter((record) => record.actualStatus === 'present').length
-  return { presentCount, totalCount: records.length }
+  return { presentCount, totalCount: openCount }
 }
 
 // AC-CTS-16/AC-CTS-17 — `null` (never `0`) when nothing was ever recorded:

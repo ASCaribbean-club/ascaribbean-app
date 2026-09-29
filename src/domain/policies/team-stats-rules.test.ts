@@ -31,28 +31,32 @@ function matchEvent(userId: string, eventType: MatchEvent['eventType'], override
 }
 
 describe('tallyAttendance', () => {
-  it('returns zeroed counts when no records exist (AC-CTS-16, "aucune séance constatée")', () => {
-    expect(tallyAttendance([])).toEqual({ presentCount: 0, totalCount: 0 })
+  it('returns zeroed counts when no records exist and no open convocations (AC-CTS-16, "aucune séance constatée")', () => {
+    expect(tallyAttendance([], 0)).toEqual({ presentCount: 0, totalCount: 0 })
   })
 
-  it('counts present and total across every record regardless of player', () => {
+  // PO-CTS-04(a)/(d) tranché — totalCount is the OPEN CONVOCATION count
+  // passed in by the caller, never records.length: with several players on
+  // a roster, summing every player's own rows produces a number with no
+  // "how many sessions" meaning.
+  it('counts present across every record regardless of player, and totalCount from the open-convocation count, not records.length', () => {
     const records = [
       attendanceRecord('player-1', 'present'),
       attendanceRecord('player-2', 'absent'),
       attendanceRecord('player-1', 'present'),
     ]
-    expect(tallyAttendance(records)).toEqual({ presentCount: 2, totalCount: 3 })
+    expect(tallyAttendance(records, 2)).toEqual({ presentCount: 2, totalCount: 2 })
   })
 
-  it('counts a record with actualStatus "absent" toward totalCount but not presentCount', () => {
-    expect(tallyAttendance([attendanceRecord('player-1', 'absent')])).toEqual({ presentCount: 0, totalCount: 1 })
+  it('counts a record with actualStatus "absent" toward presentCount as zero, independently of the open-convocation count', () => {
+    expect(tallyAttendance([attendanceRecord('player-1', 'absent')], 1)).toEqual({ presentCount: 0, totalCount: 1 })
   })
 
   // AC-CTS-06 — never derives from anything but actualStatus itself; a
   // record carrying absenceValidity/note must not change the count.
   it('ignores absenceValidity and note entirely (AC-CTS-06/AC-CTS-10)', () => {
     const records = [attendanceRecord('player-1', 'absent', { absenceValidity: 'excused', note: 'Blessé' })]
-    expect(tallyAttendance(records)).toEqual({ presentCount: 0, totalCount: 1 })
+    expect(tallyAttendance(records, 1)).toEqual({ presentCount: 0, totalCount: 1 })
   })
 })
 

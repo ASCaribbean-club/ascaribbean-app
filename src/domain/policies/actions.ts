@@ -188,3 +188,25 @@ export type Action =
   // stay split: different resource, different column surface (`date`,
   // `location` vs `is_home`, `meeting_point_time`, `meeting_point_location`).
   | 'convocation:update'
+  // specs/player-stats.md §2/§6.3 — "Deux actions nouvelles — et exactement
+  // deux" (PO-PS-02 tranché). Both are PERSON-scoped, not team-scoped: the
+  // two RPCs they mirror (get_my_attendance_summary/get_my_response_summary)
+  // filter on auth.uid() internally and take no team/user parameter at all.
+  // See can.ts's 'player' branch for the corresponding, deliberate absence
+  // from `requiresTeamScope` (AC-PS-20) — do NOT add these two actions
+  // there, there is no context.teamId for them to compare against.
+  | 'attendance:read-own-summary'
+  | 'response:read-own-summary'
+  // specs/player-stats.md addendum "PO-PS-03 tranché" (2026-09-29, décision
+  // développeuse seule — Bureau non consulté, PO-PS-03 demandait
+  // initialement les deux). Deliberately a NEW, narrowly-named action —
+  // never folded into 'match_goals:view' (which covers 'goal' rows for the
+  // whole team, not "my own card only") nor into 'match_staff_events:view'
+  // (coach-only, every non-goal type): this one grants a player read access
+  // to a NEW slice of match_events (yellow_card/red_card rows) that was
+  // previously staff-only for everyone but the coach, scoped to the row's
+  // OWN user_id, never a teammate's. Same PERSON-scoped shape as
+  // 'attendance:read-own-summary'/'response:read-own-summary' above — see
+  // can.ts's 'player' branch for the matching deliberate absence from
+  // `requiresTeamScope`.
+  | 'match_cards:view-own'

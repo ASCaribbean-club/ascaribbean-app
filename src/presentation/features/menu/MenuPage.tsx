@@ -2,6 +2,7 @@ import { IconChartBar, IconFileText, IconTrophy } from '@tabler/icons-react'
 import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
+import { MenuNavCard } from './components/MenuNavCard'
 import { MenuSectionTitle } from './components/MenuSectionTitle'
 import { VersionFooter } from './components/VersionFooter'
 import { CLUB_ADMINISTRATION_LINKS, MENU_EXTERNAL_LINKS } from './external-links'
@@ -27,16 +28,18 @@ export function MenuPage() {
       <h1 className="text-[26px] font-extrabold text-white pt-6">Menu</h1>
 
 
-      {/* "SUIVI DE L'ÉQUIPE" — Statistiques/Classement: no CDC-grounded
-          module behind either card (specs/menu.md Écarts, PO-MN-04).
-          Rendered disabled rather than absent per the addendum, point 2.
-          "Classement" subtitle is neutral, not the mockup's fabricated
-          "4e · 11 pts · J6" — a greyed card is still a card, and a fake
-          ranking value would mislead even greyed out. */}
+      {/* "SUIVI DE L'ÉQUIPE" — specs/player-stats.md §1/PO-PS-01 (tranché
+          2026-09-28): "Statistiques" is now a real nav card to the
+          player-stats screen (AC-PS-15) — subtitle "Présence, buts", NOT
+          the mockup's "Présence, buts, forme" ("forme" has no fondement
+          construit, AC-PS-09). "Classement" is UNCHANGED — still a
+          DisabledMenuCard (no CDC-grounded module behind it, PO-MN-04/
+          PO-PD-07 still open). Neutral subtitle, not the mockup's fabricated
+          "4e · 11 pts · J6" (AC-MN-04, now restricted to this card only). */}
       <section className="flex flex-col gap-2.5">
         <MenuSectionTitle>Suivi de l'équipe</MenuSectionTitle>
         <div className="grid grid-cols-2 gap-3">
-          <DisabledMenuCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts, forme" />
+          <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to="/stats" />
           <DisabledMenuCard icon={IconTrophy} title="Classement" subtitle="Bientôt disponible" />
         </div>
       </section>

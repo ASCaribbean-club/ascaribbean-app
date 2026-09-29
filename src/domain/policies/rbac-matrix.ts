@@ -256,4 +256,29 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // (date, location)` — see
   // supabase/migrations/20260925150603_edit_match_details_write_policy.sql.
   'convocation:update': ['coach'],
+
+  // specs/player-stats.md §2/§6.3 — "Deux actions nouvelles — et exactement
+  // deux", the ONLY RBAC change this feature is allowed to make. Both scoped
+  // to Joueur/Joueuse only, and both bounded to the PERSON, not a team: the
+  // RPCs behind them (get_my_attendance_summary — SECURITY DEFINER, since
+  // attendance_records' RLS stays closed to players; get_my_response_summary
+  // — SECURITY INVOKER, since convocation_responses_select_own_or_coach
+  // already grants a player SELECT on their own rows) filter on auth.uid()
+  // internally and accept no parameter to falsify (AC-02). See can.ts's
+  // 'player' branch: these two are DELIBERATELY NOT added to
+  // requiresTeamScope (AC-PS-20) — there is no context.teamId for a
+  // person-scoped action to compare against.
+  'attendance:read-own-summary': ['player'],
+  'response:read-own-summary': ['player'],
+
+  // specs/player-stats.md addendum "PO-PS-03 tranché" (2026-09-29) — a
+  // player reading their OWN yellow/red card rows. Required rewriting
+  // match_events_select_scoped (previously a pure `event_type = 'goal'`
+  // whitelist for the team-member branch) to add an own-row branch — see
+  // supabase/migrations/20260929112002_player_stats_own_cards_rls.sql.
+  // AC-MS-09/AC-MS-10 (no teammate's card visible to a player) are
+  // UNCHANGED — the new branch only ever matches the row's own user_id.
+  // Person-scoped like the two entries above, not team-scoped — see
+  // can.ts's 'player' branch.
+  'match_cards:view-own': ['player'],
 }

@@ -215,4 +215,30 @@ export const queryKeys = {
   // ConvocationRosterForCoach the Effectif tab already caches under
   // `convocationRosterForCoach` — reused as-is, not forked here.
   matchEvents: (convocationId: string) => ['convocations', convocationId, 'matchEvents'] as const,
+
+  // specs/player-stats.md §6.3 — three INDEPENDENT keys, one per RPC, not
+  // one combined "playerStats" key: the UI design requires the response and
+  // attendance cards to load/render independently (§4.2, "les deux blocs
+  // restent indépendants" — one can be ready while the other isn't), which
+  // a single shared query would make impossible to express. Scoped by
+  // userId even though the RPCs take no parameter (auth.uid() only) — same
+  // convention as every other per-user key in this file (profileRoleScopes,
+  // profileMembership), so a multi-role/shared-device account never shows a
+  // stale cache entry across two different signed-in users.
+  playerStatsAttendanceSummary: (userId: string) => ['playerStats', userId, 'attendanceSummary'] as const,
+  playerStatsResponseSummary: (userId: string) => ['playerStats', userId, 'responseSummary'] as const,
+  playerStatsGoalsCount: (userId: string) => ['playerStats', userId, 'goalsCount'] as const,
+
+  // specs/player-stats.md addendum "troisième passage" (PO-PS-12
+  // partiellement tranché) — attendance-only breakdown by convocation type.
+  // A FOURTH independent key, not folded into playerStatsAttendanceSummary
+  // above: different RPC, different shape (a list, not one aggregate row),
+  // same "don't share a cache entry across a different shape" reasoning as
+  // every other split key in this file.
+  playerStatsAttendanceSummaryByType: (userId: string) => ['playerStats', userId, 'attendanceSummaryByType'] as const,
+
+  // specs/player-stats.md addendum "PO-PS-03 tranché" — a player's own
+  // yellow/red card counts (get_my_cards_count()). Its own key, same
+  // reasoning as the others above.
+  playerStatsCardsCount: (userId: string) => ['playerStats', userId, 'cardsCount'] as const,
 }

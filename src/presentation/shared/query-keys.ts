@@ -259,4 +259,11 @@ export const queryKeys = {
   // coach and a player looking at the same team (same reasoning as why the
   // use case itself isn't forked per screen).
   teamRecentForm: (teamId: string) => ['teams', teamId, 'recentForm'] as const,
+
+  // specs/coach-alerts.md §6 point 4 / AC-AL-20 — discriminant is the
+  // ACTIVE team only (never the coach id): PO-AL-01 resolved, this screen is
+  // bounded to one team at a time, so a team switch in CoachHeader must
+  // invalidate/reload this key exactly like `teamStats`/`teamRecentForm`
+  // above, never carry over the previous team's alerts.
+  coachAlerts: (teamId: string) => ['convocations', 'team', teamId, 'coachAlerts'] as const,
 }

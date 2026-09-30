@@ -283,6 +283,14 @@ export function useConvocationDetailViewModel() {
       // (attendance_records_close_convocation), unlike respondMutation's
       // onSuccess above where only the roster/responders keys are at stake.
       void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      // specs/coach-alerts.md — confirming attendance can clear this
+      // convocation's "missing attendance confirmation" signal (AC-AL-06);
+      // the Alerts list has its own cache entry (query-keys.ts's `coachAlerts`
+      // is per-team, not per-convocation) that this screen never otherwise
+      // touches.
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
+      }
       setAttendanceErrorByUserId((prev) => {
         if (!(input.userId in prev)) return prev
         const next = { ...prev }
@@ -447,12 +455,18 @@ export function useConvocationDetailViewModel() {
       setMatchDetailsSaveError(null)
       setIsEditingMatchDetails(false)
       setMatchDetailsFormValues(null)
-      // §5/§10 of the spec — the ONLY key invalidated: matchDetails is
-      // already carried by GetConvocationWithDetailsUseCase's own response,
-      // no separate matchDetails query key exists or should be created
-      // (AC-EM-14).
+      // §5/§10 of the spec — matchDetails is already carried by
+      // GetConvocationWithDetailsUseCase's own response, no separate
+      // matchDetails query key exists or should be created (AC-EM-14).
       if (convocationId) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+      // specs/coach-alerts.md — a corrected kickoff date can itself move a
+      // convocation into/out of "past" (signals A/B both read `isPastDate`),
+      // same cross-screen cache as confirmAttendanceMutation/recordScoreMutation/
+      // addGoalMutation/deleteEventMutation's onSuccess above.
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
       }
     },
     onError: (error) => {
@@ -706,6 +720,13 @@ export function useConvocationDetailViewModel() {
       // invalidate, same reasoning as query-keys.ts's own comment on
       // `matchEvents` not duplicating that read.
       void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      // specs/coach-alerts.md — recording a score can clear the "missing
+      // match score" signal (AC-AL-07) and changes whether "missing goal
+      // attribution" even applies (goalsFor === 0 vs > 0) — same cross-
+      // screen cache as confirmAttendanceMutation's onSuccess above.
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
+      }
     },
     onError: (error) => setScoreError(mapDomainErrorToUiError(error)),
   })
@@ -746,6 +767,11 @@ export function useConvocationDetailViewModel() {
     onSuccess: () => {
       if (!convocationId) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.matchEvents(convocationId) })
+      // specs/coach-alerts.md — attributing a goal can clear this
+      // convocation's "missing goal attribution" signal (AC-AL-08).
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
+      }
       setSelectedScorerId(null)
       setIsPenaltySelected(false)
     },
@@ -812,6 +838,14 @@ export function useConvocationDetailViewModel() {
     onSuccess: () => {
       if (!convocationId) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.matchEvents(convocationId) })
+      // specs/coach-alerts.md — deleting a goal event can re-open the
+      // "missing goal attribution" signal (a card deletion never affects
+      // any of the three alert signals, but invalidating unconditionally
+      // here is harmless — the alerts read just recomputes the same
+      // result — and this mutation has no way to tell which kind it was).
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
+      }
     },
     onSettled: () => setDeletingEventId(null),
   })

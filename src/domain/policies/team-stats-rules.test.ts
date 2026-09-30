@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { AttendanceRecord } from '../entities/convocation'
 import type { MatchEvent } from '../entities/match-event'
-import { attendanceRate, tallyAttendance, tallyAttendanceByPlayer, tallyCardsByPlayer, tallyGoalsByPlayer, tallyTeamCards } from './team-stats-rules'
+import type { MatchDetails } from '../entities/match-details'
+import { attendanceRate, sumTeamGoals, tallyAttendance, tallyAttendanceByPlayer, tallyCardsByPlayer, tallyGoalsByPlayer, tallyTeamCards } from './team-stats-rules'
 
 function attendanceRecord(userId: string, actualStatus: AttendanceRecord['actualStatus'], overrides: Partial<AttendanceRecord> = {}): AttendanceRecord {
   return {
@@ -169,5 +170,23 @@ describe('tallyTeamCards', () => {
       matchEvent('player-3', 'goal'),
     ]
     expect(tallyTeamCards(events)).toEqual({ yellowCount: 2, redCount: 1 })
+  })
+})
+
+describe('sumTeamGoals', () => {
+  it('returns 0 when there is no match_details row', () => {
+    expect(sumTeamGoals([])).toBe(0)
+  })
+
+  it('sums goalsFor across every match, ignoring a not-yet-played match (AC-MS-15, both null)', () => {
+    const matchDetails: Pick<MatchDetails, 'goalsFor'>[] = [{ goalsFor: 3 }, { goalsFor: 1 }, { goalsFor: null }]
+    expect(sumTeamGoals(matchDetails)).toBe(4)
+  })
+
+  // specs/coach-team-stats.md §6 point 4 — the team total is read directly
+  // from goals_for, never recomputed from goal events: a match can have more
+  // recorded goals than attributed scorer events (AC-MS-05/17).
+  it('does not depend on match_events at all — only the primary goalsFor fact', () => {
+    expect(sumTeamGoals([{ goalsFor: 5 }])).toBe(5)
   })
 })

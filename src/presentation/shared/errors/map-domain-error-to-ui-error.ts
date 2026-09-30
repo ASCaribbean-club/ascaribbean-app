@@ -8,6 +8,7 @@ import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-a
 import { InvalidAuditLogFiltersError } from '@domain/errors/invalid-audit-log-filters-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
+import { InvalidOpponentInputError } from '@domain/errors/invalid-opponent-input-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
 import { InvalidPaymentInputError } from '@domain/errors/invalid-payment-input-error'
 import { InvalidFullNameInputError } from '@domain/errors/invalid-full-name-input-error'
@@ -184,6 +185,17 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // verbatim as the failure message rather than a generic one.
     return {
       message: 'Le nom, la section et la saison sont obligatoires : une équipe est propre à une saison.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidOpponentInputError) {
+    // specs/team-opponents.md §2.2/AC-TO-08 — shown at the top of
+    // AddOpponentDialog; the disabled submit button already prevents the
+    // common case, this is the safety net.
+    return {
+      message: "Le nom de l'adversaire et l'équipe du club concernée sont obligatoires.",
       variant: 'inline',
       retryable: true,
     }

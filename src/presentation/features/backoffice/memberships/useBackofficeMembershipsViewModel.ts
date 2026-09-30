@@ -63,6 +63,10 @@ export function useBackofficeMembershipsViewModel() {
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null)
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  // Deep link from /admin/users' ADHÉSION SAISON redirect: `?newFor=<id>`
+  // opens the creation dialog pre-selected on that account. Ignored without
+  // 'membership:write' (the dialog's own entry point is hidden then too).
+  const newForUserId = canWriteMembership ? searchParams.get('newFor') : null
   // specs/web-memberships.md §1/§7/UI design (amendement du 2026-09-17) —
   // the ONE reconciled edit surface: a table row expands in place, never a
   // dialog. At most one expanded at a time (UI design, "une seule ligne
@@ -217,9 +221,18 @@ export function useBackofficeMembershipsViewModel() {
     filteredUserName: filteredUserQuery.data?.fullName ?? null,
     clearUserFilter,
 
-    isCreateDialogOpen,
+    isCreateDialogOpen: isCreateDialogOpen || !!newForUserId,
+    createDialogPresetUserId: newForUserId,
     openCreateDialog: () => setIsCreateDialogOpen(true),
-    closeCreateDialog: () => setIsCreateDialogOpen(false),
+    // Drops `newFor` from the URL too, so a reload never re-opens the dialog.
+    closeCreateDialog: () => {
+      setIsCreateDialogOpen(false)
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current)
+        next.delete('newFor')
+        return next
+      }, { replace: true })
+    },
 
     // specs/web-memberships.md §1/UI design (amendement du 2026-09-17) — the
     // chevron/pencil toggle in ACTIONS. Expanding a row collapses any other

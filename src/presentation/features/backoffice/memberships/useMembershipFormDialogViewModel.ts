@@ -16,6 +16,9 @@ const EMPTY_VALUES: MembershipFormValues = { userId: '', seasonId: '', licenceNu
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
 interface UseMembershipFormDialogViewModelParams {
+  // Pre-selects UTILISATEUR (deep link from /admin/users); the admin can
+  // still change it. null/undefined = empty, as before.
+  presetUserId?: string | null
   onSuccess: () => void
 }
 
@@ -31,12 +34,12 @@ interface UseMembershipFormDialogViewModelParams {
 // MembershipFormDialog.tsx). The UTILISATEUR/SAISON dropdowns read the SAME
 // centralized queryKeys already warmed by useBackofficeMembershipsViewModel
 // — TanStack Query dedupes.
-export function useMembershipFormDialogViewModel({ onSuccess }: UseMembershipFormDialogViewModelParams) {
+export function useMembershipFormDialogViewModel({ presetUserId = null, onSuccess }: UseMembershipFormDialogViewModelParams) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const { userRepository, seasonRepository, membershipRepository, createMembershipUseCase } = useMembershipsDependencies()
 
-  const [values, setValues] = useState<MembershipFormValues>(() => ({ ...EMPTY_VALUES }))
+  const [values, setValues] = useState<MembershipFormValues>(() => ({ ...EMPTY_VALUES, userId: presetUserId ?? '' }))
 
   function setField<K extends keyof MembershipFormValues>(key: K, value: MembershipFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))

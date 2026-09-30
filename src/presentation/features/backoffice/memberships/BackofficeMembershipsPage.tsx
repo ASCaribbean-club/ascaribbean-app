@@ -149,7 +149,7 @@ export function BackofficeMembershipsPage() {
         />
       )}
 
-      <MembershipFormDialog isOpen={vm.isCreateDialogOpen} onClose={vm.closeCreateDialog} />
+      <MembershipFormDialog isOpen={vm.isCreateDialogOpen} presetUserId={vm.createDialogPresetUserId} onClose={vm.closeCreateDialog} />
       <RecordPaymentDialog target={vm.paymentTarget} onClose={vm.closePaymentDialog} />
       <ArchiveMembershipDialog
         target={vm.pendingArchive}

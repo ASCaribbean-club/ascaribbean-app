@@ -1,4 +1,4 @@
-import { IconArrowUpRight } from '@tabler/icons-react'
+import { IconPlus } from '@tabler/icons-react'
 
 interface UserMembershipSeasonCellProps {
   hasMembershipForCurrentSeason: boolean
@@ -39,7 +39,8 @@ export function UserMembershipSeasonCell({ hasMembershipForCurrentSeason, curren
   }
 
   // §2.3a — the redirect control. A real button (never a div with
-  // onClick), keyboard-reachable, h-11/min-w-11 real touch target
+  // onClick), keyboard-reachable, same h-7 chip size as the RÔLES
+  // pastilles with a 44px touch target via an invisible ::before overlay
   // (CLAUDE.md §6, "y compris sur desktop"), amber register matching the
   // row's own warning icon (a dossier to complete, not a failure — the red
   // register stays reserved for destructive actions/real failures
@@ -49,11 +50,11 @@ export function UserMembershipSeasonCell({ hasMembershipForCurrentSeason, curren
     <button
       type="button"
       onClick={onRedirect}
-      aria-label={`Voir ou créer l'adhésion de ${fullName}`}
-      className="inline-flex h-11 min-w-11 items-center gap-1.5 rounded-full border border-coach-amber/35 bg-coach-amber/10 px-3 text-xs font-semibold text-coach-amber hover:bg-coach-amber/20 focus-visible:ring-2 focus-visible:ring-coach-amber/50 focus-visible:ring-offset-1"
+      aria-label={`Créer l'adhésion de ${fullName}`}
+      className="relative inline-flex h-7 items-center gap-1.5 rounded-full border border-coach-amber/35 bg-coach-amber/10 px-3 text-xs font-medium text-coach-amber before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:bg-coach-amber/20 focus-visible:ring-2 focus-visible:ring-coach-amber/50 focus-visible:ring-offset-1"
     >
       Non
-      <IconArrowUpRight className="size-3.5" aria-hidden />
+      <IconPlus className="size-3.5" aria-hidden />
     </button>
   )
 }

@@ -5,6 +5,7 @@ import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assi
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
+import { InvalidAuditLogFiltersError } from '@domain/errors/invalid-audit-log-filters-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
@@ -84,6 +85,16 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // INVITE_LINK_VALIDITY_HOURS ↔ otp_expiry.
     return {
       message: 'Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidAuditLogFiltersError) {
+    // specs/web-audit-logs.md §2.6 — ListAuditLogUseCase's own guard, fires
+    // before any network call when both date bounds are set and inverted.
+    return {
+      message: 'La date de début doit précéder la date de fin.',
       variant: 'inline',
       retryable: true,
     }

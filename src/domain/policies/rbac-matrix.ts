@@ -298,4 +298,16 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // get_team_roster (this feature's own narrow SECURITY DEFINER RPC, scoped
   // the same way get_team_coaches already is).
   'team_stats:view': ['coach'],
+
+  // specs/web-audit-logs.md §3 — "sept ❌ sans qualificatif, un ✅ sans
+  // portée": the CDC matrix's own "Consulter le journal d'audit" row,
+  // Administrateur only, no other role. Club-wide by construction (the
+  // 'admin' RoleAssignment carries no scope field) — no matching scope
+  // check is needed in can.ts, same shape as 'backoffice:access' above.
+  // Deliberately the ONLY RBAC change this feature makes (AC-AU-20): no
+  // widening of 'backoffice:access' itself, no other action, no other role.
+  // Mirrors the single policy on public.audit_log
+  // (audit_log_select_admin) — see
+  // supabase/migrations/20260930090000_web_audit_logs_schema.sql.
+  'audit:read': ['admin'],
 }

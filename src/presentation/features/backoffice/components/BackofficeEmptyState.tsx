@@ -1,9 +1,17 @@
 import type { Icon } from '@tabler/icons-react'
+import type { ReactNode } from 'react'
 
 interface BackofficeEmptyStateProps {
   icon: Icon
   title: string
   description?: string
+  // specs/web-audit-logs.md UI design, "Aucun résultat pour les filtres
+  // appliqués" (AC-AU-18(b)) — an optional action rendered below the
+  // description, e.g. a "Réinitialiser les filtres" button: AC-AU-18
+  // requires "un moyen évident de revenir à la liste complète", which plain
+  // text (MembershipsPage's own filtered-empty copy) doesn't always cover.
+  // Every other existing caller passes no children — unaffected.
+  children?: ReactNode
 }
 
 // specs/web-empty-state.md, "Corps de page — état vide": replaces the 4
@@ -26,12 +34,13 @@ interface BackofficeEmptyStateProps {
 // No loading/error branches here on purpose: AC-WE-12 guarantees this
 // screen never queries anything, so there's nothing to be loading or to
 // fail — unlike BackofficeLoginPage, which really does call a use case.
-export function BackofficeEmptyState({ icon: Icon, title, description }: BackofficeEmptyStateProps) {
+export function BackofficeEmptyState({ icon: Icon, title, description, children }: BackofficeEmptyStateProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-6 py-24 text-center">
       <Icon className="size-8 text-muted-foreground" aria-hidden />
       <p className="text-base font-semibold text-foreground">{title}</p>
       {description && <p className="max-w-sm text-sm text-muted-foreground">{description}</p>}
+      {children}
     </div>
   )
 }

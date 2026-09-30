@@ -2,6 +2,7 @@
 // sous-container par domaine (di/containers/). Client Supabase unique,
 // créé ici et transmis aux sous-containers — jamais recréé par domaine.
 import { supabaseClient } from '@data/datasources/supabase-client'
+import { createAuditLogContainer, type AuditLogContainer } from './containers/audit-log-container'
 import { createAuthContainer, type AuthContainer } from './containers/auth-container'
 import { createCalendarContainer, type CalendarContainer } from './containers/calendar-container'
 import { createCoachAlertsContainer, type CoachAlertsContainer } from './containers/coach-alerts-container'
@@ -18,6 +19,7 @@ import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from '.
 import { createUsersContainer, type UsersContainer } from './containers/users-container'
 
 export interface Container {
+  auditLog: AuditLogContainer
   auth: AuthContainer
   calendar: CalendarContainer
   coachAlerts: CoachAlertsContainer
@@ -36,6 +38,7 @@ export interface Container {
 
 export function createContainer(): Container {
   return {
+    auditLog: createAuditLogContainer(supabaseClient),
     auth: createAuthContainer(supabaseClient),
     calendar: createCalendarContainer(supabaseClient),
     coachAlerts: createCoachAlertsContainer(supabaseClient),

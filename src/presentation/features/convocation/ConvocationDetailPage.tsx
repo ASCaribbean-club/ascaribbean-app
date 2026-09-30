@@ -252,6 +252,7 @@ export function ConvocationDetailPage() {
             sectionName={vm.sectionName}
             opponent={vm.opponent}
             meetingDetails={vm.meetingDetails}
+            attendanceConfirmationMissing={vm.attendanceConfirmationMissing}
           />
 
           {/* Three tabs (UI design §"Barre d'onglets à trois entrées",

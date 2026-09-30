@@ -10,11 +10,17 @@ import type { ResponseCounts } from '@domain/rules/convocation-rules'
 // spec is explicit that a joueur/joueuse row never shows an aggregate and
 // a coach row never shows an individual status (§2, §3).
 export type CalendarResponseBlock =
-  // Coach view — team-wide aggregate, every row, upcoming or past alike
-  // (the barre itself has no "read-only past" variant, AC-CA-03: it's
-  // always computed from ConvocationResponse, never from an
-  // AttendanceRecord regardless of whether the date has passed).
+  // Coach view, UPCOMING échéance — team-wide aggregate, the segmented bar
+  // + legend (ResponseBar), where the live present/absent/pending
+  // distribution is worth seeing at a glance.
   | { kind: 'coach'; counts: ResponseCounts }
+  // Coach view, PAST échéance (développeuse, 2026-09-30) — same
+  // ConvocationResponse counts as `coach` above (AC-CA-03 unaffected: still
+  // no AttendanceRecord read anywhere on this screen), rendered as a denser
+  // check/cross/question-mark recap (ResponseCountsRecap) instead of the
+  // bar — a past échéance's distribution is no longer "live", so the
+  // compact form reads better in a scrolled list of history.
+  | { kind: 'coach-past'; counts: ResponseCounts }
   // Player view, within the response window (canPlayerRespond true) — the
   // real Présent/Absent action pair. `canRespond` is still threaded through
   // rather than hardcoded true here: ResponseActions already knows how to

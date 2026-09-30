@@ -42,6 +42,8 @@ export function CalendarConvocationList({ items, mode, selectedDate, onOpen }: C
               opponent={item.opponent}
               meetingDetails={item.meetingDetails}
               responseBlock={item.responseBlock}
+              matchResult={item.matchResult}
+              attendanceConfirmationMissing={item.attendanceConfirmationMissing}
               onOpen={onOpen}
             />
           ))}

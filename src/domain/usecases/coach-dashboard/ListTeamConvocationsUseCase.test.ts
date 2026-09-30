@@ -57,7 +57,7 @@ function noopMatchDetailsRepository(): MatchDetailsRepository {
 }
 
 function noopOpponentRepository(): OpponentRepository {
-  return { findByTeamId: vi.fn(), findById: vi.fn(), create: vi.fn() }
+  return { findByTeamId: vi.fn(), findById: vi.fn(), create: vi.fn(), addToTeam: vi.fn() }
 }
 
 describe('ListTeamConvocationsUseCase', () => {

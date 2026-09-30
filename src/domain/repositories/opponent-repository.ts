@@ -15,4 +15,9 @@ export interface OpponentRepository {
   // that findByTeamId goes through.
   findById(id: string): Promise<Opponent | null>
   create(name: string): Promise<Opponent>
+  // specs/team-opponents.md §2.3/§2.5/§2.6 — "find or create, then link" in
+  // ONE atomic call (the add_opponent_to_team RPC on the data side). The name
+  // is expected already trimmed by the caller. Returns the opponent found or
+  // created; adding a name already linked to the same team is a success.
+  addToTeam(teamId: string, name: string): Promise<Opponent>
 }

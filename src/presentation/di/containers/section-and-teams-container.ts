@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { AuditLogRepositoryImpl } from '@data/repositories/AuditLogRepositoryImpl'
 import { CoachRepositoryImpl } from '@data/repositories/CoachRepositoryImpl'
+import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
 import { RoleAssignmentRepositoryImpl } from '@data/repositories/RoleAssignmentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { SectionRepositoryImpl } from '@data/repositories/SectionRepositoryImpl'
@@ -8,6 +9,7 @@ import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
 import type { AuditLogRepository } from '@domain/repositories/audit-log-repository'
 import type { CoachRepository } from '@domain/repositories/coach-repository'
+import type { OpponentRepository } from '@domain/repositories/opponent-repository'
 import type { RoleAssignmentRepository } from '@domain/repositories/role-assignment-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { SectionRepository } from '@domain/repositories/section-repository'
@@ -16,6 +18,7 @@ import type { UserRepository } from '@domain/repositories/user-repository'
 import { AssignCoachToTeamsUseCase } from '@domain/usecases/section-and-teams/AssignCoachToTeamsUseCase'
 import { CreateSectionUseCase } from '@domain/usecases/section-and-teams/CreateSectionUseCase'
 import { CreateTeamUseCase } from '@domain/usecases/section-and-teams/CreateTeamUseCase'
+import { AddOpponentToTeamUseCase } from '@domain/usecases/team-opponents/AddOpponentToTeamUseCase'
 import { UpdateSectionUseCase } from '@domain/usecases/section-and-teams/UpdateSectionUseCase'
 import { UpdateTeamUseCase } from '@domain/usecases/section-and-teams/UpdateTeamUseCase'
 
@@ -33,6 +36,8 @@ export interface SectionAndTeamsContainer {
   coachRepository: CoachRepository
   userRepository: UserRepository
   roleAssignmentRepository: RoleAssignmentRepository
+  // specs/team-opponents.md — expanded-row read (findByTeamId) and the add write.
+  opponentRepository: OpponentRepository
   // Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum) — this
   // container's OWN instance, not shared with audit-log-container.ts's
   // (read-only /admin/audit screen) or users-container.ts's own.
@@ -47,6 +52,7 @@ export interface SectionAndTeamsContainer {
   createTeamUseCase: CreateTeamUseCase
   updateTeamUseCase: UpdateTeamUseCase
   assignCoachToTeamsUseCase: AssignCoachToTeamsUseCase
+  addOpponentToTeamUseCase: AddOpponentToTeamUseCase
 }
 
 export function createSectionAndTeamsContainer(supabaseClient: SupabaseClient): SectionAndTeamsContainer {
@@ -57,6 +63,7 @@ export function createSectionAndTeamsContainer(supabaseClient: SupabaseClient): 
   const userRepository = new UserRepositoryImpl(supabaseClient)
   const roleAssignmentRepository = new RoleAssignmentRepositoryImpl(supabaseClient)
   const auditLogRepository = new AuditLogRepositoryImpl(supabaseClient)
+  const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
 
   return {
     sectionRepository,
@@ -66,10 +73,12 @@ export function createSectionAndTeamsContainer(supabaseClient: SupabaseClient): 
     userRepository,
     roleAssignmentRepository,
     auditLogRepository,
+    opponentRepository,
     createSectionUseCase: new CreateSectionUseCase(userRepository, sectionRepository, auditLogRepository),
     updateSectionUseCase: new UpdateSectionUseCase(userRepository, sectionRepository, auditLogRepository),
     createTeamUseCase: new CreateTeamUseCase(userRepository, teamRepository, auditLogRepository),
     updateTeamUseCase: new UpdateTeamUseCase(userRepository, teamRepository, auditLogRepository),
     assignCoachToTeamsUseCase: new AssignCoachToTeamsUseCase(userRepository, roleAssignmentRepository, auditLogRepository),
+    addOpponentToTeamUseCase: new AddOpponentToTeamUseCase(userRepository, opponentRepository),
   }
 }

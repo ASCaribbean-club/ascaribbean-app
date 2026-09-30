@@ -62,6 +62,7 @@ function fakeMatchDetailsRepository(matchDetails: MatchDetails | null): MatchDet
     findByConvocationId: async () => matchDetails,
     recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...matchDetailsWith(), convocationId, goalsFor, goalsAgainst }),
     updateArrangements: async () => { throw new Error('not used in this test') },
+    findByConvocations: async () => [],
   }
 }
 

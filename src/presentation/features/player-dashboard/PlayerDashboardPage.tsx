@@ -1,4 +1,5 @@
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
+import { TeamFormAndGoalsRow } from '@presentation/shared/components/TeamFormAndGoalsRow'
 import { MissingDocumentAlert } from './components/MissingDocumentAlert'
 import { NextConvocationCard } from './components/NextConvocationCard'
 import { PlayerHeader } from './components/PlayerHeader'
@@ -47,14 +48,21 @@ export function PlayerDashboardPage() {
           </Alert>
         )}
 
+        {/* PO-PD-07, resolved 2026-09-30 — real team form/goals, same
+            shared component and use case as the coach dashboard's
+            equivalent block. PO-PD-02 (player access to AttendanceRecord)
+            stays open: no attendance/"Présence %" figure is shown here,
+            only the goals/form half of the old "Mes stats" mockup block. */}
+        <TeamFormAndGoalsRow form={vm.teamForm} goalsFor={vm.teamGoalsFor} goalsAgainst={vm.teamGoalsAgainst} />
+
         <UpcomingConvocationList items={vm.upcomingList} onOpen={vm.goToConvocationDetail} onSeeAll={vm.goToCalendar} />
       </div>
 
-      {/* UI design §"Fin de l'écran en v1" — the screen stops after "À
-          venir", straight into BottomNav (AppShell). "Dernier match" /
-          "Mes stats" are intentionally not scaffolded: PO-PD-02 and
-          PO-PD-07 are still open, and the spec explicitly says not to
-          reserve empty space or a placeholder for them. */}
+      {/* UI design §"Fin de l'écran en v1" — the rest of the original
+          "Dernier match" / "Mes stats" mockup block (playing-time,
+          Présence %) is still NOT scaffolded: PO-PD-02 and the
+          "Titulaire · 78'" playing-time question remain open. Only the
+          form/goals half above was resolved. */}
     </div>
   )
 }

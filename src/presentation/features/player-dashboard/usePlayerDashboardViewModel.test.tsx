@@ -63,6 +63,7 @@ function renderViewModel(upcoming: ConvocationForPlayer[]) {
     listUpcomingConvocationsForPlayerUseCase: { execute: vi.fn().mockResolvedValue(upcoming) },
     respondToConvocationUseCase,
     listUserMissingOrRejectedDocumentsUseCase: { execute: vi.fn().mockResolvedValue([]) },
+    getTeamRecentFormUseCase: { execute: vi.fn().mockResolvedValue({ form: [], goalsFor: 0, goalsAgainst: 0 }) },
   } as never)
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })

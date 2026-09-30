@@ -251,4 +251,12 @@ export const queryKeys = {
   // returns the whole TeamStats shape: roster + attendance + goals + cards,
   // a different read entirely).
   teamStats: (teamId: string) => ['teams', teamId, 'stats'] as const,
+
+  // specs/coach-dashboard.md §1 point 7 (PO-1) / specs/player-dashboard.md
+  // PO-PD-07 — GetTeamRecentFormUseCase's read (form + season goals for/
+  // against). Shared by BOTH dashboards' equivalent block: a team's recent
+  // form has no per-role variant, only a per-team one, so one key covers a
+  // coach and a player looking at the same team (same reasoning as why the
+  // use case itself isn't forked per screen).
+  teamRecentForm: (teamId: string) => ['teams', teamId, 'recentForm'] as const,
 }

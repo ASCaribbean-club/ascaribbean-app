@@ -24,6 +24,7 @@ export function usePlayerDashboardViewModel() {
     listUpcomingConvocationsForPlayerUseCase,
     respondToConvocationUseCase,
     listUserMissingOrRejectedDocumentsUseCase,
+    getTeamRecentFormUseCase,
   } = usePlayerDashboardDependencies()
 
   // The 'player' RoleAssignment carries a single teamId (domain/entities/
@@ -49,6 +50,18 @@ export function usePlayerDashboardViewModel() {
     queryKey: queryKeys.userMissingOrRejectedDocuments(user?.id ?? ''),
     queryFn: () => listUserMissingOrRejectedDocumentsUseCase.execute({ userId: user!.id }),
     enabled: !!user,
+  })
+
+  // specs/player-dashboard.md PO-PD-07, resolved 2026-09-30 — real team
+  // data now that specs/match-stats.md exists. Team-scoped, same use case
+  // and shared component as the coach dashboard's equivalent block
+  // (PO-PD-02, the player's own AttendanceRecord access, stays open and out
+  // of scope — this only covers the goals/form half of the old "Mes stats"
+  // mockup block).
+  const teamRecentFormQuery = useQuery({
+    queryKey: queryKeys.teamRecentForm(teamId ?? ''),
+    queryFn: () => getTeamRecentFormUseCase.execute({ teamId: teamId! }),
+    enabled: !!teamId,
   })
 
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
@@ -108,8 +121,8 @@ export function usePlayerDashboardViewModel() {
   })
 
   return {
-    isLoading: teamQuery.isLoading || upcomingConvocationsQuery.isLoading || documentsQuery.isLoading,
-    error: teamQuery.error ?? upcomingConvocationsQuery.error ?? documentsQuery.error,
+    isLoading: teamQuery.isLoading || upcomingConvocationsQuery.isLoading || documentsQuery.isLoading || teamRecentFormQuery.isLoading,
+    error: teamQuery.error ?? upcomingConvocationsQuery.error ?? documentsQuery.error ?? teamRecentFormQuery.error,
 
     /// --- Header ---
     firstName: user ? getFirstName(user.fullName) : '',
@@ -146,6 +159,11 @@ export function usePlayerDashboardViewModel() {
       if (respondMutation.isPending || nextConvocation?.myResponse?.status === 'absent') return
       respondMutation.mutate('absent')
     },
+
+    /// --- "Forme récente" / "Buts" row (PO-PD-07, resolved 2026-09-30) ---
+    teamForm: teamRecentFormQuery.data?.form ?? [],
+    teamGoalsFor: teamRecentFormQuery.data?.goalsFor ?? 0,
+    teamGoalsAgainst: teamRecentFormQuery.data?.goalsAgainst ?? 0,
 
     /// --- "À venir" list ---
     upcomingList,

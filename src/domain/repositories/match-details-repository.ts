@@ -28,4 +28,14 @@ export interface MatchDetailsRepository {
   // see UpdateMatchDetailsUseCase, which already guarantees the row exists
   // before calling this.
   updateArrangements(convocationId: string, arrangements: MatchArrangements): Promise<MatchDetails>
+
+  // specs/coach-dashboard.md §1 point 7 (PO-1) / specs/player-dashboard.md
+  // PO-PD-07 — GetTeamRecentFormUseCase's own read: every MatchDetails row
+  // for a team's 'match' convocations in one round trip, same bulk-form
+  // precedent as MatchEventRepository.findByConvocations /
+  // AttendanceRecordRepository.findByConvocations. Same RLS boundary as
+  // findByConvocationId above (match_details_select_team_scoped) — no new
+  // policy. An empty `convocationIds` array must resolve to an empty array
+  // without a network call (see the implementation).
+  findByConvocations(convocationIds: string[]): Promise<MatchDetails[]>
 }

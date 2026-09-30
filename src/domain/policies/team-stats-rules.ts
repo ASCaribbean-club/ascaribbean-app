@@ -1,4 +1,5 @@
 import type { AttendanceRecord } from '../entities/convocation'
+import type { MatchDetails } from '../entities/match-details'
 import type { MatchEvent } from '../entities/match-event'
 
 // specs/coach-team-stats.md — pure aggregation rules for the team-stats
@@ -81,12 +82,16 @@ export function tallyGoalsByPlayer(events: MatchEvent[]): Record<string, number>
   return byPlayer
 }
 
-// UI design §3, "Bloc Buts" — team-wide total, same shape/reasoning as
-// tallyTeamCards below (summed directly from `events`, not from
-// tallyGoalsByPlayer's own output, so a goal whose userId doesn't resolve to
-// a current roster entry still counts toward the team total).
-export function tallyTeamGoals(events: MatchEvent[]): number {
-  return events.filter((event) => event.eventType === 'goal').length
+// specs/coach-team-stats.md §6 point 4 — "ne pas recalculer les buts à
+// partir du score ni l'inverse : goals_for est un fait primaire, les
+// événements goal sont ≤ goals_for [...] un bilan d'équipe se lit sur
+// match_details". Unlike tallyGoalsByPlayer (match_events, a per-goal
+// scorer attribution that can lag behind the recorded score — AC-MS-05/17),
+// the team-wide total sums the primary goals_for fact directly, one row per
+// match with a recorded score (both-null pair = not played yet, excluded —
+// same convention as GetTeamRecentFormUseCase/sumGoals).
+export function sumTeamGoals(matchDetails: Pick<MatchDetails, 'goalsFor'>[]): number {
+  return matchDetails.reduce((total, details) => total + (details.goalsFor ?? 0), 0)
 }
 
 // Staff-only by construction (§1/§3 — the events themselves are only ever

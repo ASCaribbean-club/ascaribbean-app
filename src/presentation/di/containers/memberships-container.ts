@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { AuditLogRepositoryImpl } from '@data/repositories/AuditLogRepositoryImpl'
 import { MembershipRepositoryImpl } from '@data/repositories/MembershipRepositoryImpl'
 import { PaymentRepositoryImpl } from '@data/repositories/PaymentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
+import type { AuditLogRepository } from '@domain/repositories/audit-log-repository'
 import type { MembershipRepository } from '@domain/repositories/membership-repository'
 import type { PaymentRepository } from '@domain/repositories/payment-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
@@ -23,6 +25,14 @@ export interface MembershipsContainer {
   paymentRepository: PaymentRepository
   seasonRepository: SeasonRepository
   userRepository: UserRepository
+  // Follow-up pass to specs/web-audit-logs.md (2026-09-30 fourth addendum) —
+  // this container's OWN instance, not shared with users-container.ts's or
+  // audit-log-container.ts's own (same per-container-instance pattern as
+  // every other repository above).
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — the SAME
+  // instance below is now also wired into createMembershipUseCase/
+  // updateMembershipUseCase, not a second one.
+  auditLogRepository: AuditLogRepository
 
   createMembershipUseCase: CreateMembershipUseCase
   updateMembershipUseCase: UpdateMembershipUseCase
@@ -36,16 +46,18 @@ export function createMembershipsContainer(supabaseClient: SupabaseClient): Memb
   const paymentRepository = new PaymentRepositoryImpl(supabaseClient)
   const seasonRepository = new SeasonRepositoryImpl(supabaseClient)
   const userRepository = new UserRepositoryImpl(supabaseClient)
+  const auditLogRepository = new AuditLogRepositoryImpl(supabaseClient)
 
   return {
     membershipRepository,
     paymentRepository,
     seasonRepository,
     userRepository,
-    createMembershipUseCase: new CreateMembershipUseCase(userRepository, membershipRepository, paymentRepository),
-    updateMembershipUseCase: new UpdateMembershipUseCase(userRepository, membershipRepository, paymentRepository),
-    archiveMembershipUseCase: new ArchiveMembershipUseCase(userRepository, membershipRepository),
-    recordPaymentUseCase: new RecordPaymentUseCase(userRepository, paymentRepository),
+    auditLogRepository,
+    createMembershipUseCase: new CreateMembershipUseCase(userRepository, membershipRepository, paymentRepository, auditLogRepository),
+    updateMembershipUseCase: new UpdateMembershipUseCase(userRepository, membershipRepository, paymentRepository, auditLogRepository),
+    archiveMembershipUseCase: new ArchiveMembershipUseCase(userRepository, membershipRepository, auditLogRepository),
+    recordPaymentUseCase: new RecordPaymentUseCase(userRepository, paymentRepository, auditLogRepository),
     countMembershipsRequiringAttentionUseCase: new CountMembershipsRequiringAttentionUseCase(seasonRepository, membershipRepository),
   }
 }

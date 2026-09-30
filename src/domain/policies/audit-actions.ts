@@ -1,0 +1,64 @@
+// specs/web-audit-logs.md §2.2/§2.3/AC-AU-09 — mirrors the `check` constraint
+// on public.audit_log.action, hand-mirrored, never generated either
+// direction (CLAUDE.md §7) — see
+// supabase/migrations/20260930125319_web_audit_logs_schema.sql's own
+// comment naming THIS file back. Seven codes for the initial pass; the CDC
+// §11.3 lines "modification paiement" and "création de compte" had no code
+// there on purpose (§2.2, "ne pas les ajouter ici par anticipation").
+//
+// specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — four more codes,
+// added by the pass that built their own emitters
+// (RecordPaymentUseCase/ArchiveMembershipUseCase/InviteUserUseCase/
+// GeneratePasswordResetLinkUseCase). Mirrors
+// supabase/migrations/20260930141222_audit_log_membership_user_actions.sql's
+// own widened `audit_log_action_check`.
+//
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — nine more codes,
+// a DELIBERATE widening beyond "sensitive actions only" (§2.1 of the
+// initial spec): plain create/edit tracking for structural admin data
+// (membership, season, section, team, user) that the original design
+// explicitly excluded. Confirmed by the developer after this tradeoff was
+// stated — see the addendum for the full reasoning. `news.created`/
+// `news.updated` are deliberately NOT included. Mirrors
+// supabase/migrations/20260930160000_audit_log_create_edit_actions.sql's
+// own widened `audit_log_action_check`.
+//
+// "wired" below means a real use case calls record() for that code today —
+// check it's actually showing up as expected in /admin/audit for a while
+// after each new wiring pass ships, since a failed record() call is caught
+// and only surfaced via console.error (see e.g. AssignRoleUseCase's own top
+// comment) — a silent gap here wouldn't throw anywhere.
+export const AUDIT_ACTIONS = [
+  'health_data.viewed', // not wired — no emitter exists yet (would be a Postgres trigger, not a use case)
+  'role.granted', // wired: AssignRoleUseCase, AssignCoachToTeamsUseCase
+  'role.revoked', // wired: RemoveRoleAssignmentUseCase
+  'account.deactivated', // not wired — no "deactivate account" use case exists yet
+  'legacy_points.corrected', // not wired — no Legacy points correction use case exists yet
+  'export.nominative', // not wired — no nominative export use case exists yet
+  'purge.executed', // not wired — future service_role retention job, not a use case
+  'membership.payment_recorded', // wired: RecordPaymentUseCase
+  'user.invited', // wired: InviteUserUseCase
+  'membership.archived', // wired: ArchiveMembershipUseCase
+  'password_reset.issued', // wired: GeneratePasswordResetLinkUseCase
+  'membership.created', // wired: CreateMembershipUseCase
+  'membership.updated', // wired: UpdateMembershipUseCase
+  'season.created', // wired: CreateSeasonUseCase
+  'season.updated', // wired: UpdateSeasonUseCase
+  'section.created', // wired: CreateSectionUseCase
+  'section.updated', // wired: UpdateSectionUseCase
+  'team.created', // wired: CreateTeamUseCase
+  'team.updated', // wired: UpdateTeamUseCase
+  'user.updated', // wired: UpdateUserFullNameUseCase
+] as const
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[number]
+
+// §2.3/AC-AU-08 — a pure guard, never throws. A row can carry a code absent
+// from this union (retired, renamed, or written by a version that has since
+// been rolled back) — domain/entities/audit-log-entry.ts's own `action:
+// string` field (not `AuditAction`) is what makes reading such a row
+// possible at all; this guard is what lets presentation/ branch on "known
+// vs unknown" without ever throwing on the unknown branch.
+export function isAuditAction(code: string): code is AuditAction {
+  return (AUDIT_ACTIONS as readonly string[]).includes(code)
+}

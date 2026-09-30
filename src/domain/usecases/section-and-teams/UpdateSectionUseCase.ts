@@ -2,6 +2,7 @@ import { SECTION_TYPES, type Section, type SectionType } from '../../entities/se
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSectionInputError } from '../../errors/invalid-section-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { SectionRepository } from '../../repositories/section-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -18,10 +19,23 @@ export interface UpdateSectionUseCaseInput {
 // to deliberately leave to RLS here: no document requires a "section with
 // teams" or any other state to be locked (PO-ST-04b), and no
 // sections_update_admin clause restricts it beyond private.is_admin().
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case emits
+// 'section.updated' below, after the update itself has already committed.
+//
+// Audit-write failure AFTER the update has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated UPDATE on
+// sections vs. a SECURITY DEFINER RPC on audit_log), so the section update
+// cannot be rolled back if the audit call fails. Caught and surfaced via
+// `console.error`, never rejecting this use case's own promise — the
+// business outcome (the section is updated) already succeeded, the
+// caller/UI should see success.
 export class UpdateSectionUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly sectionRepository: SectionRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: UpdateSectionUseCaseInput): Promise<Section> {
@@ -43,9 +57,28 @@ export class UpdateSectionUseCase {
     }
 
     // AC-ST-24 — updates the SAME row, never creates a duplicate.
-    return this.sectionRepository.update(input.sectionId, {
+    const section = await this.sectionRepository.update(input.sectionId, {
       name,
       type: input.type as SectionType,
     })
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'section.updated',
+        targetId: input.sectionId,
+        targetType: 'section',
+        metadata: { name: input.name, type: input.type },
+      })
+    } catch (auditError) {
+      console.error('UpdateSectionUseCase: failed to record section.updated audit entry', {
+        actorId: input.actorId,
+        targetId: input.sectionId,
+        auditError,
+      })
+    }
+
+    return section
   }
 }

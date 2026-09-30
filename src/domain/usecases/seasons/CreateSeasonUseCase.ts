@@ -2,6 +2,7 @@ import type { Season, SeasonLabel } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { SeasonRepository } from '../../repositories/season-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -31,10 +32,23 @@ export interface CreateSeasonUseCaseInput {
 // seasons_no_overlap and surfaces from the database as
 // OverlappingSeasonError, already mapped to the existing, already-tested
 // inline UI message (data/errors/map-supabase-error.ts, AC-WS-16).
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case emits
+// 'season.created' below, after the season itself has already committed.
+//
+// Audit-write failure AFTER the season write has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated INSERT on
+// seasons vs. a SECURITY DEFINER RPC on audit_log), so the season write
+// cannot be rolled back if the audit call fails. Caught and surfaced via
+// `console.error`, never rejecting this use case's own promise — the
+// business outcome (the season is created) already succeeded, the
+// caller/UI should see success.
 export class CreateSeasonUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly seasonRepository: SeasonRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: CreateSeasonUseCaseInput): Promise<Season> {
@@ -75,7 +89,7 @@ export class CreateSeasonUseCase {
       throw new InvalidSeasonInputError('cotisationAmount must be a non-negative number, or null')
     }
 
-    return this.seasonRepository.create({
+    const season = await this.seasonRepository.create({
       // SeasonLabel is a template literal type (`${number}-${number}`), not
       // `string` (§2.1/AC-WS-11) — this cast doesn't widen the domain type,
       // it only reflects that the string-shaped form value has already
@@ -86,5 +100,24 @@ export class CreateSeasonUseCase {
       endDate: input.endDate,
       cotisationAmount: input.cotisationAmount,
     })
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'season.created',
+        targetId: season.id,
+        targetType: 'season',
+        metadata: { label: input.label },
+      })
+    } catch (auditError) {
+      console.error('CreateSeasonUseCase: failed to record season.created audit entry', {
+        actorId: input.actorId,
+        targetId: season.id,
+        auditError,
+      })
+    }
+
+    return season
   }
 }

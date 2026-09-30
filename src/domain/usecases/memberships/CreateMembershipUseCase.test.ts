@@ -6,6 +6,7 @@ import { ArchivedMembershipHasPaymentsError } from '../../errors/archived-member
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidMembershipInputError } from '../../errors/invalid-membership-input-error'
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
+import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { CreateMembershipInput, MembershipRepository } from '../../repositories/membership-repository'
 import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -90,6 +91,14 @@ function payment(overrides: Partial<Payment> = {}): Payment {
   }
 }
 
+function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
+  return {
+    list: async () => ({ entries: [], hasMore: false }),
+    record: vi.fn(async (_entry: RecordAuditLogEntryInput) => {}),
+    ...overrides,
+  }
+}
+
 function validInput(overrides: Partial<CreateMembershipUseCaseInput> = {}): CreateMembershipUseCaseInput {
   return {
     actorId: 'admin-1',
@@ -104,7 +113,7 @@ function validInput(overrides: Partial<CreateMembershipUseCaseInput> = {}): Crea
 
 describe('CreateMembershipUseCase', () => {
   it('throws ForbiddenError when the actor does not exist', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(null), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(null), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
   })
 
@@ -112,27 +121,27 @@ describe('CreateMembershipUseCase', () => {
   // write, even though the CDC names them for the "cotisation" side (§3,
   // "position retenue... un pis-aller assumé").
   it('throws ForbiddenError when the actor is a treasurer, not an admin', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(treasurerUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(treasurerUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'treasurer-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws InvalidMembershipInputError when userId is missing', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ userId: '' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   it('throws InvalidMembershipInputError when seasonId is missing', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ seasonId: '' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   it('throws InvalidMembershipInputError when status is missing', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ status: '' as unknown as Membership['status'] }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   it('throws InvalidMembershipInputError when validUntil is missing', async () => {
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ validUntil: '' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
@@ -140,7 +149,7 @@ describe('CreateMembershipUseCase', () => {
   // rejected by the domain.
   it('accepts a null licenceNumber', async () => {
     const create = vi.fn(async (input: CreateMembershipInput) => ({ id: 'membership-1', ...input }) satisfies Membership)
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ licenceNumber: null }))
 
@@ -152,7 +161,7 @@ describe('CreateMembershipUseCase', () => {
   // amountDueCents === null, never guessed at.
   it('always creates a membership with amountDueCents null, regardless of input', async () => {
     const create = vi.fn(async (input: CreateMembershipInput) => ({ id: 'membership-1', ...input }) satisfies Membership)
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput())
 
@@ -165,7 +174,7 @@ describe('CreateMembershipUseCase', () => {
   // rejected from the domain, before any network call.
   it('throws MembershipActivationRequirementsNotMetError when status "active" is requested at creation', async () => {
     const create = vi.fn()
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await expect(useCase.execute(validInput({ status: 'active', licenceNumber: 'FR-12345' }))).rejects.toThrow(
       MembershipActivationRequirementsNotMetError,
@@ -177,7 +186,7 @@ describe('CreateMembershipUseCase', () => {
   // and 'suspended' remain free of licence/cotisation requirements.
   it('accepts status "pending" with no licence and no amount due', async () => {
     const create = vi.fn(async (input: CreateMembershipInput) => ({ id: 'membership-1', ...input }) satisfies Membership)
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ status: 'pending', licenceNumber: null }))
 
@@ -191,6 +200,7 @@ describe('CreateMembershipUseCase', () => {
       fakeUserRepository(adminUser()),
       fakeMembershipRepository({ create, findArchivedForUserAndSeason }),
       fakePaymentRepository(),
+      fakeAuditLogRepository(),
     )
 
     await useCase.execute(validInput())
@@ -215,6 +225,7 @@ describe('CreateMembershipUseCase', () => {
         create,
       }),
       fakePaymentRepository({ listForMembership: async () => [] }),
+      fakeAuditLogRepository(),
     )
 
     const result = await useCase.execute(validInput())
@@ -238,6 +249,7 @@ describe('CreateMembershipUseCase', () => {
         create,
       }),
       fakePaymentRepository({ listForMembership: async () => [payment()] }),
+      fakeAuditLogRepository(),
     )
 
     await expect(useCase.execute(validInput())).rejects.toThrow(ArchivedMembershipHasPaymentsError)
@@ -252,8 +264,62 @@ describe('CreateMembershipUseCase', () => {
     const create = vi.fn(async () => {
       throw new FakeDuplicateError('duplicate')
     })
-    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository())
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await expect(useCase.execute(validInput())).rejects.toThrow(FakeDuplicateError)
+  })
+
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — a successful
+  // creation records exactly one 'membership.created' audit entry, targeted
+  // at the new membership, after the write itself has already committed.
+  it('records a membership.created audit entry once, targeted at the new membership', async () => {
+    const record = vi.fn(async () => {})
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository({ record }))
+
+    await useCase.execute(validInput())
+
+    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledWith({
+      action: 'membership.created',
+      targetId: 'membership-1',
+      targetType: 'membership',
+      metadata: { seasonId: 'season-1', status: 'pending' },
+    })
+  })
+
+  // Recreate-after-archive path (R1) — same audit entry, targeted at the
+  // desarchived row's own id.
+  it('records a membership.created audit entry when replacing an archived membership', async () => {
+    const archived = membership({ id: 'membership-archived-1', status: 'suspended' })
+    const record = vi.fn(async () => {})
+    const useCase = new CreateMembershipUseCase(
+      fakeUserRepository(adminUser()),
+      fakeMembershipRepository({
+        findArchivedForUserAndSeason: async () => archived,
+        replaceArchived: async (id: string, input: CreateMembershipInput) => ({ id, ...input }) satisfies Membership,
+      }),
+      fakePaymentRepository({ listForMembership: async () => [] }),
+      fakeAuditLogRepository({ record }),
+    )
+
+    await useCase.execute(validInput())
+
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ action: 'membership.created', targetId: 'membership-archived-1' }))
+  })
+
+  // See this use case's own top comment: an audit-write failure must not
+  // reject execute()'s own promise — the membership itself already
+  // succeeded.
+  it('still resolves when the audit write rejects, because the membership itself already succeeded', async () => {
+    const record = vi.fn(async () => {
+      throw new Error('audit RPC unavailable')
+    })
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository({ record }))
+
+    await expect(useCase.execute(validInput())).resolves.toBeDefined()
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

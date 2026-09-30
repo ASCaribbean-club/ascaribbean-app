@@ -1,6 +1,7 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidFullNameInputError } from '../../errors/invalid-full-name-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
 export interface UpdateUserFullNameUseCaseInput {
@@ -18,12 +19,32 @@ export interface UpdateUserFullNameUseCaseInput {
 // carries no scope field) — no context object needed here.
 //
 // §4 "Journal d'audit" — CDC §11.3 names "changement de rôle" but NOT a
-// generic profile edit; a rename isn't one of the two actions this pass
-// flags as newly-pressing (§4). No audit call is added regardless — same
-// "no infrastructure exists yet" position as InviteUserUseCase/
-// AssignRoleUseCase, PO-WU-07/PO-WU-08 track this, not this class.
+// generic profile edit; a rename wasn't one of the two actions the
+// original web-users.md pass flagged as newly-pressing (PO-WU-07/PO-WU-08).
+//
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case now emits
+// 'user.updated' below regardless, after the rename itself has already
+// committed: the developer confirmed this broader create/edit coverage for
+// structural admin data (membership/season/section/team/user), not just
+// CDC §11.3-named sensitive actions. `metadata` stays empty (`{}`) rather
+// than carrying the new `fullName` — the target's own row already says
+// the new value, and a name isn't excessive to log but there's no reason
+// to duplicate it here either; kept minimal on purpose.
+//
+// Audit-write failure AFTER the rename has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated UPDATE on
+// users vs. a SECURITY DEFINER RPC on audit_log), so the rename cannot be
+// rolled back if the audit call fails. Caught and surfaced via
+// `console.error`, never rejecting this use case's own promise — the
+// business outcome (the name is updated) already succeeded, the caller/UI
+// should see success.
 export class UpdateUserFullNameUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly auditLogRepository: AuditLogRepository,
+  ) {}
 
   async execute(input: UpdateUserFullNameUseCaseInput): Promise<void> {
     const actor = await this.userRepository.findById(input.actorId)
@@ -47,5 +68,22 @@ export class UpdateUserFullNameUseCase {
     }
 
     await this.userRepository.updateFullName(input.userId, fullName)
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'user.updated',
+        targetId: input.userId,
+        targetType: 'user',
+        metadata: {},
+      })
+    } catch (auditError) {
+      console.error('UpdateUserFullNameUseCase: failed to record user.updated audit entry', {
+        actorId: input.actorId,
+        targetId: input.userId,
+        auditError,
+      })
+    }
   }
 }

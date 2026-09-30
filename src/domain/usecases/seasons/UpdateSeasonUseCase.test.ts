@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Season } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
+import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { SeasonRepository, UpdateSeasonInput } from '../../repositories/season-repository'
 import type { User } from '../../entities/user'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -54,6 +55,14 @@ function fakeSeasonRepository(overrides: Partial<SeasonRepository> = {}): Season
   }
 }
 
+function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
+  return {
+    list: async () => ({ entries: [], hasMore: false }),
+    record: vi.fn(async (_entry: RecordAuditLogEntryInput) => {}),
+    ...overrides,
+  }
+}
+
 function validInput(overrides: Partial<UpdateSeasonUseCaseInput> = {}): UpdateSeasonUseCaseInput {
   return {
     actorId: 'admin-1',
@@ -68,32 +77,32 @@ function validInput(overrides: Partial<UpdateSeasonUseCaseInput> = {}): UpdateSe
 
 describe('UpdateSeasonUseCase', () => {
   it('throws ForbiddenError when the actor does not exist', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(null), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(null), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
   })
 
   it('throws ForbiddenError when the actor is a section-manager, not an admin', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(sectionManagerUser()), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(sectionManagerUser()), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'section-manager-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws InvalidSeasonInputError when label is empty', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ label: '   ' }))).rejects.toThrow(InvalidSeasonInputError)
   })
 
   it('throws InvalidSeasonInputError when startDate is missing', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ startDate: '' }))).rejects.toThrow(InvalidSeasonInputError)
   })
 
   it('throws InvalidSeasonInputError when endDate is missing', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ endDate: '' }))).rejects.toThrow(InvalidSeasonInputError)
   })
 
   it('throws InvalidSeasonInputError when startDate is after endDate', async () => {
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ startDate: '2027-06-30', endDate: '2026-08-01' }))).rejects.toThrow(InvalidSeasonInputError)
   })
 
@@ -101,7 +110,7 @@ describe('UpdateSeasonUseCase', () => {
   // pre-checked by reading other seasons first.
   it('never calls findAll to pre-check overlap before updating', async () => {
     const findAll = vi.fn(async () => [])
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ findAll }))
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ findAll }), fakeAuditLogRepository())
 
     await useCase.execute(validInput())
 
@@ -113,7 +122,7 @@ describe('UpdateSeasonUseCase', () => {
   // check lives exclusively in the RLS policy.
   it('updates the same season id with the trimmed label and both dates as given', async () => {
     const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ seasonId: 'season-42', label: '  2026-2027  ' }))
 
@@ -129,7 +138,7 @@ describe('UpdateSeasonUseCase', () => {
   describe('cotisationAmount validation (AC-WS-34)', () => {
     it('writes a decimal cotisationAmount through to the repository, unconverted', async () => {
       const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
-      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
 
       await useCase.execute(validInput({ cotisationAmount: 45.5 }))
 
@@ -138,7 +147,7 @@ describe('UpdateSeasonUseCase', () => {
 
     it('accepts a null cotisationAmount (clearing a previously-set amount)', async () => {
       const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
-      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
 
       await useCase.execute(validInput({ cotisationAmount: null }))
 
@@ -146,12 +155,12 @@ describe('UpdateSeasonUseCase', () => {
     })
 
     it('throws InvalidSeasonInputError when cotisationAmount is negative', async () => {
-      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
       await expect(useCase.execute(validInput({ cotisationAmount: -1 }))).rejects.toThrow(InvalidSeasonInputError)
     })
 
     it('throws InvalidSeasonInputError when cotisationAmount is not finite', async () => {
-      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository())
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository())
       await expect(useCase.execute(validInput({ cotisationAmount: Number.NaN }))).rejects.toThrow(InvalidSeasonInputError)
     })
   })
@@ -163,8 +172,41 @@ describe('UpdateSeasonUseCase', () => {
     const update = vi.fn(async () => {
       throw new FakeForbiddenWriteError('ended season')
     })
-    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }))
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
 
     await expect(useCase.execute(validInput())).rejects.toThrow(FakeForbiddenWriteError)
+  })
+
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — a successful
+  // update records exactly one 'season.updated' audit entry, targeted at
+  // the season, after the write itself has already committed.
+  it('records a season.updated audit entry once, targeted at the season', async () => {
+    const record = vi.fn(async () => {})
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository({ record }))
+
+    await useCase.execute(validInput())
+
+    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledWith({
+      action: 'season.updated',
+      targetId: 'season-1',
+      targetType: 'season',
+      metadata: { label: '2026-2027' },
+    })
+  })
+
+  // See this use case's own top comment: an audit-write failure must not
+  // reject execute()'s own promise — the update itself already succeeded.
+  it('still resolves when the audit write rejects, because the update itself already succeeded', async () => {
+    const record = vi.fn(async () => {
+      throw new Error('audit RPC unavailable')
+    })
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository(), fakeAuditLogRepository({ record }))
+
+    await expect(useCase.execute(validInput())).resolves.toBeDefined()
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

@@ -28,9 +28,8 @@ describe('toVote', () => {
 })
 
 describe('toVoteRow', () => {
-  it('maps an entity (minus id) to a row', () => {
-    const { id: _id, ...withoutId } = vote
-    expect(toVoteRow(withoutId)).toEqual({
+  it('maps an entity to a row without its id', () => {
+    expect(toVoteRow(vote)).toEqual({
       convocation_id: 'convocation-1',
       category_id: 'positive',
       voter_id: 'player-1',

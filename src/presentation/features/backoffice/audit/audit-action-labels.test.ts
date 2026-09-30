@@ -29,7 +29,7 @@ describe('auditActionLabel', () => {
   // added for CreateMembershipUseCase/UpdateMembershipUseCase/
   // CreateSeasonUseCase/UpdateSeasonUseCase/CreateSectionUseCase/
   // UpdateSectionUseCase/CreateTeamUseCase/UpdateTeamUseCase/
-  // UpdateUserFullNameUseCase's new emitters.
+  // UpdateUserUseCase's new emitters.
   it('returns the French label for every one of the nine create/edit codes', () => {
     expect(auditActionLabel('membership.created')).toBe("Création d'une adhésion")
     expect(auditActionLabel('membership.updated')).toBe("Modification d'une adhésion")

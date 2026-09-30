@@ -8,7 +8,7 @@ import type { UserRepository } from '../../repositories/user-repository'
 import { RemoveRoleAssignmentUseCase, type RemoveRoleAssignmentUseCaseInput } from './RemoveRoleAssignmentUseCase'
 
 function adminUser(): User {
-  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: null }
+  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function volunteerUser(): User {
@@ -18,6 +18,8 @@ function volunteerUser(): User {
     email: 'volunteer@example.com',
     roles: [{ role: 'volunteer' }],
     position: null,
+    age: null,
+    handedness: null,
     charterAcceptedAt: null,
   }
 }
@@ -29,7 +31,7 @@ function fakeUserRepository(user: User | null): UserRepository {
     findAll: async () => [],
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
-    updateFullName: async () => {},
+    updateProfile: async () => {},
     invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
     reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
     generatePasswordResetLink: async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' }),

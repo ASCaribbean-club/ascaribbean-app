@@ -46,6 +46,8 @@ function buildUser(overrides: Partial<User> = {}): User {
     email: 'compte-un@example.test',
     roles: [],
     position: null,
+    age: null,
+    handedness: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
     ...overrides,
   }
@@ -63,7 +65,7 @@ function renderViewModel({
   route?: string
 }) {
   mockedUseAuth.mockReturnValue({
-    user: { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: new Date() },
+    user: { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: new Date() },
     isLoading: false,
     refreshUser: vi.fn(),
   } as never)

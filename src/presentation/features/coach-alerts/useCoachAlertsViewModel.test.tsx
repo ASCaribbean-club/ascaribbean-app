@@ -69,7 +69,7 @@ function buildAlertItem(overrides: Partial<CoachAlertItem> & { convocation: Conv
 
 function renderViewModel(alerts: CoachAlertItem[]) {
   mockedUseAuth.mockReturnValue({
-    user: { id: USER_ID, fullName: 'Test Coach', email: 'c@test.fr', roles: [{ role: 'coach', teamIds: [TEAM_ID] }], position: null, charterAcceptedAt: null },
+    user: { id: USER_ID, fullName: 'Test Coach', email: 'c@test.fr', roles: [{ role: 'coach', teamIds: [TEAM_ID] }], position: null, age: null, handedness: null, charterAcceptedAt: null },
     isLoading: false,
     refreshUser: vi.fn(),
   })

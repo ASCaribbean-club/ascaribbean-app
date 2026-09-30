@@ -18,7 +18,7 @@ import { GeneratePasswordResetLinkUseCase } from '@domain/usecases/users/Generat
 import { InviteUserUseCase } from '@domain/usecases/users/InviteUserUseCase'
 import { ReissueInvitationLinkUseCase } from '@domain/usecases/users/ReissueInvitationLinkUseCase'
 import { RemoveRoleAssignmentUseCase } from '@domain/usecases/users/RemoveRoleAssignmentUseCase'
-import { UpdateUserFullNameUseCase } from '@domain/usecases/users/UpdateUserFullNameUseCase'
+import { UpdateUserUseCase } from '@domain/usecases/users/UpdateUserUseCase'
 
 // specs/web-users.md §2.10 — a dedicated container for the /admin/users
 // write path, same per-container instance pattern used throughout
@@ -42,13 +42,13 @@ export interface UsersContainer {
   // instance below is now also wired into inviteUserUseCase/
   // generatePasswordResetLinkUseCase, not a second one.
   // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — and now also
-  // into updateUserFullNameUseCase, still the same instance.
+  // into updateUserUseCase, still the same instance.
   auditLogRepository: AuditLogRepository
 
   inviteUserUseCase: InviteUserUseCase
   reissueInvitationLinkUseCase: ReissueInvitationLinkUseCase
   generatePasswordResetLinkUseCase: GeneratePasswordResetLinkUseCase
-  updateUserFullNameUseCase: UpdateUserFullNameUseCase
+  updateUserUseCase: UpdateUserUseCase
   assignRoleUseCase: AssignRoleUseCase
   editRoleAssignmentScopeUseCase: EditRoleAssignmentScopeUseCase
   removeRoleAssignmentUseCase: RemoveRoleAssignmentUseCase
@@ -73,7 +73,7 @@ export function createUsersContainer(supabaseClient: SupabaseClient): UsersConta
     inviteUserUseCase: new InviteUserUseCase(userRepository, auditLogRepository),
     reissueInvitationLinkUseCase: new ReissueInvitationLinkUseCase(userRepository),
     generatePasswordResetLinkUseCase: new GeneratePasswordResetLinkUseCase(userRepository, auditLogRepository),
-    updateUserFullNameUseCase: new UpdateUserFullNameUseCase(userRepository, auditLogRepository),
+    updateUserUseCase: new UpdateUserUseCase(userRepository, auditLogRepository),
     assignRoleUseCase: new AssignRoleUseCase(userRepository, roleAssignmentRepository, auditLogRepository),
     editRoleAssignmentScopeUseCase: new EditRoleAssignmentScopeUseCase(userRepository, roleAssignmentRepository),
     removeRoleAssignmentUseCase: new RemoveRoleAssignmentUseCase(userRepository, roleAssignmentRepository, auditLogRepository),

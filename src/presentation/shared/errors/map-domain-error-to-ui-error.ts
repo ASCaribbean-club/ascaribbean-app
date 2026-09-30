@@ -18,6 +18,7 @@ import { MatchArrangementsWindowClosedError } from '@domain/errors/match-arrange
 import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
+import { InvalidUserProfileInputError } from '@domain/errors/invalid-user-profile-input-error'
 import { InvalidUserInputError } from '@domain/errors/invalid-user-input-error'
 import { AuthLinkInvalidError } from '@domain/errors/auth-link-invalid-error'
 import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-target-not-invited-error'
@@ -323,6 +324,14 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // rarer race the use case is the real authority for.
     return {
       message: 'Le nom complet et l’adresse e-mail sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidUserProfileInputError) {
+    return {
+      message: 'L’âge doit être un nombre entier compris entre 1 et 120.',
       variant: 'inline',
       retryable: true,
     }

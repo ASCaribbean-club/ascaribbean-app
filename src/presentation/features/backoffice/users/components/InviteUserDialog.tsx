@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
 import { Textarea } from '@presentation/shared/components/ui/textarea'
+import { UserProfileFields } from './UserProfileFields'
 import { type InviteUserDialogTarget, useInviteUserDialogViewModel } from '../useInviteUserDialogViewModel'
 
 interface InviteUserDialogProps {
@@ -77,6 +78,15 @@ function InviteUserDialogContent({ target, onClose }: { target: InviteUserDialog
                 className="h-11 rounded-xl"
               />
             </div>
+
+            <UserProfileFields
+              idPrefix="invite-user"
+              age={vm.age}
+              onAgeChange={vm.setAge}
+              handedness={vm.handedness}
+              onHandednessChange={vm.setHandedness}
+              disabled={vm.isGenerating}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" disabled={vm.isGenerating} onClick={vm.close} className="h-11 rounded-full">

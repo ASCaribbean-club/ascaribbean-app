@@ -4,6 +4,7 @@ import { Button } from '@presentation/shared/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@presentation/shared/components/ui/dialog'
 import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
+import { UserProfileFields } from './UserProfileFields'
 import { useUserEditDialogViewModel } from '../useUserEditDialogViewModel'
 
 interface UserEditDialogProps {
@@ -73,6 +74,15 @@ function UserEditDialogContent({ target, onClose }: { target: AdminUserDirectory
             <Input id="user-edit-email" type="email" disabled value={vm.email} className="h-11 rounded-xl" />
             <p className="text-xs text-muted-foreground">Non modifiable — identifie la connexion du compte.</p>
           </div>
+
+          <UserProfileFields
+            idPrefix="user-edit"
+            age={vm.age}
+            onAgeChange={vm.setAge}
+            handedness={vm.handedness}
+            onHandednessChange={vm.setHandedness}
+            disabled={vm.isSubmitting}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" disabled={vm.isSubmitting} onClick={onClose} className="h-11 rounded-full">

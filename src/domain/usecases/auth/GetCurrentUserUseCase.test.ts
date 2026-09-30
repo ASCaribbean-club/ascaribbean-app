@@ -11,6 +11,8 @@ describe('GetCurrentUserUseCase', () => {
       email: 't@example.com',
       roles: [],
       position: null,
+      age: null,
+      handedness: null,
       charterAcceptedAt: null,
     }
     const findById = vi.fn().mockResolvedValue(user)

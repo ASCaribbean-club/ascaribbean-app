@@ -48,7 +48,7 @@ export const AUDIT_ACTIONS = [
   'section.updated', // wired: UpdateSectionUseCase
   'team.created', // wired: CreateTeamUseCase
   'team.updated', // wired: UpdateTeamUseCase
-  'user.updated', // wired: UpdateUserFullNameUseCase
+  'user.updated', // wired: UpdateUserUseCase
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

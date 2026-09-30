@@ -23,6 +23,8 @@ function buildEntry(overrides: Partial<AdminUserDirectoryEntry> = {}): AdminUser
     id: 'user-1',
     fullName: 'Compte Un',
     email: 'compte-un@example.test',
+    age: null,
+    handedness: null,
     charterAcceptedAt: null,
     roles: [],
     missingElementFacts: { hasRole: true, hasMembershipForCurrentSeason: true, hasLicenceNumberForCurrentSeason: true, charterAccepted: false },

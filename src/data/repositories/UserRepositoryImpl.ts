@@ -5,6 +5,7 @@ import type {
   AdminUserDirectoryEntry,
   InvitationLink,
   InviteUserInput,
+  UpdateUserProfileInput,
   UserMissingElementFactsEntry,
   UserRepository,
   UserSummary,
@@ -34,7 +35,7 @@ export class UserRepositoryImpl implements UserRepository {
   async findById(id: string): Promise<User | null> {
     const { data: userRow, error: userError } = await this.client
       .from('users')
-      .select('id, full_name, email, charter_accepted_at, position')
+      .select('id, full_name, email, charter_accepted_at, position, age, handedness')
       .eq('id', id)
       .maybeSingle<UserRow>()
 
@@ -87,7 +88,7 @@ export class UserRepositoryImpl implements UserRepository {
   async findAdminDirectory(currentSeasonId: string | null): Promise<AdminUserDirectoryEntry[]> {
     const { data: userRows, error: userError } = await this.client
       .from('users')
-      .select('id, full_name, email, charter_accepted_at')
+      .select('id, full_name, email, age, handedness, charter_accepted_at')
       .overrideTypes<AdminUserRow[]>()
     if (userError) throw mapSupabaseError(userError)
 
@@ -164,12 +165,15 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   // specs/web-users.md §2.7/AC-WU-38 — users_update_admin (RLS), mirrors
-  // 'user:write'. Writes full_name ONLY — the policy's own `grant update
-  // (full_name)` makes any other column structurally unwritable regardless
-  // of what this call sends, but the call itself only ever sends this one
-  // column too (defence in depth at this layer as well).
-  async updateFullName(userId: string, fullName: string): Promise<void> {
-    const { error } = await this.client.from('users').update({ full_name: fullName }).eq('id', userId)
+  // 'user:write'. Writes full_name, age and handedness ONLY — the policy's
+  // column-level `grant update` makes any other column structurally
+  // unwritable regardless of what this call sends, but the call itself only
+  // ever sends these three too (defence in depth at this layer as well).
+  async updateProfile(userId: string, input: UpdateUserProfileInput): Promise<void> {
+    const { error } = await this.client
+      .from('users')
+      .update({ full_name: input.fullName, age: input.age, handedness: input.handedness })
+      .eq('id', userId)
     if (error) throw mapSupabaseError(error)
   }
 
@@ -188,7 +192,7 @@ export class UserRepositoryImpl implements UserRepository {
   // InviteUserResponseDto's comment): InviteUserUseCase's 'user.invited'
   // audit targetId.
   async invite(input: InviteUserInput): Promise<InvitationLink> {
-    const body: InviteUserRequestDto = { mode: 'create', fullName: input.fullName, email: input.email }
+    const body: InviteUserRequestDto = { mode: 'create', fullName: input.fullName, email: input.email, age: input.age, handedness: input.handedness }
     const { data, error } = await this.client.functions.invoke<InviteUserResponseDto>('invite-user', { body })
     if (error) throw await mapInviteFunctionError(error)
     return { url: data!.url, userId: data!.id }

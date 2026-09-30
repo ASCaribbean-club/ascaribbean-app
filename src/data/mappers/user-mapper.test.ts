@@ -7,6 +7,8 @@ const userRow: UserRow = {
   full_name: 'Test User',
   email: 't@example.com',
   position: null,
+  age: null,
+  handedness: null,
   charter_accepted_at: null,
 }
 
@@ -69,7 +71,7 @@ describe('toUserSummary', () => {
 
 // specs/web-users.md §2.2/§2.10
 describe('toAdminUserDirectoryEntry', () => {
-  const adminUserRow: AdminUserRow = { id: 'u1', full_name: 'Test User', email: 't@example.com', charter_accepted_at: null }
+  const adminUserRow: AdminUserRow = { id: 'u1', full_name: 'Test User', email: 't@example.com', age: null, handedness: null, charter_accepted_at: null }
   const facts = { hasRole: true, hasMembershipForCurrentSeason: true, hasLicenceNumberForCurrentSeason: true, charterAccepted: false }
 
   it('maps id/fullName/email/charterAcceptedAt and reuses toUser’s own role aggregation', () => {
@@ -80,10 +82,19 @@ describe('toAdminUserDirectoryEntry', () => {
       id: 'u1',
       fullName: 'Test User',
       email: 't@example.com',
+      age: null,
+      handedness: null,
       charterAcceptedAt: null,
       roles: [{ role: 'section-manager', sectionId: 'section-a' }],
       missingElementFacts: facts,
     })
+  })
+
+  it('maps age and handedness', () => {
+    const row: AdminUserRow = { ...adminUserRow, age: 27, handedness: 'left' }
+    const entry = toAdminUserDirectoryEntry(row, [], facts)
+    expect(entry.age).toBe(27)
+    expect(entry.handedness).toBe('left')
   })
 
   it('maps charter_accepted_at to a Date when set', () => {

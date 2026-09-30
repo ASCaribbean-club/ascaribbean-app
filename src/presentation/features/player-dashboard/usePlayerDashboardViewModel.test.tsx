@@ -52,7 +52,7 @@ function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse
 
 function renderViewModel(upcoming: ConvocationForPlayer[]) {
   mockedUseAuth.mockReturnValue({
-    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], position: null, charterAcceptedAt: null },
+    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], position: null, age: null, handedness: null, charterAcceptedAt: null },
     isLoading: false,
     refreshUser: vi.fn(),
   })

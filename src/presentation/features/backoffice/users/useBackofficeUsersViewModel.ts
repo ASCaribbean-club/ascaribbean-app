@@ -101,11 +101,13 @@ export function useBackofficeUsersViewModel() {
 
   // specs/web-users-membership-column.md §2.3a/AC-WU-58 — the ADHÉSION
   // SAISON column's own redirect control, for a non-member row: navigates
-  // to /admin/memberships pre-filtered on this account's id (never its
-  // name, §2.3a) via the router (no full page reload). This screen never
-  // writes a membership itself anymore (§2.4) — it only ever hands off.
+  // to /admin/memberships with `newFor=<account id>`, which opens that
+  // screen's "Nouvelle adhésion" dialog pre-selected on this account (an
+  // empty list filtered on a member-less account was a dead end). This
+  // screen never writes a membership itself anymore (§2.4) — it only ever
+  // hands off.
   function goToMembership(userId: string) {
-    navigate(`/admin/memberships?user=${userId}`)
+    navigate(`/admin/memberships?newFor=${userId}`)
   }
 
   return {

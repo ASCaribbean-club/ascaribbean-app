@@ -14,6 +14,8 @@ import { useMembershipFormDialogViewModel } from '../useMembershipFormDialogView
 
 interface MembershipFormDialogProps {
   isOpen: boolean
+  // Account to pre-select (deep link from /admin/users); null = none.
+  presetUserId?: string | null
   onClose: () => void
 }
 
@@ -38,14 +40,14 @@ interface MembershipFormDialogProps {
 // (dropdowns populated from admin directory reads). Remounted (via `key` in
 // the parent, or via `isOpen` unmounting entirely) rather than reset by a
 // useEffect, each time it's reopened.
-export function MembershipFormDialog({ isOpen, onClose }: MembershipFormDialogProps) {
+export function MembershipFormDialog({ isOpen, presetUserId = null, onClose }: MembershipFormDialogProps) {
   if (!isOpen) return null
 
-  return <MembershipFormDialogContent onClose={onClose} />
+  return <MembershipFormDialogContent presetUserId={presetUserId} onClose={onClose} />
 }
 
-function MembershipFormDialogContent({ onClose }: { onClose: () => void }) {
-  const vm = useMembershipFormDialogViewModel({ onSuccess: onClose })
+function MembershipFormDialogContent({ presetUserId, onClose }: { presetUserId: string | null; onClose: () => void }) {
+  const vm = useMembershipFormDialogViewModel({ presetUserId, onSuccess: onClose })
 
   const noUsers = !vm.isLoadingOptions && vm.users.length === 0
   const noSeasons = !vm.isLoadingOptions && vm.seasons.length === 0

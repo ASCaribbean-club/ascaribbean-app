@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Opponent } from '@domain/entities/opponent'
 import type { OpponentRepository } from '@domain/repositories/opponent-repository'
+import { mapSupabaseError } from '../errors/map-supabase-error'
 import type { OpponentRow } from '../dto/opponent-dto'
 import { OpponentMapper } from '../mappers/opponent-mapper'
 
@@ -49,5 +50,19 @@ export class OpponentRepositoryImpl implements OpponentRepository {
     if (error) throw error
 
     return OpponentMapper.toDomain(data as OpponentRow)
+  }
+
+  // specs/team-opponents.md §2.3/§2.5 — one RPC = one transaction: find by
+  // exact name, else create, then link (on conflict do nothing). Mirrors the
+  // add_opponent_to_team() function and 'team:write'
+  // (supabase/migrations/20260930175109_add_opponent_to_team.sql).
+  async addToTeam(teamId: string, name: string): Promise<Opponent> {
+    const { data, error } = await this.supabaseClient
+      .rpc('add_opponent_to_team', { p_team_id: teamId, p_name: name })
+      .single<OpponentRow>()
+
+    if (error) throw mapSupabaseError(error)
+
+    return OpponentMapper.toDomain(data)
   }
 }

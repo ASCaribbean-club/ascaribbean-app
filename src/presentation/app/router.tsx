@@ -9,6 +9,7 @@ import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
+import { CoachAlertsPage } from '../features/coach-alerts/CoachAlertsPage'
 import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
@@ -178,6 +179,16 @@ export const router = createBrowserRouter([
               // PO-CTS-06 resolved — reached from the Menu "Statistiques"
               // card for the coach active role (MenuPage.tsx).
               { path: 'team-stats', element: <TeamStatsPage /> },
+              // specs/coach-alerts.md §1/UI design "Emplacement — écran et
+              // entrée" — "route poussée (`/alerts`), au même niveau que
+              // /profile, /stats, /team-stats et /convocations/:id", same
+              // full-screen-over-tabs group, no BottomNav (AC-AL-14).
+              // Reached only via CoachHeader's new alert button
+              // (useCoachDashboardViewModel.goToAlerts) — direct URL access
+              // with the wrong active role renders CoachAlertsPage's own
+              // AlertsWrongRoleState (AC-AL-05), same precedent as
+              // PlayerStatsPage for 'stats' above.
+              { path: 'alerts', element: <CoachAlertsPage /> },
               // specs/create-convocation.md UI design, "Emplacement dans la
               // nav": a full-screen route pushed OVER one of the 4 tabs, no
               // bottom-nav chrome — deliberately NOT nested under AppShell

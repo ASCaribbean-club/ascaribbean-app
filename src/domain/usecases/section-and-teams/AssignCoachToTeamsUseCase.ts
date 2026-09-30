@@ -1,6 +1,7 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidCoachAssignmentInputError } from '../../errors/invalid-coach-assignment-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { RoleAssignmentRepository } from '../../repositories/role-assignment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -25,20 +26,26 @@ export interface AssignCoachToTeamsUseCaseInput {
 // exigence" — CDC §11.3 requires a "changement de rôle" to be traced, and
 // assigning a coach is exactly that. Per CLAUDE.md §6 this belongs here (a
 // business action, logged from the use case, never from a component or a
-// trigger) — but no audit table, AuditRepository, or write path exists
-// anywhere in this codebase yet (verified: no migration creates one), and
-// PO-ST-14 explicitly defers designing that infrastructure to its own spec.
-// No audit call is added below — adding one against nothing would either
-// silently no-op or invent a schema this spec was told not to invent (§4,
-// "cette spec ne conçoit pas la table d'audit"). AC-ST-37 marks this
-// blocking for PRODUCTION, not for building this use case — flagged again
-// in this class's own JSDoc so it isn't missed at review time:
-// blocked on PO-ST-14, see specs/section-and-teams.md §4 — no audit
-// infrastructure exists yet to write this "changement de rôle" trace to.
+// trigger). Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum):
+// the audit infrastructure PO-ST-14 deferred to now exists
+// (public.record_audit_log_entry, domain/repositories/audit-log-repository.ts's
+// `record()`) and this use case emits 'role.granted' below, after the coach
+// assignment itself has already committed. AC-ST-37 no longer blocks
+// production on a missing emitter for this use case.
+//
+// Audit-write failure AFTER the coach-assignment write has already
+// succeeded — same tradeoff, and same reasoning, as AssignRoleUseCase's own
+// top comment: no shared transaction across the two calls
+// (client-RLS-gated INSERT on user_roles vs. a SECURITY DEFINER RPC on
+// audit_log), so the assignment cannot be rolled back if the audit call
+// fails. Caught and surfaced via `console.error`, never rejecting this use
+// case's own promise — the business outcome already succeeded, the
+// caller/UI should see success.
 export class AssignCoachToTeamsUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly roleAssignmentRepository: RoleAssignmentRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: AssignCoachToTeamsUseCaseInput): Promise<void> {
@@ -62,8 +69,23 @@ export class AssignCoachToTeamsUseCase {
 
     await this.roleAssignmentRepository.assignCoachToTeams(input.userId, input.teamIds)
 
-    // blocked on PO-ST-14 — see this class's own top comment: no audit
-    // infrastructure exists to write the required "changement de rôle"
-    // trace to yet.
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'role.granted',
+        targetId: input.userId,
+        // specs/web-audit-logs.md — 2026-09-30 (third addendum) — the
+        // target is always the affected account.
+        targetType: 'user',
+        metadata: { role: 'coach', teamIds: input.teamIds },
+      })
+    } catch (auditError) {
+      console.error('AssignCoachToTeamsUseCase: failed to record role.granted audit entry', {
+        actorId: input.actorId,
+        targetId: input.userId,
+        auditError,
+      })
+    }
   }
 }

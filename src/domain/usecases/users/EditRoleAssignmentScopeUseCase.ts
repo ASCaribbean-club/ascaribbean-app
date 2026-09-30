@@ -43,8 +43,18 @@ export interface EditRoleAssignmentScopeUseCaseInput {
 // §4 "Journal d'audit" — CDC §11.3 names "changement de rôle" literally,
 // and this is the SECOND of the two operations §4 of the amendment flags as
 // newly-pressing (the first being AssignRoleUseCase's own creation path).
-// Same "no infrastructure exists yet" position — no audit call is added
-// below: blocked on PO-WU-07, see specs/web-users-role-edit-remove.md §4.
+// Still no audit call added below — but the reason is no longer "no
+// infrastructure exists": the follow-up pass to specs/web-audit-logs.md
+// (2026-09-30 addendum) wired real 'role.granted'/'role.revoked' emitters
+// into AssignRoleUseCase/AssignCoachToTeamsUseCase/RemoveRoleAssignmentUseCase,
+// deliberately EXCLUDING this use case. Reason: a scope edit's coach-team
+// reconciliation can INSERT newly-checked teams AND DELETE unchecked ones in
+// the SAME invocation (§2.5d above) — mechanically reusing
+// 'role.granted'/'role.revoked' here needs its own design (one call emitting
+// two audit rows? one row carrying both?) that pass deliberately didn't
+// improvise. blocked on PO-WU-07 for THIS use case specifically, see
+// specs/web-users-role-edit-remove.md §4 — its sibling use cases are no
+// longer blocked on it.
 export class EditRoleAssignmentScopeUseCase {
   constructor(
     private readonly userRepository: UserRepository,

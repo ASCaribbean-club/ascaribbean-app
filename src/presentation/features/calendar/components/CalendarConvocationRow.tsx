@@ -2,13 +2,19 @@ import type { Convocation } from '@domain/entities/convocation'
 import type { MatchDetails } from '@domain/entities/match-details'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { Opponent } from '@domain/entities/opponent'
+import { AttendanceConfirmationAlert } from '@presentation/shared/components/AttendanceConfirmationAlert'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
+import { Badge } from '@presentation/shared/components/ui/badge'
 import { StatusBadge } from '@presentation/features/convocation/components/StatusBadge'
 import { CONVOCATION_TYPE_ACCENT } from '@presentation/shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '@presentation/shared/formatters/convocation-labels'
+import { MATCH_OUTCOME_BADGE_CLASSNAME, MATCH_OUTCOME_LABEL } from '@presentation/shared/formatters/match-outcome-labels'
+import { cn } from '@presentation/shared/lib/utils'
+import type { CalendarMatchResult } from './calendar-list-item'
 import type { CalendarResponseBlock } from './calendar-response-block'
+import { ResponseCountsRecap } from './ResponseCountsRecap'
 import { ResponseStatusPill } from './ResponseStatusPill'
 
 interface CalendarConvocationRowProps {
@@ -17,6 +23,8 @@ interface CalendarConvocationRowProps {
   opponent: Opponent | null
   meetingDetails: MeetingDetails | null
   responseBlock: CalendarResponseBlock
+  matchResult: CalendarMatchResult | null
+  attendanceConfirmationMissing: boolean
   onOpen: (convocationId: string) => void
 }
 
@@ -26,14 +34,23 @@ interface CalendarConvocationRowProps {
 // class names, per the spec's own "même ligne, pas une nouvelle ligne"),
 // with the additions this screen specifically asks for that a dashboard
 // preview doesn't need: full ScheduleInfo (adversaire + RDV chip for a
-// match, AC-CA-02), StatusBadge (closed/cancelled, AC-CA-16), and a
-// response block that varies by role/pastness (see calendar-response-
-// block.ts). Not literally UpcomingList itself — that component owns its
+// match, AC-CA-02), StatusBadge (cancelled only since the 2026-09-30
+// AC-CA-16 override, see calendar-list-item.ts), and a response block that
+// varies by role/pastness (see calendar-response-block.ts). Not literally UpcomingList itself — that component owns its
 // own "À venir" section header + "Voir tout" link, neither of which
 // belongs on a per-day list — so this is a sibling row built from the same
 // shared primitives (ScheduleInfo, StatusBadge, ResponseBar, ResponseActions)
 // rather than a fork of its markup.
-export function CalendarConvocationRow({ convocation, matchDetails, opponent, meetingDetails, responseBlock, onOpen }: CalendarConvocationRowProps) {
+export function CalendarConvocationRow({
+  convocation,
+  matchDetails,
+  opponent,
+  meetingDetails,
+  responseBlock,
+  matchResult,
+  attendanceConfirmationMissing,
+  onOpen,
+}: CalendarConvocationRowProps) {
   const accent = CONVOCATION_TYPE_ACCENT[convocation.type]
 
   // AC-CA-02 : un entraînement ne rend aucun champ de type qu'il ne
@@ -64,15 +81,32 @@ export function CalendarConvocationRow({ convocation, matchDetails, opponent, me
             {titleSuffix}
           </p>
         </div>
-        {/* AC-CA-16: only renders for closed/cancelled — StatusBadge itself
-            returns nothing for 'open', so no extra branch needed here. */}
-        <StatusBadge status={convocation.status} />
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Développeuse, 2026-09-30 — AC-CA-15 override (see
+              specs/calendar.md's own dated note): the recorded score of a
+              PAST match, `null` (hence absent, not a placeholder) for every
+              other case — see buildMatchResult's own comment. */}
+          {matchResult && (
+            <Badge className={cn('rounded-full border px-2.5 py-1 text-[11px] font-bold', MATCH_OUTCOME_BADGE_CLASSNAME[matchResult.outcome])}>
+              {MATCH_OUTCOME_LABEL[matchResult.outcome]} {matchResult.goalsFor}–{matchResult.goalsAgainst}
+            </Badge>
+          )}
+          {/* Développeuse, 2026-09-30 — AC-CA-16 override (see specs/
+              calendar.md's own dated note): coach-only, `false` for every
+              player item — see calendar-list-item.ts's own comment. */}
+          <AttendanceConfirmationAlert visible={attendanceConfirmationMissing} />
+          {/* AC-CA-16: only renders for 'cancelled' now — StatusBadge itself
+              returns nothing for 'open'/'closed', so no extra branch needed
+              here. */}
+          <StatusBadge status={convocation.status} />
+        </div>
       </div>
 
       <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         {responseBlock.kind === 'coach' && <ResponseBar counts={responseBlock.counts} />}
+        {responseBlock.kind === 'coach-past' && <ResponseCountsRecap counts={responseBlock.counts} />}
         {responseBlock.kind === 'player-actions' && (
           <ResponseActions
             canRespond={responseBlock.canRespond}

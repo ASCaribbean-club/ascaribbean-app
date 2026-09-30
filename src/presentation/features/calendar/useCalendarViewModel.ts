@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { Convocation, DeclaredStatus } from '@domain/entities/convocation'
+import type { MatchDetails } from '@domain/entities/match-details'
 import { dayKey, groupConvocationTypesByDay, isPastDate } from '@domain/rules/convocation-rules'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { getMatchOutcome } from '@domain/policies/match-outcome-rules'
 import type { ConvocationForCoach } from '@domain/usecases/coach-dashboard/ListTeamConvocationsUseCase'
 import type { ConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
@@ -18,10 +20,26 @@ import { addMonths, addWeeks, formatMonthYear, getMonthGridDates, getWeekDates, 
 import { useCalendarDependencies } from '@presentation/di/hooks/use-calendar-dependencies'
 import type { CalendarRangeMode } from './components/RangeModeToggle'
 import type { CalendarDayInfo } from './components/calendar-day'
-import type { CalendarListItem } from './components/calendar-list-item'
+import type { CalendarListItem, CalendarMatchResult } from './components/calendar-list-item'
 import type { CalendarResponseBlock } from './components/calendar-response-block'
 
-function buildCoachDayItems(items: ConvocationForCoach[], selectedDate: Date): CalendarListItem[] {
+// Développeuse, 2026-09-30 — AC-CA-15 override (see specs/calendar.md's own
+// dated note): a PAST match's recorded score, same "no result before it's
+// actually past/recorded" guard AC-MS-15 already enforces elsewhere. `null`
+// covers every non-showing case at once (not a match, not past yet, score
+// not recorded) rather than three separate booleans the row would have to
+// re-check.
+function buildMatchResult(convocation: Convocation, matchDetails: MatchDetails | null, now: Date): CalendarMatchResult | null {
+  if (convocation.type !== 'match' || !isPastDate(convocation.date, now)) return null
+  if (!matchDetails || matchDetails.goalsFor === null || matchDetails.goalsAgainst === null) return null
+  return {
+    outcome: getMatchOutcome(matchDetails.goalsFor, matchDetails.goalsAgainst),
+    goalsFor: matchDetails.goalsFor,
+    goalsAgainst: matchDetails.goalsAgainst,
+  }
+}
+
+function buildCoachDayItems(items: ConvocationForCoach[], selectedDate: Date, now: Date): CalendarListItem[] {
   return items
     .filter((item) => isSameDay(new Date(item.convocation.date), selectedDate))
     .map((item): CalendarListItem => ({
@@ -32,7 +50,19 @@ function buildCoachDayItems(items: ConvocationForCoach[], selectedDate: Date): C
       // matchDetails/opponent) — same gap already accepted on UpcomingList's
       // own coach-side rows, not introduced here.
       meetingDetails: null,
-      responseBlock: { kind: 'coach', counts: item.responseCounts },
+      // Développeuse, 2026-09-30 — 'coach-past' once the échéance has
+      // happened (ResponseCountsRecap, the denser recap), 'coach' while
+      // upcoming (ResponseBar, the segmented bar). Same `responseCounts`
+      // either way — only the rendering differs, see calendar-response-
+      // block.ts's own comment.
+      responseBlock: isPastDate(item.convocation.date, now)
+        ? { kind: 'coach-past', counts: item.responseCounts }
+        : { kind: 'coach', counts: item.responseCounts },
+      matchResult: buildMatchResult(item.convocation, item.matchDetails, now),
+      // Développeuse, 2026-09-30 — same "past + still open" signal as
+      // useConvocationDetailViewModel's attendanceConfirmationMissing, coach
+      // view only (this function is never called for a player item).
+      attendanceConfirmationMissing: item.convocation.status === 'open' && isPastDate(item.convocation.date, now),
     }))
 }
 
@@ -62,6 +92,10 @@ function buildPlayerDayItems(
         opponent: item.opponent,
         meetingDetails: item.meetingDetails,
         responseBlock,
+        matchResult: buildMatchResult(item.convocation, item.matchDetails, now),
+        // AC-CA-09 unaffected: a player never sees this signal (coach-only,
+        // same reasoning as the coach-side computation above).
+        attendanceConfirmationMissing: false,
       }
     })
 }
@@ -90,7 +124,7 @@ function buildSelectedDayItems(
 ): CalendarListItem[] {
   switch (role) {
     case 'coach':
-      return buildCoachDayItems(coachItems, selectedDate)
+      return buildCoachDayItems(coachItems, selectedDate, now)
     case 'player':
       return buildPlayerDayItems(playerItems, selectedDate, now, hasRbacPermission, onRespond)
     default:

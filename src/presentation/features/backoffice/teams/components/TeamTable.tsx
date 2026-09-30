@@ -3,6 +3,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconPencil,
+  IconPlus,
 } from "@tabler/icons-react";
 import type { Team } from "@domain/entities/team";
 import { CoachListCell } from "@presentation/features/backoffice/components/CoachListCell";
@@ -102,14 +103,15 @@ export function TeamTable({
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     {canAssignCoach && (
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
                         onClick={() => onAssignCoach(team)}
-                        className="h-11 rounded-full"
+                        aria-label={`Ajouter un coach à « ${team.name} »`}
+                        className="relative inline-flex h-7 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-xs font-medium text-white/70 before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1"
                       >
-                        + Coach
-                      </Button>
+                        <IconPlus className="size-3.5" aria-hidden />
+                        Coach
+                      </button>
                     )}
                     {canWriteTeams && (
                       <Button

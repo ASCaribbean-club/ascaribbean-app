@@ -1,24 +1,49 @@
-import { IconPencil } from '@tabler/icons-react'
-import type { Team } from '@domain/entities/team'
-import { CoachListCell } from '@presentation/features/backoffice/components/CoachListCell'
-import { SeasonStatusBadge } from '@presentation/features/backoffice/seasons/components/SeasonStatusBadge'
-import { Button } from '@presentation/shared/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
-import type { TeamAdminRow } from '../useBackofficeTeamsViewModel'
+import { Fragment } from "react";
+import {
+  IconChevronDown,
+  IconChevronRight,
+  IconPencil,
+} from "@tabler/icons-react";
+import type { Team } from "@domain/entities/team";
+import { CoachListCell } from "@presentation/features/backoffice/components/CoachListCell";
+import { SeasonStatusBadge } from "@presentation/features/backoffice/seasons/components/SeasonStatusBadge";
+import { Button } from "@presentation/shared/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@presentation/shared/components/ui/table";
+import { TeamOpponentsPanel } from "./TeamOpponentsPanel";
+import type { TeamAdminRow } from "../useBackofficeTeamsViewModel";
 
 interface TeamTableProps {
-  rows: TeamAdminRow[]
-  canWriteTeams: boolean
-  canAssignCoach: boolean
-  onEdit: (team: Team) => void
-  onAssignCoach: (team: Team) => void
+  rows: TeamAdminRow[];
+  canWriteTeams: boolean;
+  canAssignCoach: boolean;
+  onEdit: (team: Team) => void;
+  onAssignCoach: (team: Team) => void;
+  expandedTeamIds: ReadonlySet<string>;
+  onToggleExpanded: (teamId: string) => void;
+  onAddOpponent: (team: Team) => void;
 }
 
 // specs/section-and-teams.md UI design, "Écran « Équipes »" — four columns
 // (NOM, SECTION, SAISON, COACH(S)) plus two action buttons per row: "+
 // Coach" (AC-ST-45, rendered on EVERY row, including ones that already show
 // a coach — never conditioned on the absence of one) and the edit pencil.
-export function TeamTable({ rows, canWriteTeams, canAssignCoach, onEdit, onAssignCoach }: TeamTableProps) {
+export function TeamTable({
+  rows,
+  canWriteTeams,
+  canAssignCoach,
+  onEdit,
+  onAssignCoach,
+  expandedTeamIds,
+  onToggleExpanded,
+  onAddOpponent,
+}: TeamTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -33,50 +58,92 @@ export function TeamTable({ rows, canWriteTeams, canAssignCoach, onEdit, onAssig
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(({ team, sectionName, season, seasonStatus, coaches }) => (
-          <TableRow key={team.id}>
-            <TableCell className="font-semibold whitespace-normal">{team.name}</TableCell>
-            {/* AC-ST-17 — the section's NAME, never sections.id. */}
-            <TableCell>{sectionName}</TableCell>
-            <TableCell>
-              {/* PO-ST-08 (resolved by reuse) — the season's own label
+        {rows.map(({ team, sectionName, season, seasonStatus, coaches }) => {
+          const isExpanded = expandedTeamIds.has(team.id);
+          const panelId = `team-opponents-${team.id}`;
+          const toggleLabel = `${isExpanded ? "Masquer" : "Afficher"} les adversaires de l'équipe « ${team.name} » (${season?.label ?? "—"})`;
+          return (
+            <Fragment key={team.id}>
+              <TableRow aria-expanded={isExpanded}>
+                <TableCell className="font-semibold whitespace-normal">
+                  <div className="flex items-center gap-2">
+                    {/* specs/team-opponents.md UI design — native button, 44px hit area, small glyph. */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-expanded={isExpanded}
+                      aria-controls={panelId}
+                      aria-label={toggleLabel}
+                      onClick={() => onToggleExpanded(team.id)}
+                      className="h-11 w-11 rounded-full"
+                    >
+                      {isExpanded ? (
+                        <IconChevronDown className="size-4" aria-hidden />
+                      ) : (
+                        <IconChevronRight className="size-4" aria-hidden />
+                      )}
+                    </Button>
+                    {team.name}
+                  </div>
+                </TableCell>
+                {/* AC-ST-17 — the section's NAME, never sections.id. */}
+                <TableCell>{sectionName}</TableCell>
+                <TableCell>
+                  {/* PO-ST-08 (resolved by reuse) — the season's own label
                   followed by the already-computed 3-state badge; never a new
                   color re-derived from scratch here (AC-ST-19). */}
-              <span className="mr-2">{season?.label ?? '—'}</span>
-              <SeasonStatusBadge status={seasonStatus} />
-            </TableCell>
-            <TableCell>
-              <CoachListCell coaches={coaches} />
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center justify-end gap-2">
-                {canAssignCoach && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onAssignCoach(team)}
-                    className="h-11 rounded-full"
+                  <span className="mr-2">{season?.label ?? "—"}</span>
+                  <SeasonStatusBadge status={seasonStatus} />
+                </TableCell>
+                <TableCell>
+                  <CoachListCell coaches={coaches} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-2">
+                    {canAssignCoach && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onAssignCoach(team)}
+                        className="h-11 rounded-full"
+                      >
+                        + Coach
+                      </Button>
+                    )}
+                    {canWriteTeams && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Modifier l'équipe « ${team.name} »`}
+                        onClick={() => onEdit(team)}
+                        className="h-11 w-11 rounded-full"
+                      >
+                        <IconPencil className="size-4" aria-hidden />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+              {isExpanded && (
+                <TableRow id={panelId}>
+                  <TableCell
+                    colSpan={5}
+                    className="pt-0 pl-16 whitespace-normal"
                   >
-                    + Coach
-                  </Button>
-                )}
-                {canWriteTeams && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Modifier l'équipe « ${team.name} »`}
-                    onClick={() => onEdit(team)}
-                    className="h-11 w-11 rounded-full"
-                  >
-                    <IconPencil className="size-4" aria-hidden />
-                  </Button>
-                )}
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+                    <TeamOpponentsPanel
+                      teamId={team.id}
+                      canWriteTeams={canWriteTeams}
+                      onAdd={() => onAddOpponent(team)}
+                    />
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
+          );
+        })}
       </TableBody>
     </Table>
-  )
+  );
 }

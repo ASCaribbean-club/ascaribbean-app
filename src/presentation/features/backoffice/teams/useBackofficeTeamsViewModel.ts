@@ -16,6 +16,13 @@ export type TeamSectionFilter = string | 'all'
 export type TeamSeasonFilter = string | 'all'
 export type TeamCoachFilter = 'all' | 'with' | 'without'
 
+// specs/team-opponents.md §2.2/PO-TO-13 — option of the "Équipe du club
+// concernée" select: `{équipe} · {section} ({saison})`.
+export interface TeamOption {
+  id: string
+  label: string
+}
+
 export interface TeamAdminRow {
   team: Team
   sectionName: string
@@ -46,6 +53,10 @@ export function useBackofficeTeamsViewModel() {
   // AC-ST-45 — the row an "+ Coach" click came from is the dialog's
   // pre-checked/default target team.
   const [assignCoachTarget, setAssignCoachTarget] = useState<Team | null>(null)
+  // specs/team-opponents.md — several rows may be expanded at once; purely
+  // local view state. addOpponentTarget is the row "+ Adversaire" came from.
+  const [expandedTeamIds, setExpandedTeamIds] = useState<ReadonlySet<string>>(new Set())
+  const [addOpponentTarget, setAddOpponentTarget] = useState<Team | null>(null)
 
   const teamsQuery = useQuery({ queryKey: queryKeys.teamsAdminList(), queryFn: () => teamRepository.findAllForAdmin() })
   const sectionsQuery = useQuery({ queryKey: queryKeys.sectionsAdminList(), queryFn: () => sectionRepository.findAll() })
@@ -81,6 +92,12 @@ export function useBackofficeTeamsViewModel() {
     }
   })
 
+  // PO-TO-13 (OPEN) — every team already loaded by the screen, unfiltered.
+  const teamOptions: TeamOption[] = allRows.map((row) => ({
+    id: row.team.id,
+    label: `${row.team.name} · ${row.sectionName} (${row.season?.label ?? '—'})`,
+  }))
+
   const rows = allRows.filter((row) => {
     if (sectionFilter !== 'all' && row.team.sectionId !== sectionFilter) return false
     if (seasonFilter !== 'all' && row.team.seasonId !== seasonFilter) return false
@@ -104,6 +121,7 @@ export function useBackofficeTeamsViewModel() {
 
     sections,
     seasons,
+    teamOptions,
 
     sectionFilter,
     setSectionFilter,
@@ -120,5 +138,17 @@ export function useBackofficeTeamsViewModel() {
     assignCoachTarget,
     openAssignCoachDialog: (team: Team) => setAssignCoachTarget(team),
     closeAssignCoachDialog: () => setAssignCoachTarget(null),
+
+    expandedTeamIds,
+    toggleTeamExpanded: (teamId: string) =>
+      setExpandedTeamIds((current) => {
+        const next = new Set(current)
+        if (next.has(teamId)) next.delete(teamId)
+        else next.add(teamId)
+        return next
+      }),
+    addOpponentTarget,
+    openAddOpponentDialog: (team: Team) => setAddOpponentTarget(team),
+    closeAddOpponentDialog: () => setAddOpponentTarget(null),
   }
 }

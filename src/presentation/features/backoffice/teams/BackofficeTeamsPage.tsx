@@ -4,6 +4,7 @@ import { Button } from '@presentation/shared/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffice-nav'
 import { BackofficeEmptyState } from '@presentation/features/backoffice/components/BackofficeEmptyState'
+import { AddOpponentDialog } from './components/AddOpponentDialog'
 import { AssignCoachDialog } from './components/AssignCoachDialog'
 import { TeamFormDialog } from './components/TeamFormDialog'
 import { TeamTable } from './components/TeamTable'
@@ -123,10 +124,14 @@ export function BackofficeTeamsPage() {
           canAssignCoach={vm.canAssignCoach}
           onEdit={vm.openEditDialog}
           onAssignCoach={vm.openAssignCoachDialog}
+          expandedTeamIds={vm.expandedTeamIds}
+          onToggleExpanded={vm.toggleTeamExpanded}
+          onAddOpponent={vm.openAddOpponentDialog}
         />
       )}
 
       <TeamFormDialog dialog={vm.dialog} onClose={vm.closeDialog} />
+      <AddOpponentDialog targetTeam={vm.addOpponentTarget} teamOptions={vm.teamOptions} onClose={vm.closeAddOpponentDialog} />
       <AssignCoachDialog targetTeam={vm.assignCoachTarget} onClose={vm.closeAssignCoachDialog} />
     </div>
   )

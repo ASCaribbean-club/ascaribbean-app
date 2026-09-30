@@ -19,6 +19,7 @@ import { GetPlayerTeamUseCase } from '@domain/usecases/player-dashboard/GetPlaye
 import { ListUserMissingOrRejectedDocumentsUseCase } from '@/domain/usecases/player-dashboard/ListUserMissingOrRejectedDocumentsUseCase'
 import { ListUpcomingConvocationsForPlayerUseCase } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { RespondToConvocationUseCase } from '@domain/usecases/player-dashboard/RespondToConvocationUseCase'
+import { GetTeamRecentFormUseCase } from '@domain/usecases/team-form/GetTeamRecentFormUseCase'
 import { AssembleConvocationDetailFieldsUseCase } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import { GetConvocationDetailsUseCase } from '@/domain/usecases/convocation/GetConvocationDetailsUseCase'
 import { UserRepositoryImpl } from '@/data/repositories/UserRepositoryImpl'
@@ -42,6 +43,7 @@ export interface PlayerDashboardContainer {
   listUpcomingConvocationsForPlayerUseCase: ListUpcomingConvocationsForPlayerUseCase
   respondToConvocationUseCase: RespondToConvocationUseCase
   listUserMissingOrRejectedDocumentsUseCase: ListUserMissingOrRejectedDocumentsUseCase
+  getTeamRecentFormUseCase: GetTeamRecentFormUseCase
 }
 
 export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): PlayerDashboardContainer {
@@ -77,5 +79,6 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
     ),
     respondToConvocationUseCase: new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository),
     listUserMissingOrRejectedDocumentsUseCase: new ListUserMissingOrRejectedDocumentsUseCase(documentRepository),
+    getTeamRecentFormUseCase: new GetTeamRecentFormUseCase(convocationRepository, matchDetailsRepository),
   }
 }

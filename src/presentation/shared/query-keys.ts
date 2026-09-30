@@ -266,4 +266,14 @@ export const queryKeys = {
   // invalidate/reload this key exactly like `teamStats`/`teamRecentForm`
   // above, never carry over the previous team's alerts.
   coachAlerts: (teamId: string) => ['convocations', 'team', teamId, 'coachAlerts'] as const,
+
+  // specs/web-audit-logs.md §2.6/§2.7/AC-AU-24 — discriminated by the
+  // filters themselves (never the page: useInfiniteQuery accumulates pages
+  // under ONE key, per filter set — changing a filter therefore means a
+  // brand-new key, which is exactly what makes "changer un filtre
+  // réinitialise la pagination" (AC-AU-13) true for free, with no manual
+  // reset anywhere in the ViewModel). `from`/`to` as ISO strings (or null),
+  // `actions` sorted so the key is stable regardless of check/uncheck order.
+  auditLog: (filters: { from: string | null; to: string | null; actions: string[] }) =>
+    ['audit-log', filters] as const,
 }

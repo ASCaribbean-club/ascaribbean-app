@@ -22,6 +22,7 @@ import { BackofficeTeamsPage } from '../features/backoffice/teams/BackofficeTeam
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
 import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
 import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
+import { BackofficeAuditPage } from '../features/backoffice/audit/BackofficeAuditPage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
 import { ActiveTeamProvider } from './providers/active-team-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
@@ -86,6 +87,7 @@ export const router = createBrowserRouter([
                   { path: 'sections', element: <BackofficeSectionsPage /> },
                   { path: 'seasons', element: <BackofficeSeasonsPage /> },
                   { path: 'news', element: <BackofficeNewsPage /> },
+                  { path: 'audit', element: <BackofficeAuditPage /> },
                 ],
               },
             ],

@@ -368,4 +368,44 @@ describe('can', () => {
       expect(can(user, 'team_stats:view', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
     }
   })
+
+  // specs/web-audit-logs.md §3/AC-AU-20 — 'audit:read' is ['admin']-only,
+  // club-wide (no scope check, same as 'backoffice:access'/'season:write').
+  it('allows an admin to read the audit log', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'audit:read')).toBe(true)
+  })
+
+  it('denies every non-admin role from reading the audit log, including a multi-role account without admin', () => {
+    // §3 "Comptes multi-rôles" — cumulating several non-admin roles never
+    // adds up to admin access; the one role whose consultations this
+    // journal traces (medical-referent) is deliberately included, §3's own
+    // "le rôle dont les consultations sont tracées n'est pas celui qui lit
+    // la trace".
+    const multiRoleWithoutAdmin = userWith([
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'medical-referent' },
+      { role: 'treasurer' },
+    ])
+    expect(can(multiRoleWithoutAdmin, 'audit:read')).toBe(false)
+
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      const user = userWith([role])
+      expect(can(user, 'audit:read')).toBe(false)
+    }
+  })
+
+  it('allows an admin+coach multi-role account to read the audit log regardless of order or scope', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }, { role: 'admin' }])
+    expect(can(user, 'audit:read')).toBe(true)
+  })
 })

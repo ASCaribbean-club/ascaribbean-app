@@ -63,8 +63,32 @@ export interface InviteUserInput {
 // see the invite-user Edge Function's own comment on why), built from the
 // hashed OTP token. Extended only if the function genuinely returns more —
 // no speculative fields.
+//
+// specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — `userId` added,
+// populated by invite() ONLY: InviteUserUseCase needs the newly created
+// account's id as its 'user.invited' audit targetId, and the Edge Function's
+// 'create' branch is the only place that id is computed (see its own
+// comment). reissueInvitationLink()/generatePasswordResetLink() never
+// populate this field — the account they act on already exists, and its id
+// is already known to their own caller's input (targetUserId/userId), so
+// there's nothing new to hand back.
+//
+// A distinct `CreatedInvitationLink extends InvitationLink { userId: string }`
+// type was considered instead of widening this one with an optional field —
+// it would make invite()'s return type more honest (only the method that
+// truly always returns an id would carry one). Rejected here: about two
+// dozen existing test files across this codebase construct a fake
+// `UserRepository.invite()` returning a bare `{ url }` as an unrelated
+// stub (they exercise a different use case entirely and never assert on
+// invite()'s own return value) — a required field would force every one of
+// them to grow an unused `userId` just to keep satisfying the interface.
+// An optional field on the existing type is the narrower change, and
+// `userId?: string` costs reissueInvitationLink()/generatePasswordResetLink()
+// nothing beyond a field they simply never populate — no caller of either
+// reads it.
 export interface InvitationLink {
   url: string
+  userId?: string
 }
 
 export interface UserRepository {
@@ -112,9 +136,10 @@ export interface UserRepository {
   // creates is NOT returned here — a successful call still means "go
   // re-fetch the directory" for the row itself (same "invalidate, don't
   // thread the new row through" shape every other write in this screen
-  // already uses); the ONLY thing threaded back to the caller is the
-  // activation link, which exists nowhere else to be re-fetched from (it
-  // is never stored, §1.6).
+  // already uses); the activation link and the new account's `userId` are
+  // what's threaded back to the caller — the link exists nowhere else to be
+  // re-fetched from (it is never stored, §1.6), and `userId` is
+  // InviteUserUseCase's own audit targetId (see InvitationLink's comment).
   invite(input: InviteUserInput): Promise<InvitationLink>
 
   // specs/web-users-invitation-links.md §2/§4 — ReissueInvitationLinkUseCase

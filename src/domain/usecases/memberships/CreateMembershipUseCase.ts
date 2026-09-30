@@ -5,6 +5,7 @@ import { InvalidMembershipInputError } from '../../errors/invalid-membership-inp
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
 import { can } from '../../policies/can'
 import { canSetMembershipActive } from '../../rules/membership-payment-rules'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { MembershipRepository } from '../../repositories/membership-repository'
 import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -23,11 +24,26 @@ export interface CreateMembershipUseCaseInput {
 // caller never learns which field would have been rejected. Club-wide
 // action, no team/section scope (§3, 'admin' carries no scope field in
 // RoleAssignment) — no context object needed here.
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case emits
+// 'membership.created' below, after the membership itself has already
+// committed (whichever branch below produced it — a plain create() or the
+// replaceArchived() recreate path, §2.7/PO-WM-03).
+//
+// Audit-write failure AFTER the membership write has already succeeded —
+// same tradeoff, and same reasoning, as AssignRoleUseCase's own top
+// comment: no shared transaction across the two calls (client-RLS-gated
+// INSERT on memberships vs. a SECURITY DEFINER RPC on audit_log), so the
+// membership write cannot be rolled back if the audit call fails. Caught
+// and surfaced via `console.error`, never rejecting this use case's own
+// promise — the business outcome (the membership is created) already
+// succeeded, the caller/UI should see success.
 export class CreateMembershipUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly membershipRepository: MembershipRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: CreateMembershipUseCaseInput): Promise<Membership> {
@@ -112,7 +128,9 @@ export class CreateMembershipUseCase {
       // reading of "remplacer" applies (R1): desarchive the existing row
       // and overwrite it in place with the new values. Single row, same id,
       // never a second insert left dangling.
-      return this.membershipRepository.replaceArchived(archived.id, createInput)
+      const replaced = await this.membershipRepository.replaceArchived(archived.id, createInput)
+      await this.recordMembershipCreated(replaced.id, input)
+      return replaced
     }
 
     // No archived collision — including the normal renewal case (different
@@ -121,6 +139,31 @@ export class CreateMembershipUseCase {
     // surface from the database's own partial unique index, never
     // pre-checked here (TOCTOU, same reasoning as CreateSeasonUseCase's own
     // comment on not pre-checking season overlap).
-    return this.membershipRepository.create(createInput)
+    const created = await this.membershipRepository.create(createInput)
+    await this.recordMembershipCreated(created.id, input)
+    return created
+  }
+
+  // See this class's own top comment for why a rejection here does not
+  // reject execute()'s own promise. Shared by both write paths above (a
+  // plain create and the replaceArchived recreate) so the audit call isn't
+  // duplicated. `seasonId`/`status` come from the ORIGINAL input, not the
+  // repository's own return value — both branches write them through
+  // unchanged, so the two are always equal, but the input is the more
+  // direct source of "what the actor asked for".
+  private async recordMembershipCreated(membershipId: string, input: CreateMembershipUseCaseInput): Promise<void> {
+    try {
+      await this.auditLogRepository.record({
+        action: 'membership.created',
+        targetId: membershipId,
+        targetType: 'membership',
+        metadata: { seasonId: input.seasonId, status: input.status },
+      })
+    } catch (auditError) {
+      console.error('CreateMembershipUseCase: failed to record membership.created audit entry', {
+        targetId: membershipId,
+        auditError,
+      })
+    }
   }
 }

@@ -3,6 +3,7 @@ import type { Team } from '../../entities/team'
 import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidTeamInputError } from '../../errors/invalid-team-input-error'
+import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { TeamRepository, UpdateTeamInput } from '../../repositories/team-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 import { UpdateTeamUseCase, type UpdateTeamUseCaseInput } from './UpdateTeamUseCase'
@@ -53,6 +54,14 @@ function fakeTeamRepository(overrides: Partial<TeamRepository> = {}): TeamReposi
   }
 }
 
+function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
+  return {
+    list: async () => ({ entries: [], hasMore: false }),
+    record: vi.fn(async (_entry: RecordAuditLogEntryInput) => {}),
+    ...overrides,
+  }
+}
+
 function validInput(overrides: Partial<UpdateTeamUseCaseInput> = {}): UpdateTeamUseCaseInput {
   return {
     actorId: 'admin-1',
@@ -66,37 +75,70 @@ function validInput(overrides: Partial<UpdateTeamUseCaseInput> = {}): UpdateTeam
 
 describe('UpdateTeamUseCase', () => {
   it('throws ForbiddenError when the actor does not exist', async () => {
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(null), fakeTeamRepository())
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(null), fakeTeamRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
   })
 
   it('throws ForbiddenError when the actor is a section-manager, not an admin', async () => {
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(sectionManagerUser()), fakeTeamRepository())
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(sectionManagerUser()), fakeTeamRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'section-manager-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws InvalidTeamInputError when name is empty', async () => {
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository())
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ name: '' }))).rejects.toThrow(InvalidTeamInputError)
   })
 
   it('throws InvalidTeamInputError when sectionId is missing', async () => {
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository())
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ sectionId: '' }))).rejects.toThrow(InvalidTeamInputError)
   })
 
   it('throws InvalidTeamInputError when seasonId is missing', async () => {
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository())
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ seasonId: '' }))).rejects.toThrow(InvalidTeamInputError)
   })
 
   // AC-ST-24 — updates the SAME row, never creates a duplicate.
   it('updates the targeted team id with the trimmed name and given section/season ids', async () => {
     const update = vi.fn(async (id: string, input: UpdateTeamInput) => ({ id, ...input }) satisfies Team)
-    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository({ update }))
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository({ update }), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ teamId: 'team-42', name: '  Groupe B  ' }))
 
     expect(update).toHaveBeenCalledWith('team-42', { name: 'Groupe B', sectionId: 'section-1', seasonId: 'season-1' })
+  })
+
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — a successful
+  // update records exactly one 'team.updated' audit entry, targeted at the
+  // team, after the write itself has already committed.
+  it('records a team.updated audit entry once, targeted at the team', async () => {
+    const record = vi.fn(async () => {})
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository(), fakeAuditLogRepository({ record }))
+
+    await useCase.execute(validInput())
+
+    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledWith({
+      action: 'team.updated',
+      targetId: 'team-1',
+      targetType: 'team',
+      metadata: { name: 'Groupe A', sectionId: 'section-1', seasonId: 'season-1' },
+    })
+  })
+
+  // See this use case's own top comment: an audit-write failure must not
+  // reject execute()'s own promise — the update itself already succeeded.
+  it('still resolves when the audit write rejects, because the update itself already succeeded', async () => {
+    const record = vi.fn(async () => {
+      throw new Error('audit RPC unavailable')
+    })
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const useCase = new UpdateTeamUseCase(fakeUserRepository(adminUser()), fakeTeamRepository(), fakeAuditLogRepository({ record }))
+
+    await expect(useCase.execute(validInput())).resolves.toBeDefined()
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

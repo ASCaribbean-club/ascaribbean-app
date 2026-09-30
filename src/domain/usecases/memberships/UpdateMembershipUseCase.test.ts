@@ -5,6 +5,7 @@ import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidMembershipInputError } from '../../errors/invalid-membership-input-error'
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
+import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { MembershipRepository, UpdateMembershipInput } from '../../repositories/membership-repository'
 import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -81,6 +82,14 @@ function fakePaymentRepository(overrides: Partial<PaymentRepository> = {}): Paym
   }
 }
 
+function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
+  return {
+    list: async () => ({ entries: [], hasMore: false }),
+    record: vi.fn(async (_entry: RecordAuditLogEntryInput) => {}),
+    ...overrides,
+  }
+}
+
 function validInput(overrides: Partial<UpdateMembershipUseCaseInput> = {}): UpdateMembershipUseCaseInput {
   return {
     actorId: 'admin-1',
@@ -97,23 +106,23 @@ function validInput(overrides: Partial<UpdateMembershipUseCaseInput> = {}): Upda
 
 describe('UpdateMembershipUseCase', () => {
   it('throws ForbiddenError when the actor does not exist', async () => {
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(null), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(null), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
   })
 
   it('throws ForbiddenError when the actor is not admin', async () => {
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(coachUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(coachUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'coach-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws InvalidMembershipInputError when validUntil is missing', async () => {
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ validUntil: '' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   it('accepts a null licenceNumber when status stays "pending"', async () => {
     const update = vi.fn(async (id: string, input: UpdateMembershipInput) => ({ id, ...input }) satisfies Membership)
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ licenceNumber: null, status: 'pending' }))
 
@@ -122,7 +131,7 @@ describe('UpdateMembershipUseCase', () => {
 
   it('updates the SAME row (targets membershipId, never inserts a new one)', async () => {
     const update = vi.fn(async (id: string, input: UpdateMembershipInput) => ({ id, ...input }) satisfies Membership)
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
     const result = await useCase.execute(validInput())
 
@@ -132,7 +141,7 @@ describe('UpdateMembershipUseCase', () => {
 
   it('writes amountDueCents through to the repository, converted upstream to cents already', async () => {
     const update = vi.fn(async (id: string, input: UpdateMembershipInput) => ({ id, ...input }) satisfies Membership)
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ amountDueCents: 45000, status: 'pending' }))
 
@@ -141,7 +150,7 @@ describe('UpdateMembershipUseCase', () => {
 
   it('accepts a null amountDueCents (clearing a previously-set amount)', async () => {
     const update = vi.fn(async (id: string, input: UpdateMembershipInput) => ({ id, ...input }) satisfies Membership)
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ amountDueCents: null, status: 'pending' }))
 
@@ -149,12 +158,12 @@ describe('UpdateMembershipUseCase', () => {
   })
 
   it('throws InvalidMembershipInputError when amountDueCents is negative', async () => {
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ amountDueCents: -1, status: 'pending' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   it('throws InvalidMembershipInputError when amountDueCents is not an integer', async () => {
-    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository())
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ amountDueCents: 150.5, status: 'pending' }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
@@ -163,7 +172,7 @@ describe('UpdateMembershipUseCase', () => {
   describe('activation rule (AC-WM-35)', () => {
     it('rejects "active" when licenceNumber is missing', async () => {
       const update = vi.fn()
-      const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+      const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
       await expect(useCase.execute(validInput({ licenceNumber: null }))).rejects.toThrow(MembershipActivationRequirementsNotMetError)
       expect(update).not.toHaveBeenCalled()
@@ -171,7 +180,7 @@ describe('UpdateMembershipUseCase', () => {
 
     it('rejects "active" when licenceNumber is blank (only whitespace)', async () => {
       const update = vi.fn()
-      const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository())
+      const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
 
       await expect(useCase.execute(validInput({ licenceNumber: '   ' }))).rejects.toThrow(MembershipActivationRequirementsNotMetError)
       expect(update).not.toHaveBeenCalled()
@@ -183,6 +192,7 @@ describe('UpdateMembershipUseCase', () => {
         fakeUserRepository(adminUser()),
         fakeMembershipRepository({ update }),
         fakePaymentRepository({ listForMembership: async () => [payment({ amountCents: 15000 })] }),
+        fakeAuditLogRepository(),
       )
 
       await expect(useCase.execute(validInput({ amountDueCents: 30000 }))).rejects.toThrow(MembershipActivationRequirementsNotMetError)
@@ -195,6 +205,7 @@ describe('UpdateMembershipUseCase', () => {
         fakeUserRepository(adminUser()),
         fakeMembershipRepository({ update }),
         fakePaymentRepository({ listForMembership: async () => [] }),
+        fakeAuditLogRepository(),
       )
 
       await expect(useCase.execute(validInput({ amountDueCents: 30000 }))).rejects.toThrow(MembershipActivationRequirementsNotMetError)
@@ -207,6 +218,7 @@ describe('UpdateMembershipUseCase', () => {
         fakeUserRepository(adminUser()),
         fakeMembershipRepository({ update }),
         fakePaymentRepository({ listForMembership: async () => [payment({ amountCents: 30000 })] }),
+        fakeAuditLogRepository(),
       )
 
       const result = await useCase.execute(validInput({ amountDueCents: 30000 }))
@@ -222,6 +234,7 @@ describe('UpdateMembershipUseCase', () => {
         fakeUserRepository(adminUser()),
         fakeMembershipRepository({ update }),
         fakePaymentRepository({ listForMembership: async () => [] }),
+        fakeAuditLogRepository(),
       )
 
       await useCase.execute(validInput({ status: 'pending', licenceNumber: null, amountDueCents: null }))
@@ -243,6 +256,7 @@ describe('UpdateMembershipUseCase', () => {
         fakeUserRepository(adminUser()),
         fakeMembershipRepository({ update, findForUserAndSeason, findAllForAdmin }),
         fakePaymentRepository({ listForMembership: async () => [payment({ amountCents: 30000 })] }),
+        fakeAuditLogRepository(),
       )
 
       await useCase.execute(validInput({ amountDueCents: 30000 }))
@@ -250,5 +264,38 @@ describe('UpdateMembershipUseCase', () => {
       expect(findForUserAndSeason).not.toHaveBeenCalled()
       expect(findAllForAdmin).not.toHaveBeenCalled()
     })
+  })
+
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — a successful
+  // update records exactly one 'membership.updated' audit entry, targeted
+  // at the membership, after the write itself has already committed.
+  it('records a membership.updated audit entry once, targeted at the membership', async () => {
+    const record = vi.fn(async () => {})
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository({ record }))
+
+    await useCase.execute(validInput())
+
+    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledWith({
+      action: 'membership.updated',
+      targetId: 'membership-1',
+      targetType: 'membership',
+      metadata: { status: 'active' },
+    })
+  })
+
+  // See this use case's own top comment: an audit-write failure must not
+  // reject execute()'s own promise — the update itself already succeeded.
+  it('still resolves when the audit write rejects, because the update itself already succeeded', async () => {
+    const record = vi.fn(async () => {
+      throw new Error('audit RPC unavailable')
+    })
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository({ record }))
+
+    await expect(useCase.execute(validInput())).resolves.toBeDefined()
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

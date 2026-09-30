@@ -1,6 +1,5 @@
 import type { ConvocationStatus } from '@domain/entities/convocation'
 import { Badge } from '@presentation/shared/components/ui/badge'
-import { cn } from '@presentation/shared/lib/utils'
 
 interface StatusBadgeProps {
   status: ConvocationStatus
@@ -12,35 +11,23 @@ interface StatusBadgeProps {
 // there's no notion of "convoked" at the screen level) — this replaces it
 // with the REAL status, in the same top-right slot of the hero.
 //
-// AC-MD-05 / AC-MD-22: the status is always doubled by a text label, never
-// conveyed by color alone — this component always renders both the Badge's
-// background AND its text, there's no icon-only or color-only variant.
-// Colors extend the vocabulary already established elsewhere in the app
-// (vert positif / rouge négatif / neutre) rather than inventing a new one —
-// same green/red tokens as ResponseBar and ResponseActions.
-const STATUS_LABEL: Record<ConvocationStatus, string> = {
-  open: 'Ouverte',
-  closed: 'Clôturée',
-  cancelled: 'Annulée',
-}
-
-const STATUS_CLASSNAME: Record<ConvocationStatus, string> = {
-  open: 'border-coach-green/35 bg-coach-green/15 text-coach-green-text',
-  cancelled: 'border-coach-red/35 bg-coach-red/15 text-coach-red-text',
-  // "Clôturée" is neither a positive nor a negative outcome (a closed
-  // convocation just means responses are no longer being collected) — the
-  // neutral white/muted treatment, same family as ResponseBar's "en
-  // attente" segment.
-  closed: 'border-white/15 bg-white/10 text-white/70',
-}
-
+// Développeuse, 2026-09-30 — AC-MD-05/AC-CA-16 override (see specs/
+// match_details_page.md and specs/calendar.md's own dated notes): 'closed'
+// no longer renders "Clôturée" here. A closed convocation just means
+// attendance-taking finished normally (the attendance_records_close_
+// convocation trigger) — not worth an exception badge. The genuinely
+// actionable signal is the OPPOSITE: a past convocation still `open`,
+// meaning attendance was never confirmed — that's
+// `AttendanceConfirmationAlert` (presentation/shared/components/), a
+// separate coach-only component, not a third state of this badge.
+// 'cancelled' remains the only real exception this badge exists to
+// surface, always doubled by its text label (AC-MD-22/AC-CA-17).
 export function StatusBadge({ status }: StatusBadgeProps) {
-  // AC-MD-05 (revised 2026-09-02): 'open' is the silent default — the badge
-  // only surfaces an exception (closed/cancelled), never the active state.
-  if (status === 'open') return
+  if (status !== 'cancelled') return
+
   return (
-    <Badge className={cn('rounded-full px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide uppercase', STATUS_CLASSNAME[status])}>
-      {STATUS_LABEL[status]}
+    <Badge className="rounded-full border border-coach-red/35 bg-coach-red/15 px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-coach-red-text uppercase">
+      Annulée
     </Badge>
   )
 }

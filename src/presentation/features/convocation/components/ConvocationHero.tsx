@@ -5,6 +5,7 @@ import type { Opponent } from '@domain/entities/opponent'
 import { formatConvocationType, getConvocationTypeIcon } from '@presentation/shared/formatters/convocation-labels'
 import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { TeamCrestAvatar } from '@presentation/shared/components/TeamCrestAvatar'
+import { AttendanceConfirmationAlert } from '@presentation/shared/components/AttendanceConfirmationAlert'
 import { StatusBadge } from './StatusBadge'
 
 interface ConvocationHeroProps {
@@ -13,6 +14,7 @@ interface ConvocationHeroProps {
   sectionName: string | undefined
   opponent: Opponent | null
   meetingDetails: MeetingDetails | null
+  attendanceConfirmationMissing: boolean
 }
 
 // The "hero" zone below BackHeader (UI design §"Structure de l'écran",
@@ -29,7 +31,7 @@ interface ConvocationHeroProps {
 // The status pastille (top-right in the mockup) and the cancellation reason
 // line are common to all three types — rendered once, outside the
 // match/non-match branch.
-export function ConvocationHero({ convocation, teamName, sectionName, opponent, meetingDetails }: ConvocationHeroProps) {
+export function ConvocationHero({ convocation, teamName, sectionName, opponent, meetingDetails, attendanceConfirmationMissing }: ConvocationHeroProps) {
   const Icon = getConvocationTypeIcon(convocation.type)
 
   const title =
@@ -54,7 +56,10 @@ export function ConvocationHero({ convocation, teamName, sectionName, opponent, 
             ci-dessous, qui n'a pas de première ligne de titre à afficher deux
             fois). */}
         <span />
-        <StatusBadge status={convocation.status} />
+        <div className="flex items-center gap-2">
+          <AttendanceConfirmationAlert visible={attendanceConfirmationMissing} />
+          <StatusBadge status={convocation.status} />
+        </div>
       </div>
 
       {convocation.type === 'match' ? (

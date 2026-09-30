@@ -173,6 +173,16 @@ export function useConvocationDetailViewModel() {
   const hasAttendanceValidatePermission = usePermission('attendance:validate', { teamId: convocation?.teamId })
   const canValidateAttendance = activeRole === 'coach' && hasAttendanceValidatePermission
 
+  // Développeuse, 2026-09-30 — AC-MD-05 override (specs/match_details_page.md's
+  // own dated note): the "opposite" of the old "Clôturée" pill — a past
+  // convocation still `open` means attendance_records_close_convocation
+  // never fired, i.e. at least one player's attendance is still
+  // unconfirmed. Coach-only, same `canValidateAttendance` gate as
+  // AttendanceConfirmRow itself (only the role that can act on this sees
+  // it).
+  const attendanceConfirmationMissing =
+    canValidateAttendance && !!convocation && convocation.status === 'open' && isPastDate(convocation.date, now)
+
   const hasRbacPermission = usePermission('convocation:respond', { teamId: convocation?.teamId })
   // AC-MD-13 — RBAC AND response-deadline window, same shape as
   // usePlayerDashboardViewModel.canRespond. Also gated on `activeRole`
@@ -852,6 +862,7 @@ export function useConvocationDetailViewModel() {
     matchDetails,
     opponent: detailedConvocationQuery.data?.opponent ?? null,
     meetingDetails: detailedConvocationQuery.data?.meetingDetails ?? null,
+    attendanceConfirmationMissing,
 
     activeTab,
     setActiveTab,

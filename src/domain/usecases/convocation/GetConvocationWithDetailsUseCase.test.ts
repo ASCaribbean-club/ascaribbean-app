@@ -70,6 +70,7 @@ function fakeOpponentRepository(record: Opponent | null): OpponentRepository {
     findByTeamId: async () => [],
     findById: async () => record,
     create: async (name) => ({ id: 'opponent-1', name }),
+    addToTeam: async (_teamId, name) => ({ id: 'opponent-1', name }),
   }
 }
 

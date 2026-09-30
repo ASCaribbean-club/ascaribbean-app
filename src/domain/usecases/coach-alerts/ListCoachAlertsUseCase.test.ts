@@ -90,6 +90,7 @@ function fakeOpponentRepository(opponents: Opponent[] = [], findByTeamId = vi.fn
     findByTeamId,
     findById: vi.fn(),
     create: vi.fn(),
+    addToTeam: vi.fn(),
   }
 }
 

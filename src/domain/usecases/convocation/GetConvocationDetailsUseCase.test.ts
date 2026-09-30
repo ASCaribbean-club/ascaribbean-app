@@ -41,6 +41,7 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     // — present only to satisfy the interface, same reasoning as the other
     // fakes in this file.
     updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', goalsFor: null, goalsAgainst: null, ...arrangements }),
+    findByConvocations: async () => [],
   }
 }
 

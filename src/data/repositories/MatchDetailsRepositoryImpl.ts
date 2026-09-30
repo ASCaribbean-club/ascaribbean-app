@@ -91,4 +91,21 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
 
     return toMatchDetails(data as MatchDetailsRow)
   }
+
+  // specs/coach-dashboard.md §1 point 7 (PO-1) / specs/player-dashboard.md
+  // PO-PD-07 — bulk form of findByConvocationId() above, same RLS policy
+  // (match_details_select_team_scoped), same columns. Short-circuits on an
+  // empty array, same reasoning as MatchEventRepositoryImpl.findByConvocations.
+  async findByConvocations(convocationIds: string[]): Promise<MatchDetails[]> {
+    if (convocationIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('match_details')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .in('convocation_id', convocationIds)
+
+    if (error) throw mapSupabaseError(error)
+
+    return (data as MatchDetailsRow[]).map(toMatchDetails)
+  }
 }

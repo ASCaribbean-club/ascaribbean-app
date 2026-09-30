@@ -1,6 +1,6 @@
+import { TeamFormAndGoalsRow } from '@presentation/shared/components/TeamFormAndGoalsRow'
 import { CoachHeader } from './components/CoachHeader'
 import { CreateConvocationFab } from './components/CreateConvocationFab'
-import { FormAndGoalsRow } from './components/FormAndGoalsRow'
 import { NextTrainingOrMatchCard } from './components/NextTrainingOrMatchCard'
 import { UpcomingList } from './components/UpcomingList'
 import { useCoachDashboardViewModel } from './useCoachDashboardViewModel'
@@ -33,7 +33,7 @@ export function CoachDashboardPage() {
       <div className="flex flex-col gap-5 px-5.5 pb-16">
         <NextTrainingOrMatchCard nextTrainingOrMatch={vm.nextTrainingOrMatch} onOpen={() => vm.goToConvocationDetail(vm.nextTrainingOrMatch?.convocation.id ?? '')} />
 
-        <FormAndGoalsRow />
+        <TeamFormAndGoalsRow form={vm.teamForm} goalsFor={vm.teamGoalsFor} goalsAgainst={vm.teamGoalsAgainst} />
 
         <UpcomingList items={vm.upcomingList} onOpen={vm.goToConvocationDetail} onSeeAll={vm.goToCalendar} />
       </div>

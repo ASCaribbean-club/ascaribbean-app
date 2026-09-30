@@ -13,7 +13,11 @@ export function useCoachDashboardViewModel() {
   const navigate = useNavigate()
   const { toggleActiveRole } = useActiveRole()
   const { selectedCoachTeamId, selectCoachTeam } = useActiveTeam()
-  const { getCoachTeamsUseCase, listTeamConvocationsUseCase: listUpcomingTeamConvocationsUseCase } = useCoachDashboardDependencies()
+  const {
+    getCoachTeamsUseCase,
+    listTeamConvocationsUseCase: listUpcomingTeamConvocationsUseCase,
+    getTeamRecentFormUseCase,
+  } = useCoachDashboardDependencies()
 
   // Get teams ids where coach is assigned to
   const coachAssignment = user?.roles.find((assignment) => assignment.role === 'coach')
@@ -45,11 +49,20 @@ export function useCoachDashboardViewModel() {
   const nextTrainingOrMatch = upcomingConvocations.find((c) => c.convocation.type === 'training' || c.convocation.type === 'match')
   const upcomingList = upcomingConvocations.filter((c) => c !== nextTrainingOrMatch);
 
+  // specs/coach-dashboard.md §1 point 7 (PO-1), resolved 2026-09-30 — real
+  // team data now that specs/match-stats.md exists, replacing the earlier
+  // hardcoded FormAndGoalsRow values.
+  const teamRecentFormQuery = useQuery({
+    queryKey: queryKeys.teamRecentForm(currentTeam?.id ?? ''),
+    queryFn: () => getTeamRecentFormUseCase.execute({ teamId: currentTeam!.id }),
+    enabled: !!currentTeam,
+  })
+
   const canCreateConvocation = usePermission('convocation:create', { teamId: currentTeam?.id })
 
   return {
-    isLoading: teamsQuery.isLoading || upcomingConvocationsQuery.isLoading,
-    error: teamsQuery.error ?? upcomingConvocationsQuery.error,
+    isLoading: teamsQuery.isLoading || upcomingConvocationsQuery.isLoading || teamRecentFormQuery.isLoading,
+    error: teamsQuery.error ?? upcomingConvocationsQuery.error ?? teamRecentFormQuery.error,
 
     /// --- Header ---
     firstName: user ? getFirstName(user.fullName) : '',
@@ -67,6 +80,11 @@ export function useCoachDashboardViewModel() {
 
     /// --- Next training or match card ---
     nextTrainingOrMatch: nextTrainingOrMatch,
+
+    /// --- "Forme récente" / "Buts" row (PO-1, resolved 2026-09-30) ---
+    teamForm: teamRecentFormQuery.data?.form ?? [],
+    teamGoalsFor: teamRecentFormQuery.data?.goalsFor ?? 0,
+    teamGoalsAgainst: teamRecentFormQuery.data?.goalsAgainst ?? 0,
 
     /// --- Events/convocations to come ---
     upcomingList,

@@ -61,6 +61,7 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     // Not exercised by GetConvocationWithDetailsUseCase (a read-only use
     // case) — present only to satisfy the interface.
     updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', goalsFor: null, goalsAgainst: null, ...arrangements }),
+    findByConvocations: async () => [],
   }
 }
 

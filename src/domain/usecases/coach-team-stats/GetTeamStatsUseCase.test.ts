@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AttendanceRecord, Convocation } from '../../entities/convocation'
+import type { MatchDetails } from '../../entities/match-details'
 import type { MatchEvent } from '../../entities/match-event'
 import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
+import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
 import type { TeamRosterPlayer, TeamRosterRepository } from '../../repositories/team-roster-repository'
 import { GetTeamStatsUseCase } from './GetTeamStatsUseCase'
@@ -85,6 +87,16 @@ function fakeMatchEventRepository(events: MatchEvent[] = []): MatchEventReposito
     findByConvocations: async () => events,
     getOwnGoalsCountForCurrentSeason: async () => 0,
     getOwnCardsCountForCurrentSeason: async () => ({ yellowCount: 0, redCount: 0 }),
+  }
+}
+
+function fakeMatchDetailsRepository(matchDetails: MatchDetails[] = []): MatchDetailsRepository {
+  return {
+    upsert: vi.fn(),
+    findByConvocationId: vi.fn(),
+    recordScore: vi.fn(),
+    updateArrangements: vi.fn(),
+    findByConvocations: async () => matchDetails,
   }
 }
 

@@ -15,6 +15,7 @@ import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
 import { GetCoachTeamsUseCase } from '@domain/usecases/coach-dashboard/GetCoachTeamsUseCase'
 import { ListTeamConvocationsUseCase } from '@/domain/usecases/coach-dashboard/ListTeamConvocationsUseCase'
+import { GetTeamRecentFormUseCase } from '@domain/usecases/team-form/GetTeamRecentFormUseCase'
 
 export interface CoachDashboardContainer {
   // Repositories
@@ -29,6 +30,7 @@ export interface CoachDashboardContainer {
   // Use cases
   getCoachTeamsUseCase: GetCoachTeamsUseCase
   listTeamConvocationsUseCase: ListTeamConvocationsUseCase
+  getTeamRecentFormUseCase: GetTeamRecentFormUseCase
 }
 
 export function createCoachDashboardContainer(supabaseClient: SupabaseClient): CoachDashboardContainer {
@@ -56,5 +58,6 @@ export function createCoachDashboardContainer(supabaseClient: SupabaseClient): C
       matchDetailsRepository,
       opponentRepository,
     ),
+    getTeamRecentFormUseCase: new GetTeamRecentFormUseCase(convocationRepository, matchDetailsRepository),
   }
 }

@@ -66,6 +66,7 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
       goalsAgainst,
     }) as MatchDetails,
     updateArrangements: async () => { throw new Error('not used in this test') },
+    findByConvocations: async () => [],
     ...overrides,
   }
 }

@@ -1,15 +1,16 @@
 import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
+import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
 import type { TeamRosterPlayer, TeamRosterRepository } from '../../repositories/team-roster-repository'
 import {
   attendanceRate,
+  sumTeamGoals,
   tallyAttendance,
   tallyAttendanceByPlayer,
   tallyCardsByPlayer,
   tallyGoalsByPlayer,
   tallyTeamCards,
-  tallyTeamGoals,
   type AttendanceTally,
   type CardTally,
 } from '../../policies/team-stats-rules'
@@ -77,6 +78,7 @@ export class GetTeamStatsUseCase {
     private readonly convocationRepository: ConvocationRepository,
     private readonly attendanceRecordRepository: AttendanceRecordRepository,
     private readonly matchEventRepository: MatchEventRepository,
+    private readonly matchDetailsRepository: MatchDetailsRepository,
   ) {}
 
   async execute(input: GetTeamStatsInput): Promise<TeamStats> {
@@ -104,9 +106,10 @@ export class GetTeamStatsUseCase {
     // (AC-MS-18).
     const matchConvocationIds = convocations.filter((convocation) => convocation.type === 'match').map((convocation) => convocation.id)
 
-    const [attendanceRecords, matchEvents] = await Promise.all([
+    const [attendanceRecords, matchEvents, matchDetails] = await Promise.all([
       this.attendanceRecordRepository.findByConvocations(convocationIds),
       this.matchEventRepository.findByConvocations(matchConvocationIds),
+      this.matchDetailsRepository.findByConvocations(matchConvocationIds),
     ])
 
     const teamAttendanceTally = tallyAttendance(attendanceRecords, openConvocations.length)
@@ -121,7 +124,7 @@ export class GetTeamStatsUseCase {
         ),
       },
       goals: {
-        team: tallyTeamGoals(matchEvents),
+        team: sumTeamGoals(matchDetails),
         byPlayer: tallyGoalsByPlayer(matchEvents),
       },
       cards: {

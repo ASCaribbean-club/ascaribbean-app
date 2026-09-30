@@ -59,6 +59,7 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
       goalsAgainst: null,
       ...arrangements,
     }),
+    findByConvocations: async () => [],
     ...overrides,
   }
 }

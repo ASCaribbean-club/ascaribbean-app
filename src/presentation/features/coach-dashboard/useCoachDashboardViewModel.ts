@@ -17,6 +17,7 @@ export function useCoachDashboardViewModel() {
     getCoachTeamsUseCase,
     listTeamConvocationsUseCase: listUpcomingTeamConvocationsUseCase,
     getTeamRecentFormUseCase,
+    listCoachAlertsUseCase,
   } = useCoachDashboardDependencies()
 
   // Get teams ids where coach is assigned to
@@ -55,6 +56,21 @@ export function useCoachDashboardViewModel() {
   const teamRecentFormQuery = useQuery({
     queryKey: queryKeys.teamRecentForm(currentTeam?.id ?? ''),
     queryFn: () => getTeamRecentFormUseCase.execute({ teamId: currentTeam!.id }),
+    enabled: !!currentTeam,
+  })
+
+  // specs/coach-alerts.md PO-AL-03, re-résolu 2026-09-30 — badge de
+  // compteur sur l'icône d'alerte, à la demande explicite de la
+  // développeuse. Même queryKey que useCoachAlertsViewModel
+  // (`queryKeys.coachAlerts`), donc le cache TanStack Query est partagé
+  // entre le dashboard et l'écran Alertes — pas une seconde lecture
+  // indépendante. Volontairement HORS de `isLoading`/`error` ci-dessous :
+  // le badge est une amélioration secondaire, jamais un bloqueur de
+  // l'affichage du dashboard (AC-CD-10, < 3 s) — `alertsCount` reste à 0
+  // (badge absent) tant que la requête n'a pas résolu ou si elle échoue.
+  const coachAlertsQuery = useQuery({
+    queryKey: queryKeys.coachAlerts(currentTeam?.id ?? ''),
+    queryFn: () => listCoachAlertsUseCase.execute({ teamId: currentTeam!.id, now: new Date() }),
     enabled: !!currentTeam,
   })
 
@@ -104,6 +120,17 @@ export function useCoachDashboardViewModel() {
       if (!user) return
       navigate('/profile')
     },
+
+    /// --- Alert icon click (specs/coach-alerts.md §1, UI design
+    // "Emplacement — écran et entrée") — pushed route, same full-screen/
+    // no-BottomNav group as /profile and /stats (AC-AL-14). No teamId is
+    // passed through router state: the destination screen resolves the
+    // active team itself, the same ActiveTeamProvider-backed way this
+    // screen does (PO-AL-01 résolu). ---
+    goToAlerts: () => {
+      navigate('/alerts')
+    },
+    alertsCount: coachAlertsQuery.data?.length ?? 0,
 
     /// --- Floatting "+" button ---
     canCreateConvocation,

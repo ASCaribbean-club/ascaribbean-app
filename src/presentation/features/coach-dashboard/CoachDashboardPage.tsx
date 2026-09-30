@@ -28,6 +28,8 @@ export function CoachDashboardPage() {
         selectedTeamId={vm.currentTeam?.id}
         onSelectTeam={vm.onSelectTeam}
         onAvatarClick={vm.goToProfilePage}
+        onAlertsClick={vm.goToAlerts}
+        alertsCount={vm.alertsCount}
       />
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">

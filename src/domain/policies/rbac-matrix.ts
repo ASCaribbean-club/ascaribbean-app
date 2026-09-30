@@ -104,6 +104,12 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // teams_update_admin) — see
   // supabase/migrations/20260917140000_section_team_write_policies.sql.
   'section:write': ['admin'],
+  // specs/team-opponents.md §3/AC-TO-07 — also gates "+ Adversaire" and
+  // AddOpponentToTeamUseCase. Mirrored (manually) by the add_opponent_to_team()
+  // function and the opponents_insert_admin / team_opponents_insert_admin
+  // policies — supabase/migrations/20260930175109_add_opponent_to_team.sql.
+  // Reminder (PO-TO-04): opponents_insert_admin stays bound to
+  // private.is_admin(), it does NOT follow this action if widened.
   'team:write': ['admin'],
 
   // specs/section-and-teams.md §3 — "['admin'] n'est pas discutable" (CDC

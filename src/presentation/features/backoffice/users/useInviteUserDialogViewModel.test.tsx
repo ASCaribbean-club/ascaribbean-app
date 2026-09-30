@@ -67,7 +67,7 @@ describe('useInviteUserDialogViewModel', () => {
     act(() => result.current.generate())
 
     await waitFor(() => expect(result.current.link).not.toBeNull())
-    expect(invite).toHaveBeenCalledWith({ actorId: 'admin-1', fullName: 'Nouveau Membre', email: 'nouveau@example.test' })
+    expect(invite).toHaveBeenCalledWith({ actorId: 'admin-1', fullName: 'Nouveau Membre', email: 'nouveau@example.test', age: null, handedness: null })
     expect(result.current.message).toContain('Bonjour Nouveau 👋')
     expect(result.current.message).toContain('https://app.example.com/activation?token_hash=abc&type=invite')
     expect(result.current.message).toContain(`valable ${INVITE_LINK_VALIDITY_HOURS} h`)

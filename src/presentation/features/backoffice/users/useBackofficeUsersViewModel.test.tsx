@@ -24,6 +24,8 @@ function buildEntry(overrides: Partial<AdminUserDirectoryEntry> = {}): AdminUser
     id: 'user-1',
     fullName: 'Joueur Un',
     email: 'joueur-un@example.test',
+    age: null,
+    handedness: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
     roles: [{ role: 'player', teamId: 'team-1' }],
     missingElementFacts: { hasRole: true, hasMembershipForCurrentSeason: true, hasLicenceNumberForCurrentSeason: true, charterAccepted: true },

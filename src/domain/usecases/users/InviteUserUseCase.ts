@@ -1,6 +1,9 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidUserInputError } from '../../errors/invalid-user-input-error'
+import { InvalidUserProfileInputError } from '../../errors/invalid-user-profile-input-error'
 import { can } from '../../policies/can'
+import { isValidUserAge } from '../../policies/user-profile-rules'
+import type { Handedness } from '../../entities/user'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { InvitationLink, UserRepository } from '../../repositories/user-repository'
 
@@ -8,6 +11,8 @@ export interface InviteUserUseCaseInput {
   actorId: string
   fullName: string
   email: string
+  age: number | null
+  handedness: Handedness | null
 }
 
 // specs/web-users.md §2.5/§3 (amendement du 2026-09-18, PO-WU-01 résolu) —
@@ -75,7 +80,11 @@ export class InviteUserUseCase {
       throw new InvalidUserInputError('email is required')
     }
 
-    const link = await this.userRepository.invite({ fullName, email })
+    if (!isValidUserAge(input.age)) {
+      throw new InvalidUserProfileInputError('age must be an integer between 1 and 120')
+    }
+
+    const link = await this.userRepository.invite({ fullName, email, age: input.age, handedness: input.handedness })
 
     // See this class's own top comment for why a rejection here does not
     // reject execute()'s own promise.

@@ -88,7 +88,7 @@ function renderViewModel(options: {
   const matchDetails = options.matchDetails === undefined ? null : options.matchDetails
 
   mockedUseAuth.mockReturnValue({
-    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }, { role: 'coach', teamIds: [TEAM_ID] }], position: null, charterAcceptedAt: null },
+    user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }, { role: 'coach', teamIds: [TEAM_ID] }], position: null, age: null, handedness: null, charterAcceptedAt: null },
     isLoading: false,
     refreshUser: vi.fn(),
   })

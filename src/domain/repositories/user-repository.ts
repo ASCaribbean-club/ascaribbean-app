@@ -1,4 +1,4 @@
-import type { RoleAssignment, User } from '../entities/user'
+import type { Handedness, RoleAssignment, User } from '../entities/user'
 import type { MissingElementFacts } from '../policies/user-completeness'
 
 // specs/section-and-teams.md §2.11/PO-ST-12b — minimal shape for the
@@ -34,6 +34,8 @@ export interface AdminUserDirectoryEntry {
   id: string
   fullName: string
   email: string
+  age: number | null
+  handedness: Handedness | null
   charterAcceptedAt: Date | null
   roles: RoleAssignment[]
   // §2.2/§2.3 — the four completeness facts for THIS row, backing the
@@ -56,6 +58,17 @@ export interface UserMissingElementFactsEntry {
 export interface InviteUserInput {
   fullName: string
   email: string
+  age: number | null
+  handedness: Handedness | null
+}
+
+// Fields an admin may write on public.users — full_name, age, handedness
+// (see the column-level grant in 20260930172452_user_age_handedness.sql).
+// Never email, never position/charter_accepted_at.
+export interface UpdateUserProfileInput {
+  fullName: string
+  age: number | null
+  handedness: Handedness | null
 }
 
 // specs/web-users-invitation-links.md §2 — what invite()/reissueInvitationLink()
@@ -120,11 +133,11 @@ export interface UserRepository {
   // currentSeasonId contract as findAdminDirectory above.
   findMissingElementFacts(currentSeasonId: string | null): Promise<UserMissingElementFactsEntry[]>
 
-  // specs/web-users.md §2.7/AC-WU-38 — UpdateUserFullNameUseCase is the
-  // only caller. Writes full_name ONLY — backed by users_update_admin, a
-  // policy structurally incapable of touching any other column (§2.7,
-  // `grant update (full_name)`).
-  updateFullName(userId: string, fullName: string): Promise<void>
+  // specs/web-users.md §2.7/AC-WU-38 — UpdateUserUseCase is the
+  // only caller. Writes full_name, age and handedness ONLY — backed by
+  // users_update_admin, a policy structurally incapable of touching any
+  // other column (§2.7, column-level `grant update`).
+  updateProfile(userId: string, input: UpdateUserProfileInput): Promise<void>
 
   // specs/web-users-invitation-links.md §2/§4 (replaces the CDC §3.1
   // email-invitation flow — amendement du 2026-09-18) — InviteUserUseCase

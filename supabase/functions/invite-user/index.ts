@@ -85,6 +85,8 @@ interface InviteUserRequestBody {
   mode?: unknown
   fullName?: unknown
   email?: unknown
+  age?: unknown
+  handedness?: unknown
   userId?: unknown
 }
 
@@ -286,6 +288,17 @@ Deno.serve(async (request: Request) => {
     return errorResponse('invalid_input', 'fullName and email are required.', 400)
   }
 
+  // Optional profile facts — null/absent means "not set". Mirrors the
+  // CHECK constraints in 20260930172452_user_age_handedness.sql.
+  const age = body.age ?? null
+  const handedness = body.handedness ?? null
+  if (age !== null && (!Number.isInteger(age) || (age as number) < 1 || (age as number) > 120)) {
+    return errorResponse('invalid_input', 'age must be an integer between 1 and 120.', 400)
+  }
+  if (handedness !== null && handedness !== 'right' && handedness !== 'left') {
+    return errorResponse('invalid_input', "handedness must be 'right' or 'left'.", 400)
+  }
+
   const { data: invited, error: inviteError } = await serviceRoleClient.auth.admin.generateLink({
     type: 'invite',
     email,
@@ -308,6 +321,8 @@ Deno.serve(async (request: Request) => {
     id: invited.user.id,
     full_name: fullName,
     email,
+    age,
+    handedness,
     charter_accepted_at: null,
   })
 

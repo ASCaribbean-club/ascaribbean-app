@@ -108,6 +108,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeConvocationRepository(),
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -124,6 +125,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeConvocationRepository([convocationWith({ id: 'c1', type: 'training', status: 'cancelled' })]),
       fakeAttendanceRecordRepository([]),
       fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -148,6 +150,7 @@ describe('GetTeamStatsUseCase', () => {
       ]),
       fakeAttendanceRecordRepository([]),
       fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -174,6 +177,7 @@ describe('GetTeamStatsUseCase', () => {
       ]),
       fakeAttendanceRecordRepository(records),
       fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -188,7 +192,7 @@ describe('GetTeamStatsUseCase', () => {
     expect(Object.hasOwn(result.attendance.byPlayer, 'player-2')).toBe(false)
   })
 
-  it('aggregates goals and cards per player and the team card total, from match_events only', async () => {
+  it('aggregates per-player goals/cards from match_events and the card total from match_events', async () => {
     const events = [
       matchEvent('player-1', 'goal'),
       matchEvent('player-1', 'yellow_card'),
@@ -199,14 +203,45 @@ describe('GetTeamStatsUseCase', () => {
       fakeConvocationRepository([convocationWith({ id: 'c2', type: 'match' })]),
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(events),
+      fakeMatchDetailsRepository([{ convocationId: 'c2', goalsFor: 1, goalsAgainst: 0 } as MatchDetails]),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
-    expect(result.goals.team).toBe(1)
     expect(result.goals.byPlayer).toEqual({ 'player-1': 1 })
     expect(result.cards.byPlayer).toEqual({ 'player-1': { yellowCount: 1, redCount: 0 }, 'player-2': { yellowCount: 0, redCount: 1 } })
     expect(result.cards.team).toEqual({ yellowCount: 1, redCount: 1 })
+  })
+
+  // specs/coach-team-stats.md §6 point 4 — "un bilan d'équipe se lit sur
+  // match_details", never recomputed from match_events: goal events can
+  // legitimately undercount goals_for (AC-MS-05/17, a coach isn't required
+  // to attribute every goal to a scorer), so the team total must track
+  // goals_for even when it disagrees with the scorer-event count.
+  it('sums the team goal total from match_details.goalsFor, not from match_events, even when they disagree', async () => {
+    const events = [matchEvent('player-1', 'goal')]
+    const matchDetails = [
+      { convocationId: 'c2', goalsFor: 3, goalsAgainst: 1 } as MatchDetails,
+      { convocationId: 'c3', goalsFor: 2, goalsAgainst: 2 } as MatchDetails,
+      // A match not yet played (both null) must not contribute — AC-MS-15.
+      { convocationId: 'c4', goalsFor: null, goalsAgainst: null } as MatchDetails,
+    ]
+    const useCase = new GetTeamStatsUseCase(
+      fakeTeamRosterRepository(),
+      fakeConvocationRepository([
+        convocationWith({ id: 'c2', type: 'match' }),
+        convocationWith({ id: 'c3', type: 'match' }),
+        convocationWith({ id: 'c4', type: 'match' }),
+      ]),
+      fakeAttendanceRecordRepository(),
+      fakeMatchEventRepository(events),
+      fakeMatchDetailsRepository(matchDetails),
+    )
+
+    const result = await useCase.execute({ teamId: 'team-1' })
+
+    expect(result.goals.team).toBe(5)
+    expect(result.goals.byPlayer).toEqual({ 'player-1': 1 })
   })
 
   // AC-MS-18 — match_events only ever exist on 'match' convocations. This
@@ -232,6 +267,34 @@ describe('GetTeamStatsUseCase', () => {
       fakeConvocationRepository(convocations),
       fakeAttendanceRecordRepository(),
       matchEventRepository,
+      fakeMatchDetailsRepository(),
+    )
+
+    await useCase.execute({ teamId: 'team-1' })
+
+    expect(findByConvocations).toHaveBeenCalledExactlyOnceWith(['match-1'])
+  })
+
+  it('only requests match details for convocations of type "match"', async () => {
+    const findByConvocations = vi.fn(async () => [])
+    const convocations = [
+      convocationWith({ id: 'training-1', type: 'training' }),
+      convocationWith({ id: 'match-1', type: 'match' }),
+      convocationWith({ id: 'meeting-1', type: 'meeting' }),
+    ]
+    const matchDetailsRepository: MatchDetailsRepository = {
+      upsert: vi.fn(),
+      findByConvocationId: vi.fn(),
+      recordScore: vi.fn(),
+      updateArrangements: vi.fn(),
+      findByConvocations,
+    }
+    const useCase = new GetTeamStatsUseCase(
+      fakeTeamRosterRepository(),
+      fakeConvocationRepository(convocations),
+      fakeAttendanceRecordRepository(),
+      fakeMatchEventRepository(),
+      matchDetailsRepository,
     )
 
     await useCase.execute({ teamId: 'team-1' })
@@ -258,6 +321,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeConvocationRepository(convocations),
       attendanceRecordRepository,
       fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1' })

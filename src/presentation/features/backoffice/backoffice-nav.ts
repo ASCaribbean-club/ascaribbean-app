@@ -1,6 +1,7 @@
 import {
   IconCalendarStats,
   IconCreditCard,
+  IconHistory,
   IconLayoutDashboard,
   IconNews,
   IconShirtSport,
@@ -9,7 +10,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -102,5 +103,21 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/news',
     icon: IconNews,
     emptyStateTitle: 'Aucune actualité à afficher pour l’instant',
+  },
+  {
+    // specs/web-audit-logs.md §2/UI design "Où ça vit" — 8th sidebar entry,
+    // `/admin/audit`. AC-AU-23: same guard as the seven others
+    // (RequireDesktopViewport -> RequireBackofficeSession ->
+    // RequireBackofficeAccess -> BackofficeDashboardLayout), no new guard,
+    // no numeric badge (AC-AU-23, echo of AC-WE-13) — this entry never gets
+    // a MembershipsNavBadge/UsersNavBadge-style twin. `IconHistory`: this
+    // agent's own proposal (the mockup's "menu" export shows an unreadable
+    // plain square icon), any icon already in this icon set is fine — to
+    // confirm/replace freely.
+    id: 'audit',
+    label: 'Journal d’audit',
+    path: '/admin/audit',
+    icon: IconHistory,
+    emptyStateTitle: 'Aucune entrée de journal d’audit à afficher pour l’instant',
   },
 ]

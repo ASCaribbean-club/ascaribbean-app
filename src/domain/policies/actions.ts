@@ -224,3 +224,13 @@ export type Action =
   // second source of truth for the same rule — exactly the divergence risk
   // this file's own header warns against.
   | 'team_stats:view'
+  // specs/web-audit-logs.md §3 — the only new action this feature adds
+  // (AC-AU-20). Club-wide by construction (the 'admin' RoleAssignment
+  // carries no scope field) — no matching scope check is needed in can.ts,
+  // same shape as 'backoffice:access'/'season:write'/'news:write' above.
+  // Names the SCREEN, same criterion as 'backoffice:access'/'team_stats:view':
+  // presentation/ must decide whether to render the "Journal d'audit"
+  // sidebar entry BEFORE any query runs. Mirrors audit_log_select_admin
+  // (RLS SELECT on public.audit_log, `private.is_admin()`) — see
+  // supabase/migrations/20260930090000_web_audit_logs_schema.sql.
+  | 'audit:read'

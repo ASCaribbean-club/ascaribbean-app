@@ -255,4 +255,35 @@ export interface Team {
 
 **Priorité de revisite** : basse.
 
+---
+
+## Pagination du journal d'audit — décalage (`offset`), page de 50
+
+**Où** : `domain/repositories/audit-log-repository.ts` (`AUDIT_LOG_PAGE_SIZE`), `data/repositories/AuditLogRepositoryImpl.ts` (`.range()`).
+
+**Valeur actuelle** : `/admin/audit` pagine par décalage (`offset`/`range()` PostgREST), pages de 50 lignes, détection de « encore une page » par une lecture de 51 lignes plutôt que 50 (`limit + 1`).
+
+**Pourquoi cette valeur, provisoirement** : `specs/web-audit-logs.md` §2.6 fixe explicitement ce choix (« pagination par décalage, page de 50 ») — le plus simple à implémenter et à vérifier pour un premier jet, sur une table qui est vide à la livraison de cette passe (§1, aucun émetteur construit).
+
+**Ce qu'il faudrait challenger** :
+- Le décalage devient coûteux (l'exécution d'une requête `offset` élevé doit reparcourir toutes les lignes précédentes) une fois un volume réel accumulé sur plusieurs années d'actions sensibles — une pagination par curseur (keyset, `where occurred_at < :dernier_curseur order by occurred_at desc limit 50`) resterait à coût constant quelle que soit la profondeur de pagination.
+- Le décalage est aussi sensible aux insertions concurrentes entre deux pages (une ligne insérée entre deux « charger plus » peut décaler la fenêtre et dupliquer ou sauter une ligne) — un souci qui ne se manifestera concrètement qu'une fois des émetteurs réels alimentant la table en continu.
+
+**Priorité de revisite** : basse — à réévaluer une fois un émetteur réel alimente la table et qu'un volume ou une fréquence d'écriture concurrente rend le problème visible en pratique, pas avant.
+
+---
+
+## Journal d'audit — tableau backoffice desktop à défilement horizontal propre
+
+**Où** : `presentation/features/backoffice/audit/components/AuditLogTable.tsx`, `presentation/shared/components/ui/table.tsx`.
+
+**Valeur actuelle** : le tableau du journal d'audit défile horizontalement dans son propre conteneur (`overflow-x-auto`, déjà porté par la primitive `Table` partagée), jamais la page entière — aucun ajout spécifique à cette feature, la primitive le garantissait déjà.
+
+**Pourquoi cette valeur, provisoirement** : la consigne de conception générique reçue pour cette tâche présentait par défaut cette feature comme un écran mobile (coquille à 4 destinations fixes) nécessitant une carte Menu et un tableau adapté à un défilement tactile étroit. `specs/web-audit-logs.md` tranche sans ambiguïté que ce n'est PAS le cas : « une destination supplémentaire du backoffice web **desktop** », sans variante mobile à concevoir (§1, note pour designer-agent). L'écran vit donc exclusivement dans la coquille backoffice desktop existante (`RequireDesktopViewport` en tête de garde), et le tableau à quatre colonnes (DATE/ACTEUR/ACTION/CIBLE) tient dans la largeur d'un écran desktop sans qu'un défilement horizontal réel ne se manifeste en pratique aujourd'hui — la primitive le permettrait si une colonne future l'exigeait, mais rien ne l'exerce encore.
+
+**Ce qu'il faudrait challenger** :
+- Si une colonne supplémentaire est ajoutée un jour (ex. résolution de `target_type`/`target_id` en une cible lisible, PO-AU-02), vérifier que le défilement horizontal reste confiné au tableau sur les plus petites largeurs de `RequireDesktopViewport` (le plancher desktop de cette coquille), pas seulement sur un grand écran.
+
+**Priorité de revisite** : basse — pas de mobile envisagé pour cet écran (`specs/web-empty-state.md`, patron déjà établi pour tout le backoffice), à revisiter seulement si une colonne large est ajoutée.
+
 ## (Prochaine entrée à ajouter ici)

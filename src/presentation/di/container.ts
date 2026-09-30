@@ -4,6 +4,7 @@
 import { supabaseClient } from '@data/datasources/supabase-client'
 import { createAuthContainer, type AuthContainer } from './containers/auth-container'
 import { createCalendarContainer, type CalendarContainer } from './containers/calendar-container'
+import { createCoachAlertsContainer, type CoachAlertsContainer } from './containers/coach-alerts-container'
 import { createCoachDashboardContainer, type CoachDashboardContainer } from './containers/coach-dashboard-container'
 import { createCoachTeamStatsContainer, type CoachTeamStatsContainer } from './containers/coach-team-stats-container'
 import { createConvocationContainer, type ConvocationContainer } from './containers/convocation-container'
@@ -19,6 +20,7 @@ import { createUsersContainer, type UsersContainer } from './containers/users-co
 export interface Container {
   auth: AuthContainer
   calendar: CalendarContainer
+  coachAlerts: CoachAlertsContainer
   coachDashboard: CoachDashboardContainer
   coachTeamStats: CoachTeamStatsContainer
   convocation: ConvocationContainer
@@ -36,6 +38,7 @@ export function createContainer(): Container {
   return {
     auth: createAuthContainer(supabaseClient),
     calendar: createCalendarContainer(supabaseClient),
+    coachAlerts: createCoachAlertsContainer(supabaseClient),
     coachDashboard: createCoachDashboardContainer(supabaseClient),
     coachTeamStats: createCoachTeamStatsContainer(supabaseClient),
     convocation: createConvocationContainer(supabaseClient),

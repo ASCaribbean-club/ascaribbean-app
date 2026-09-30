@@ -1,4 +1,4 @@
-import { IconKey, IconLink, IconPencil } from '@tabler/icons-react'
+import { IconKey, IconLink, IconPencil, IconPlus } from '@tabler/icons-react'
 import type { Section } from '@domain/entities/section'
 import type { Team } from '@domain/entities/team'
 import type { AssignableRoleAssignment } from '@domain/entities/user'
@@ -126,9 +126,14 @@ export function UserTable({
                     ViewModel boolean is true, never grayed out. Text-only
                     buttons (no icon), same as the mockup. */}
                 {canAssignRole && (
-                  <Button type="button" variant="outline" onClick={() => onAssignRole(row)} className="h-11 rounded-full">
-                    + Rôle
-                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => onAssignRole(row)}
+                    className="relative inline-flex h-7 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-xs font-medium text-white/70 before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1"
+                  >
+                    <IconPlus className="size-3.5" aria-hidden />
+                    Rôle
+                  </button>
                 )}
                 {canWriteUser && (
                   <Button

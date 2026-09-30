@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { IconArchive, IconChevronDown, IconPencil } from '@tabler/icons-react'
+import { IconArchive, IconChevronDown, IconPencil, IconPlus } from '@tabler/icons-react'
 import type { UserSummary } from '@domain/repositories/user-repository'
 import { Button } from '@presentation/shared/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
@@ -97,9 +97,14 @@ export function MembershipTable({
                         decided, hiding this once "payé" would preempt that
                         arbitration. */}
                     {canRecordPayment && (
-                      <Button type="button" variant="outline" onClick={() => onRecordPayment(row)} className="h-11 rounded-full">
-                        + Paiement
-                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => onRecordPayment(row)}
+                        className="relative inline-flex h-7 items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 text-xs font-medium text-white/70 before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1"
+                      >
+                        <IconPlus className="size-3.5" aria-hidden />
+                        Paiement
+                      </button>
                     )}
                     {/* §1/§7/UI design "Ligne dépliable d'édition" (amendement
                         du 2026-09-17) — a SINGLE icon that flips between

@@ -1,9 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { AuditLogRepositoryImpl } from '@data/repositories/AuditLogRepositoryImpl'
 import { RoleAssignmentRepositoryImpl } from '@data/repositories/RoleAssignmentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { SectionRepositoryImpl } from '@data/repositories/SectionRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
+import type { AuditLogRepository } from '@domain/repositories/audit-log-repository'
 import type { RoleAssignmentRepository } from '@domain/repositories/role-assignment-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { SectionRepository } from '@domain/repositories/section-repository'
@@ -33,6 +35,15 @@ export interface UsersContainer {
   teamRepository: TeamRepository
   sectionRepository: SectionRepository
   seasonRepository: SeasonRepository
+  // Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum) — this
+  // container's OWN instance, not shared with audit-log-container.ts's
+  // (read-only /admin/audit screen) or section-and-teams-container.ts's own.
+  // specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — the SAME
+  // instance below is now also wired into inviteUserUseCase/
+  // generatePasswordResetLinkUseCase, not a second one.
+  // specs/web-audit-logs.md — 2026-09-30 (fifth addendum) — and now also
+  // into updateUserFullNameUseCase, still the same instance.
+  auditLogRepository: AuditLogRepository
 
   inviteUserUseCase: InviteUserUseCase
   reissueInvitationLinkUseCase: ReissueInvitationLinkUseCase
@@ -50,6 +61,7 @@ export function createUsersContainer(supabaseClient: SupabaseClient): UsersConta
   const seasonRepository = new SeasonRepositoryImpl(supabaseClient)
   const teamRepository = new TeamRepositoryImpl(supabaseClient, seasonRepository)
   const sectionRepository = new SectionRepositoryImpl(supabaseClient)
+  const auditLogRepository = new AuditLogRepositoryImpl(supabaseClient)
 
   return {
     userRepository,
@@ -57,13 +69,14 @@ export function createUsersContainer(supabaseClient: SupabaseClient): UsersConta
     teamRepository,
     sectionRepository,
     seasonRepository,
-    inviteUserUseCase: new InviteUserUseCase(userRepository),
+    auditLogRepository,
+    inviteUserUseCase: new InviteUserUseCase(userRepository, auditLogRepository),
     reissueInvitationLinkUseCase: new ReissueInvitationLinkUseCase(userRepository),
-    generatePasswordResetLinkUseCase: new GeneratePasswordResetLinkUseCase(userRepository),
-    updateUserFullNameUseCase: new UpdateUserFullNameUseCase(userRepository),
-    assignRoleUseCase: new AssignRoleUseCase(userRepository, roleAssignmentRepository),
+    generatePasswordResetLinkUseCase: new GeneratePasswordResetLinkUseCase(userRepository, auditLogRepository),
+    updateUserFullNameUseCase: new UpdateUserFullNameUseCase(userRepository, auditLogRepository),
+    assignRoleUseCase: new AssignRoleUseCase(userRepository, roleAssignmentRepository, auditLogRepository),
     editRoleAssignmentScopeUseCase: new EditRoleAssignmentScopeUseCase(userRepository, roleAssignmentRepository),
-    removeRoleAssignmentUseCase: new RemoveRoleAssignmentUseCase(userRepository, roleAssignmentRepository),
+    removeRoleAssignmentUseCase: new RemoveRoleAssignmentUseCase(userRepository, roleAssignmentRepository, auditLogRepository),
     countUsersRequiringAttentionUseCase: new CountUsersRequiringAttentionUseCase(seasonRepository, userRepository),
   }
 }

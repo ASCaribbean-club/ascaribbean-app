@@ -60,3 +60,24 @@ export function scopeContextFor(assignment: AssignableRoleAssignment): Authoriza
       return {}
   }
 }
+
+// Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum) — shared by
+// AssignRoleUseCase and RemoveRoleAssignmentUseCase, the two call sites that
+// emit a 'role.granted'/'role.revoked' audit entry from an
+// AssignableRoleAssignment (§ "metadata exists precisely to carry archival
+// detail the UI doesn't render this pass" — the migration's own column
+// comment on public.audit_log.metadata). Deliberately non-sensitive: a role
+// name plus its scope identifiers (team id(s)/section id), never anything
+// that could be personal/health data.
+export function auditMetadataFor(assignment: AssignableRoleAssignment): Record<string, unknown> {
+  switch (assignment.role) {
+    case 'player':
+      return { role: assignment.role, teamId: assignment.teamId }
+    case 'coach':
+      return { role: assignment.role, teamIds: assignment.teamIds }
+    case 'section-manager':
+      return { role: assignment.role, sectionId: assignment.sectionId }
+    default:
+      return { role: assignment.role }
+  }
+}

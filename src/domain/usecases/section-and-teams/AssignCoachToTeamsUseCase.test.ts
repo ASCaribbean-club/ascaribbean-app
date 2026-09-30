@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidCoachAssignmentInputError } from '../../errors/invalid-coach-assignment-input-error'
+import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { RoleAssignmentRepository } from '../../repositories/role-assignment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 import { AssignCoachToTeamsUseCase, type AssignCoachToTeamsUseCaseInput } from './AssignCoachToTeamsUseCase'
@@ -63,6 +64,14 @@ function fakeRoleAssignmentRepository(overrides: Partial<RoleAssignmentRepositor
   }
 }
 
+function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): AuditLogRepository {
+  return {
+    list: async () => ({ entries: [], hasMore: false }),
+    record: vi.fn(async (_entry: RecordAuditLogEntryInput) => {}),
+    ...overrides,
+  }
+}
+
 function validInput(overrides: Partial<AssignCoachToTeamsUseCaseInput> = {}): AssignCoachToTeamsUseCaseInput {
   return {
     actorId: 'admin-1',
@@ -74,36 +83,36 @@ function validInput(overrides: Partial<AssignCoachToTeamsUseCaseInput> = {}): As
 
 describe('AssignCoachToTeamsUseCase', () => {
   it('throws ForbiddenError when the actor does not exist', async () => {
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(null), fakeRoleAssignmentRepository())
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(null), fakeRoleAssignmentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
   })
 
   // §3/AC-ST-39 — a coach must never be able to self-assign.
   it('throws ForbiddenError when the actor is a coach, not an admin', async () => {
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(coachUser()), fakeRoleAssignmentRepository())
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(coachUser()), fakeRoleAssignmentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'coach-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws ForbiddenError when the actor is a section-manager, not an admin', async () => {
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(sectionManagerUser()), fakeRoleAssignmentRepository())
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(sectionManagerUser()), fakeRoleAssignmentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ actorId: 'section-manager-1' }))).rejects.toThrow(ForbiddenError)
   })
 
   it('throws InvalidCoachAssignmentInputError when userId is missing', async () => {
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository())
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ userId: '' }))).rejects.toThrow(InvalidCoachAssignmentInputError)
   })
 
   // §2.10/AC-ST-40 — submitting the dialog with no team checked is rejected
   // from the domain, before any network call.
   it('throws InvalidCoachAssignmentInputError when teamIds is empty', async () => {
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository())
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ teamIds: [] }))).rejects.toThrow(InvalidCoachAssignmentInputError)
   })
 
   it('assigns the given userId to every given teamId', async () => {
     const assignCoachToTeams = vi.fn(async () => {})
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository({ assignCoachToTeams }))
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository({ assignCoachToTeams }), fakeAuditLogRepository())
 
     await useCase.execute(validInput({ userId: 'coach-1', teamIds: ['team-1', 'team-2'] }))
 
@@ -115,8 +124,51 @@ describe('AssignCoachToTeamsUseCase', () => {
     const assignCoachToTeams = vi.fn(async () => {
       throw new FakeRepositoryError('boom')
     })
-    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository({ assignCoachToTeams }))
+    const useCase = new AssignCoachToTeamsUseCase(fakeUserRepository(adminUser()), fakeRoleAssignmentRepository({ assignCoachToTeams }), fakeAuditLogRepository())
 
     await expect(useCase.execute(validInput())).rejects.toThrow(FakeRepositoryError)
+  })
+
+  // Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum) — a
+  // successful coach assignment records exactly one 'role.granted' audit
+  // entry, targeted at the affected account (not the actor), after the
+  // coach assignment itself has already committed.
+  it('records a role.granted audit entry once, targeted at the affected account', async () => {
+    const record = vi.fn(async () => {})
+    const useCase = new AssignCoachToTeamsUseCase(
+      fakeUserRepository(adminUser()),
+      fakeRoleAssignmentRepository(),
+      fakeAuditLogRepository({ record }),
+    )
+
+    await useCase.execute(validInput({ userId: 'coach-1', teamIds: ['team-1', 'team-2'] }))
+
+    expect(record).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledWith({
+      action: 'role.granted',
+      targetId: 'coach-1',
+      targetType: 'user',
+      metadata: { role: 'coach', teamIds: ['team-1', 'team-2'] },
+    })
+  })
+
+  // See this use case's own top comment: an audit-write failure must not
+  // reject execute()'s own promise — the coach assignment itself already
+  // succeeded.
+  it('still resolves when the audit write rejects, because the coach assignment itself already succeeded', async () => {
+    const record = vi.fn(async () => {
+      throw new Error('audit RPC unavailable')
+    })
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const useCase = new AssignCoachToTeamsUseCase(
+      fakeUserRepository(adminUser()),
+      fakeRoleAssignmentRepository(),
+      fakeAuditLogRepository({ record }),
+    )
+
+    await expect(useCase.execute(validInput())).resolves.toBeUndefined()
+    expect(consoleErrorSpy).toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
   })
 })

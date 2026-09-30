@@ -2,7 +2,8 @@ import type { AssignableRoleAssignment } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidRoleAssignmentInputError } from '../../errors/invalid-role-assignment-input-error'
 import { can } from '../../policies/can'
-import { scopeContextFor, validateRoleAssignmentScope } from '../../policies/role-assignment-scope'
+import { auditMetadataFor, scopeContextFor, validateRoleAssignmentScope } from '../../policies/role-assignment-scope'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { RoleAssignmentRepository } from '../../repositories/role-assignment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -29,13 +30,30 @@ export interface AssignRoleUseCaseInput {
 // boundary.
 //
 // §4 "Journal d'audit" — CDC §11.3 names "changement de rôle" literally.
-// Same "no infrastructure exists yet" position as InviteUserUseCase — no
-// audit call is added below: blocked on PO-WU-07, see
-// specs/web-users.md §4.
+// Follow-up pass to specs/web-audit-logs.md (2026-09-30 addendum): the audit
+// infrastructure PO-WU-07 was blocked on now exists
+// (public.record_audit_log_entry, domain/repositories/audit-log-repository.ts's
+// `record()`) and this use case emits 'role.granted' below, after the role
+// assignment itself has already committed. InviteUserUseCase's own
+// "blocked on PO-WU-07" is untouched — account creation isn't one of the
+// three use cases this pass wires.
+//
+// Audit-write failure AFTER the role-assignment write has already succeeded
+// — no shared transaction across the two calls exists (different privilege
+// paths: client-RLS-gated INSERT on user_roles vs. a SECURITY DEFINER RPC on
+// audit_log), so the role change cannot be rolled back if the audit call
+// fails. Deliberate, documented choice for this first emitter pass: catch
+// the audit-write error, do NOT let it reject this use case's own promise
+// (the business outcome already succeeded, and the caller/UI should see
+// success) — but do NOT silently swallow it either, surface it via
+// `console.error` with enough context to investigate (no dedicated
+// error-reporting service exists elsewhere in this codebase to route it to
+// instead, verified before choosing this).
 export class AssignRoleUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly roleAssignmentRepository: RoleAssignmentRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: AssignRoleUseCaseInput): Promise<void> {
@@ -59,8 +77,23 @@ export class AssignRoleUseCase {
 
     await this.roleAssignmentRepository.assignRole(input.userId, input.assignment)
 
-    // blocked on PO-WU-07 — see this class's own top comment: no audit
-    // infrastructure exists to write the required "changement de rôle"
-    // trace to yet.
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'role.granted',
+        targetId: input.userId,
+        // specs/web-audit-logs.md — 2026-09-30 (third addendum) — the
+        // target is always the affected account.
+        targetType: 'user',
+        metadata: auditMetadataFor(input.assignment),
+      })
+    } catch (auditError) {
+      console.error('AssignRoleUseCase: failed to record role.granted audit entry', {
+        actorId: input.actorId,
+        targetId: input.userId,
+        auditError,
+      })
+    }
   }
 }

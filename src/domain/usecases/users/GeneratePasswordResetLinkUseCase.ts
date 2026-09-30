@@ -3,6 +3,7 @@ import { NotFoundError } from '../../errors/not-found-error'
 import { PasswordResetTargetNotActiveError } from '../../errors/password-reset-target-not-active-error'
 import { can } from '../../policies/can'
 import { userStatus } from '../../policies/user-status'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { InvitationLink, UserRepository } from '../../repositories/user-repository'
 
 export interface GeneratePasswordResetLinkUseCaseInput {
@@ -23,8 +24,26 @@ export interface GeneratePasswordResetLinkUseCaseInput {
 // the row's own status badge and the row action's visibility already use).
 // An 'invited' account has no password to reset — it needs an activation
 // link instead.
+//
+// §4 "Journal d'audit" — follow-up pass to specs/web-audit-logs.md
+// (2026-09-30 fourth addendum): the audit infrastructure PO-WU-07 was
+// blocked on now exists (public.record_audit_log_entry,
+// domain/repositories/audit-log-repository.ts's `record()`) and this use
+// case emits 'password_reset.issued' below, after the link itself has
+// already been generated. `targetId` is `input.targetUserId` — already
+// known, unlike InviteUserUseCase's own targetId which needed the Edge
+// Function widened to hand back an id that didn't exist before the call.
+//
+// Audit-write failure AFTER the link-generation write has already
+// succeeded — same tradeoff, and same reasoning, as AssignRoleUseCase's own
+// top comment: caught and surfaced via `console.error`, never rejecting
+// this use case's own promise — the business outcome (a fresh recovery
+// link exists) already succeeded, the caller/UI should see success.
 export class GeneratePasswordResetLinkUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly auditLogRepository: AuditLogRepository,
+  ) {}
 
   async execute(input: GeneratePasswordResetLinkUseCaseInput): Promise<InvitationLink> {
     const actor = await this.userRepository.findById(input.actorId)
@@ -43,9 +62,25 @@ export class GeneratePasswordResetLinkUseCase {
       throw new PasswordResetTargetNotActiveError(`User ${input.targetUserId} is not at 'active' status`)
     }
 
-    // blocked on PO-WU-07 — same audit gap InviteUserUseCase's own top
-    // comment flags: no audit infrastructure exists yet to trace a
-    // password-reset link generation either.
-    return await this.userRepository.generatePasswordResetLink(input.targetUserId)
+    const link = await this.userRepository.generatePasswordResetLink(input.targetUserId)
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'password_reset.issued',
+        targetId: input.targetUserId,
+        targetType: 'user',
+        metadata: {},
+      })
+    } catch (auditError) {
+      console.error('GeneratePasswordResetLinkUseCase: failed to record password_reset.issued audit entry', {
+        actorId: input.actorId,
+        targetId: input.targetUserId,
+        auditError,
+      })
+    }
+
+    return link
   }
 }

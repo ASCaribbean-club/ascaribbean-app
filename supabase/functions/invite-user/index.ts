@@ -61,6 +61,14 @@
 // §7) with src/data/dto/invite-user-dto.ts — keep the two files in sync
 // manually if either changes. Never logs the link or token, never stores
 // it in a table (§1.6).
+//
+// specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — the 'create'
+// branch's response now also carries `id` (the newly created auth user's
+// id): InviteUserUseCase needs it as its 'user.invited' audit targetId,
+// and this function is the only place that id is computed (§1 point 3
+// below, `invited.user.id`). 'reissue'/'reset-password' responses are
+// untouched — their callers already know the target id (it's their own
+// input), they don't need it echoed back.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -310,12 +318,13 @@ Deno.serve(async (request: Request) => {
     return errorResponse('directory_insert_failed', insertError.message, 502)
   }
 
-  // TODO(audit): CDC §11.3 names "création de compte" as a business action
-  // to trace (domain/, per ARCHITECTURE.md §11) — no audit
-  // table/repository/write path exists anywhere in this codebase yet
-  // (PO-WU-07, still open). Not added here: this function has no business
-  // knowing about that infrastructure any more than InviteUserUseCase
-  // does — same gap, flagged at both ends.
+  // specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — the
+  // 'user.invited' audit entry is recorded by InviteUserUseCase itself,
+  // AFTER this function returns successfully (domain/, not here — CLAUDE.md
+  // §6: a business action's intent is logged from the use case, never a
+  // trigger or, by the same reasoning, an Edge Function). This function's
+  // only remaining responsibility toward that trace is returning `id`
+  // below, since it's the only place the new account's id is computed.
 
-  return jsonResponse({ url: buildActivationUrl(siteUrl, invited.properties.hashed_token, 'invite', fullName) }, 200)
+  return jsonResponse({ url: buildActivationUrl(siteUrl, invited.properties.hashed_token, 'invite', fullName), id: invited.user.id }, 200)
 })

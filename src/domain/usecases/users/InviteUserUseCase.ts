@@ -1,6 +1,7 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidUserInputError } from '../../errors/invalid-user-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { InvitationLink, UserRepository } from '../../repositories/user-repository'
 
 export interface InviteUserUseCaseInput {
@@ -28,14 +29,29 @@ export interface InviteUserUseCaseInput {
 // §4 "Journal d'audit" — CDC §11.3 names "création/suppression compte"
 // literally as an action to trace. Per CLAUDE.md §6 that belongs here (a
 // business action, logged from the use case, never from a component or a
-// trigger) — but no audit table/AuditRepository/write path exists anywhere
-// in this codebase yet (verified against every migration), and PO-WU-07
-// explicitly defers building that infrastructure to its own spec. No audit
-// call is added below — flagged again here so it isn't missed at review
-// time: blocked on PO-WU-07, see specs/web-users.md §4 — no audit
-// infrastructure exists yet to write this "création de compte" trace to.
+// trigger). Follow-up pass to specs/web-audit-logs.md (2026-09-30 fourth
+// addendum): the audit infrastructure PO-WU-07 was blocked on now exists
+// (public.record_audit_log_entry, domain/repositories/audit-log-repository.ts's
+// `record()`) and this use case emits 'user.invited' below, after the
+// invitation itself has already committed (a new public.users row and a
+// generated activation link both exist by then). `targetId` is the newly
+// created account's id, threaded back by UserRepository.invite() via
+// InvitationLink.userId — see that field's own comment for why the Edge
+// Function needed widening to return it at all.
+//
+// Audit-write failure AFTER the invitation write has already succeeded —
+// same tradeoff, and same reasoning, as AssignRoleUseCase's own top comment:
+// no shared transaction across the two calls (a service_role-backed Edge
+// Function call vs. a SECURITY DEFINER RPC on audit_log), so the invitation
+// cannot be rolled back if the audit call fails. Caught and surfaced via
+// `console.error`, never rejecting this use case's own promise — the
+// business outcome (the account exists, the activation link was generated)
+// already succeeded, the caller/UI should see success.
 export class InviteUserUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly auditLogRepository: AuditLogRepository,
+  ) {}
 
   async execute(input: InviteUserUseCaseInput): Promise<InvitationLink> {
     const actor = await this.userRepository.findById(input.actorId)
@@ -61,9 +77,24 @@ export class InviteUserUseCase {
 
     const link = await this.userRepository.invite({ fullName, email })
 
-    // blocked on PO-WU-07 — see this class's own top comment: no audit
-    // infrastructure exists to write the required "création de compte"
-    // trace to yet.
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'user.invited',
+        targetId: link.userId,
+        targetType: 'user',
+        // §4 of the fourth addendum — "identifying content for 'who was
+        // invited'", not excessive: an email and a name, no more.
+        metadata: { email, fullName },
+      })
+    } catch (auditError) {
+      console.error('InviteUserUseCase: failed to record user.invited audit entry', {
+        actorId: input.actorId,
+        targetId: link.userId,
+        auditError,
+      })
+    }
 
     return link
   }

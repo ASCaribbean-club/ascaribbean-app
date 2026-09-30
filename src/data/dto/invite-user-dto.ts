@@ -14,10 +14,19 @@ export interface InviteUserRequestDto {
   userId?: string
 }
 
-// The function's success body, both modes — the app's own /activation URL,
-// never Supabase's action_link (see the function's own top comment).
+// The function's success body — the app's own /activation URL, never
+// Supabase's action_link (see the function's own top comment).
+//
+// specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — `id` added,
+// 'create' mode only: the newly created account's id, needed by
+// InviteUserUseCase as its 'user.invited' audit targetId
+// (domain/repositories/user-repository.ts's InvitationLink.userId). The
+// function's 'reissue'/'reset-password' branches never set it (see their
+// own JSON literals in supabase/functions/invite-user/index.ts, both left
+// unchanged by this addendum).
 export interface InviteUserResponseDto {
   url: string
+  id?: string
 }
 
 // The function's JSON error body on a non-2xx response. `error` is a

@@ -4,6 +4,7 @@ import { InvalidMembershipInputError } from '../../errors/invalid-membership-inp
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
 import { can } from '../../policies/can'
 import { canSetMembershipActive, sumPaymentsCents } from '../../rules/membership-payment-rules'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { MembershipRepository } from '../../repositories/membership-repository'
 import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -27,11 +28,25 @@ export interface UpdateMembershipUseCaseInput {
 // targeting the SAME row (never a duplicate insert). No "which rows are
 // modifiable" restriction (§2.9) — unlike seasons_update_admin, no document
 // requires locking a membership's editability by any state.
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case emits
+// 'membership.updated' below, after the update itself has already
+// committed.
+//
+// Audit-write failure AFTER the update has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated UPDATE on
+// memberships vs. a SECURITY DEFINER RPC on audit_log), so the membership
+// update cannot be rolled back if the audit call fails. Caught and
+// surfaced via `console.error`, never rejecting this use case's own
+// promise — the business outcome (the membership is updated) already
+// succeeded, the caller/UI should see success.
 export class UpdateMembershipUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly membershipRepository: MembershipRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: UpdateMembershipUseCaseInput): Promise<Membership> {
@@ -78,7 +93,7 @@ export class UpdateMembershipUseCase {
       }
     }
 
-    return this.membershipRepository.update(input.membershipId, {
+    const membership = await this.membershipRepository.update(input.membershipId, {
       userId: input.userId,
       seasonId: input.seasonId,
       licenceNumber: input.licenceNumber,
@@ -86,5 +101,24 @@ export class UpdateMembershipUseCase {
       validUntil: input.validUntil,
       amountDueCents: input.amountDueCents,
     })
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'membership.updated',
+        targetId: input.membershipId,
+        targetType: 'membership',
+        metadata: { status: input.status },
+      })
+    } catch (auditError) {
+      console.error('UpdateMembershipUseCase: failed to record membership.updated audit entry', {
+        actorId: input.actorId,
+        targetId: input.membershipId,
+        auditError,
+      })
+    }
+
+    return membership
   }
 }

@@ -2,6 +2,7 @@ import type { Season, SeasonLabel } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { SeasonRepository } from '../../repositories/season-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -31,10 +32,23 @@ export interface UpdateSeasonUseCaseInput {
 // never be able to open up a write the RLS policy would refuse. A rejected
 // write on an ended season surfaces as Postgres 42501 -> ForbiddenError,
 // already mapped (data/errors/map-supabase-error.ts).
+// specs/web-audit-logs.md — 2026-09-30 (fifth addendum, deliberate scope
+// widening beyond "sensitive actions only") — this use case emits
+// 'season.updated' below, after the update itself has already committed.
+//
+// Audit-write failure AFTER the update has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated UPDATE on
+// seasons vs. a SECURITY DEFINER RPC on audit_log), so the season update
+// cannot be rolled back if the audit call fails. Caught and surfaced via
+// `console.error`, never rejecting this use case's own promise — the
+// business outcome (the season is updated) already succeeded, the
+// caller/UI should see success.
 export class UpdateSeasonUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly seasonRepository: SeasonRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: UpdateSeasonUseCaseInput): Promise<Season> {
@@ -70,11 +84,30 @@ export class UpdateSeasonUseCase {
     }
 
     // AC-WS-24 — updates the SAME row, never creates a duplicate.
-    return this.seasonRepository.update(input.seasonId, {
+    const season = await this.seasonRepository.update(input.seasonId, {
       label: label as SeasonLabel,
       startDate: input.startDate,
       endDate: input.endDate,
       cotisationAmount: input.cotisationAmount,
     })
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'season.updated',
+        targetId: input.seasonId,
+        targetType: 'season',
+        metadata: { label: input.label },
+      })
+    } catch (auditError) {
+      console.error('UpdateSeasonUseCase: failed to record season.updated audit entry', {
+        actorId: input.actorId,
+        targetId: input.seasonId,
+        auditError,
+      })
+    }
+
+    return season
   }
 }

@@ -182,11 +182,16 @@ export class UserRepositoryImpl implements UserRepository {
   // error needs its own translation path, distinct from mapSupabaseError().
   // Returns the activation link — never stored, never logged, handed
   // straight back to the ViewModel for Copier/Partager (§1.6/§4).
+  //
+  // specs/web-audit-logs.md — 2026-09-30 (fourth addendum) — `userId` also
+  // threaded through from the function's own `id` field (see
+  // InviteUserResponseDto's comment): InviteUserUseCase's 'user.invited'
+  // audit targetId.
   async invite(input: InviteUserInput): Promise<InvitationLink> {
     const body: InviteUserRequestDto = { mode: 'create', fullName: input.fullName, email: input.email }
     const { data, error } = await this.client.functions.invoke<InviteUserResponseDto>('invite-user', { body })
     if (error) throw await mapInviteFunctionError(error)
-    return { url: data!.url }
+    return { url: data!.url, userId: data!.id }
   }
 
   // specs/web-users-invitation-links.md §2 — ReissueInvitationLinkUseCase

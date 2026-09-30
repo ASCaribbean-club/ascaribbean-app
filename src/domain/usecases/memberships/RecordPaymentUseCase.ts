@@ -2,6 +2,7 @@ import type { Payment } from '../../entities/payment'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidPaymentInputError } from '../../errors/invalid-payment-input-error'
 import { can } from '../../policies/can'
+import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
@@ -20,13 +21,26 @@ export interface RecordPaymentUseCaseInput {
 //
 // §4 — the CDC §11.3 explicitly names "modification paiement" as an action
 // to trace, and CLAUDE.md §6 says a business action with intent is logged
-// FROM THE USE CASE, never a component or a trigger. No call is wired here:
-// PO-WM-09 is open (no audit infrastructure exists anywhere in this repo
-// yet) — this comment marks exactly where that call belongs once it is.
+// FROM THE USE CASE, never a component or a trigger. Follow-up pass to
+// specs/web-audit-logs.md (2026-09-30 fourth addendum): the audit
+// infrastructure PO-WM-09 was blocked on now exists
+// (public.record_audit_log_entry, domain/repositories/audit-log-repository.ts's
+// `record()`) and this use case emits 'membership.payment_recorded' below,
+// after the payment itself has already committed.
+//
+// Audit-write failure AFTER the payment write has already succeeded — same
+// tradeoff, and same reasoning, as AssignRoleUseCase's own top comment: no
+// shared transaction across the two calls (client-RLS-gated INSERT on
+// membership_payments vs. a SECURITY DEFINER RPC on audit_log), so the
+// payment cannot be rolled back if the audit call fails. Caught and
+// surfaced via `console.error`, never rejecting this use case's own
+// promise — the business outcome (the payment is recorded) already
+// succeeded, the caller/UI should see success.
 export class RecordPaymentUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly paymentRepository: PaymentRepository,
+    private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
   async execute(input: RecordPaymentUseCaseInput): Promise<Payment> {
@@ -50,11 +64,32 @@ export class RecordPaymentUseCase {
       throw new InvalidPaymentInputError('paidAt is required')
     }
 
-    return this.paymentRepository.create({
+    const payment = await this.paymentRepository.create({
       membershipId: input.membershipId,
       amountCents: input.amountCents,
       paidAt: input.paidAt,
       recordedBy: user.id,
     })
+
+    // See this class's own top comment for why a rejection here does not
+    // reject execute()'s own promise.
+    try {
+      await this.auditLogRepository.record({
+        action: 'membership.payment_recorded',
+        targetId: input.membershipId,
+        targetType: 'membership',
+        // Not sensitive — an amount and a date, needed archival detail per
+        // public.audit_log.metadata's own column comment.
+        metadata: { amountCents: input.amountCents, paidAt: input.paidAt },
+      })
+    } catch (auditError) {
+      console.error('RecordPaymentUseCase: failed to record membership.payment_recorded audit entry', {
+        actorId: input.actorId,
+        targetId: input.membershipId,
+        auditError,
+      })
+    }
+
+    return payment
   }
 }

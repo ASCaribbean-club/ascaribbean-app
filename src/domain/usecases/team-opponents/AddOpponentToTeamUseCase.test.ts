@@ -8,7 +8,7 @@ import type { UserRepository } from '../../repositories/user-repository'
 import { AddOpponentToTeamUseCase } from './AddOpponentToTeamUseCase'
 
 function userWith(roles: User['roles']): User {
-  return { id: 'user-1', fullName: 'Utilisateur', email: 'user@example.com', roles, position: null, charterAcceptedAt: null }
+  return { id: 'user-1', fullName: 'Utilisateur', email: 'user@example.com', roles, position: null, charterAcceptedAt: null, age: null, handedness: null }
 }
 
 const admin = userWith([{ role: 'admin' }])
@@ -22,7 +22,7 @@ function fakeUserRepository(user: User | null): UserRepository {
     findAll: async () => [],
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
-    updateFullName: async () => {},
+    updateProfile: async () => {},
     invite: async () => ({ url: 'https://app.example.com/fake' }),
     reissueInvitationLink: async () => ({ url: 'https://app.example.com/fake' }),
     generatePasswordResetLink: async () => ({ url: 'https://app.example.com/fake' }),

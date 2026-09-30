@@ -1,3 +1,4 @@
+import { IconAlertTriangle } from '@tabler/icons-react'
 import type { Team } from '@domain/entities/team'
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
@@ -34,6 +35,19 @@ interface CoachHeaderProps {
   selectedTeamId: string | undefined
   onSelectTeam: (teamId: string) => void
   onAvatarClick: () => void
+  // specs/coach-alerts.md §1/§2, UI design "Emplacement — écran et entrée"
+  // — a real, named control with a real destination, distinct from the
+  // avatar (AC-AL-15). Always rendered for a coach (CoachHeader only ever
+  // renders on the coach role already, §2) — the gate on which actions are
+  // actually missing lives on the destination screen itself, not here.
+  onAlertsClick: () => void
+  // specs/coach-alerts.md PO-AL-03, re-résolu 2026-09-30 (décision
+  // développeuse) — the count itself is computed by useCoachDashboardViewModel
+  // (same bulk-read use case/query cache as the Alerts screen, never a
+  // second independent read here), this component only renders the number
+  // it's given. `0` means "no badge", not "badge showing 0" (AC-CD-05c-style
+  // "exception only" rule — a clean dashboard shows a bare icon).
+  alertsCount: number
 }
 
 export function CoachHeader({
@@ -49,6 +63,8 @@ export function CoachHeader({
   selectedTeamId,
   onSelectTeam,
   onAvatarClick: goToProfilePage,
+  onAlertsClick,
+  alertsCount,
 }: CoachHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
@@ -101,22 +117,59 @@ export function CoachHeader({
           )
         )}
 
-        {/* Avatar/initiales : tap navigates to /profile (Mon profil) —
-            sign-out lives on ProfilePage's own avatar (ProfileIdentityHeader)
-            instead, since a single tap target can't sensibly do both at
-            once. Positioned relative to this row (not the whole header) so
-            its top edge lines up with the role/team pills instead of the
-            header's own padding edge. */}
-        <button type="button" onClick={goToProfilePage} aria-label="Mon profil" className="absolute top-0 right-0">
-          <Avatar className="size-9.5 border-2 border-coach-red">
-            <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </button>
+        {/* specs/coach-alerts.md UI design "Emplacement — écran et entrée"
+            — the `absolute top-0 right-0` anchor moves from the avatar
+            itself to this wrapping flex container, so the alert button can
+            sit beside it (never posted ON TOP of it, AC-AL-15) while the
+            overall anchor point (header's top-right corner) is unchanged —
+            only the occupied width grows by one more pill. Positioned
+            relative to this row (not the whole header) so its top edge
+            lines up with the role/team pills instead of the header's own
+            padding edge. */}
+        <div className="absolute top-0 right-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onAlertsClick}
+            // The count itself is never color-only: it's read out through
+            // the accessible name too (mirrors AC-AL-17's "toujours doublé
+            // d'un libellé" rule elsewhere in this feature), not just a
+            // visual badge a screen reader would silently skip.
+            aria-label={alertsCount > 0 ? `Alertes, ${alertsCount} à traiter` : 'Alertes'}
+            className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-white hover:bg-white/15"
+          >
+            <IconAlertTriangle className="size-5" aria-hidden />
+            {alertsCount > 0 && (
+              <span
+                aria-hidden
+                className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full border-2 border-coach-bg bg-coach-red px-1 text-[10px] font-extrabold text-white"
+              >
+                {alertsCount > 9 ? '9+' : alertsCount}
+              </span>
+            )}
+          </button>
+
+          {/* Avatar/initiales : tap navigates to /profile (Mon profil) —
+              sign-out lives on ProfilePage's own avatar
+              (ProfileIdentityHeader) instead, since a single tap target
+              can't sensibly do both at once. Size/border/destination
+              unchanged by this pass (AC-AL-15 — the avatar itself is
+              untouched, only its wrapping container moved). */}
+          <button type="button" onClick={goToProfilePage} aria-label="Mon profil">
+            <Avatar className="size-9.5 border-2 border-coach-red">
+              <AvatarFallback className="bg-coach-green text-[13px] font-semibold text-white">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </div>
       </div>
 
-      <h1 className="pr-13 text-[30px] leading-[1.05] font-black tracking-tight text-white">
+      {/* pr-28, up from pr-13 (specs/coach-alerts.md UI design pass) — the
+          absolutely positioned top-right control cluster this padding
+          clears grew by one more size-11 button + gap (see the wrapping div
+          above), so the greeting title needs proportionally more clearance
+          than when only the avatar occupied that corner. */}
+      <h1 className="pr-28 text-[30px] leading-[1.05] font-black tracking-tight text-white">
         Bonjour,
         <br />
         {firstName}

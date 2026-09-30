@@ -11,6 +11,8 @@ export interface InviteUserRequestDto {
   mode: 'create' | 'reissue' | 'reset-password'
   fullName?: string
   email?: string
+  age?: number | null
+  handedness?: 'right' | 'left' | null
   userId?: string
 }
 

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Handedness } from '@domain/entities/user'
 import type { InvitationLink } from '@domain/repositories/user-repository'
 import { useUsersDependencies } from '@presentation/di/hooks/use-users-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { handednessOrNull, parseAgeInput } from './user-profile-form'
 import { buildInvitationMessage, buildPasswordResetMessage, INVITE_LINK_VALIDITY_HOURS } from './invitation-message'
 
 // specs/web-users-invitation-links.md §4 — one dialog, three modes: a brand
@@ -42,6 +44,8 @@ export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserD
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [age, setAge] = useState('')
+  const [handedness, setHandedness] = useState<Handedness | ''>('')
   const [link, setLink] = useState<InvitationLink | null>(null)
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const [clipboardError, setClipboardError] = useState<UiError | null>(null)
@@ -54,7 +58,7 @@ export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserD
         throw new Error('No authenticated admin session.')
       }
       if (target.mode === 'create') {
-        return inviteUserUseCase.execute({ actorId: user.id, fullName, email })
+        return inviteUserUseCase.execute({ actorId: user.id, fullName, email, age: parseAgeInput(age), handedness: handednessOrNull(handedness) })
       }
       if (target.mode === 'reissue') {
         return reissueInvitationLinkUseCase.execute({ actorId: user.id, targetUserId: target.userId })
@@ -109,6 +113,8 @@ export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserD
   function close() {
     setFullName('')
     setEmail('')
+    setAge('')
+    setHandedness('')
     setLink(null)
     setCopyState('idle')
     setClipboardError(null)
@@ -125,6 +131,10 @@ export function useInviteUserDialogViewModel({ target, onClose }: UseInviteUserD
     setFullName,
     email,
     setEmail,
+    age,
+    setAge,
+    handedness,
+    setHandedness,
 
     canSubmit,
     isGenerating: generate.isPending,

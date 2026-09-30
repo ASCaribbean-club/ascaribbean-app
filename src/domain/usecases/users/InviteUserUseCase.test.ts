@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
+import { InvalidUserProfileInputError } from '../../errors/invalid-user-profile-input-error'
 import { InvalidUserInputError } from '../../errors/invalid-user-input-error'
 import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 import { InviteUserUseCase, type InviteUserUseCaseInput } from './InviteUserUseCase'
 
 function adminUser(): User {
-  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: null }
+  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function coachUser(): User {
@@ -17,6 +18,8 @@ function coachUser(): User {
     email: 'coach@example.com',
     roles: [{ role: 'coach', teamIds: ['team-1'] }],
     position: null,
+    age: null,
+    handedness: null,
     charterAcceptedAt: null,
   }
 }
@@ -28,7 +31,7 @@ function fakeUserRepository(user: User | null, overrides: Partial<UserRepository
     findAll: async () => [],
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
-    updateFullName: async () => {},
+    updateProfile: async () => {},
     invite: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite', userId: 'new-user-1' })),
     reissueInvitationLink: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=xyz&type=magiclink' })),
     generatePasswordResetLink: async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' }),
@@ -45,10 +48,24 @@ function fakeAuditLogRepository(overrides: Partial<AuditLogRepository> = {}): Au
 }
 
 function validInput(overrides: Partial<InviteUserUseCaseInput> = {}): InviteUserUseCaseInput {
-  return { actorId: 'admin-1', fullName: 'Nouveau membre', email: 'nouveau@example.com', ...overrides }
+  return { actorId: 'admin-1', fullName: 'Nouveau membre', email: 'nouveau@example.com', age: null, handedness: null, ...overrides }
 }
 
 describe('InviteUserUseCase', () => {
+  it('forwards age and handedness to the repository', async () => {
+    const invite = vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }))
+    const useCase = new InviteUserUseCase(fakeUserRepository(adminUser(), { invite }), fakeAuditLogRepository())
+
+    await useCase.execute(validInput({ age: 30, handedness: 'right' }))
+
+    expect(invite).toHaveBeenCalledWith({ fullName: 'Nouveau membre', email: 'nouveau@example.com', age: 30, handedness: 'right' })
+  })
+
+  it('throws InvalidUserProfileInputError when age is out of range', async () => {
+    const useCase = new InviteUserUseCase(fakeUserRepository(adminUser()), fakeAuditLogRepository())
+    await expect(useCase.execute(validInput({ age: 200 }))).rejects.toThrow(InvalidUserProfileInputError)
+  })
+
   it('throws ForbiddenError when the actor does not exist', async () => {
     const useCase = new InviteUserUseCase(fakeUserRepository(null), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)
@@ -75,7 +92,7 @@ describe('InviteUserUseCase', () => {
 
     await useCase.execute(validInput({ fullName: '  Nouveau membre  ', email: '  nouveau@example.com  ' }))
 
-    expect(invite).toHaveBeenCalledWith({ fullName: 'Nouveau membre', email: 'nouveau@example.com' })
+    expect(invite).toHaveBeenCalledWith({ fullName: 'Nouveau membre', email: 'nouveau@example.com', age: null, handedness: null })
   })
 
   it('returns the activation link the repository produced', async () => {

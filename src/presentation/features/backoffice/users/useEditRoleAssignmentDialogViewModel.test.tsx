@@ -30,6 +30,8 @@ function buildTarget(overrides: Partial<AdminUserDirectoryEntry> = {}): AdminUse
     id: 'target-1',
     fullName: 'Joueur Un',
     email: 'joueur-un@example.test',
+    age: null,
+    handedness: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
     roles: [{ role: 'player', teamId: 'team-1' }],
     missingElementFacts: { hasRole: true, hasMembershipForCurrentSeason: true, hasLicenceNumberForCurrentSeason: true, charterAccepted: true },
@@ -51,7 +53,7 @@ function renderViewModel({
   canRemoveRole?: boolean
 }) {
   mockedUseAuth.mockReturnValue({
-    user: { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: new Date() },
+    user: { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: new Date() },
     isLoading: false,
     refreshUser: vi.fn(),
   } as never)

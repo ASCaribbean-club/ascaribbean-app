@@ -4,7 +4,7 @@ import type { User } from '../entities/user'
 import { hasActiveRoleForConvocation } from './active-role-scope'
 
 function userWith(roles: User['roles']): User {
-  return { id: 'u1', fullName: 'Test User', email: 't@example.com', roles, position: null, charterAcceptedAt: null }
+  return { id: 'u1', fullName: 'Test User', email: 't@example.com', roles, position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function convocationForTeam(teamId: string): Convocation {

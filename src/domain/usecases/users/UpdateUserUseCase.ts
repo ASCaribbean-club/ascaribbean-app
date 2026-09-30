@@ -1,17 +1,23 @@
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidFullNameInputError } from '../../errors/invalid-full-name-input-error'
+import { InvalidUserProfileInputError } from '../../errors/invalid-user-profile-input-error'
 import { can } from '../../policies/can'
+import { isValidUserAge } from '../../policies/user-profile-rules'
+import type { Handedness } from '../../entities/user'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 
-export interface UpdateUserFullNameUseCaseInput {
+export interface UpdateUserUseCaseInput {
   actorId: string
   userId: string
   fullName: string
+  age: number | null
+  handedness: Handedness | null
 }
 
 // specs/web-users.md §2.7/§3 (PO-WU-02 résolu) — "Modifier l'utilisateur".
-// Writes full_name ONLY, never email — the dialog renders the EMAIL field
+// Writes full_name, age and handedness ONLY (admin-only via 'user:write'),
+// never email — the dialog renders the EMAIL field
 // too, but this use case's own input has no email field to leak: the same
 // "the type documents the guarantee instead of merely a runtime check"
 // reasoning already used for AssignCoachToTeamsUseCase's hard-coded
@@ -40,13 +46,13 @@ export interface UpdateUserFullNameUseCaseInput {
 // `console.error`, never rejecting this use case's own promise — the
 // business outcome (the name is updated) already succeeded, the caller/UI
 // should see success.
-export class UpdateUserFullNameUseCase {
+export class UpdateUserUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly auditLogRepository: AuditLogRepository,
   ) {}
 
-  async execute(input: UpdateUserFullNameUseCaseInput): Promise<void> {
+  async execute(input: UpdateUserUseCaseInput): Promise<void> {
     const actor = await this.userRepository.findById(input.actorId)
     if (!actor) {
       throw new ForbiddenError(`User not found: ${input.actorId}`)
@@ -67,7 +73,11 @@ export class UpdateUserFullNameUseCase {
       throw new InvalidFullNameInputError('userId is required')
     }
 
-    await this.userRepository.updateFullName(input.userId, fullName)
+    if (!isValidUserAge(input.age)) {
+      throw new InvalidUserProfileInputError('age must be an integer between 1 and 120')
+    }
+
+    await this.userRepository.updateProfile(input.userId, { fullName, age: input.age, handedness: input.handedness })
 
     // See this class's own top comment for why a rejection here does not
     // reject execute()'s own promise.
@@ -79,7 +89,7 @@ export class UpdateUserFullNameUseCase {
         metadata: {},
       })
     } catch (auditError) {
-      console.error('UpdateUserFullNameUseCase: failed to record user.updated audit entry', {
+      console.error('UpdateUserUseCase: failed to record user.updated audit entry', {
         actorId: input.actorId,
         targetId: input.userId,
         auditError,

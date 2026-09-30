@@ -67,6 +67,10 @@ export function isAssignableRole(role: Role): role is AssignableRoleAssignment['
 // non-player branch to carry a dead `position` field.
 export type PlayerPosition = 'goalkeeper' | 'defender' | 'midfielder' | 'forward'
 
+// Admin-maintained player profile facts (specs: web create/edit user dialog).
+// Nullable on both fields: only set by an admin, unknown until then.
+export type Handedness = 'right' | 'left'
+
 export interface User {
   id: string
   fullName: string
@@ -74,6 +78,8 @@ export interface User {
   roles: RoleAssignment[]
   // null for every non-player role, and for a player who hasn't set one yet.
   position: PlayerPosition | null
+  age: number | null
+  handedness: Handedness | null
   // CDC §3.1: "activation après acceptation de la charte" — null until the
   // member accepts, set once via the accept_charter() RPC, never cleared.
   charterAcceptedAt: Date | null

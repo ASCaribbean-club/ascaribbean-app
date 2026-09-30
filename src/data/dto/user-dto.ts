@@ -9,6 +9,9 @@ export interface UserRow {
   // CHECK-constrained to the same four values as domain's PlayerPosition —
   // null for non-players and for a player with no position set yet.
   position: string | null
+  age: number | null
+  // CHECK-constrained to 'right' | 'left'.
+  handedness: string | null
   charter_accepted_at: string | null
 }
 
@@ -43,6 +46,8 @@ export interface AdminUserRow {
   id: string
   full_name: string
   email: string
+  age: number | null
+  handedness: string | null
   charter_accepted_at: string | null
 }
 

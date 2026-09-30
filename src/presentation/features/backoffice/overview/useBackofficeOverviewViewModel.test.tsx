@@ -36,6 +36,8 @@ function buildEntry(overrides: Partial<AdminUserDirectoryEntry> = {}): AdminUser
     id: 'user-1',
     fullName: 'Compte Un',
     email: 'compte-un@example.test',
+    age: null,
+    handedness: null,
     charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
     roles: [{ role: 'player', teamId: 'team-1' }],
     missingElementFacts: { hasRole: true, hasMembershipForCurrentSeason: true, hasLicenceNumberForCurrentSeason: true, charterAccepted: true },
@@ -67,7 +69,7 @@ function renderViewModel({
   usersSummary?: Array<{ id: string; fullName: string; email: string }>
 }) {
   mockedUseAuth.mockReturnValue({
-    user: { id: 'admin-1', fullName: 'Administrateur Un', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: new Date() },
+    user: { id: 'admin-1', fullName: 'Administrateur Un', email: 'admin@example.test', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: new Date() },
     isLoading: false,
     refreshUser: vi.fn(),
   } as never)

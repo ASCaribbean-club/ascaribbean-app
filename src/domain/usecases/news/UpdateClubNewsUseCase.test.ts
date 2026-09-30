@@ -8,11 +8,11 @@ import type { UserRepository } from '../../repositories/user-repository'
 import { UpdateClubNewsUseCase, type UpdateClubNewsUseCaseInput } from './UpdateClubNewsUseCase'
 
 function adminUser(id = 'admin-1'): User {
-  return { id, fullName: 'Admin', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: null }
+  return { id, fullName: 'Admin', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function coachUser(): User {
-  return { id: 'coach-1', fullName: 'Coach', email: 'coach@example.com', roles: [{ role: 'coach', teamIds: [] }], position: null, charterAcceptedAt: null }
+  return { id: 'coach-1', fullName: 'Coach', email: 'coach@example.com', roles: [{ role: 'coach', teamIds: [] }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function fakeUserRepository(user: User | null): UserRepository {
@@ -25,7 +25,7 @@ function fakeUserRepository(user: User | null): UserRepository {
     // satisfying the interface.
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
-    updateFullName: async () => {},
+    updateProfile: async () => {},
     invite: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=invite' }),
     reissueInvitationLink: async () => ({ url: 'https://app.example.com/activation?token_hash=fake&type=magiclink' }),
     generatePasswordResetLink: async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' }),

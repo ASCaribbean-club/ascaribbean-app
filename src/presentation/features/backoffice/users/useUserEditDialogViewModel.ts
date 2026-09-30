@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Handedness } from '@domain/entities/user'
 import type { AdminUserDirectoryEntry } from '@domain/repositories/user-repository'
 import { useUsersDependencies } from '@presentation/di/hooks/use-users-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { handednessOrNull, parseAgeInput } from './user-profile-form'
 
 interface UseUserEditDialogViewModelParams {
   target: AdminUserDirectoryEntry
@@ -12,16 +14,18 @@ interface UseUserEditDialogViewModelParams {
 }
 
 // specs/web-users.md §2.7/PO-WU-02 résolu — "Modifier l'utilisateur". Writes
-// ONLY full_name through UpdateUserFullNameUseCase — `email` is read here
+// full_name, age and handedness through UpdateUserUseCase — `email` is read here
 // for DISPLAY only (the dialog's own read-only field, §2.7), this hook has
 // no setEmail/submitted email at all: the same "the shape documents the
 // guarantee" reasoning already used for AssignCoachToTeamsUseCase.
 export function useUserEditDialogViewModel({ target, onSuccess }: UseUserEditDialogViewModelParams) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const { updateUserFullNameUseCase } = useUsersDependencies()
+  const { updateUserUseCase } = useUsersDependencies()
 
   const [fullName, setFullName] = useState(target.fullName)
+  const [age, setAge] = useState(target.age === null ? '' : String(target.age))
+  const [handedness, setHandedness] = useState<Handedness | ''>(target.handedness ?? '')
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -30,7 +34,11 @@ export function useUserEditDialogViewModel({ target, onSuccess }: UseUserEditDia
         // this screen on an admin session.
         throw new Error('No authenticated admin session.')
       }
-      return updateUserFullNameUseCase.execute({ actorId: user.id, userId: target.id, fullName })
+      return updateUserUseCase.execute({ actorId: user.id, userId: target.id,
+        fullName,
+        age: parseAgeInput(age),
+        handedness: handednessOrNull(handedness),
+      })
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
@@ -48,6 +56,10 @@ export function useUserEditDialogViewModel({ target, onSuccess }: UseUserEditDia
   return {
     fullName,
     setFullName,
+    age,
+    setAge,
+    handedness,
+    setHandedness,
     email: target.email,
 
     canSubmit,

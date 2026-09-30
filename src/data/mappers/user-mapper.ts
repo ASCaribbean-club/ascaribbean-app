@@ -1,4 +1,4 @@
-import type { PlayerPosition, RoleAssignment, User } from '@domain/entities/user'
+import type { Handedness, PlayerPosition, RoleAssignment, User } from '@domain/entities/user'
 import type { MissingElementFacts } from '@domain/policies/user-completeness'
 import type { AdminUserDirectoryEntry, UserSummary } from '@domain/repositories/user-repository'
 import type { AdminUserRow, MembershipCompletenessFactRow, UserCharterFactRow, UserRoleRow, UserRow, UserSummaryRow } from '../dto/user-dto'
@@ -15,6 +15,9 @@ export function toUser(row: UserRow, roleRows: UserRoleRow[]): User {
     // toRoleAssignments below: the CHECK constraint on public.users.position
     // is what actually guarantees the value is one of PlayerPosition's four.
     position: row.position as PlayerPosition | null,
+    age: row.age,
+    // Same trust boundary as `position` above — the CHECK constraint.
+    handedness: row.handedness as Handedness | null,
     charterAcceptedAt: row.charter_accepted_at ? new Date(row.charter_accepted_at) : null,
     roles: toRoleAssignments(roleRows),
   }
@@ -40,6 +43,8 @@ export function toAdminUserDirectoryEntry(row: AdminUserRow, roleRows: UserRoleR
     id: row.id,
     fullName: row.full_name,
     email: row.email,
+    age: row.age,
+    handedness: row.handedness as Handedness | null,
     charterAcceptedAt: row.charter_accepted_at ? new Date(row.charter_accepted_at) : null,
     roles: toRoleAssignments(roleRows),
     missingElementFacts: facts,

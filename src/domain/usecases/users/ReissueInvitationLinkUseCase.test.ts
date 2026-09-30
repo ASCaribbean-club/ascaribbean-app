@@ -7,7 +7,7 @@ import type { UserRepository } from '../../repositories/user-repository'
 import { ReissueInvitationLinkUseCase, type ReissueInvitationLinkUseCaseInput } from './ReissueInvitationLinkUseCase'
 
 function adminUser(): User {
-  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, charterAcceptedAt: null }
+  return { id: 'admin-1', fullName: 'Administrateur', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function coachUser(): User {
@@ -17,12 +17,14 @@ function coachUser(): User {
     email: 'coach@example.com',
     roles: [{ role: 'coach', teamIds: ['team-1'] }],
     position: null,
+    age: null,
+    handedness: null,
     charterAcceptedAt: null,
   }
 }
 
 function invitedMember(): User {
-  return { id: 'member-1', fullName: 'Membre invité', email: 'membre@example.com', roles: [{ role: 'player', teamId: 'team-1' }], position: null, charterAcceptedAt: null }
+  return { id: 'member-1', fullName: 'Membre invité', email: 'membre@example.com', roles: [{ role: 'player', teamId: 'team-1' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
 function activeMember(): User {
@@ -32,6 +34,8 @@ function activeMember(): User {
     email: 'membre2@example.com',
     roles: [{ role: 'player', teamId: 'team-1' }],
     position: null,
+    age: null,
+    handedness: null,
     charterAcceptedAt: new Date('2026-01-01'),
   }
 }
@@ -43,7 +47,7 @@ function fakeUserRepository(usersById: Record<string, User>, overrides: Partial<
     findAll: async () => [],
     findAdminDirectory: async () => [],
     findMissingElementFacts: async () => [],
-    updateFullName: async () => {},
+    updateProfile: async () => {},
     invite: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=abc&type=invite' })),
     reissueInvitationLink: vi.fn(async () => ({ url: 'https://app.example.com/activation?token_hash=xyz&type=magiclink' })),
     generatePasswordResetLink: vi.fn(async () => ({ url: 'https://app.example.com/update-password?token_hash=fake&type=recovery' })),

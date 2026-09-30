@@ -29,6 +29,12 @@ interface UserRolesCellProps {
 // on click); the `Administrateur` pastille stays exactly as before, no
 // affordance of any kind (§2.4: a decision, not an omission — never a
 // disabled <button>, which would still look like a broken control).
+// One shared look for every pastille (inert or interactive) so a row never
+// mixes chip heights.
+const CHIP_CLASS = 'h-7 rounded-full border-white/15 bg-white/10 px-3 text-xs font-medium text-white/70'
+const INTERACTIVE_CHIP_CLASS =
+  "relative cursor-pointer before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1"
+
 export function UserRolesCell({ roles, teamsById, sectionsById, canAssignRole, onSelectAssignment }: UserRolesCellProps) {
   if (roles.length === 0) {
     // AC-WU-18 — explicit text, never a blank cell, and the mockup's own
@@ -38,7 +44,7 @@ export function UserRolesCell({ roles, teamsById, sectionsById, canAssignRole, o
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       {roles.map((assignment) => {
         const label = formatRoleAssignment(assignment, teamsById, sectionsById)
         // §2.1 of the amendment/PO-WU-13 — two pastilles of the SAME role
@@ -53,7 +59,7 @@ export function UserRolesCell({ roles, teamsById, sectionsById, canAssignRole, o
           // cursor-pointer, no title/tooltip promising an action that will
           // never exist from this screen.
           return (
-            <Badge key={key} className="rounded-full border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70">
+            <Badge key={key} className={CHIP_CLASS}>
               {label}
             </Badge>
           )
@@ -66,22 +72,20 @@ export function UserRolesCell({ roles, teamsById, sectionsById, canAssignRole, o
           // reasoning as the 'admin' branch above, applied to any actor
           // this screen might one day admit without 'role:assign', PO-WE-01).
           return (
-            <Badge key={key} className="rounded-full border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70">
+            <Badge key={key} className={CHIP_CLASS}>
               {label}
             </Badge>
           )
         }
 
         return (
-          // UI design "Compromis assumé" — min-h-11 makes the pastille
-          // itself grow by a few px versus the mockup's dense export 4
-          // (CLAUDE.md §6, "y compris sur desktop", AC-WU-50), horizontal
-          // density (several pastilles side by side, natural wrap)
-          // untouched.
+          // Same visual size as the inert pastilles; the 44px touch target
+          // (CLAUDE.md §6, AC-WU-50) comes from an invisible ::before
+          // overlay (INTERACTIVE_CHIP_CLASS) instead of growing the chip.
           <Badge
             asChild
             key={key}
-            className="min-h-11 cursor-pointer rounded-full border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white/70 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-1"
+            className={`${CHIP_CLASS} ${INTERACTIVE_CHIP_CLASS}`}
           >
             <button type="button" aria-label={`Modifier ou retirer l'affectation ${label}`} onClick={() => onSelectAssignment(assignment)}>
               {label}

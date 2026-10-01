@@ -1,4 +1,4 @@
-import { IconChartBar, IconFileText, IconTrophy } from '@tabler/icons-react'
+import { IconChartBar, IconFileText, IconTrophy, IconUsers } from '@tabler/icons-react'
 import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
@@ -45,6 +45,11 @@ export function MenuPage() {
         <div className="grid grid-cols-2 gap-3">
           <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
           <MenuNavCard icon={IconTrophy} title="Classement" subtitle="Buts, cartons" to="/leaderboard" />
+          {/* specs/player-unavailability.md UI design §1 — the card disappears
+              (never greyed out) when can('availability:read-team') is false. */}
+          {vm.canReadTeamAvailability && (
+            <MenuNavCard icon={IconUsers} title="Disponibilités" subtitle="Effectif de l'équipe" to="/availability" />
+          )}
         </div>
       </section>
 

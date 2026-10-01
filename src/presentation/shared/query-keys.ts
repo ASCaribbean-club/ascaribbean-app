@@ -318,4 +318,10 @@ export const queryKeys = {
   adminConvocation: (convocationId: string) => ['admin-convocations', 'detail', convocationId] as const,
   adminAttendanceSheet: (convocationId: string) => ['admin-convocations', 'attendance', convocationId] as const,
   convocationsRoot: () => ['convocations'] as const,
+
+  // specs/player-unavailability.md — the team availability list. One key per
+  // team: the projected shape (coach vs teammate) is decided server-side by
+  // get_team_availability from the caller, so it never differs for the same
+  // session and team.
+  teamAvailability: (teamId: string) => ['availability', 'team', teamId] as const,
 }

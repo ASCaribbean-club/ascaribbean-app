@@ -1,5 +1,7 @@
 import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
+import { useAvailabilityTeamId } from '@presentation/shared/hooks/use-availability-team-id'
+import { usePermission } from '@presentation/shared/hooks/use-permission'
 
 // specs/menu.md §1/§2 — the Menu adds ZERO use cases, ZERO repositories,
 // ZERO rbac-matrix entries of its own (§2 "Aucune entrée de matrice, aucune
@@ -9,9 +11,15 @@ import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 export function useMenuViewModel() {
   const { signOutUseCase } = useAuthDependencies()
   const { activeRole } = useActiveRole()
+  const availabilityTeamId = useAvailabilityTeamId()
+  const canReadTeamAvailability = usePermission('availability:read-team', { teamId: availabilityTeamId })
 
   return {
     onLogout: () => signOutUseCase.execute(),
+
+    // specs/player-unavailability.md §1/UI design §1 — UX only; the RPC is the
+    // real boundary.
+    canReadTeamAvailability,
 
     // specs/coach-team-stats.md PO-CTS-06 — the "Statistiques" card now
     // branches on the dashboard's active role: a coach reaches their own

@@ -4,6 +4,7 @@ import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-er
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
+import { InvalidMatchLineupInputError } from '@domain/errors/invalid-match-lineup-input-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
@@ -52,6 +53,12 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       if (error.message.includes('training_location_archived')) {
         return new TrainingLocationArchivedError(error.message)
       }
+      // specs/coach-match-composition.md AC-MC-07 — the trigger on
+      // match_lineup_slots refuses a player who is not convoked. Backstop only:
+      // SaveMatchLineupUseCase rejects the same case before any network call.
+      if (error.message.includes('match_lineup_player_not_convoked')) {
+        return new InvalidMatchLineupInputError(error.message)
+      }
       return new NotFoundError(error.message)
     case '23P01':
       // exclusion_violation on seasons_no_overlap means the caller tried to
@@ -76,6 +83,11 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // function (see that class's own comment on why).
       if (error.message.includes('user_roles_team_scoped_idx') || error.message.includes('user_roles_section_scoped_idx')) {
         return new DuplicateRoleAssignmentError(error.message)
+      }
+      // AC-MC-07 — duplicate player / duplicate slot (unique constraints of
+      // match_lineup_slots). Backstop, same as above.
+      if (error.message.includes('match_lineup_slots')) {
+        return new InvalidMatchLineupInputError(error.message)
       }
       return new NotFoundError(error.message)
     default:

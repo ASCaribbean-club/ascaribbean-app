@@ -276,4 +276,14 @@ export const queryKeys = {
   // `actions` sorted so the key is stable regardless of check/uncheck order.
   auditLog: (filters: { from: string | null; to: string | null; actions: string[] }) =>
     ['audit-log', filters] as const,
+
+  // specs/web-localizations.md §2.5 — ONE shared resource root for the
+  // admin list and the selector's non-archived list, so a single
+  // invalidation of `trainingLocationsRoot` refreshes both (same reasoning
+  // as `teamOpponents(teamId)`). The two lists stay distinct keys under that
+  // root: different repository method, different row set (the admin one
+  // includes archived rows) — sharing one cache entry would be wrong.
+  trainingLocationsRoot: () => ['training-locations'] as const,
+  trainingLocationsAdminList: () => ['training-locations', 'admin', 'list'] as const,
+  trainingLocationsAvailable: () => ['training-locations', 'available'] as const,
 }

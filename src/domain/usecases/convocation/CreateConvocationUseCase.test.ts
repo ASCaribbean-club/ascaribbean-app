@@ -3,6 +3,7 @@ import type { Convocation, ConvocationType } from '../../entities/convocation'
 import type { Team } from '../../entities/team'
 import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
+import { InvalidTrainingLocationInputError } from '../../errors/invalid-training-location-input-error'
 import { InvalidScheduleError } from '../../errors/invalid-schedule-error'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { TeamRepository } from '../../repositories/team-repository'
@@ -93,7 +94,8 @@ function convocationFrom(input: {
   teamId: string
   createdBy: string
   date: string
-  location: string
+  location?: string
+  trainingLocationId?: string
   type: ConvocationType
 }): Convocation {
   return {
@@ -101,7 +103,10 @@ function convocationFrom(input: {
     teamId: input.teamId,
     type: input.type,
     date: input.date,
-    location: input.location,
+    location: input.location ?? null,
+    trainingLocation: input.trainingLocationId
+      ? { id: input.trainingLocationId, name: 'Terrain A', address: '1 rue du Stade', isArchived: false }
+      : null,
     status: 'open',
     closedAt: null,
     closedBy: null,
@@ -130,7 +135,7 @@ function trainingInput(overrides: Partial<CreateTrainingConvocationInput> = {}):
     teamId: 'team-1',
     createdBy: 'coach-1',
     date: FUTURE_DATE,
-    location: 'Gymnase municipal',
+    trainingLocationId: 'training-location-1',
     ...overrides,
   }
 }
@@ -233,6 +238,34 @@ describe('CreateConvocationUseCase', () => {
 
     expect(createTraining).toHaveBeenCalledTimes(1)
     expect(result.type).toBe('training')
+  })
+
+  // specs/web-localizations.md §2.3/AC-WL-10 — a training carries the venue
+  // id, never free text, and a missing id is refused before any network call.
+  it('passes the trainingLocationId through to ConvocationRepository.createTraining', async () => {
+    const createTraining = vi.fn(async (input: CreateTrainingConvocationInput) => convocationFrom(input))
+    const useCase = new CreateConvocationUseCase(
+      fakeUserRepository(coachUser(['team-1'])),
+      fakeTeamRepository([teamWith('team-1')]),
+      fakeConvocationRepository({ createTraining }),
+    )
+
+    const result = await useCase.execute(trainingInput({ trainingLocationId: 'training-location-9' }))
+
+    expect(createTraining).toHaveBeenCalledWith(expect.objectContaining({ trainingLocationId: 'training-location-9' }))
+    expect(result.trainingLocation?.id).toBe('training-location-9')
+  })
+
+  it('refuses a training without trainingLocationId, with no repository call', async () => {
+    const createTraining = vi.fn(async (input: CreateTrainingConvocationInput) => convocationFrom(input))
+    const useCase = new CreateConvocationUseCase(
+      fakeUserRepository(coachUser(['team-1'])),
+      fakeTeamRepository([teamWith('team-1')]),
+      fakeConvocationRepository({ createTraining }),
+    )
+
+    await expect(useCase.execute(trainingInput({ trainingLocationId: '' }))).rejects.toBeInstanceOf(InvalidTrainingLocationInputError)
+    expect(createTraining).not.toHaveBeenCalled()
   })
 
   it('creates a match convocation via ConvocationRepository.createMatch', async () => {

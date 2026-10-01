@@ -9,7 +9,6 @@ import { MeetingAgendaField } from './components/MeetingAgendaField'
 import { RecipientsCard } from './components/RecipientsCard'
 import { SegmentedToggle } from '@presentation/shared/components/SegmentedToggle'
 import { TypeSelector } from './components/TypeSelector'
-import { TRAINING_LOCATIONS } from './training-locations'
 import { useCreateConvocationViewModel, type ConvocationFormValues } from './useCreateConvocationViewModel'
 
 interface CreateConvocationFormProps {
@@ -135,22 +134,48 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
               </FormField>
             </div>
 
-            {/* §2 "Lieu d'entraînement" — a select over Convocation.location
-                itself (same column match/meeting use as free text), fed by
-                the fixed TRAINING_LOCATIONS list, not a real referentiel. */}
-            <FormField label="Lieu d'entraînement" htmlFor="location">
-              <Select value={values.location} onValueChange={vm.setLocation}>
-                <SelectTrigger id="location" className={FIELD_CLASSNAME}>
-                  <SelectValue placeholder="Choisir un lieu" />
+            {/* specs/web-localizations.md §2.7/AC-WL-16/17 — a select over the
+                non-archived training_locations; the submitted value is the
+                venue id. Loading / load error / empty each get their own
+                state, and there is never a free-text fallback. The label
+                is the venue name only (PO-WL-09 undecided). */}
+            <FormField label="Lieu d'entraînement" htmlFor="trainingLocationId" error={vm.trainingLocationError}>
+              <Select
+                value={vm.selectedTrainingLocationId}
+                onValueChange={vm.setTrainingLocationId}
+                disabled={vm.isLoadingTrainingLocations || vm.hasTrainingLocationsError || vm.hasNoTrainingLocations}
+              >
+                <SelectTrigger id="trainingLocationId" className={FIELD_CLASSNAME}>
+                  <SelectValue placeholder={vm.isLoadingTrainingLocations ? 'Chargement des lieux…' : 'Choisir un lieu'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {TRAINING_LOCATIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
+                  {vm.trainingLocations.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {vm.hasNoTrainingLocations && (
+                <p className="text-[12px] text-white/60">
+                  Aucun lieu d’entraînement disponible. Un administrateur doit en ajouter.
+                </p>
+              )}
+              {vm.hasTrainingLocationsError && (
+                <div className="flex flex-col items-start gap-2">
+                  <p role="alert" className="text-[12px] font-semibold text-coach-red-text">
+                    Impossible de charger les lieux d’entraînement.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={vm.retryLoadTrainingLocations}
+                    className="h-11 border-white/20 text-white"
+                  >
+                    Réessayer
+                  </Button>
+                </div>
+              )}
             </FormField>
           </div>
         )}

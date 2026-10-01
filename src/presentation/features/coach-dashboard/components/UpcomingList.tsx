@@ -3,6 +3,7 @@ import { Badge } from '../../../shared/components/ui/badge'
 import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface UpcomingListProps {
   items: ConvocationForCoach[]
@@ -41,7 +42,7 @@ export function UpcomingList({ items, onOpen, onSeeAll }: UpcomingListProps) {
                     {formatConvocationType(convocation.type)}
                   </p>
                   <p className="m-0 mt-0.75 text-[11.5px] font-semibold text-white/50">
-                    {formatEventSchedule(convocation.date, convocation.location)}
+                    {formatEventSchedule(convocation.date, getConvocationLocationLabel(convocation))}
                   </p>
                 </div>
                 <Badge className={`shrink-0 rounded-full px-2.25 py-0.75 text-[10.5px] font-extrabold ${accent.badge}`}>

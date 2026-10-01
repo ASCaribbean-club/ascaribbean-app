@@ -6,6 +6,7 @@ import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
+import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 
 // Traduit une erreur Postgres/PostgREST en erreur de domaine — le point qui
@@ -43,6 +44,13 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       }
       if (error.message.includes('match_events_penalty_requires_goal_check')) {
         return new InconsistentMatchScoreError(error.message)
+      }
+      // specs/web-localizations.md §2.3/AC-WL-06 — the BEFORE INSERT trigger on
+      // convocations (convocations_training_location_not_archived) refuses a
+      // training that references an archived venue, via function or direct
+      // insert. See supabase/migrations/20261001100000_web_localizations.sql.
+      if (error.message.includes('training_location_archived')) {
+        return new TrainingLocationArchivedError(error.message)
       }
       return new NotFoundError(error.message)
     case '23P01':

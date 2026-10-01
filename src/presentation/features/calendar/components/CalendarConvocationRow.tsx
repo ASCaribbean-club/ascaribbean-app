@@ -16,6 +16,7 @@ import type { CalendarMatchResult } from './calendar-list-item'
 import type { CalendarResponseBlock } from './calendar-response-block'
 import { ResponseCountsRecap } from './ResponseCountsRecap'
 import { ResponseStatusPill } from './ResponseStatusPill'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface CalendarConvocationRowProps {
   convocation: Convocation
@@ -102,7 +103,7 @@ export function CalendarConvocationRow({
         </div>
       </div>
 
-      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
+      <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         {responseBlock.kind === 'coach' && <ResponseBar counts={responseBlock.counts} />}

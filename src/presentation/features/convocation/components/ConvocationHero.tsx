@@ -7,6 +7,7 @@ import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { TeamCrestAvatar } from '@presentation/shared/components/TeamCrestAvatar'
 import { AttendanceConfirmationAlert } from '@presentation/shared/components/AttendanceConfirmationAlert'
 import { StatusBadge } from './StatusBadge'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface ConvocationHeroProps {
   convocation: Convocation
@@ -44,7 +45,8 @@ export function ConvocationHero({ convocation, teamName, sectionName, opponent, 
   // "Seniors" — coarser than the team itself); the team then moves down to
   // the subtitle next to `convocation.location`, e.g. "Groupe A · Stade
   // municipal" in the mockup.
-  const trainingSubtitle = teamName ? `${teamName} · ${convocation.location}` : convocation.location
+  const locationLabel = getConvocationLocationLabel(convocation)
+  const trainingSubtitle = teamName ? `${teamName} · ${locationLabel}` : locationLabel
 
   return (
     <div className="flex flex-col gap-4 px-5.5 pt-1 pb-5">

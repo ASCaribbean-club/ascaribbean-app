@@ -30,6 +30,7 @@ function convocationWith(overrides: Partial<Convocation> = {}): Convocation {
     type: 'training',
     date: '2026-08-10T18:00:00.000Z', // 10-min deadline for training → 17:50
     location: 'Gymnase',
+    trainingLocation: null,
     status: 'open',
     closedAt: null,
     closedBy: null,

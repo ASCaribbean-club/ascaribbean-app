@@ -9,6 +9,7 @@ function convocationAt(date: string, status: Convocation['status'] = 'open'): Co
     type: 'training',
     date,
     location: 'Terrain principal',
+    trainingLocation: null,
     status,
     closedAt: null,
     closedBy: null,

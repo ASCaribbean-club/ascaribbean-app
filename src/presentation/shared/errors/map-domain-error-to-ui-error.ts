@@ -29,6 +29,8 @@ import { MembershipActivationRequirementsNotMetError } from '@domain/errors/memb
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
+import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-training-location-input-error'
+import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
 import { VotingNotOpenError } from '@domain/errors/voting-not-open-error'
@@ -439,6 +441,30 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
         'L’invitation a été envoyée mais la fiche du compte n’a pas pu être créée — contactez un administrateur technique.',
       variant: 'inline',
       retryable: false,
+    }
+  }
+
+  if (error instanceof InvalidTrainingLocationInputError) {
+    // specs/web-localizations.md §2.5/AC-WL-08, UI design "États du
+    // dialogue" — the dialog's own `required` attributes let whitespace-only
+    // input through, so the use case's trim check is the real authority and
+    // surfaces here at the top of TrainingLocationFormDialog. Generic copy
+    // covering both fields, same reasoning as InvalidSeasonInputError above.
+    return {
+      message: 'Le nom du lieu et l’adresse sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof TrainingLocationArchivedError) {
+    // specs/web-localizations.md §2.3/§2.7/AC-WL-10 — the database refused a
+    // training created on a location archived since the form was opened.
+    // Shown inline under the location field.
+    return {
+      message: 'Ce lieu n’est plus disponible. Choisissez un autre lieu.',
+      variant: 'inline',
+      retryable: true,
     }
   }
 

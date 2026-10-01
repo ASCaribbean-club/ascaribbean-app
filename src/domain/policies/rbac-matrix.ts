@@ -316,4 +316,15 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // (audit_log_select_admin) — see
   // supabase/migrations/20260930090000_web_audit_logs_schema.sql.
   'audit:read': ['admin'],
+
+  // specs/web-localizations.md §3 (PO-WL-02) — 'training_location:write':
+  // ['admin'], club-wide, on the 'season:write' pattern. Covers add, edit
+  // and archive (archiving goes through the update policy, there is no
+  // delete). Manual mirror (CLAUDE.md §7) of 2 RLS policies on
+  // public.training_locations (training_locations_insert_admin,
+  // training_locations_update_admin), each commented with this action name —
+  // see supabase/migrations/20261001100000_web_localizations.sql. Reading
+  // locations stays RLS-only, no matrix entry (every authenticated account
+  // reads them, archived included, to resolve a convocation's location).
+  'training_location:write': ['admin'],
 }

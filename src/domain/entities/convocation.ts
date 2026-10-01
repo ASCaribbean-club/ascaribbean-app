@@ -1,3 +1,5 @@
+import type { TrainingLocation } from './training-location'
+
 export type ConvocationType = 'training' | 'match' | 'meeting'
 export type ConvocationStatus = 'open' | 'closed' | 'cancelled'
 
@@ -6,7 +8,16 @@ export interface Convocation {
   teamId: string
   type: ConvocationType
   date: string // ISO date
-  location: string
+  // specs/web-localizations.md §2.2 — free text, now nullable: set for
+  // match, meeting and training convocations created BEFORE the
+  // training_locations table existed (legacy rows); null for a training
+  // that references a TrainingLocation. Never read directly for display —
+  // use getConvocationLocationLabel (domain/rules/convocation-location.ts).
+  location: string | null
+  // specs/web-localizations.md §2.2/§2.6 — the referenced venue, resolved
+  // by join (name/address always current), null for match/meeting/legacy
+  // training. An archived venue is still resolved here.
+  trainingLocation: TrainingLocation | null
   status: ConvocationStatus
   closedAt: string | null
   closedBy: string | null // userId of the coach whose validation completed the record set
@@ -30,7 +41,12 @@ export interface Convocation {
 // writing any OTHER Convocation field (type, teamId, status, closedBy,
 // cancelledBy, createdBy, ...) through this path a compile error, not a
 // runtime guard someone has to remember to keep enforcing.
-export type ConvocationArrangements = Pick<Convocation, 'date' | 'location'>
+//
+// specs/web-localizations.md §2.2/AC-WL-11 — `Convocation.location` is now
+// `string | null`, but a match always has a non-null location (DB check
+// constraint), so the edit path re-declares `location` as plain `string`:
+// it must never become able to write null.
+export type ConvocationArrangements = Pick<Convocation, 'date'> & { location: string }
 
 // --- Player-declared intent, submitted before the event ---
 

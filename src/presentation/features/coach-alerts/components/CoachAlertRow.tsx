@@ -6,6 +6,7 @@ import { formatConvocationType } from '@presentation/shared/formatters/convocati
 import { CONVOCATION_TYPE_ACCENT } from '@presentation/shared/formatters/convocation-type-accent'
 import { GoalAttributionMissingAlert } from './GoalAttributionMissingAlert'
 import { MatchScoreMissingAlert } from './MatchScoreMissingAlert'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface CoachAlertRowProps {
   convocation: Convocation
@@ -72,7 +73,7 @@ export function CoachAlertRow({
         {titleSuffix}
       </p>
 
-      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
+      <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 
       {/* At most two of the three chips together (B and C are structurally
           exclusive, §1 point 4) — wraps rather than overflows on a narrow

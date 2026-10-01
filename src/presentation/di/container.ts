@@ -16,6 +16,7 @@ import { createPlayerStatsContainer, type PlayerStatsContainer } from './contain
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
 import { createSeasonsContainer, type SeasonsContainer } from './containers/seasons-container'
 import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from './containers/section-and-teams-container'
+import { createTrainingLocationsContainer, type TrainingLocationsContainer } from './containers/training-locations-container'
 import { createUsersContainer, type UsersContainer } from './containers/users-container'
 
 export interface Container {
@@ -33,6 +34,7 @@ export interface Container {
   profile: ProfileContainer
   seasons: SeasonsContainer
   sectionAndTeams: SectionAndTeamsContainer
+  trainingLocations: TrainingLocationsContainer
   users: UsersContainer
 }
 
@@ -52,6 +54,7 @@ export function createContainer(): Container {
     profile: createProfileContainer(supabaseClient),
     seasons: createSeasonsContainer(supabaseClient),
     sectionAndTeams: createSectionAndTeamsContainer(supabaseClient),
+    trainingLocations: createTrainingLocationsContainer(supabaseClient),
     users: createUsersContainer(supabaseClient),
   }
 }

@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { ConvocationType } from '@domain/entities/convocation'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import { isPastDate } from '@domain/rules/convocation-rules'
 import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation/CreateConvocationUseCase'
+import { mapDomainErrorToUiError } from '../../shared/errors/map-domain-error-to-ui-error'
 import { useConvocationDependencies } from '../../di/hooks/use-convocation-dependencies'
 import { combineDateAndTime, toDateInputValue } from '../../shared/formatters/date-input'
 import { useAuth } from '../../shared/hooks/use-auth'
@@ -28,7 +30,11 @@ export interface ConvocationFormValues {
   type: ConvocationType
   date: string
   time: string
+  // match / meeting only — a training references a venue by id instead
+  // (`trainingLocationId` below, specs/web-localizations.md §2.7).
   location: string
+  // training only — the selected training_locations id, never free text.
+  trainingLocationId: string
 
   // match only (see domain/entities/match-details.ts)
   opponentId: string
@@ -50,6 +56,7 @@ const EMPTY_VALUES: ConvocationFormValues = {
   date: '',
   time: '',
   location: '',
+  trainingLocationId: '',
   opponentId: '',
   isHome: true,
   meetingPointTime: '',
@@ -66,14 +73,17 @@ const EMPTY_VALUES: ConvocationFormValues = {
 // `meetingPointTime`/`meetingPointLocation` (RDV) are deliberately NOT part
 // of this check anymore — a coach may create a match without knowing the RDV
 // yet (see CreateConvocationUseCase's matching relaxation).
-function isFormComplete(values: ConvocationFormValues): boolean {
+function isFormComplete(values: ConvocationFormValues, selectedTrainingLocationId: string): boolean {
   if (!values.date || !values.time) return false
 
   switch (values.type) {
     case 'match':
       return !!values.opponentId && !!values.location
     case 'training':
-      return !!values.location
+      // specs/web-localizations.md §2.7/AC-WL-17 — a venue must be selected;
+      // with an empty venue list this stays false, so submission is
+      // impossible.
+      return !!selectedTrainingLocationId
     case 'meeting':
       // Agenda is explicitly optional (§2, "Ordre du jour... liste vide
       // acceptée à la soumission") — not part of this check.
@@ -105,7 +115,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { createConvocationUseCase, opponentRepository } = useConvocationDependencies()
+  const { createConvocationUseCase, opponentRepository, listAvailableTrainingLocationsUseCase } = useConvocationDependencies()
 
   const routeState = location.state as CreateConvocationRouteState | null
   const teamId = routeState?.teamId
@@ -134,8 +144,34 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     setScheduleError(undefined)
   }
 
+  const isTraining = values.type === 'training'
+
+  // specs/web-localizations.md §2.7/AC-WL-16 — the selector's options: the
+  // non-archived venues, loaded only while the Entraînement type is chosen.
+  // An empty list is a valid state (AC-WL-17), not an error.
+  const trainingLocationsQuery = useQuery({
+    queryKey: queryKeys.trainingLocationsAvailable(),
+    queryFn: () => listAvailableTrainingLocationsUseCase.execute(),
+    enabled: isTraining,
+  })
+  const trainingLocations = trainingLocationsQuery.data ?? []
+  // A selection that is no longer in the (refetched) list — e.g. the venue
+  // was archived meanwhile — counts as no selection.
+  const selectedTrainingLocationId = trainingLocations.some((option) => option.id === values.trainingLocationId)
+    ? values.trainingLocationId
+    : ''
+
   const createConvocation = useMutation({
     mutationFn: (input: CreateConvocationUseCaseInput) => createConvocationUseCase.execute(input),
+    onError: (error) => {
+      // §2.7 — a venue archived between opening the form and submitting:
+      // the form stays open with everything else kept, the chosen venue is
+      // cleared and the list reloaded so the archived one disappears.
+      if (error instanceof TrainingLocationArchivedError) {
+        setValues((current) => ({ ...current, trainingLocationId: '' }))
+        void queryClient.invalidateQueries({ queryKey: queryKeys.trainingLocationsRoot() })
+      }
+    },
     onSuccess: () => {
       if (teamId) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.teamUpcomingConvocations(teamId) })
@@ -150,9 +186,18 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     },
   })
 
-  const canSubmit = isFormComplete(values) && !createConvocation.isPending
+  const canSubmit = isFormComplete(values, selectedTrainingLocationId) && !createConvocation.isPending
 
-  const fieldError = scheduleError ?? (createConvocation.error ? toFieldErrorMessage(createConvocation.error) : undefined)
+  // The "venue no longer available" refusal is shown inline under the venue
+  // field, not in the bottom message.
+  const trainingLocationError =
+    createConvocation.error instanceof TrainingLocationArchivedError
+      ? mapDomainErrorToUiError(createConvocation.error).message
+      : undefined
+
+  const fieldError =
+    scheduleError ??
+    (createConvocation.error && !trainingLocationError ? toFieldErrorMessage(createConvocation.error) : undefined)
 
   function onSubmit() {
     if (!teamId || !user) return
@@ -199,7 +244,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
           teamId,
           createdBy: user.id,
           date: isoDate,
-          location: values.location,
+          trainingLocationId: selectedTrainingLocationId,
         }
         break
       case 'meeting':
@@ -255,6 +300,11 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     setDate: (date: string) => setField('date', date),
     setTime: (time: string) => setField('time', time),
     setLocation: (value: string) => setField('location', value),
+    setTrainingLocationId: (value: string) => {
+      setField('trainingLocationId', value)
+      // Drop the previous refusal once another venue is picked.
+      createConvocation.reset()
+    },
     setOpponentId: (value: string) => setField('opponentId', value),
     setIsHome: (value: boolean) => setField('isHome', value),
     setMeetingPointTime: (value: string) => setField('meetingPointTime', value),
@@ -263,6 +313,17 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     setAgenda: (agenda: string[]) => setField('agenda', agenda),
 
     opponents,
+
+    // specs/web-localizations.md §2.7 — selector state, one boolean per
+    // distinct rendering (loading / load error / empty / options).
+    trainingLocations,
+    selectedTrainingLocationId,
+    isLoadingTrainingLocations: trainingLocationsQuery.isLoading,
+    hasTrainingLocationsError: trainingLocationsQuery.isError,
+    hasNoTrainingLocations:
+      !trainingLocationsQuery.isLoading && !trainingLocationsQuery.isError && trainingLocations.length === 0,
+    trainingLocationError,
+    retryLoadTrainingLocations: () => void trainingLocationsQuery.refetch(),
 
     recipientsCount: routeState?.activeMemberCount,
 

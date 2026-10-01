@@ -1,4 +1,5 @@
 import type { Convocation, ConvocationArrangements, ConvocationResponse } from '@domain/entities/convocation'
+import { toTrainingLocation } from './training-location-mapper'
 import type { ConvocationArrangementsUpdateRow, ConvocationResponseRow, ConvocationRow } from '../dto/convocation-dto'
 
 export function toConvocation(row: ConvocationRow): Convocation {
@@ -8,6 +9,9 @@ export function toConvocation(row: ConvocationRow): Convocation {
     type: row.type,
     date: row.date,
     location: row.location,
+    // specs/web-localizations.md §2.6 — name/address resolved by the join,
+    // never copied onto the convocation.
+    trainingLocation: row.training_location ? toTrainingLocation(row.training_location) : null,
     status: row.status,
     closedAt: row.closed_at,
     closedBy: row.closed_by,

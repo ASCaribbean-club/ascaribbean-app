@@ -408,4 +408,32 @@ describe('can', () => {
     const user = userWith([{ role: 'coach', teamIds: ['team-1'] }, { role: 'admin' }])
     expect(can(user, 'audit:read')).toBe(true)
   })
+
+  // specs/web-localizations.md §3/AC-WL-09 — 'training_location:write' is
+  // ['admin']-only and club-wide (no scope check, same as 'season:write').
+  it('allows an admin to write training locations', () => {
+    expect(can(userWith([{ role: 'admin' }]), 'training_location:write')).toBe(true)
+  })
+
+  it('denies coach and section-manager from writing training locations', () => {
+    expect(can(userWith([{ role: 'coach', teamIds: ['team-1'] }]), 'training_location:write')).toBe(false)
+    expect(can(userWith([{ role: 'section-manager', sectionId: 'section-a' }]), 'training_location:write')).toBe(false)
+  })
+
+  it('denies every other non-admin role from writing training locations', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      expect(can(userWith([role]), 'training_location:write')).toBe(false)
+    }
+  })
+
+  it('allows an admin+coach multi-role account to write training locations', () => {
+    expect(can(userWith([{ role: 'coach', teamIds: ['team-1'] }, { role: 'admin' }]), 'training_location:write')).toBe(true)
+  })
 })

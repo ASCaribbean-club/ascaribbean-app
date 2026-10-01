@@ -62,6 +62,9 @@ function fakeConvocationRepository(convocations: Convocation[] = []): Convocatio
     createMatch: vi.fn(),
     createMeeting: vi.fn(),
     updateArrangements: vi.fn(),
+    updateTraining: async () => { throw new Error('not used in this test') },
+    updateMatch: async () => { throw new Error('not used in this test') },
+    updateMeeting: async () => { throw new Error('not used in this test') },
   }
 }
 

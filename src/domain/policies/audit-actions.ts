@@ -49,6 +49,12 @@ export const AUDIT_ACTIONS = [
   'team.created', // wired: CreateTeamUseCase
   'team.updated', // wired: UpdateTeamUseCase
   'user.updated', // wired: UpdateUserUseCase
+  // specs/web-create-convocation.md §4/AC-WC-32 — one row per player whose
+  // attendance value effectively changes, written by an admin. Mirrors
+  // supabase/migrations/20261001120000_web_create_convocation.sql's widened
+  // `audit_log_action_check`. convocation.created/updated are NOT added
+  // (PO-WC-07, still open).
+  'attendance.updated', // wired: RecordAttendanceByAdminUseCase
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

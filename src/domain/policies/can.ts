@@ -91,7 +91,10 @@ function grants(
         action === 'convocation:update' ||
         action === 'team_stats:view' ||
         // specs/coach-match-composition.md §2 — team-scoped, same gap class as above.
-        action === 'match_lineup:write'
+        action === 'match_lineup:write' ||
+        // specs/web-create-convocation.md §2 — inert today (admin only in the
+        // matrix), listed now so a future widening carries a scope check.
+        action === 'meeting_details:update'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':
@@ -134,7 +137,9 @@ function grants(
         action === 'convocation:update' ||
         // specs/coach-match-composition.md §2 — pre-wired, inert today
         // (rbacMatrix['match_lineup:write'] is ['coach']-only, PO-MC-10).
-        action === 'match_lineup:write'
+        action === 'match_lineup:write' ||
+        // specs/web-create-convocation.md §2 — pre-wired, inert today.
+        action === 'meeting_details:update'
       ) {
         // The use case resolves the target's sectionId (via TeamRepository
         // for a team-scoped target, or directly for a section-scoped one)

@@ -1,5 +1,10 @@
 import type { Convocation, ConvocationArrangements } from '../entities/convocation'
 import type {
+  UpdateMatchConvocationPayload,
+  UpdateMeetingConvocationPayload,
+  UpdateTrainingConvocationPayload,
+} from '../usecases/convocation/UpdateConvocationUseCase'
+import type {
   CreateMatchConvocationInput,
   CreateMeetingConvocationInput,
   CreateTrainingConvocationInput,
@@ -25,4 +30,14 @@ export interface ConvocationRepository {
   // UpdateMatchDetailsUseCase, gated on the same "before kickoff" window as
   // the MatchDetails write.
   updateArrangements(id: string, arrangements: ConvocationArrangements): Promise<Convocation>
+
+  // specs/web-create-convocation.md §3/AC-WC-20 — admin edit of an UPCOMING,
+  // open convocation, one method per type like the create* methods above: the
+  // convocation row and its satellite change in ONE transaction (an RPC per
+  // type on the data side), all-or-nothing. Payloads are the narrow,
+  // type-specific field sets of UpdateConvocationUseCase — never the whole
+  // entity, so `teamId`/`type`/`status` stay unwritable by construction.
+  updateTraining(payload: UpdateTrainingConvocationPayload): Promise<Convocation>
+  updateMatch(payload: UpdateMatchConvocationPayload): Promise<Convocation>
+  updateMeeting(payload: UpdateMeetingConvocationPayload): Promise<Convocation>
 }

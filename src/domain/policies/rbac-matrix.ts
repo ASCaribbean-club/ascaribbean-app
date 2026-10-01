@@ -35,7 +35,16 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // the closest matrix row ("Saisir une évaluation sportive") says ❌ for
   // that role, so extending it needs PO-AT-01 resolved first, not an
   // extensive reading of a neighboring row.
-  'attendance:validate': ['coach'],
+  //
+  // specs/web-create-convocation.md §2 (PO-AT-01(b) tranché par la
+  // développeuse, 2026-10-01) — 'admin' ADDED: a deliberate gap from the
+  // closest CDC row ("Saisir une évaluation sportive", ❌ for admin), the
+  // Bureau still to validate it (PO-WC-06). Mirrors the admin sibling
+  // policies attendance_records_insert_validate_admin /
+  // attendance_records_update_validate_admin (PAST convocations only, never
+  // 'cancelled') — see supabase/migrations/20261001120000_web_create_convocation.sql.
+  // The coach branch is unchanged (can.ts, no time window for a coach).
+  'attendance:validate': ['coach', 'admin'],
 
   // specs/player-vote.md §2 — "Il n'existe aucune ligne de matrice
   // applicable" for a positive vote: this is a brand-new matrix row, not an
@@ -251,7 +260,17 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // control BEFORE any write is attempted (§2, "l'onglet Infos ne change pas
   // de structure selon le rôle, seul le contrôle d'édition apparaît ou
   // non").
-  'match_details:update': ['coach'],
+  //
+  // specs/web-create-convocation.md §2 — 'admin' ADDED (CDC row "Créer/modifier
+  // une convocation" is ✅ for admin, which lifts PO-EM-01 for admin ONLY; the
+  // coach scope and window are unchanged, section-manager/authorized-officer
+  // stay out). Mirrors match_details_update_admin (same window: parent
+  // convocation date > now() and status = 'open'), plus `grant update
+  // (opponent_id)` — guarded against non-admin callers by the trigger
+  // match_details_guard_opponent_admin_only (a column grant is per
+  // (table, role), never per policy). Migration:
+  // supabase/migrations/20261001120000_web_create_convocation.sql.
+  'match_details:update': ['coach', 'admin'],
 
   // specs/edit-match-details.md, developer decision (2026-09-25) — same
   // scope as 'match_details:update' above (coach of the convocation's own
@@ -261,7 +280,15 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // via team_id, c.date > now(), c.status = 'open') plus `grant update
   // (date, location)` — see
   // supabase/migrations/20260925150603_edit_match_details_write_policy.sql.
-  'convocation:update': ['coach'],
+  //
+  // specs/web-create-convocation.md §2 — 'admin' ADDED, same reasoning as
+  // 'match_details:update' above. Mirrors convocations_update_admin (using/
+  // with check: private.is_admin() and date > now() and status = 'open'),
+  // plus `grant update (training_location_id)` guarded for non-admin callers
+  // by convocations_guard_training_location_admin_only. Team and type stay
+  // outside every grant. Migration:
+  // supabase/migrations/20261001120000_web_create_convocation.sql.
+  'convocation:update': ['coach', 'admin'],
 
   // specs/player-stats.md §2/§6.3 — "Deux actions nouvelles — et exactement
   // deux", the ONLY RBAC change this feature is allowed to make. Both scoped
@@ -336,4 +363,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // 'match_lineup:write' — see supabase/migrations/20261001075331_match_lineup.sql.
   // Deliberately NO time window (PO-MC-05), unlike match_details_update_arrangements.
   'match_lineup:write': ['coach'],
+
+  // specs/web-create-convocation.md §2 — NEW permission: the admin edits a
+  // meeting's title and agenda before it starts. Admin only; club-wide by
+  // construction (no scope field on the admin assignment). can.ts also lists
+  // it in the 'coach' (requiresTeamScope) and 'section-manager' branches in
+  // this same change, inert today, so a future widening can't ship without a
+  // scope check. Mirrors meeting_details_update_admin (+ `revoke update` then
+  // `grant update (title, agenda)`) — see
+  // supabase/migrations/20261001120000_web_create_convocation.sql.
+  'meeting_details:update': ['admin'],
 }

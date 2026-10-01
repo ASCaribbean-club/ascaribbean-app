@@ -373,4 +373,13 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // `grant update (title, agenda)`) — see
   // supabase/migrations/20261001120000_web_create_convocation.sql.
   'meeting_details:update': ['admin'],
+
+  // specs/player-unavailability.md §2 — Coach/Staff only, own teams (can.ts).
+  // SQL mirror: future migration, not built in the domain-only pass.
+  'availability:declare': ['coach'],
+
+  // specs/player-unavailability.md §2 — player (own team) and coach (own
+  // teams). Players see the teammate projection only. SQL mirror: future
+  // migration, not built in the domain-only pass.
+  'availability:read-team': ['player', 'coach'],
 }

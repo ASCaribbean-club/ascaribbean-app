@@ -252,6 +252,11 @@ export const queryKeys = {
   // a different read entirely).
   teamStats: (teamId: string) => ['teams', teamId, 'stats'] as const,
 
+  // specs/mobile-leaderboard.md — the three ranked tabs' shared read
+  // (get_team_leaderboard), one entry per team; a Team row is per-season so
+  // the season is folded into the id, same reasoning as `teamStats`.
+  teamLeaderboard: (teamId: string) => ['teams', teamId, 'leaderboard'] as const,
+
   // specs/coach-dashboard.md §1 point 7 (PO-1) / specs/player-dashboard.md
   // PO-PD-07 — GetTeamRecentFormUseCase's read (form + season goals for/
   // against). Shared by BOTH dashboards' equivalent block: a team's recent

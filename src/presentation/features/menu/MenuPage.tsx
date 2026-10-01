@@ -36,15 +36,15 @@ export function MenuPage() {
           PO-CTS-06: its destination now branches on the active dashboard
           role (vm.statisticsHref) rather than pointing at the player screen
           for everyone — a coach lands on /team-stats, not /stats.
-          "Classement" is UNCHANGED — still a DisabledMenuCard (no
-          CDC-grounded module behind it, PO-MN-04/PO-PD-07 still open).
-          Neutral subtitle, not the mockup's fabricated "4e · 11 pts · J6"
-          (AC-MN-04, now restricted to this card only). */}
+          "Classement" is now a real nav card too (specs/mobile-leaderboard.md
+          AC-LB-01, developer request resolves PO-MN-04 for this card): an
+          in-team ranking, not the championship standing. Neutral subtitle,
+          never the mockup's fabricated "4e · 11 pts · J6" (AC-MN-04). */}
       <section className="flex flex-col gap-2.5">
         <MenuSectionTitle>Suivi de l'équipe</MenuSectionTitle>
         <div className="grid grid-cols-2 gap-3">
           <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
-          <DisabledMenuCard icon={IconTrophy} title="Classement" subtitle="Bientôt disponible" />
+          <MenuNavCard icon={IconTrophy} title="Classement" subtitle="Buts, cartons" to="/leaderboard" />
         </div>
       </section>
 

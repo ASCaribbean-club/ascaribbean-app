@@ -39,6 +39,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'team.created': "Création d'une équipe",
   'team.updated': "Modification d'une équipe",
   'user.updated': "Modification d'un utilisateur",
+  // specs/web-create-convocation.md AC-WC-32 — a presence entered or corrected by an admin.
+  'attendance.updated': "Modification d'une présence",
 }
 
 // AC-AU-08/AC-AU-11 — never throws: a code absent from AUDIT_ACTIONS

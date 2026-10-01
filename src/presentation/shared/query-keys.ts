@@ -292,4 +292,25 @@ export const queryKeys = {
   // single key per convocation is right: a session has one active role at a
   // time on this screen.
   matchLineup: (convocationId: string) => ['convocations', convocationId, 'lineup'] as const,
+
+  // specs/web-create-convocation.md AC-WC-16/AC-WC-34 — backoffice
+  // convocations. The list key is discriminated by the filters (a change of
+  // filter starts that key's own cache entry at page 0); every mutation
+  // invalidates the root prefix. `convocationsRoot` is the mobile screens'
+  // shared prefix (calendar, dashboards, detail), invalidated too so they
+  // don't serve a stale copy after an admin edit.
+  adminConvocationsRoot: () => ['admin-convocations'] as const,
+  adminConvocationsList: (filters: {
+    seasonId: string | null
+    sectionId: string | null
+    teamId: string | null
+    type: string | null
+    period: string
+    unrecordedOnly: boolean
+    dateRange?: { from: string; to: string }
+  }) => ['admin-convocations', 'list', filters] as const,
+  adminConvocationsUnrecordedCount: (seasonId: string | null) => ['admin-convocations', 'unrecorded-count', seasonId ?? ''] as const,
+  adminConvocation: (convocationId: string) => ['admin-convocations', 'detail', convocationId] as const,
+  adminAttendanceSheet: (convocationId: string) => ['admin-convocations', 'attendance', convocationId] as const,
+  convocationsRoot: () => ['convocations'] as const,
 }

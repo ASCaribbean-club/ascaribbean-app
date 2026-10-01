@@ -24,6 +24,9 @@ import { BackofficeMembershipsPage } from '../features/backoffice/memberships/Ba
 import { BackofficeLocalizationsPage } from '../features/backoffice/localizations/BackofficeLocalizationsPage'
 import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
 import { BackofficeAuditPage } from '../features/backoffice/audit/BackofficeAuditPage'
+import { BackofficeConvocationsPage } from '../features/backoffice/convocations/BackofficeConvocationsPage'
+import { BackofficeConvocationFormPage } from '../features/backoffice/convocations/form/BackofficeConvocationFormPage'
+import { BackofficeAttendancePage } from '../features/backoffice/convocations/attendance/BackofficeAttendancePage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
 import { ActiveTeamProvider } from './providers/active-team-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
@@ -87,6 +90,11 @@ export const router = createBrowserRouter([
                   { path: 'teams', element: <BackofficeTeamsPage /> },
                   { path: 'sections', element: <BackofficeSectionsPage /> },
                   { path: 'seasons', element: <BackofficeSeasonsPage /> },
+                  // specs/web-create-convocation.md — four routes, same guards.
+                  { path: 'convocations', element: <BackofficeConvocationsPage /> },
+                  { path: 'convocations/new', element: <BackofficeConvocationFormPage /> },
+                  { path: 'convocations/:convocationId/edit', element: <BackofficeConvocationFormPage /> },
+                  { path: 'convocations/:convocationId/attendance', element: <BackofficeAttendancePage /> },
                   { path: 'news', element: <BackofficeNewsPage /> },
                   { path: 'locations', element: <BackofficeLocalizationsPage /> },
                   { path: 'audit', element: <BackofficeAuditPage /> },

@@ -250,3 +250,9 @@ export type Action =
   // Team-scoped, coach only; NO temporal predicate (PO-MC-05). Reading a
   // lineup stays RLS-only (no matrix entry, §2 "Lecture").
   | 'match_lineup:write'
+  // specs/web-create-convocation.md §2 — names the resource ACTUALLY written
+  // (public.meeting_details: title, agenda), same convention as
+  // 'match_details:update'. A NEW permission, admin only: no UPDATE policy
+  // existed on that table before. Mirrors meeting_details_update_admin — see
+  // supabase/migrations/20261001120000_web_create_convocation.sql.
+  | 'meeting_details:update'

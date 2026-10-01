@@ -260,7 +260,9 @@ describe('can', () => {
   // acting inside their own section (the pre-wired can.ts branch, §2 "quatrième
   // occurrence exacte du même écart" for 'section-manager', stays inert
   // until PO-EM-01 widens the matrix entry).
-  it('denies every non-coach role from updating match details, including a section-manager acting inside their own section', () => {
+  // specs/web-create-convocation.md AC-WC-04 — 'admin' now holds this action
+  // (club-wide); every OTHER non-coach role is still denied.
+  it('denies every non-coach, non-admin role from updating match details, including a section-manager acting inside their own section', () => {
     const roles: User['roles'] = [
       { role: 'player', teamId: 'team-1' },
       { role: 'section-manager', sectionId: 'section-a' },
@@ -268,7 +270,6 @@ describe('can', () => {
       { role: 'treasurer' },
       { role: 'medical-referent' },
       { role: 'volunteer' },
-      { role: 'admin' },
     ]
     for (const role of roles) {
       const user = userWith([role])
@@ -288,7 +289,9 @@ describe('can', () => {
     expect(can(user, 'convocation:update', { teamId: 'team-2' })).toBe(false)
   })
 
-  it('denies every non-coach role from updating a convocation, including a section-manager acting inside their own section', () => {
+  // specs/web-create-convocation.md AC-WC-04 — 'admin' now holds this action
+  // (club-wide); every OTHER non-coach role is still denied.
+  it('denies every non-coach, non-admin role from updating a convocation, including a section-manager acting inside their own section', () => {
     const roles: User['roles'] = [
       { role: 'player', teamId: 'team-1' },
       { role: 'section-manager', sectionId: 'section-a' },
@@ -296,7 +299,6 @@ describe('can', () => {
       { role: 'treasurer' },
       { role: 'medical-referent' },
       { role: 'volunteer' },
-      { role: 'admin' },
     ]
     for (const role of roles) {
       const user = userWith([role])
@@ -464,5 +466,50 @@ describe('can — match_lineup:write', () => {
   it('denies a section-manager (PO-MC-10, not built)', () => {
     const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
     expect(can(user, 'match_lineup:write', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  // specs/web-create-convocation.md AC-WC-04 — the admin additions to the
+  // matrix, and the one new permission.
+  describe('admin convocation and attendance actions', () => {
+    const admin = userWith([{ role: 'admin' }])
+
+    it.each(['attendance:validate', 'convocation:update', 'match_details:update', 'meeting_details:update'] as const)(
+      'allows an admin to %s on any team, club-wide',
+      (action) => {
+        expect(can(admin, action, { teamId: 'team-9', sectionId: 'section-9' })).toBe(true)
+        expect(can(admin, action)).toBe(true)
+      },
+    )
+
+    it('keeps meeting_details:update admin-only: a coach of the team is denied', () => {
+      const coach = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+      expect(can(coach, 'meeting_details:update', { teamId: 'team-1' })).toBe(false)
+    })
+
+    it.each([
+      { role: 'player', teamId: 'team-1' },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ] as User['roles'])('denies %j meeting_details:update and attendance:validate', (role) => {
+      const user = userWith([role])
+      expect(can(user, 'meeting_details:update', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+      expect(can(user, 'attendance:validate', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    })
+
+    it('leaves the coach team scope intact on the widened actions', () => {
+      const coach = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+      for (const action of ['attendance:validate', 'convocation:update', 'match_details:update'] as const) {
+        expect(can(coach, action, { teamId: 'team-1' })).toBe(true)
+        expect(can(coach, action, { teamId: 'team-2' })).toBe(false)
+      }
+    })
+
+    it('only the admin passes backoffice:access, the guard the attendance use case relies on', () => {
+      expect(can(admin, 'backoffice:access')).toBe(true)
+      expect(can(userWith([{ role: 'coach', teamIds: ['team-1'] }]), 'backoffice:access')).toBe(false)
+    })
   })
 })

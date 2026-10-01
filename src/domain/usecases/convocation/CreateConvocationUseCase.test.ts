@@ -125,6 +125,9 @@ function fakeConvocationRepository(overrides: Partial<ConvocationRepository> = {
     createMatch: async (input) => convocationFrom(input),
     createMeeting: async (input) => convocationFrom(input),
     updateArrangements: async () => { throw new Error('not used in this test') },
+    updateTraining: async () => { throw new Error('not used in this test') },
+    updateMatch: async () => { throw new Error('not used in this test') },
+    updateMeeting: async () => { throw new Error('not used in this test') },
     ...overrides,
   }
 }

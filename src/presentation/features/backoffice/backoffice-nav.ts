@@ -1,4 +1,5 @@
 import {
+  IconCalendarEvent,
   IconCalendarStats,
   IconCreditCard,
   IconHistory,
@@ -11,7 +12,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'locations' | 'audit'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'convocations' | 'locations' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -97,6 +98,16 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/seasons',
     icon: IconCalendarStats,
     emptyStateTitle: 'Aucune saison à afficher pour l’instant',
+  },
+  {
+    // specs/web-create-convocation.md UI design "Où ça vit" — 9th entry,
+    // right before "Actus". Same guards as the others, no numeric badge
+    // (UI-WC-08, PO-WC-04 open). `IconCalendarEvent` is a replaceable proposal.
+    id: 'convocations',
+    label: 'Convocations',
+    path: '/admin/convocations',
+    icon: IconCalendarEvent,
+    emptyStateTitle: 'Aucune convocation à afficher pour l’instant',
   },
   {
     id: 'news',

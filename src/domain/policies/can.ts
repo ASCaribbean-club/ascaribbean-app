@@ -48,7 +48,12 @@ function grants(
       // third person-scoped action: 'match_cards:view-own' is bounded by
       // get_my_cards_count()'s own auth.uid() filter, not by a team. Also
       // deliberately NOT here.
-      const requiresTeamScope = action === 'convocation:respond' || action === 'vote:cast' || action === 'match_goals:view'
+      const requiresTeamScope = action === 'convocation:respond' ||
+        action === 'vote:cast' ||
+        action === 'match_goals:view' ||
+        // specs/player-unavailability.md §2 — team-scoped (unlike the person-scoped
+        // player-stats actions): without it a player of team A passes for team B.
+        action === 'availability:read-team'
       return !requiresTeamScope || assignment.teamId === context.teamId
     }
     case 'coach': {
@@ -94,7 +99,10 @@ function grants(
         action === 'match_lineup:write' ||
         // specs/web-create-convocation.md §2 — inert today (admin only in the
         // matrix), listed now so a future widening carries a scope check.
-        action === 'meeting_details:update'
+        action === 'meeting_details:update' ||
+        // specs/player-unavailability.md §2 — both team-scoped.
+        action === 'availability:declare' ||
+        action === 'availability:read-team'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':

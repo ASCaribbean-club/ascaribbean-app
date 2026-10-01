@@ -512,4 +512,58 @@ describe('can — match_lineup:write', () => {
       expect(can(userWith([{ role: 'coach', teamIds: ['team-1'] }]), 'backoffice:access')).toBe(false)
     })
   })
+
+  // specs/player-unavailability.md §2, AC-02, AC-PU-09
+  describe('availability actions', () => {
+    const coach = userWith([{ role: 'coach', teamIds: ['team-1', 'team-3'] }])
+    const player = userWith([{ role: 'player', teamId: 'team-1' }])
+
+    it('allows a coach to declare and read-team for each of their teams', () => {
+      for (const action of ['availability:declare', 'availability:read-team'] as const) {
+        expect(can(coach, action, { teamId: 'team-1' })).toBe(true)
+        expect(can(coach, action, { teamId: 'team-3' })).toBe(true)
+      }
+    })
+
+    it('denies a coach for another team or without a teamId', () => {
+      for (const action of ['availability:declare', 'availability:read-team'] as const) {
+        expect(can(coach, action, { teamId: 'team-2' })).toBe(false)
+        expect(can(coach, action)).toBe(false)
+      }
+    })
+
+    it('allows a player to read-team for their own team only', () => {
+      expect(can(player, 'availability:read-team', { teamId: 'team-1' })).toBe(true)
+      expect(can(player, 'availability:read-team', { teamId: 'team-2' })).toBe(false)
+      expect(can(player, 'availability:read-team')).toBe(false)
+    })
+
+    it('denies a player availability:declare, even for their own team', () => {
+      expect(can(player, 'availability:declare', { teamId: 'team-1' })).toBe(false)
+    })
+
+    it.each([
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+      { role: 'admin' },
+    ] as User['roles'])('denies %j both availability actions', (role) => {
+      const user = userWith([role])
+      for (const action of ['availability:declare', 'availability:read-team'] as const) {
+        expect(can(user, action, { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+      }
+    })
+
+    it('grants a player-coach multi-role account declare via the coach assignment only', () => {
+      const both = userWith([
+        { role: 'player', teamId: 'team-2' },
+        { role: 'coach', teamIds: ['team-1'] },
+      ])
+      expect(can(both, 'availability:declare', { teamId: 'team-1' })).toBe(true)
+      expect(can(both, 'availability:declare', { teamId: 'team-2' })).toBe(false)
+      expect(can(both, 'availability:read-team', { teamId: 'team-2' })).toBe(true)
+    })
+  })
 })

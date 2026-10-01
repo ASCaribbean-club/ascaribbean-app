@@ -256,3 +256,11 @@ export type Action =
   // existed on that table before. Mirrors meeting_details_update_admin — see
   // supabase/migrations/20261001120000_web_create_convocation.sql.
   | 'meeting_details:update'
+  // specs/player-unavailability.md §2 — team-scoped (can.ts requiresTeamScope,
+  // coach branch). Coach/Staff declares or lifts an unavailability for a
+  // player of their team.
+  | 'availability:declare'
+  // specs/player-unavailability.md §2 — team-scoped (can.ts requiresTeamScope,
+  // player AND coach branches). Players only ever get the teammate projection
+  // (toTeammateStatus).
+  | 'availability:read-team'

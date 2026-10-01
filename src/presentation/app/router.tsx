@@ -12,6 +12,7 @@ import { ConvocationDetailPage } from '../features/convocation/ConvocationDetail
 import { CoachAlertsPage } from '../features/coach-alerts/CoachAlertsPage'
 import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+import { LeaderboardPage } from '@presentation/features/leaderboard/LeaderboardPage'
 import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
 import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
 import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
@@ -191,6 +192,11 @@ export const router = createBrowserRouter([
               // PO-CTS-06 resolved — reached from the Menu "Statistiques"
               // card for the coach active role (MenuPage.tsx).
               { path: 'team-stats', element: <TeamStatsPage /> },
+              // specs/mobile-leaderboard.md UI design §1 — pushed route
+              // reached from the Menu "Classement" card (same for all 8
+              // roles, no can() gate: the database function serves the
+              // caller's own team or nothing), no BottomNav (AC-LB-01).
+              { path: 'leaderboard', element: <LeaderboardPage /> },
               // specs/coach-alerts.md §1/UI design "Emplacement — écran et
               // entrée" — "route poussée (`/alerts`), au même niveau que
               // /profile, /stats, /team-stats et /convocations/:id", same

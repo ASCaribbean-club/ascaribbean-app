@@ -1,3 +1,6 @@
+import { AttendanceWindowClosedError } from '@domain/errors/attendance-window-closed-error'
+import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
+import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
 import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
@@ -452,6 +455,32 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // covering both fields, same reasoning as InvalidSeasonInputError above.
     return {
       message: 'Le nom du lieu et l’adresse sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  // specs/web-create-convocation.md AC-WC-23/AC-WC-26 — window crossed while
+  // the screen was open: nothing to retry, the screen offers only a way back.
+  if (error instanceof ConvocationNotEditableError) {
+    return {
+      message: 'Cette convocation n’est plus modifiable : elle est passée ou son statut a changé.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof AttendanceWindowClosedError) {
+    return {
+      message: 'Les présences ne peuvent pas être saisies pour cette convocation.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof InvalidConvocationInputError) {
+    return {
+      message: 'Les informations saisies ne sont pas valides. Vérifiez le formulaire et réessayez.',
       variant: 'inline',
       retryable: true,
     }

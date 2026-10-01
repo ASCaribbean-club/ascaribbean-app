@@ -39,6 +39,7 @@ Deux niveaux de référence, dans cet ordre de préférence :
 | coach-alerts — **vue coach (écran Alertes)** | — aucune maquette produite | 2026-09-30 | N/A | **absent** |
 | web-audit-logs — **backoffice desktop : journal d'audit** (`[Admin] Web - audit - {menu,content}`) | — aucun lien fourni | 2026-09-30 | `docs/designs/desktop/audit/[Admin] Web - audit - {menu,content}.png` | **instantané seul** |
 | team-opponents — **backoffice desktop : adversaires d'une équipe (ligne dépliée + dialogue d'ajout)** (`[Admin] Web - opponent`, `[Admin] Web - opponent - creation`) | — aucun lien fourni | 2026-09-30 | `docs/designs/desktop/opponents/[Admin] Web - opponent{, - creation}.png` | **instantané seul** |
+| mobile-leaderboard — **classements de l'équipe (buteurs, jaunes, rouges), vue joueur et vue coach** (`Mob - Classements - {1,2,3}`) | — aucun lien fourni | 2026-10-01 | `docs/designs/learderboard/Mob - Classements - {1,2,3}.png` | **instantané seul** |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 

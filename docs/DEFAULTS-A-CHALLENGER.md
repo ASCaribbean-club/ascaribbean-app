@@ -286,4 +286,20 @@ export interface Team {
 
 **Priorité de revisite** : basse — pas de mobile envisagé pour cet écran (`specs/web-empty-state.md`, patron déjà établi pour tout le backoffice), à revisiter seulement si une colonne large est ajoutée.
 
+## Priorité médical / suspension dans `getAvailabilityStatus`
+
+**Où** : `domain/policies/availability.ts` (`getAvailabilityStatus`), `specs/player-unavailability.md` §1 et Q-UI-08.
+
+**Valeur actuelle** : si une indisponibilité médicale et une suspension sont actives en même temps, `medical` l'emporte — le statut renvoyé est `'medical'`, la suspension sous-jacente n'est pas visible dans le statut.
+
+**Pourquoi cette valeur, provisoirement** : la maquette n'affiche qu'une seule pastille de statut par joueur, il fallait donc choisir une règle de priorité ; `medical` a été retenu sans analyse métier approfondie.
+
+**Ce qu'il faudrait challenger** :
+- Le coach a-t-il besoin de voir la suspension quand le joueur est aussi indisponible médicalement (la suspension continue de courir pendant la blessure) ? Si oui, afficher deux pastilles ou un statut cumulé plutôt qu'une priorité unique.
+- Côté coéquipier, `medical` est projeté en « indisponible » : la priorité masque donc aussi une suspension à leurs yeux.
+
+**Priorité de revisite** : après premiers retours réels.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

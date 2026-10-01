@@ -1,6 +1,7 @@
 import type { Convocation } from '@domain/entities/convocation'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
+import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-training-location-input-error'
 import { can } from '@domain/policies/can'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
@@ -12,15 +13,19 @@ interface CreateConvocationBaseInput {
   teamId: string
   createdBy: string
   date: string // ISO — kickoff (match) / start time (training, meeting)
-  location: string
 }
 
+// specs/web-localizations.md §2.3/AC-WL-10 — a training references its
+// venue by id (training_locations), no longer by free text. Match and
+// meeting keep their free-text `location`.
 export interface CreateTrainingConvocationInput extends CreateConvocationBaseInput {
   type: 'training'
+  trainingLocationId: string
 }
 
 export interface CreateMatchConvocationInput extends CreateConvocationBaseInput {
   type: 'match'
+  location: string
   opponentId: string
   isHome: boolean
   // Coach feedback (2026-09-25): both optional — a coach may create a match
@@ -32,6 +37,7 @@ export interface CreateMatchConvocationInput extends CreateConvocationBaseInput 
 
 export interface CreateMeetingConvocationInput extends CreateConvocationBaseInput {
   type: 'meeting'
+  location: string
   title: string
   agenda: string[]
 }
@@ -97,6 +103,14 @@ export class CreateConvocationUseCase {
       case 'meeting':
         return this.convocationRepository.createMeeting(input)
       case 'training':
+        // specs/web-localizations.md §2.3 — refused before any network call
+        // when no venue id was supplied. The "archived venue" refusal is the
+        // database's (BEFORE INSERT trigger), surfaced as
+        // TrainingLocationArchivedError — never re-checked here against a
+        // possibly stale client-side list.
+        if (!input.trainingLocationId) {
+          throw new InvalidTrainingLocationInputError('trainingLocationId is required for a training')
+        }
         return this.convocationRepository.createTraining(input)
       default: {
         const _exhaustive: never = input

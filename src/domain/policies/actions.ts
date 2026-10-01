@@ -234,3 +234,14 @@ export type Action =
   // (RLS SELECT on public.audit_log, `private.is_admin()`) — see
   // supabase/migrations/20260930090000_web_audit_logs_schema.sql.
   | 'audit:read'
+  // specs/web-localizations.md §3 (PO-WL-02, decided 2026-10-01) — a
+  // SEPARATE action on the 'season:write' pattern: presentation/ must decide
+  // whether to render "+ Nouveau lieu", the edit pencil and "Archiver"
+  // independently of 'backoffice:access' (a future widening of that one,
+  // PO-WE-01, must not silently grant location writes). One action covers
+  // add, edit AND archive — no document distinguishes a role that could do
+  // one without the others. Club-wide by construction (the 'admin'
+  // RoleAssignment carries no scope field), so can.ts is unchanged.
+  // Mirrors the SQL policies training_locations_insert_admin and
+  // training_locations_update_admin ('training_location:write').
+  | 'training_location:write'

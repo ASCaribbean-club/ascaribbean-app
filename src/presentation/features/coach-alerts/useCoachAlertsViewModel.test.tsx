@@ -44,6 +44,7 @@ function buildConvocation(overrides: Partial<Convocation> = {}): Convocation {
     type: 'training',
     date: '2026-08-01T18:00:00.000Z',
     location: 'Stade',
+    trainingLocation: null,
     status: 'open',
     closedAt: null,
     closedBy: null,

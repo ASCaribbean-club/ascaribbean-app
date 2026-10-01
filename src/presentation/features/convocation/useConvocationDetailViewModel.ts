@@ -379,7 +379,9 @@ export function useConvocationDetailViewModel() {
     setMatchDetailsFormValues({
       kickoffDate: toDateInputValue(kickoff),
       kickoffTime: toTimeInputValue(kickoff),
-      matchLocation: convocation.location,
+      // A match always has a non-null location (DB check constraint,
+      // specs/web-localizations.md §2.2) — `?? ''` only narrows the type.
+      matchLocation: convocation.location ?? '',
       isHome: matchDetails.isHome,
       // RDV is optional (coach feedback, 2026-09-25) — falls back to the
       // form's own "unset" sentinel (empty string), same as
@@ -434,7 +436,7 @@ export function useConvocationDetailViewModel() {
       matchDetailsFormValues.meetingPointLocation !== (matchDetails.meetingPointLocation ?? '') ||
       matchDetailsFormValues.meetingPointTime !==
         (matchDetails.meetingPointTime ? toTimeInputValue(new Date(matchDetails.meetingPointTime)) : '') ||
-      matchDetailsFormValues.matchLocation !== convocation.location ||
+      matchDetailsFormValues.matchLocation !== (convocation.location ?? '') ||
       matchDetailsFormValues.kickoffDate !== toDateInputValue(new Date(convocation.date)) ||
       matchDetailsFormValues.kickoffTime !== toTimeInputValue(new Date(convocation.date)))
 

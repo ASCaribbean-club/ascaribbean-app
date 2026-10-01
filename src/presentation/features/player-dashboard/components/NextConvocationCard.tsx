@@ -4,6 +4,7 @@ import { Card } from '../../../shared/components/ui/card'
 import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface NextConvocationCardProps {
   data: ConvocationForPlayer | undefined
@@ -64,7 +65,7 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
         <p className="text-[19px] leading-tight font-extrabold text-white">{title}</p>
       </div>
 
-      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
+      <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseActions

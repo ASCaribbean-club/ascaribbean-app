@@ -8,6 +8,7 @@ import { MatchDetailsInfos } from '@presentation/features/convocation/components
 import { MeetingDetailsInfos } from '@presentation/features/convocation/components/MeetingDetailsInfos'
 import { EditMatchDetailsButton } from './EditMatchDetailsButton'
 import type { MatchDetailsFormValues } from './MatchDetailsEditForm'
+import { getConvocationLocationAddress, getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 // specs/edit-match-details.md — bundles useConvocationDetailViewModel's
 // match-details-edit fields into one prop instead of ten loose ones.
@@ -60,6 +61,7 @@ export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetai
   // unaffected (isEditingMatchDetails can only ever be true for a match,
   // canEditMatchDetails requires convocation.type === 'match').
   const isEditingMatch = convocation.type === 'match' && matchDetailsEdit.isEditing
+  const locationAddress = getConvocationLocationAddress(convocation)
 
   return (
     <div className="flex flex-col gap-4 px-5.5 pt-4 pb-8">
@@ -88,7 +90,14 @@ export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetai
             <InfoRow label={convocation.type === 'match' ? "Coup d'envoi" : convocation.type === 'training' ? 'Séance' : 'Date'}>
               {formatConvocationDate(convocation.date)}
             </InfoRow>
-            <InfoRow label="Lieu">{convocation.location}</InfoRow>
+            <InfoRow label="Lieu">
+              {getConvocationLocationLabel(convocation)}
+              {/* specs/web-localizations.md §2.6/AC-WL-18 — the current
+                  address, only for a training referencing a venue; a
+                  legacy training / match / meeting has none and renders no
+                  second line at all (no empty slot, no dash). */}
+              {locationAddress && <p className="mt-0.5 text-[11.5px] font-normal break-words text-white/55">{locationAddress}</p>}
+            </InfoRow>
           </>
         )}
 

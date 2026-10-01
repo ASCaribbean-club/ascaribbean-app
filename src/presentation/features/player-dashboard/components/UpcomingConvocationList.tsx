@@ -2,6 +2,7 @@ import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/Li
 import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface UpcomingConvocationListProps {
   items: ConvocationForPlayer[]
@@ -48,7 +49,7 @@ export function UpcomingConvocationList({ items, onOpen, onSeeAll }: UpcomingCon
                     {formatConvocationType(convocation.type)} {meetingDetails ? `| ${meetingDetails.title}` : ''}
                   </p>
                   <p className="m-0 mt-0.75 text-[11.5px] font-semibold text-white/50">
-                    {formatEventSchedule(convocation.date, convocation.location)}
+                    {formatEventSchedule(convocation.date, getConvocationLocationLabel(convocation))}
                   </p>
                 </div>
                 {/* AC-PD-09 / AC-PD-10 : ni compteur "N/M convoqués", ni

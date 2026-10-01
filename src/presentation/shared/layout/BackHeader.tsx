@@ -8,6 +8,8 @@ interface BackHeaderProps {
   // only. Other call sites (CreateConvocationForm, ProfilePage) keep passing
   // a title as before.
   title?: string
+  // Optional second line under the title (e.g. "Seniors · 12 licenciés").
+  subtitle?: string
   onBack: () => void
 }
 
@@ -33,7 +35,7 @@ interface BackHeaderProps {
 //
 // `h-11`/`size-11` (~44px minimum touch target, CLAUDE.md §6) — bumped from
 // the original `size-9.5` mockup size (AC-MD-23).
-export function BackHeader({ title, onBack }: BackHeaderProps) {
+export function BackHeader({ title, subtitle, onBack }: BackHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex items-center gap-3 bg-coach-bg px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-2">
       <Button
@@ -45,7 +47,12 @@ export function BackHeader({ title, onBack }: BackHeaderProps) {
       >
         <IconChevronLeft className="size-5" />
       </Button>
-      {title && <h1 className="text-xl font-extrabold text-white">{title}</h1>}
+      {title && (
+        <div className="flex min-w-0 flex-col">
+          <h1 className="truncate text-xl font-extrabold text-white">{title}</h1>
+          {subtitle && <p className="truncate text-[13px] text-white/60">{subtitle}</p>}
+        </div>
+      )}
     </header>
   )
 }

@@ -14,6 +14,7 @@ import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { LeaderboardPage } from '@presentation/features/leaderboard/LeaderboardPage'
 import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
+import { TeamAvailabilityPage } from '@presentation/features/team-availability/TeamAvailabilityPage'
 import { BackofficeLoginPage } from '../features/backoffice/login/BackofficeLoginPage'
 import { BackofficeDashboardLayout } from '../features/backoffice/dashboard/BackofficeDashboardLayout'
 import { BackofficeOverviewPage } from '../features/backoffice/overview/BackofficeOverviewPage'
@@ -197,6 +198,10 @@ export const router = createBrowserRouter([
               // roles, no can() gate: the database function serves the
               // caller's own team or nothing), no BottomNav (AC-LB-01).
               { path: 'leaderboard', element: <LeaderboardPage /> },
+              // specs/player-unavailability.md UI design §1 — pushed from the
+              // Menu "Disponibilités" card (coach and player), same
+              // full-screen-over-tabs group: no new BottomNav destination.
+              { path: 'availability', element: <TeamAvailabilityPage /> },
               // specs/coach-alerts.md §1/UI design "Emplacement — écran et
               // entrée" — "route poussée (`/alerts`), au même niveau que
               // /profile, /stats, /team-stats et /convocations/:id", same

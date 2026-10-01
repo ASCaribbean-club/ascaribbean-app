@@ -6,6 +6,7 @@ import { ConvocationResponseRepositoryImpl } from '@data/repositories/Convocatio
 import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepositoryImpl'
 // specs/match-stats.md §7/"Forme technique attendue" — net-new in this pass.
 import { MatchEventRepositoryImpl } from '@data/repositories/MatchEventRepositoryImpl'
+import { MatchLineupRepositoryImpl } from '@data/repositories/MatchLineupRepositoryImpl'
 import { MeetingDetailsRepositoryImpl } from '@data/repositories/MeetingDetailsRepositoryImpl'
 import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
@@ -25,6 +26,7 @@ import type { ConvocationRespondersRepository } from '@domain/repositories/convo
 import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
 import type { MatchDetailsRepository } from '@domain/repositories/match-details-repository'
 import type { MatchEventRepository } from '@domain/repositories/match-event-repository'
+import type { MatchLineupRepository } from '@domain/repositories/match-lineup-repository'
 import type { MeetingDetailsRepository } from '@domain/repositories/meeting-details-repository'
 import type { OpponentRepository } from '@domain/repositories/opponent-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
@@ -43,6 +45,8 @@ import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocatio
 import { GetConvocationWithDetailsUseCase } from '@domain/usecases/convocation/GetConvocationWithDetailsUseCase'
 import { ListConvocationRespondersUseCase } from '@domain/usecases/convocation/ListConvocationRespondersUseCase'
 import { UpdateMatchDetailsUseCase } from '@domain/usecases/convocation/UpdateMatchDetailsUseCase'
+import { GetMatchLineupUseCase } from '@domain/usecases/match-lineup/GetMatchLineupUseCase'
+import { SaveMatchLineupUseCase } from '@domain/usecases/match-lineup/SaveMatchLineupUseCase'
 import { CastVoteUseCase } from '@domain/usecases/player-vote/CastVoteUseCase'
 import { GetMyVoteUseCase } from '@domain/usecases/player-vote/GetMyVoteUseCase'
 import { GetVoteCategoryUseCase } from '@domain/usecases/player-vote/GetVoteCategoryUseCase'
@@ -79,6 +83,8 @@ export interface ConvocationContainer {
   // supabase/migrations/20260924100000_match_statistics_schema.sql; no view
   // exists yet for a repository to call).
   matchEventRepository: MatchEventRepository
+  // specs/coach-match-composition.md — net-new.
+  matchLineupRepository: MatchLineupRepository
   meetingDetailsRepository: MeetingDetailsRepository
   opponentRepository: OpponentRepository
   // specs/coach-attendance-confirmation.md §1 — net-new, no implementation
@@ -116,6 +122,9 @@ export interface ConvocationContainer {
   addMatchEventUseCase: AddMatchEventUseCase
   deleteMatchEventUseCase: DeleteMatchEventUseCase
   getMatchEventsUseCase: GetMatchEventsUseCase
+  // specs/coach-match-composition.md — "Composition" tab read/write.
+  getMatchLineupUseCase: GetMatchLineupUseCase
+  saveMatchLineupUseCase: SaveMatchLineupUseCase
 }
 
 export function createConvocationContainer(supabaseClient: SupabaseClient): ConvocationContainer {
@@ -128,6 +137,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const convocationRespondersRepository = new ConvocationRespondersRepositoryImpl(supabaseClient)
   const matchDetailsRepository = new MatchDetailsRepositoryImpl(supabaseClient)
   const matchEventRepository = new MatchEventRepositoryImpl(supabaseClient)
+  const matchLineupRepository = new MatchLineupRepositoryImpl(supabaseClient)
   const meetingDetailsRepository = new MeetingDetailsRepositoryImpl(supabaseClient)
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
   const attendanceRecordRepository = new AttendanceRecordRepositoryImpl(supabaseClient)
@@ -162,6 +172,8 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const addMatchEventUseCase = new AddMatchEventUseCase(convocationRepository, matchDetailsRepository, matchEventRepository)
   const deleteMatchEventUseCase = new DeleteMatchEventUseCase(matchEventRepository)
   const getMatchEventsUseCase = new GetMatchEventsUseCase(matchEventRepository)
+  const getMatchLineupUseCase = new GetMatchLineupUseCase(matchLineupRepository)
+  const saveMatchLineupUseCase = new SaveMatchLineupUseCase(convocationRepository, convocationRespondersRepository, matchLineupRepository)
 
   return {
     userRepository,
@@ -173,6 +185,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     convocationRespondersRepository,
     matchDetailsRepository,
     matchEventRepository,
+    matchLineupRepository,
     meetingDetailsRepository,
     opponentRepository,
     attendanceRecordRepository,
@@ -197,5 +210,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     addMatchEventUseCase,
     deleteMatchEventUseCase,
     getMatchEventsUseCase,
+    getMatchLineupUseCase,
+    saveMatchLineupUseCase,
   }
 }

@@ -96,8 +96,12 @@ export function UserTable({
                   warning icon lives HERE, in the NOM cell, not in the RÔLES
                   cell (which only ever renders what it's given, §2.2). */}
               <div className="flex min-w-0 items-center gap-1.5">
+                {/* Fixed-width slot (same size-11 as the indicator's button)
+                    so names stay aligned on rows that render no icon. */}
+                <div className="size-11 shrink-0">
+                  <UserMissingElementIndicator facts={row.missingElementFacts} />
+                </div>
                 <span className="truncate">{row.fullName}</span>
-                <UserMissingElementIndicator facts={row.missingElementFacts} />
               </div>
             </TableCell>
             <TableCell>

@@ -1,0 +1,17 @@
+-- Fix "permission denied for schema private" (42501) on admin convocation edits.
+--
+-- update_training_convocation / update_match_convocation /
+-- update_meeting_convocation and the two guard triggers
+-- (convocations_guard_training_location_admin_only,
+-- match_details_guard_opponent_admin_only) are plpgsql, NOT security definer
+-- (the RLS policies must apply to their statements), and call
+-- private.is_admin() from their body. Postgres resolves that name at run time,
+-- under the caller's own privileges, which requires USAGE on the schema. RLS
+-- policy expressions don't hit this (their function references are resolved at
+-- policy creation), which is why every other private.* use already worked.
+--
+-- USAGE only allows name lookup: who may CALL each private function is still
+-- decided by its own EXECUTE grant (every helper revokes it from public and
+-- grants it to authenticated explicitly), and PostgREST doesn't expose the
+-- `private` schema.
+grant usage on schema private to authenticated;

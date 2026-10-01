@@ -245,3 +245,8 @@ export type Action =
   // Mirrors the SQL policies training_locations_insert_admin and
   // training_locations_update_admin ('training_location:write').
   | 'training_location:write'
+  // specs/coach-match-composition.md §2 — names the resource ACTUALLY written
+  // (the lineup tables), never 'convocation:update' (public.convocations).
+  // Team-scoped, coach only; NO temporal predicate (PO-MC-05). Reading a
+  // lineup stays RLS-only (no matrix entry, §2 "Lecture").
+  | 'match_lineup:write'

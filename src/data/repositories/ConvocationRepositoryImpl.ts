@@ -7,9 +7,15 @@ import type {
   CreateMeetingConvocationInput,
   CreateTrainingConvocationInput,
 } from '@domain/usecases/convocation/CreateConvocationUseCase'
+import type {
+  UpdateMatchConvocationPayload,
+  UpdateMeetingConvocationPayload,
+  UpdateTrainingConvocationPayload,
+} from '@domain/usecases/convocation/UpdateConvocationUseCase'
 import type { ConvocationRow } from '../dto/convocation-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
 import { toConvocation, toConvocationArrangementsUpdateRow } from '../mappers/convocation-mapper'
+import { toUpdateMatchRpcParams, toUpdateMeetingRpcParams, toUpdateTrainingRpcParams } from '../mappers/convocation-update-mapper'
 
 // specs/web-localizations.md §2.6/AC-WL-19 — the venue's name/address are
 // resolved by a PostgREST embedded join on the FK, never copied onto the
@@ -127,5 +133,35 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
 
     if (error) throw mapSupabaseError(error)
     return toConvocation(data)
+  }
+
+  // specs/web-create-convocation.md §3/AC-WC-20 — one RPC per type, none of
+  // them SECURITY DEFINER (the admin RLS policies and the guard triggers apply
+  // to every statement inside). Each runs the convocation UPDATE and the
+  // satellite UPDATE in a single transaction: if one is refused, nothing is
+  // written. Like the create* methods, the RPC returns the bare row, so the
+  // venue's name/address come from a follow-up read.
+  async updateTraining(payload: UpdateTrainingConvocationPayload): Promise<Convocation> {
+    const { error } = await this.client.rpc('update_training_convocation', toUpdateTrainingRpcParams(payload))
+    if (error) throw mapSupabaseError(error)
+    return this.readAfterUpdate(payload.convocationId)
+  }
+
+  async updateMatch(payload: UpdateMatchConvocationPayload): Promise<Convocation> {
+    const { error } = await this.client.rpc('update_match_convocation', toUpdateMatchRpcParams(payload))
+    if (error) throw mapSupabaseError(error)
+    return this.readAfterUpdate(payload.convocationId)
+  }
+
+  async updateMeeting(payload: UpdateMeetingConvocationPayload): Promise<Convocation> {
+    const { error } = await this.client.rpc('update_meeting_convocation', toUpdateMeetingRpcParams(payload))
+    if (error) throw mapSupabaseError(error)
+    return this.readAfterUpdate(payload.convocationId)
+  }
+
+  private async readAfterUpdate(id: string): Promise<Convocation> {
+    const updated = await this.findById(id)
+    if (!updated) throw new NotFoundError(`Updated convocation ${id} not readable`)
+    return updated
   }
 }

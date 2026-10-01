@@ -1,4 +1,5 @@
 import type { PostgrestError } from '@supabase/supabase-js'
+import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { DomainError } from '@domain/errors/domain-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
@@ -18,6 +19,12 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
     case 'PGRST116':
       return new NotFoundError(error.message)
     case '42501':
+      // specs/web-create-convocation.md AC-WC-23 — the update_*_convocation
+      // RPCs raise this when the row is no longer in the admin edit window
+      // (past or not 'open'): a business-rule window, not a missing right.
+      if (error.message.includes('convocation_not_editable')) {
+        return new ConvocationNotEditableError(error.message)
+      }
       return new ForbiddenError(error.message)
     case '23514':
       // check_violation on user_roles_scope_check means the caller tried to

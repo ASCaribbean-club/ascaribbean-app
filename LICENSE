@@ -1,0 +1,52 @@
+Copyright © 2026 JEAN-LOUIS Thessalène. Tous droits réservés.
+
+LOGICIEL PROPRIÉTAIRE — AS Caribbean
+
+Ce dépôt, son code source, sa documentation, ses migrations et ses ressources
+graphiques (le « Logiciel ») sont la propriété exclusive de
+JEAN-LOUIS Thessalène (le « Titulaire »).
+Le Logiciel n'est pas distribué sous licence libre ou open source.
+
+1. Licence d'usage accordée à l'association
+
+   Le Titulaire accorde à l'association AS Caribbean
+   association loi 1901, n° RNA W441007618, dont le siège est situé Le Moulin de la Rivière, 44360 Vigneux-de-Bretagne
+   (le « Licencié ») une licence d'usage non exclusive, non transférable et
+   non sous-licenciable, limitée à l'exploitation du Logiciel pour la gestion
+   interne du Licencié et de ses membres.
+
+2. Interdictions
+
+   Sans autorisation écrite préalable du Titulaire, il est interdit de :
+   a) copier, reproduire, modifier, adapter ou distribuer le Logiciel, en tout
+      ou en partie ;
+   b) utiliser, déployer ou héberger le Logiciel pour le compte d'un tiers,
+      y compris toute autre association, club ou organisation ;
+   c) utiliser le Logiciel, en tout ou en partie, à des fins commerciales ;
+   d) céder, louer, prêter ou sous-licencier le Logiciel ;
+   e) rendre le code source public ou le communiquer à un tiers.
+
+3. Composants tiers
+
+   Le Logiciel intègre des composants tiers (React, Supabase client, Tailwind
+   CSS, shadcn/ui, etc.) qui restent soumis à leurs propres licences. La
+   présente licence ne s'applique pas à ces composants.
+
+4. Garantie
+
+   Le Logiciel est fourni « en l'état », sans garantie d'aucune sorte, expresse
+   ou implicite. Le Titulaire ne saurait être tenu responsable des dommages
+   résultant de son utilisation.
+
+5. Durée et fin de la licence
+
+   La licence prend effet le 10 août 2026 (date du premier commit du Logiciel)
+   et prend fin selon les conditions prévues par la convention conclue entre
+   le Titulaire et le Licencié. À défaut de convention, elle peut être
+   révoquée par le Titulaire par écrit.
+
+6. Droit applicable
+
+   La présente licence est régie par le droit français.
+
+Contact : jean-louis.th.pro@hotmail.com

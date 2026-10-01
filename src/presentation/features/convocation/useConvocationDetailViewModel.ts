@@ -25,6 +25,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
+import { useMatchLineupViewModel } from './lineup/useMatchLineupViewModel'
 
 // specs/edit-match-details.md UI design §3, docs/designs/coach-match-details/
 // [v3] [Coach] Mob - Match editing infos.png — the edit form's own local
@@ -42,7 +43,7 @@ import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
 // `isValidMatchSchedule` (still enforced by UpdateMatchDetailsUseCase,
 // unchanged) requires it.
 
-export type ConvocationDetailTab = 'infos' | 'effectif' | 'votes' | 'resultat'
+export type ConvocationDetailTab = 'infos' | 'composition' | 'effectif' | 'votes' | 'resultat'
 
 // specs/match_details_page.md §7 — this hook is the "câblage presentation/"
 // the correction pass explicitly deferred (docs/convocation_visibility_rls_correction.md
@@ -162,6 +163,25 @@ export function useConvocationDetailViewModel() {
     const id = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // specs/coach-match-composition.md — the "Composition" tab's own
+  // ViewModel, called HERE (page level) rather than inside the tab's
+  // components, so its draft survives Radix unmounting an inactive tab. Shares
+  // this hook's minute tick (`now`) for the player's waiting -> reading flip
+  // (AC-MC-10) and its role/team guards.
+  const lineup = useMatchLineupViewModel({
+    convocationId,
+    teamId: convocation?.teamId,
+    convocationType: convocation?.type,
+    kickoff: convocation?.date,
+    meetingPointTime: matchDetails?.meetingPointTime ?? null,
+    sectionType: sectionQuery.data?.type,
+    activeRole,
+    roleMatchesConvocationTeam,
+    isTabActive: activeTab === 'composition',
+    now,
+    onLeave: () => navigate(-1),
+  })
 
   // specs/coach-attendance-confirmation.md §2 — RBAC-only render gate,
   // moindre privilège (AC-AT-06/07): buttons must be ABSENT, never disabled,
@@ -890,7 +910,10 @@ export function useConvocationDetailViewModel() {
     // network/server error stays in `error` above instead.
     notFound: detailedConvocationQuery.isSuccess && detailedConvocationQuery.data === null,
 
-    goBack: () => navigate(-1),
+    // Routed through the lineup ViewModel so an unsaved composition draft
+    // asks for confirmation before the screen is left (UI design §4).
+    goBack: lineup.requestLeave,
+    lineup,
 
     convocation,
     teamName: teamQuery.data?.name,

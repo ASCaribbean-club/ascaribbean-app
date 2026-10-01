@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/component
 import { ConvocationHero } from './components/ConvocationHero'
 import { EffectifTab } from './components/EffectifTab'
 import { InfosTab } from './components/InfosTab'
+import { LineupDiscardDialog } from './lineup/LineupDiscardDialog'
+import { LineupTab } from './lineup/LineupTab'
 import { MatchGoalsList } from './components/MatchGoalsList'
 import { MatchOutcomeCard } from './components/MatchOutcomeCard'
 import { MatchResultCardPicker } from './components/MatchResultCardPicker'
@@ -284,13 +286,26 @@ export function ConvocationDetailPage() {
               training/meeting convocation, three for a match — absent, not
               disabled, same "moindre privilège" rule as every other
               role-gated control on this screen. */}
-          <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-b border-white/10 bg-transparent p-0 px-5.5">
+          <TabsList className="h-auto w-full justify-start gap-4 overflow-x-auto rounded-none border-b border-white/10 bg-transparent p-0 px-5.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsTrigger
               value="infos"
               className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
             >
               Infos
             </TabsTrigger>
+            {/* specs/coach-match-composition.md — "Composition", 2nd position
+                (after Infos, UI design §1). Absent, never disabled, unless
+                the convocation is a football match (AC-MC-01) — the
+                ViewModel already folded that, plus the role/team guard, into
+                one boolean. */}
+            {vm.lineup.isTabAvailable && (
+              <TabsTrigger
+                value="composition"
+                className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Composition
+              </TabsTrigger>
+            )}
             <TabsTrigger
               value="effectif"
               className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
@@ -352,6 +367,12 @@ export function ConvocationDetailPage() {
             }}
           />
         </TabsContent>
+
+        {vm.lineup.isTabAvailable && (
+          <TabsContent value="composition" className="px-5.5 pt-4 pb-8">
+            <LineupTab lineup={vm.lineup} />
+          </TabsContent>
+        )}
 
         <TabsContent value="effectif">
           {/* roleMatchesConvocationTeam is already true here (guarded above),
@@ -520,6 +541,8 @@ export function ConvocationDetailPage() {
           </TabsContent>
         )}
       </Tabs>
+
+      <LineupDiscardDialog open={vm.lineup.isLeavePending} onStay={vm.lineup.cancelLeave} onDiscard={vm.lineup.confirmLeave} />
 
       {/* Same inline-alert placeholder as PlayerDashboardPage — no generic
           toast/snackbar component exists yet in this project. */}

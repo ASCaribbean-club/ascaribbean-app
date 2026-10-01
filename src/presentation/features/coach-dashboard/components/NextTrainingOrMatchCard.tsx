@@ -4,6 +4,7 @@ import { Badge } from '../../../shared/components/ui/badge'
 import { Card } from '../../../shared/components/ui/card'
 import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
+import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface NextTrainingOrMatchCardProps {
   nextTrainingOrMatch: ConvocationForCoach | undefined
@@ -43,7 +44,7 @@ export function NextTrainingOrMatchCard({ nextTrainingOrMatch, onOpen }: NextTra
 
       {opponent && <p className="text-[21px] leading-tight font-extrabold text-white">{opponent.name}</p>}
 
-      <ScheduleInfo dateIso={convocation.date} location={convocation.location} meetingPointTime={meetingPointTime} />
+      <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseBar counts={responseCounts} />

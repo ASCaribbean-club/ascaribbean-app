@@ -1,3 +1,4 @@
+import type { TrainingLocationEmbedRow } from './training-location-row'
 import type { ConvocationStatus, ConvocationType, DeclaredStatus } from '@domain/entities/convocation'
 
 // Raw shape of public.convocations, see supabase/migrations/20260811171754_initial_schema.sql
@@ -8,7 +9,15 @@ export interface ConvocationRow {
   team_id: string
   type: ConvocationType
   date: string
-  location: string
+  // specs/web-localizations.md §2.2 — nullable since the training_locations
+  // migration: null for a training that references a venue.
+  location: string | null
+  training_location_id: string | null
+  // PostgREST embedded join on the FK (`training_location:training_locations(...)`),
+  // resolved under the CALLER's RLS (no security-definer view). Absent on
+  // rows returned by an RPC (create_*_convocation return the bare row) —
+  // hence optional.
+  training_location?: TrainingLocationEmbedRow | null
   status: ConvocationStatus
   closed_at: string | null
   closed_by: string | null
@@ -26,7 +35,11 @@ export interface ConvocationRow {
 // happening to omit them keeps it safe — this type makes including any
 // other column a compile error, same reasoning as MatchArrangementsUpdateRow
 // (match-details-dto.ts).
-export type ConvocationArrangementsUpdateRow = Pick<ConvocationRow, 'date' | 'location'>
+//
+// specs/web-localizations.md §2.2 — `location` stays a plain `string` here
+// (not Pick<ConvocationRow, 'location'>, now nullable): the match edit path
+// must never be able to write null.
+export type ConvocationArrangementsUpdateRow = { date: string; location: string }
 
 // Raw shape of public.convocation_responses — last-value-wins "current
 // state" table, not an append-only log (CLAUDE.md §6).

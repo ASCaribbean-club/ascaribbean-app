@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Convocation, ConvocationArrangements } from '@domain/entities/convocation'
+import { NotFoundError } from '@domain/errors/not-found-error'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type {
   CreateMatchConvocationInput,
@@ -10,8 +11,12 @@ import type { ConvocationRow } from '../dto/convocation-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
 import { toConvocation, toConvocationArrangementsUpdateRow } from '../mappers/convocation-mapper'
 
+// specs/web-localizations.md §2.6/AC-WL-19 — the venue's name/address are
+// resolved by a PostgREST embedded join on the FK, never copied onto the
+// convocation. It runs under the caller's RLS (training_locations is readable
+// by every authenticated account), so no security-definer view is involved.
 const CONVOCATION_COLUMNS =
-  'id, team_id, type, date, location, status, closed_at, closed_by, cancelled_at, cancelled_by, cancellation_reason, created_by'
+  'id, team_id, type, date, location, training_location_id, training_location:training_locations(id, name, address, is_archived), status, closed_at, closed_by, cancelled_at, cancelled_by, cancellation_reason, created_by'
 
 export class ConvocationRepositoryImpl implements ConvocationRepository {
   private readonly client: SupabaseClient
@@ -56,12 +61,17 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
         p_team_id: input.teamId,
         p_created_by: input.createdBy,
         p_date: input.date,
-        p_location: input.location,
+        p_training_location_id: input.trainingLocationId,
       })
       .single<ConvocationRow>()
 
     if (error) throw mapSupabaseError(error)
-    return toConvocation(data)
+
+    // The RPC returns the bare convocations row (no embedded join), so the
+    // venue's name/address are resolved by a follow-up read of the same row.
+    const created = await this.findById(data.id)
+    if (!created) throw new NotFoundError(`Created convocation ${data.id} not readable`)
+    return created
   }
 
   async createMatch(input: CreateMatchConvocationInput): Promise<Convocation> {

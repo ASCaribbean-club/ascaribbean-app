@@ -14,6 +14,7 @@ function convocationForTeam(teamId: string): Convocation {
     type: 'match',
     date: '2026-09-10T18:00:00.000Z',
     location: 'Stade municipal',
+    trainingLocation: null,
     status: 'open',
     closedAt: null,
     closedBy: null,

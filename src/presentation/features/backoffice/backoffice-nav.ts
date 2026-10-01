@@ -3,6 +3,7 @@ import {
   IconCreditCard,
   IconHistory,
   IconLayoutDashboard,
+  IconMapPin,
   IconNews,
   IconShirtSport,
   IconUsers,
@@ -10,7 +11,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'audit'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'locations' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -103,6 +104,18 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/news',
     icon: IconNews,
     emptyStateTitle: 'Aucune actualité à afficher pour l’instant',
+  },
+  {
+    // specs/web-localizations.md UI design "Où ça vit" — "Lieux", placed
+    // right after 'news' (mockup position) and before 'audit', no other
+    // entry reordered. Same guards as the others (AC-WL-12), no numeric
+    // badge. `IconMapPin`: a proposal, replaceable by any icon of this set.
+    // The mockup's "Statistiques" entry is deliberately NOT added.
+    id: 'locations',
+    label: 'Lieux',
+    path: '/admin/locations',
+    icon: IconMapPin,
+    emptyStateTitle: 'Aucun lieu d’entraînement à afficher pour l’instant',
   },
   {
     // specs/web-audit-logs.md §2/UI design "Où ça vit" — 8th sidebar entry,

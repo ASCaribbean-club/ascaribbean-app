@@ -11,6 +11,7 @@ import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImp
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { SectionRepositoryImpl } from '@data/repositories/SectionRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
+import { TrainingLocationRepositoryImpl } from '@data/repositories/TrainingLocationRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
 // specs/player-vote.md §7 — net-new in this pass: PO-PV-01 is resolved and
 // the migration is written, so these back a real Supabase implementation,
@@ -35,6 +36,7 @@ import type { VoteRepository } from '@domain/repositories/vote-repository'
 import type { VoteTallyRepository } from '@domain/repositories/vote-tally-repository'
 import { AssembleConvocationDetailFieldsUseCase } from '@domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import { ConfirmAttendanceUseCase } from '@domain/usecases/convocation/ConfirmAttendanceUseCase'
+import { ListAvailableTrainingLocationsUseCase } from '@domain/usecases/training-locations/ListAvailableTrainingLocationsUseCase'
 import { CreateConvocationUseCase } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import { GetConvocationDetailsUseCase } from '@domain/usecases/convocation/GetConvocationDetailsUseCase'
 import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
@@ -89,6 +91,10 @@ export interface ConvocationContainer {
 
   // Use cases
   createConvocationUseCase: CreateConvocationUseCase
+  // specs/web-localizations.md §2.7 — feeds the training form's location
+  // select (non-archived venues only). This container's OWN repository
+  // instance, same per-container pattern as every other one above.
+  listAvailableTrainingLocationsUseCase: ListAvailableTrainingLocationsUseCase
   getConvocationDetailsUseCase: GetConvocationDetailsUseCase
   getConvocationWithDetailsUseCase: GetConvocationWithDetailsUseCase
   listConvocationRespondersUseCase: ListConvocationRespondersUseCase
@@ -128,6 +134,8 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const voteRepository = new VoteRepositoryImpl(supabaseClient)
   const voteTallyRepository = new VoteTallyRepositoryImpl(supabaseClient)
   const voteCategoryRepository = new VoteCategoryRepositoryImpl(supabaseClient)
+  const trainingLocationRepository = new TrainingLocationRepositoryImpl(supabaseClient)
+  const listAvailableTrainingLocationsUseCase = new ListAvailableTrainingLocationsUseCase(trainingLocationRepository)
   const getConvocationDetailsUseCase = new GetConvocationDetailsUseCase(meetingDetailsRepository, matchDetailsRepository)
   const getConvocationResponseByUserUseCase = new GetConvocationResponseByUserUseCase(convocationResponseRepository)
   const assembleConvocationDetailFieldsUseCase = new AssembleConvocationDetailFieldsUseCase(opponentRepository)
@@ -172,6 +180,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     voteTallyRepository,
     voteCategoryRepository,
     createConvocationUseCase,
+    listAvailableTrainingLocationsUseCase,
     getConvocationDetailsUseCase,
     getConvocationWithDetailsUseCase,
     listConvocationRespondersUseCase,

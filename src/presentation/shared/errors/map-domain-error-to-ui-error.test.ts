@@ -7,12 +7,14 @@ import { InvalidNewsInputError } from "@domain/errors/invalid-news-input-error";
 import { InvalidOpponentInputError } from "@domain/errors/invalid-opponent-input-error";
 import { InvalidRoleScopeError } from "@domain/errors/invalid-role-scope-error";
 import { InvalidScheduleError } from "@domain/errors/invalid-schedule-error";
+import { InvalidTrainingLocationInputError } from "@domain/errors/invalid-training-location-input-error";
 import { InvalidSeasonInputError } from "@domain/errors/invalid-season-input-error";
 import { MatchArrangementsWindowClosedError } from "@domain/errors/match-arrangements-window-closed-error";
 import { MatchNotStartedError } from "@domain/errors/match-not-started-error";
 import { MatchScoreMissingError } from "@domain/errors/match-score-missing-error";
 import { NotFoundError } from "@domain/errors/not-found-error";
 import { OverlappingSeasonError } from "@domain/errors/overlapping-season-error";
+import { TrainingLocationArchivedError } from "@domain/errors/training-location-archived-error";
 import { VotingNotOpenError } from "@domain/errors/voting-not-open-error";
 import { describe, expect, it } from "vitest";
 import { mapDomainErrorToUiError } from "./map-domain-error-to-ui-error";
@@ -41,6 +43,30 @@ describe("mapDomainErrorToUiError", () => {
     expect(result).toEqual({
       message:
         "Le nom de l'adversaire et l'équipe du club concernée sont obligatoires.",
+      variant: "inline",
+      retryable: true,
+    });
+  });
+
+  it("maps InvalidTrainingLocationInputError to a retryable inline error", () => {
+    const result = mapDomainErrorToUiError(
+      new InvalidTrainingLocationInputError("name is required"),
+    );
+
+    expect(result).toEqual({
+      message: "Le nom du lieu et l’adresse sont obligatoires.",
+      variant: "inline",
+      retryable: true,
+    });
+  });
+
+  it("maps TrainingLocationArchivedError to a retryable inline error", () => {
+    const result = mapDomainErrorToUiError(
+      new TrainingLocationArchivedError("training_location_archived"),
+    );
+
+    expect(result).toEqual({
+      message: "Ce lieu n’est plus disponible. Choisissez un autre lieu.",
       variant: "inline",
       retryable: true,
     });

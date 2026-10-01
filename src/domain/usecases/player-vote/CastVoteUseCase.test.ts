@@ -32,6 +32,7 @@ function convocationWith(overrides: Partial<Convocation> = {}): Convocation {
     type: 'match',
     date: '2026-09-14T18:00:00.000Z',
     location: 'Gymnase',
+    trainingLocation: null,
     status: 'open',
     closedAt: null,
     closedBy: null,

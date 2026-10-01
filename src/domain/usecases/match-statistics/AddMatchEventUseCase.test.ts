@@ -21,6 +21,7 @@ function convocationWith(overrides: Partial<Convocation> = {}): Convocation {
     type: 'match',
     date: '2026-09-24T18:00:00.000Z', // before NOW — kickoff has passed
     location: 'Stade',
+    trainingLocation: null,
     status: 'open',
     closedAt: null,
     closedBy: null,

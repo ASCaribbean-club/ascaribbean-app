@@ -437,3 +437,32 @@ describe('can', () => {
     expect(can(userWith([{ role: 'coach', teamIds: ['team-1'] }, { role: 'admin' }]), 'training_location:write')).toBe(true)
   })
 })
+
+// specs/coach-match-composition.md §2/AC-MC-03/AC-02 — 'match_lineup:write' is
+// team-scoped to the coach's own teams, coach only.
+describe('can — match_lineup:write', () => {
+  it('allows a coach on their own team', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_lineup:write', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach on another team', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_lineup:write', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('denies a coach when no teamId is given', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'match_lineup:write')).toBe(false)
+  })
+
+  it('denies a player, even on their own team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'match_lineup:write', { teamId: 'team-1' })).toBe(false)
+  })
+
+  it('denies a section-manager (PO-MC-10, not built)', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'match_lineup:write', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+})

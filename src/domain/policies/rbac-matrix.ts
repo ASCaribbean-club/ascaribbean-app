@@ -327,4 +327,13 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // locations stays RLS-only, no matrix entry (every authenticated account
   // reads them, archived included, to resolve a convocation's location).
   'training_location:write': ['admin'],
+
+  // specs/coach-match-composition.md §2 — 'match_lineup:write': ['coach'],
+  // scoped to the coach's own team (can.ts). Deliberate restrictive gap, same
+  // as 'match_details:update' (PO-MC-10: section-manager/officer/admin not
+  // built). Manual mirror (CLAUDE.md §7) of the write policies on
+  // public.match_lineups / public.match_lineup_slots, each commented
+  // 'match_lineup:write' — see supabase/migrations/20261001075331_match_lineup.sql.
+  // Deliberately NO time window (PO-MC-05), unlike match_details_update_arrangements.
+  'match_lineup:write': ['coach'],
 }

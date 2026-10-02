@@ -6,6 +6,7 @@ import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assi
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-score-error'
 import { InvalidMatchLineupInputError } from '@domain/errors/invalid-match-lineup-input-error'
+import { InvalidMissionTemplateError } from '@domain/errors/invalid-mission-template-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
@@ -59,6 +60,11 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // insert. See supabase/migrations/20261001100000_web_localizations.sql.
       if (error.message.includes('training_location_archived')) {
         return new TrainingLocationArchivedError(error.message)
+      }
+      // specs/web-mission-templates.md §2.3 — check constraints of
+      // public.mission_templates (label, capacity, type): never raw Postgres text.
+      if (error.message.includes('mission_templates')) {
+        return new InvalidMissionTemplateError(error.message)
       }
       // specs/coach-match-composition.md AC-MC-07 — the trigger on
       // match_lineup_slots refuses a player who is not convoked. Backstop only:

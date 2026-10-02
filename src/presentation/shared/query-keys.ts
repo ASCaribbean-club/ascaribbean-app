@@ -292,6 +292,10 @@ export const queryKeys = {
   trainingLocationsAdminList: () => ['training-locations', 'admin', 'list'] as const,
   trainingLocationsAvailable: () => ['training-locations', 'available'] as const,
 
+  // specs/web-mission-templates.md §2.4 — one root; the list is a single
+  // query filtered by type client-side, so every write invalidates the root.
+  missionTemplatesRoot: () => ['mission-templates'] as const,
+
   // specs/coach-match-composition.md — one lineup per convocation. The read
   // differs per role only through the server (player window, AC-MC-09), so a
   // single key per convocation is right: a session has one active role at a

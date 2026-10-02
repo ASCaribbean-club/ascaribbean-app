@@ -6,6 +6,7 @@ import type { LeaderboardRepository } from '@domain/repositories/leaderboard-rep
 import type { SeasonRepository } from '@domain/repositories/season-repository'
 import { GetCoachTeamsUseCase } from '@domain/usecases/coach-dashboard/GetCoachTeamsUseCase'
 import { GetTeamLeaderboardUseCase } from '@domain/usecases/leaderboard/GetTeamLeaderboardUseCase'
+import { GetTeamPresenceLeaderboardUseCase } from '@domain/usecases/leaderboard/GetTeamPresenceLeaderboardUseCase'
 
 export interface LeaderboardContainer {
   // Repositories
@@ -18,6 +19,7 @@ export interface LeaderboardContainer {
   // (shared queryKeys.coachTeams cache, selected team else first).
   getCoachTeamsUseCase: GetCoachTeamsUseCase
   getTeamLeaderboardUseCase: GetTeamLeaderboardUseCase
+  getTeamPresenceLeaderboardUseCase: GetTeamPresenceLeaderboardUseCase
 }
 
 export function createLeaderboardContainer(supabaseClient: SupabaseClient): LeaderboardContainer {
@@ -30,5 +32,6 @@ export function createLeaderboardContainer(supabaseClient: SupabaseClient): Lead
     seasonRepository,
     getCoachTeamsUseCase: new GetCoachTeamsUseCase(teamRepository),
     getTeamLeaderboardUseCase: new GetTeamLeaderboardUseCase(leaderboardRepository),
+    getTeamPresenceLeaderboardUseCase: new GetTeamPresenceLeaderboardUseCase(leaderboardRepository),
   }
 }

@@ -4,6 +4,7 @@ import { Button } from '@presentation/shared/components/ui/button'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { LeaderboardRow } from './components/LeaderboardRow'
 import { LeaderboardSkeleton } from './components/LeaderboardSkeleton'
+import { PresenceRow } from './components/PresenceRow'
 import { LeaderboardTabs } from './components/LeaderboardTabs'
 import { YouBar } from './components/YouBar'
 import { useLeaderboardViewModel } from './useLeaderboardViewModel'
@@ -67,9 +68,18 @@ export function LeaderboardPage() {
       {header}
 
       <div className={`flex flex-1 flex-col px-5.5 pt-1 ${vm.youBar ? 'pb-4' : 'pb-10'}`}>
-        <LeaderboardTabs metric={vm.metric} onMetricChange={vm.onMetricChange}>
+        <LeaderboardTabs tab={vm.tab} onTabChange={vm.onTabChange}>
           {vm.isLoading ? (
             <LeaderboardSkeleton />
+          ) : vm.isPresenceTab ? (
+            <>
+              {vm.isPresenceTabAllZero && <p className="text-[13px] text-white/50">Aucune présence confirmée cette saison pour l'instant.</p>}
+              <ol className="flex flex-col">
+                {vm.presenceRows.map((row) => (
+                  <PresenceRow key={row.userId} row={row} emphasizeOwn={vm.showOwnRowEmphasis} />
+                ))}
+              </ol>
+            </>
           ) : (
             <>
               {vm.isActiveTabAllZero && <p className="text-[13px] text-white/50">{EMPTY_TAB_HINT[vm.metric]}</p>}

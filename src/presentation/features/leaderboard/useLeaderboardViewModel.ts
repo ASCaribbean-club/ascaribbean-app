@@ -16,6 +16,23 @@ export interface LeaderboardCounter {
   label: string
 }
 
+// The three counter tabs plus the presence tab (its own read, own row shape).
+export type LeaderboardTab = LeaderboardMetric | 'presence'
+
+export interface PresenceRowModel {
+  userId: string
+  rank: number
+  displayName: string
+  presentCount: number
+  isMuted: boolean
+  isOwn: boolean
+  // "80 % de présence" / "—" — text, never color alone.
+  attendanceLabel: string
+  // Whole percent, null when no convocation has started yet.
+  responseRate: number | null
+  responseLabel: string
+}
+
 export interface LeaderboardRowModel {
   userId: string
   rank: number
@@ -55,9 +72,13 @@ export function useLeaderboardViewModel() {
   const navigate = useNavigate()
   const { activeRole } = useActiveRole()
   const { selectedCoachTeamId } = useActiveTeam()
-  const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase } = useLeaderboardDependencies()
+  const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase, getTeamPresenceLeaderboardUseCase } = useLeaderboardDependencies()
 
-  const [metric, setMetric] = useState<LeaderboardMetric>('goals')
+  const [tab, setTab] = useState<LeaderboardTab>('goals')
+  const isPresenceTab = tab === 'presence'
+  // Counter tabs keep their metric; on the presence tab the (unused) counter
+  // list falls back to goals so one query result serves every counter tab.
+  const metric: LeaderboardMetric = isPresenceTab ? 'goals' : tab
 
   // PO-LB-06 / UI design §5 — a presentation variant keyed on the ACTIVE role
   // (a coach+player account in coach mode gets no emphasis). Not an
@@ -91,6 +112,13 @@ export function useLeaderboardViewModel() {
     enabled: !!teamId && seasonQuery.isSuccess && !noCurrentSeason,
   })
 
+  // Fetched only when the presence tab is opened (UI: one extra request, once).
+  const presenceQuery = useQuery({
+    queryKey: queryKeys.teamPresenceLeaderboard(teamId ?? ''),
+    queryFn: () => getTeamPresenceLeaderboardUseCase.execute({ teamId: teamId! }),
+    enabled: isPresenceTab && !!teamId && seasonQuery.isSuccess && !noCurrentSeason,
+  })
+
   // "No team" is only meaningful once the coach-teams query settled (or was
   // never needed): never flashed while it is still loading.
   const noTeam = !teamId && !coachTeamsQuery.isLoading && !seasonQuery.isLoading
@@ -110,13 +138,26 @@ export function useLeaderboardViewModel() {
     })),
   }))
 
+  const presenceRows: PresenceRowModel[] = (presenceQuery.data ?? []).map((entry) => ({
+    userId: entry.userId,
+    rank: entry.rank,
+    displayName: entry.displayName,
+    presentCount: entry.value,
+    isMuted: entry.isMuted,
+    isOwn: isPlayerView && entry.userId === user?.id,
+    attendanceLabel: entry.attendanceRate === null ? '—' : `${entry.attendanceRate} % de présence`,
+    responseRate: entry.responseRate,
+    responseLabel: entry.responseRate === null ? 'Réponses : —' : `Réponses : ${entry.responseRate} %`,
+  }))
+
   const ownRow = rows.find((row) => row.isOwn)
   // AC-LB-07 — the bar always shows a rank (zero players are ranked), player
   // view only.
   const youBar = ownRow ? { rank: ownRow.rank, displayName: ownRow.displayName, value: ownRow.value, userId: ownRow.userId } : null
 
-  const isLoading = seasonQuery.isLoading || coachTeamsQuery.isLoading || leaderboardQuery.isLoading
-  const error = seasonQuery.error ?? coachTeamsQuery.error ?? leaderboardQuery.error
+  const isLoading =
+    seasonQuery.isLoading || coachTeamsQuery.isLoading || leaderboardQuery.isLoading || (isPresenceTab && presenceQuery.isLoading)
+  const error = seasonQuery.error ?? coachTeamsQuery.error ?? leaderboardQuery.error ?? (isPresenceTab ? presenceQuery.error : null)
 
   return {
     isLoading,
@@ -125,19 +166,25 @@ export function useLeaderboardViewModel() {
       void seasonQuery.refetch()
       void coachTeamsQuery.refetch()
       void leaderboardQuery.refetch()
+      if (isPresenceTab) void presenceQuery.refetch()
     },
     noTeam,
     noCurrentSeason,
     isRosterEmpty: leaderboardQuery.isSuccess && (leaderboardQuery.data?.goals.length ?? 0) === 0,
 
+    tab,
+    onTabChange: setTab,
+    isPresenceTab,
     metric,
-    onMetricChange: setMetric,
     rows,
+    presenceRows,
+    isPresenceTabAllZero: presenceRows.length > 0 && presenceRows.every((row) => row.presentCount === 0),
     // UI design §6 — "Aucun match joué" hint: every value of the active tab is 0.
     isActiveTabAllZero: rows.length > 0 && rows.every((row) => row.value === 0),
 
     showOwnRowEmphasis: isPlayerView,
-    youBar,
+    // The presence tab has no YouBar: its own row is emphasized in place.
+    youBar: isPresenceTab ? null : youBar,
     scrollToOwnRow: () => {
       if (!youBar) return
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches

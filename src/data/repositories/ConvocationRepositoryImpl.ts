@@ -14,7 +14,7 @@ import type {
 } from '@domain/usecases/convocation/UpdateConvocationUseCase'
 import type { ConvocationRow } from '../dto/convocation-dto'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { toConvocation, toConvocationArrangementsUpdateRow } from '../mappers/convocation-mapper'
+import { toConvocation, toConvocationArrangementsUpdateRow, toConvocationDateUpdateRow } from '../mappers/convocation-mapper'
 import { toUpdateMatchRpcParams, toUpdateMeetingRpcParams, toUpdateTrainingRpcParams } from '../mappers/convocation-update-mapper'
 
 // specs/web-localizations.md §2.6/AC-WL-19 — the venue's name/address are
@@ -126,6 +126,19 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
     const { data, error } = await this.client
       .from('convocations')
       .update(toConvocationArrangementsUpdateRow(arrangements))
+      .eq('id', id)
+      .select(CONVOCATION_COLUMNS)
+      .single()
+      .overrideTypes<ConvocationRow>()
+
+    if (error) throw mapSupabaseError(error)
+    return toConvocation(data)
+  }
+
+  async updateDate(id: string, date: string): Promise<Convocation> {
+    const { data, error } = await this.client
+      .from('convocations')
+      .update(toConvocationDateUpdateRow(date))
       .eq('id', id)
       .select(CONVOCATION_COLUMNS)
       .single()

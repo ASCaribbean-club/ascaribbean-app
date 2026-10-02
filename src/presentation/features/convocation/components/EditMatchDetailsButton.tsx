@@ -3,6 +3,8 @@ import { Button } from '@presentation/shared/components/ui/button'
 
 interface EditMatchDetailsButtonProps {
   onClick: () => void
+  // Defaults to the match wording; the training edit passes its own.
+  label?: string
 }
 
 // docs/designs/coach-match-details/[v3] [Coach] Mob - Match editing infos.png
@@ -17,11 +19,11 @@ interface EditMatchDetailsButtonProps {
 // shadcn's `size="icon"` defaults to `size-8` (32px) — overridden to
 // `size-12` (48px, comfortably above the ~44px floor, AC-EM-15) to match
 // the mockup's taller/pill-styled sizing used throughout this edit form.
-export function EditMatchDetailsButton({ onClick }: EditMatchDetailsButtonProps) {
+export function EditMatchDetailsButton({ onClick, label = 'Modifier les informations du match' }: EditMatchDetailsButtonProps) {
   return (
     <Button
       type="button"
-      aria-label="Modifier les informations du match"
+      aria-label={label}
       onClick={onClick}
       size="icon"
       className="size-12 shrink-0 rounded-full bg-coach-green text-white hover:bg-coach-green/90"

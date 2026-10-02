@@ -46,6 +46,7 @@ function fakeConvocationRepository(convocation: Convocation | null, overrides: P
     updateArrangements: async (id, arrangements) => ({ ...(convocation as Convocation), id, ...arrangements }),
     updateTraining: async () => { throw new Error('not used in this test') },
     updateMatch: async () => { throw new Error('not used in this test') },
+    updateDate: async () => { throw new Error('not used in this test') },
     updateMeeting: async () => { throw new Error('not used in this test') },
     ...overrides,
   }

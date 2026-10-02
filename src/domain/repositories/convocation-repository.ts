@@ -31,6 +31,13 @@ export interface ConvocationRepository {
   // the MatchDetails write.
   updateArrangements(id: string, arrangements: ConvocationArrangements): Promise<Convocation>
 
+  // A coach correcting a training's start time before it begins: `date` only.
+  // Separate from updateArrangements because that one also writes `location`,
+  // which a training leaves null (its venue is `training_location_id`,
+  // admin-only) — the `grant update (date, location)` + coach RLS policy
+  // behind it already allow this narrower write.
+  updateDate(id: string, date: string): Promise<Convocation>
+
   // specs/web-create-convocation.md §3/AC-WC-20 — admin edit of an UPCOMING,
   // open convocation, one method per type like the create* methods above: the
   // convocation row and its satellite change in ONE transaction (an RPC per

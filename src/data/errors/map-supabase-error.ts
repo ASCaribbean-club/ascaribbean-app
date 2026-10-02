@@ -8,6 +8,7 @@ import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-s
 import { InvalidMatchLineupInputError } from '@domain/errors/invalid-match-lineup-input-error'
 import { InvalidMissionTemplateError } from '@domain/errors/invalid-mission-template-error'
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
+import { MissionFullError } from '@domain/errors/mission-full-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
@@ -25,6 +26,13 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // (past or not 'open'): a business-rule window, not a missing right.
       if (error.message.includes('convocation_not_editable')) {
         return new ConvocationNotEditableError(error.message)
+      }
+      // specs/match-details-missions.md R2/AC-MM-15 — claim_mission refuses a
+      // registration beyond the mission's capacity with this dedicated token.
+      // Checked BEFORE the generic ForbiddenError fallback, on the message
+      // token only (never the table name).
+      if (error.message.includes('mission_full')) {
+        return new MissionFullError(error.message)
       }
       return new ForbiddenError(error.message)
     case '23514':

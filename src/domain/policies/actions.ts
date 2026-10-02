@@ -264,3 +264,7 @@ export type Action =
   // player AND coach branches). Players only ever get the teammate projection
   // (toTeammateStatus).
   | 'availability:read-team'
+  // specs/web-mission-templates.md §3 — admin only, club-wide. Covers create,
+  // edit, deactivate and reactivate (no delete exists). Reading stays
+  // RLS-only. Mirrors the three RLS policies on public.mission_templates.
+  | 'mission-template:manage'

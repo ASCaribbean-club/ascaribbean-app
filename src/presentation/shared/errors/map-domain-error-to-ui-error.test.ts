@@ -7,6 +7,7 @@ import { InvalidNewsInputError } from "@domain/errors/invalid-news-input-error";
 import { InvalidOpponentInputError } from "@domain/errors/invalid-opponent-input-error";
 import { InvalidRoleScopeError } from "@domain/errors/invalid-role-scope-error";
 import { InvalidScheduleError } from "@domain/errors/invalid-schedule-error";
+import { InvalidMissionTemplateError } from "@domain/errors/invalid-mission-template-error";
 import { InvalidTrainingLocationInputError } from "@domain/errors/invalid-training-location-input-error";
 import { InvalidSeasonInputError } from "@domain/errors/invalid-season-input-error";
 import { MatchArrangementsWindowClosedError } from "@domain/errors/match-arrangements-window-closed-error";
@@ -55,6 +56,16 @@ describe("mapDomainErrorToUiError", () => {
 
     expect(result).toEqual({
       message: "Le nom du lieu et l’adresse sont obligatoires.",
+      variant: "inline",
+      retryable: true,
+    });
+  });
+
+  it("maps InvalidMissionTemplateError to a retryable inline error", () => {
+    const result = mapDomainErrorToUiError(new InvalidMissionTemplateError("label is required"));
+
+    expect(result).toEqual({
+      message: "Le libellé est obligatoire, la capacité doit être comprise entre 1 et 3 personnes et la description ne peut pas dépasser 500 caractères.",
       variant: "inline",
       retryable: true,
     });

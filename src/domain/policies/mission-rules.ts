@@ -30,3 +30,12 @@ export function normalizeMissionDescription(description: string | null | undefin
   const trimmed = (description ?? '').trim()
   return trimmed === '' ? null : trimmed
 }
+
+// specs/match-details-missions.md §2.4/AC-MM-12 — may this user be registered
+// on a mission? Pure: the eligible people (PO-MM-06, assumed: the players of
+// the convocation's team) are PASSED IN, same pattern as `requiredUserIds` in
+// convocation-closure.ts. Mirrored by the target check inside the claim_mission
+// RPC (supabase/migrations/*_match_details_missions.sql).
+export function isEligibleMissionAssignee(userId: string, eligibleUserIds: string[]): boolean {
+  return eligibleUserIds.includes(userId)
+}

@@ -587,3 +587,51 @@ describe('can — match_lineup:write', () => {
     }
   })
 })
+
+// specs/match-details-missions.md §3/AC-MM-13 — exactly two actions.
+describe('can — mission actions', () => {
+  it('allows a player of the team to self-assign, denies a player of another team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'mission:self-assign', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'mission:self-assign', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('denies self-assign to coach, treasurer and volunteer', () => {
+    for (const role of [
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'treasurer' },
+      { role: 'volunteer' },
+    ] as User['roles']) {
+      expect(can(userWith([role]), 'mission:self-assign', { teamId: 'team-1' })).toBe(false)
+    }
+  })
+
+  it('allows a coach to manage missions of their team only', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'mission:manage', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'mission:manage', { teamId: 'team-2' })).toBe(false)
+    expect(can(user, 'mission:manage')).toBe(false)
+  })
+
+  it('allows a section-manager to manage missions of their section only', () => {
+    const user = userWith([{ role: 'section-manager', sectionId: 'section-a' }])
+    expect(can(user, 'mission:manage', { teamId: 'team-1', sectionId: 'section-a' })).toBe(true)
+    expect(can(user, 'mission:manage', { teamId: 'team-1', sectionId: 'section-b' })).toBe(false)
+  })
+
+  it('allows authorized-officer and admin to manage missions club-wide', () => {
+    expect(can(userWith([{ role: 'authorized-officer' }]), 'mission:manage', { teamId: 'team-9' })).toBe(true)
+    expect(can(userWith([{ role: 'admin' }]), 'mission:manage', { teamId: 'team-9' })).toBe(true)
+  })
+
+  it('denies mission:manage to player, treasurer, medical referent and volunteer', () => {
+    for (const role of [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ] as User['roles']) {
+      expect(can(userWith([role]), 'mission:manage', { teamId: 'team-1' })).toBe(false)
+    }
+  })
+})

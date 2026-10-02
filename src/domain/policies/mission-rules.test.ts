@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isEligibleMissionAssignee,
   isValidMissionCapacity,
   isValidMissionDescription,
   isValidMissionLabel,
@@ -59,5 +60,17 @@ describe('normalizeMissionDescription', () => {
     expect(normalizeMissionDescription('   ')).toBeNull()
     expect(normalizeMissionDescription(null)).toBeNull()
     expect(normalizeMissionDescription(undefined)).toBeNull()
+  })
+})
+
+// specs/match-details-missions.md AC-MM-12
+describe('isEligibleMissionAssignee', () => {
+  it('is true for an id present in the passed list', () => {
+    expect(isEligibleMissionAssignee('u2', ['u1', 'u2'])).toBe(true)
+  })
+
+  it('is false for an id absent from the list and for an empty list', () => {
+    expect(isEligibleMissionAssignee('u3', ['u1', 'u2'])).toBe(false)
+    expect(isEligibleMissionAssignee('u1', [])).toBe(false)
   })
 })

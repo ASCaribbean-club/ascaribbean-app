@@ -21,3 +21,24 @@ export interface LeaderboardEntry extends LeaderboardPlayerCounts {
 }
 
 export type TeamLeaderboard = Record<LeaderboardMetric, LeaderboardEntry[]>
+
+// Presence tab — raw counters per roster player (what get_team_presence_leaderboard
+// returns, mapped). Presence = coach-confirmed fact; response = player-declared.
+export interface PresencePlayerCounts {
+  userId: string
+  displayName: string
+  validatedCount: number
+  presentCount: number
+  convokedCount: number
+  respondedCount: number
+}
+
+// `value` is the number of confirmed presences (what is ranked). Rates are
+// whole percents, null when their denominator is 0 (nothing to rate yet).
+export interface PresenceEntry extends PresencePlayerCounts {
+  rank: number
+  value: number
+  isMuted: boolean
+  attendanceRate: number | null
+  responseRate: number | null
+}

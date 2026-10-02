@@ -355,6 +355,16 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // reads them, archived included, to resolve a convocation's location).
   'training_location:write': ['admin'],
 
+  // specs/web-mission-templates.md §3 — 'mission-template:manage': ['admin'],
+  // club-wide (a deliberate tightening of the CDC "manage volunteer
+  // missions" row, PO-MT-02). Manual mirror (CLAUDE.md §7) of the RLS
+  // policies on public.mission_templates (mission_templates_select_admin,
+  // mission_templates_insert_admin, mission_templates_update_admin), each
+  // commented with this action name — see
+  // supabase/migrations/20261002170000_web_mission_templates.sql. There is
+  // no delete policy. Reading is admin-only RLS, no separate matrix entry.
+  'mission-template:manage': ['admin'],
+
   // specs/coach-match-composition.md §2 — 'match_lineup:write': ['coach'],
   // scoped to the coach's own team (can.ts). Deliberate restrictive gap, same
   // as 'match_details:update' (PO-MC-10: section-manager/officer/admin not

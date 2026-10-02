@@ -566,4 +566,24 @@ describe('can — match_lineup:write', () => {
       expect(can(both, 'availability:read-team', { teamId: 'team-2' })).toBe(true)
     })
   })
+
+  // specs/web-mission-templates.md §3/AC-MT-10 — 'mission-template:manage' is
+  // ['admin']-only and club-wide.
+  it('allows an admin to manage mission templates', () => {
+    expect(can(userWith([{ role: 'admin' }]), 'mission-template:manage')).toBe(true)
+  })
+
+  it('denies every non-admin role from managing mission templates', () => {
+    for (const role of [
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'authorized-officer' },
+      { role: 'volunteer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'player', teamId: 'team-1' },
+    ] as User['roles']) {
+      expect(can(userWith([role]), 'mission-template:manage')).toBe(false)
+    }
+  })
 })

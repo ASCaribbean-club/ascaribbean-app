@@ -107,8 +107,9 @@ export interface InvitationLink {
 export interface UserRepository {
   findById(id: string): Promise<User | null>
   // CDC §3.1 charter-acceptance gate — idempotent, see accept_charter() in
-  // supabase/migrations/20260813075127_charter_acceptance.sql.
-  acceptCharter(userId: string): Promise<void>
+  // supabase/migrations/20260813075127_charter_acceptance.sql
+  // and 20261002090000_charter_image_rights.sql (image-rights consent).
+  acceptCharter(userId: string, imageRightsConsent: boolean): Promise<void>
 
   // specs/section-and-teams.md §2.11/PO-ST-12b — admin-only directory read,
   // backed by the existing users_select_own policy's `or private.is_admin()`

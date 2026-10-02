@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ConvocationMissionRepositoryImpl } from '@data/repositories/ConvocationMissionRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
 import { DocumentRepositoryImpl } from '@data/repositories/DocumentRepositoryImpl'
@@ -7,6 +8,7 @@ import { MeetingDetailsRepositoryImpl } from '@data/repositories/MeetingDetailsR
 import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
+import type { ConvocationMissionRepository } from '@domain/repositories/convocation-mission-repository'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
 import type { DocumentRepository } from '@domain/repositories/document-repository'
@@ -15,6 +17,7 @@ import type { MeetingDetailsRepository } from '@domain/repositories/meeting-deta
 import type { OpponentRepository } from '@domain/repositories/opponent-repository'
 import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
+import { ListConvocationMissionsUseCase } from '@domain/usecases/convocation-missions/ListConvocationMissionsUseCase'
 import { GetPlayerTeamUseCase } from '@domain/usecases/player-dashboard/GetPlayerTeamUseCase'
 import { ListUserMissingOrRejectedDocumentsUseCase } from '@/domain/usecases/player-dashboard/ListUserMissingOrRejectedDocumentsUseCase'
 import { ListUpcomingConvocationsForPlayerUseCase } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
@@ -36,6 +39,7 @@ export interface PlayerDashboardContainer {
   meetingDetailsRepository: MeetingDetailsRepository
   opponentRepository: OpponentRepository
   documentRepository: DocumentRepository
+  convocationMissionRepository: ConvocationMissionRepository
 
   // Use cases
   getPlayerTeamUseCase: GetPlayerTeamUseCase
@@ -44,6 +48,8 @@ export interface PlayerDashboardContainer {
   respondToConvocationUseCase: RespondToConvocationUseCase
   listUserMissingOrRejectedDocumentsUseCase: ListUserMissingOrRejectedDocumentsUseCase
   getTeamRecentFormUseCase: GetTeamRecentFormUseCase
+  // specs/match-details-missions.md AC-MM-23 — "Votre mission" line.
+  listConvocationMissionsUseCase: ListConvocationMissionsUseCase
 }
 
 export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): PlayerDashboardContainer {
@@ -56,6 +62,7 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
   const meetingDetailsRepository = new MeetingDetailsRepositoryImpl(supabaseClient)
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
   const documentRepository = new DocumentRepositoryImpl(supabaseClient)
+  const convocationMissionRepository = new ConvocationMissionRepositoryImpl(supabaseClient)
   const getConvocationDetailsUseCase = new GetConvocationDetailsUseCase(meetingDetailsRepository, matchDetailsRepository)
   const assembleConvocationDetailFieldsUseCase = new AssembleConvocationDetailFieldsUseCase(opponentRepository)
 
@@ -69,6 +76,7 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
     meetingDetailsRepository,
     opponentRepository,
     documentRepository,
+    convocationMissionRepository,
     getPlayerTeamUseCase: new GetPlayerTeamUseCase(teamRepository),
     getConvocationDetailsUseCase: getConvocationDetailsUseCase,
     listUpcomingConvocationsForPlayerUseCase: new ListUpcomingConvocationsForPlayerUseCase(
@@ -80,5 +88,6 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
     respondToConvocationUseCase: new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository),
     listUserMissingOrRejectedDocumentsUseCase: new ListUserMissingOrRejectedDocumentsUseCase(documentRepository),
     getTeamRecentFormUseCase: new GetTeamRecentFormUseCase(convocationRepository, matchDetailsRepository),
+    listConvocationMissionsUseCase: new ListConvocationMissionsUseCase(convocationMissionRepository),
   }
 }

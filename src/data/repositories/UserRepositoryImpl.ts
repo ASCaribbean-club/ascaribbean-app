@@ -60,8 +60,8 @@ export class UserRepositoryImpl implements UserRepository {
   // narrower-arity method still satisfies the interface structurally. The
   // parameter stays in the domain signature so callers don't need to know
   // that Supabase detail.
-  async acceptCharter(): Promise<void> {
-    const { error } = await this.client.rpc('accept_charter')
+  async acceptCharter(_userId: string, imageRightsConsent: boolean): Promise<void> {
+    const { error } = await this.client.rpc('accept_charter', { p_image_rights_consent: imageRightsConsent })
     if (error) throw mapSupabaseError(error)
   }
 

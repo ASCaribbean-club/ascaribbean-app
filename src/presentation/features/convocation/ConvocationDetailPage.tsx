@@ -12,6 +12,7 @@ import { EffectifTab } from './components/EffectifTab'
 import { InfosTab } from './components/InfosTab'
 import { LineupDiscardDialog } from './lineup/LineupDiscardDialog'
 import { LineupTab } from './lineup/LineupTab'
+import { MissionsTab } from './missions/MissionsTab'
 import { MatchGoalsList } from './components/MatchGoalsList'
 import { MatchOutcomeCard } from './components/MatchOutcomeCard'
 import { MatchResultCardPicker } from './components/MatchResultCardPicker'
@@ -312,6 +313,18 @@ export function ConvocationDetailPage() {
             >
               Effectif
             </TabsTrigger>
+            {/* specs/match-details-missions.md UI design — "Missions", right after
+                Effectif, all three convocation types. Absent, never disabled:
+                the ViewModel folded role/team guard, rights and "any mission
+                or manager" into one boolean. */}
+            {vm.missions.isTabAvailable && (
+              <TabsTrigger
+                value="missions"
+                className="h-11 rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 pb-2.5 text-[14px] font-bold text-white/50 shadow-none data-[state=active]:border-coach-green data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Missions
+              </TabsTrigger>
+            )}
             {convocation.type === 'match' && (
               <TabsTrigger
                 value="votes"
@@ -418,6 +431,12 @@ export function ConvocationDetailPage() {
             />
           )}
         </TabsContent>
+
+        {vm.missions.isTabAvailable && (
+          <TabsContent value="missions" className="px-5.5 pt-4 pb-8">
+            <MissionsTab missions={vm.missions} />
+          </TabsContent>
+        )}
 
         {/* PO-PV-08 — mirrors the TabsTrigger gate above: no "votes" TabsContent
             at all for a non-match convocation, not an empty/disabled one. */}

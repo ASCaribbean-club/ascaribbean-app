@@ -25,6 +25,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
+import type { TrainingFormValues } from './components/TrainingEditForm'
 import { useMatchLineupViewModel } from './lineup/useMatchLineupViewModel'
 
 // specs/edit-match-details.md UI design §3, docs/designs/coach-match-details/
@@ -64,6 +65,7 @@ export function useConvocationDetailViewModel() {
     respondToConvocationUseCase,
     confirmAttendanceUseCase,
     updateMatchDetailsUseCase,
+    updateTrainingScheduleUseCase,
     castVoteUseCase,
     getMyVoteUseCase,
     getVoteTallyUseCase,
@@ -535,6 +537,92 @@ export function useConvocationDetailViewModel() {
     })
   }
 
+  // --- Coach edits a training's start time from the Infos tab, in place,
+  // same pattern as the match block above. Date/time only: the venue stays
+  // admin-only in the database (convocations_guard_training_location_admin_only),
+  // so it isn't offered here. Gated on 'convocation:update' alone — the
+  // training has no match_details row to write. ---
+  const canEditTraining =
+    !!convocation &&
+    activeRole === 'coach' &&
+    roleMatchesConvocationTeam &&
+    convocation.type === 'training' &&
+    convocation.status === 'open' &&
+    !isPastDate(convocation.date, now) &&
+    hasConvocationUpdatePermission
+
+  const [isEditingTraining, setIsEditingTraining] = useState(false)
+  const [trainingFormValues, setTrainingFormValues] = useState<TrainingFormValues | null>(null)
+  const [trainingSaveError, setTrainingSaveError] = useState<UiError | null>(null)
+
+  // Window closed while the form is open: the form stays mounted with its
+  // values intact, only the copy around it changes (same as the match form).
+  const trainingWindowClosed = isEditingTraining && !canEditTraining
+
+  function onStartEditTraining() {
+    if (!convocation) return
+    const start = new Date(convocation.date)
+    setTrainingFormValues({ date: toDateInputValue(start), time: toTimeInputValue(start) })
+    setTrainingSaveError(null)
+    setIsEditingTraining(true)
+  }
+
+  function onCancelEditTraining() {
+    setIsEditingTraining(false)
+    setTrainingFormValues(null)
+    setTrainingSaveError(null)
+  }
+
+  function setTrainingDate(value: string) {
+    setTrainingFormValues((current) => (current ? { ...current, date: value } : current))
+  }
+  function setTrainingTime(value: string) {
+    setTrainingFormValues((current) => (current ? { ...current, time: value } : current))
+  }
+
+  const trainingIsDirty =
+    !!convocation &&
+    !!trainingFormValues &&
+    !!trainingFormValues.date &&
+    !!trainingFormValues.time &&
+    (trainingFormValues.date !== toDateInputValue(new Date(convocation.date)) ||
+      trainingFormValues.time !== toTimeInputValue(new Date(convocation.date)))
+
+  const saveTrainingMutation = useMutation({
+    mutationFn: (date: string) => {
+      if (!convocationId) {
+        return Promise.reject(new Error('no convocation to update the training for yet'))
+      }
+      return updateTrainingScheduleUseCase.execute({ convocationId, date, now: new Date() })
+    },
+    onMutate: () => setTrainingSaveError(null),
+    onSuccess: () => {
+      setIsEditingTraining(false)
+      setTrainingFormValues(null)
+      if (convocationId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+      // Moving the date can move the training into/out of "past" for the alerts.
+      if (convocation?.teamId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.coachAlerts(convocation.teamId) })
+      }
+    },
+    onError: (error) => {
+      setTrainingSaveError(mapDomainErrorToUiError(error))
+      // A server-side race (window closed between render and write): resync
+      // so canEditTraining recomputes to false without a manual reload.
+      if (convocationId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+    },
+  })
+
+  function onSubmitTraining() {
+    if (!trainingFormValues) return
+    if (saveTrainingMutation.isPending || !trainingIsDirty || trainingWindowClosed) return
+    saveTrainingMutation.mutate(combineDateAndTime(trainingFormValues.date, trainingFormValues.time))
+  }
+
   // --- specs/player-vote.md — third tab, net-new in this pass ---
   //
   // AC-PV-16/PO-PV-02 — only the positive category is ever wired here (the
@@ -967,6 +1055,18 @@ export function useConvocationDetailViewModel() {
     canSubmitMatchDetails: matchDetailsIsDirty && !saveMatchDetailsMutation.isPending && !matchDetailsWindowClosed,
     isSavingMatchDetails: saveMatchDetailsMutation.isPending,
     onSubmitMatchDetails,
+    canEditTraining,
+    isEditingTraining,
+    onStartEditTraining,
+    onCancelEditTraining,
+    trainingFormValues,
+    setTrainingDate,
+    setTrainingTime,
+    canSubmitTraining: trainingIsDirty && !saveTrainingMutation.isPending && !trainingWindowClosed,
+    isSavingTraining: saveTrainingMutation.isPending,
+    onSubmitTraining,
+    trainingSaveError,
+    trainingWindowClosed,
     matchDetailsSaveError,
     matchDetailsWindowClosed,
 

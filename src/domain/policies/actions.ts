@@ -268,3 +268,16 @@ export type Action =
   // edit, deactivate and reactivate (no delete exists). Reading stays
   // RLS-only. Mirrors the three RLS policies on public.mission_templates.
   | 'mission-template:manage'
+  // specs/match-details-missions.md §3 — a player registers / withdraws
+  // THEMSELVES on a mission of their team's convocation (deadline applies,
+  // see mission-deadline.ts). Team-scoped (can.ts player branch). Mirrors the
+  // self branch of claim_mission and the mission_assignments self delete
+  // policy. No CDC matrix row exists for it (PO-MM-04).
+  | 'mission:self-assign'
+  // specs/match-details-missions.md §3 — manage missions of a convocation:
+  // register / remove any eligible member, add an ad hoc mission, delete a
+  // mission; no deadline. Same scope as 'convocation:create'. Grants it to
+  // the coach, which the CDC row excludes (PO-MM-04, to validate). Mirrors
+  // convocation_missions insert/delete policies, the manager branch of
+  // claim_mission and the mission_assignments manager delete policy.
+  | 'mission:manage'

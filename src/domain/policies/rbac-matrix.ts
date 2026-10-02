@@ -392,4 +392,8 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // teams). Players see the teammate projection only. SQL mirror: future
   // migration, not built in the domain-only pass.
   'availability:read-team': ['player', 'coach'],
+
+  // specs/match-details-missions.md §3 — the only two entries of that feature.
+  'mission:self-assign': ['player'],
+  'mission:manage': ['coach', 'section-manager', 'authorized-officer', 'admin'],
 }

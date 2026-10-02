@@ -300,6 +300,21 @@ export interface Team {
 
 **Priorité de revisite** : après premiers retours réels.
 
+## Délai d'auto-service de 30 minutes (missions d'une convocation)
+
+**Où** : `domain/policies/mission-deadline.ts` (`MISSION_SELF_SERVICE_DEADLINE_MINUTES`), `specs/match-details-missions.md` §2.3.
+
+**Valeur actuelle** : un joueur ne peut plus s'inscrire à une mission, ni s'en retirer, à partir de 30 minutes avant `Convocation.date` (début de la convocation). Délai fixe, identique pour les trois types de convocation, appliqué dans les use cases seulement (comme l'échéance de réponse de `response-deadline.ts`) ; les titulaires de `mission:manage` n'y sont pas soumis.
+
+**Pourquoi cette valeur, provisoirement** : choix produit, non mesuré — aucune donnée d'usage réel n'existait pour fixer un délai par type, une valeur unique et simple a été retenue.
+
+**Ce qu'il faudrait challenger** :
+- Les retraits de dernière minute observés en pratique : 30 minutes laissent-elles assez de temps à un référent pour remplacer quelqu'un ?
+- Le repère : pour un match, le délai part du coup d'envoi alors que le rendez-vous (`meetingPointTime`) peut être bien plus tôt ; une mission « apporter l'eau » se joue au rendez-vous (PO-MM-05).
+- Un délai par type de convocation, comme pour la réponse de présence.
+
+**Priorité de revisite** : après premiers retours réels.
+
 ---
 
 ## (Prochaine entrée à ajouter ici)

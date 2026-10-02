@@ -3,12 +3,12 @@ import type { UserRepository } from '../../repositories/user-repository'
 import { AcceptCharterUseCase } from './AcceptCharterUseCase'
 
 describe('AcceptCharterUseCase', () => {
-  it('delegates to UserRepository.acceptCharter with the given userId', async () => {
+  it('delegates to UserRepository.acceptCharter with the userId and image-rights choice', async () => {
     const acceptCharter = vi.fn().mockResolvedValue(undefined)
     const userRepository = { acceptCharter } as unknown as UserRepository
 
-    await new AcceptCharterUseCase(userRepository).execute({ userId: 'u1' })
+    await new AcceptCharterUseCase(userRepository).execute({ userId: 'u1', imageRightsConsent: false })
 
-    expect(acceptCharter).toHaveBeenCalledWith('u1')
+    expect(acceptCharter).toHaveBeenCalledWith('u1', false)
   })
 })

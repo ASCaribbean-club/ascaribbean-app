@@ -2,30 +2,54 @@ import { AuthCard } from '../components/AuthCard'
 import { Button } from '../../../shared/components/ui/button'
 import { Checkbox } from '../../../shared/components/ui/checkbox'
 import { Label } from '../../../shared/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '../../../shared/components/ui/radio-group'
+import { ScrollToReadBox } from './components/ScrollToReadBox'
+import {
+  CHARTER_INTRO,
+  CHARTER_SECTIONS,
+  IMAGE_RIGHTS_CONSENT_LABEL,
+  IMAGE_RIGHTS_INTRO,
+  IMAGE_RIGHTS_REFUSAL_LABEL,
+  IMAGE_RIGHTS_SECTIONS,
+} from './charter-content'
 import { useCharterViewModel } from './useCharterViewModel'
 
-// Charter text/URL: OPEN — not specified anywhere yet (no docs/CHARTE.md,
-// nothing in docs/specs/). Placeholder below, per CLAUDE.md §7 ("don't
-// resolve a point explicitly marked OPEN — implement around it, flag it").
 export function CharterPage() {
   const vm = useCharterViewModel()
 
   return (
-    <AuthCard title="Charte du club">
-      <div className="max-h-40 overflow-y-auto rounded-[14px] bg-auth-bg p-3.5 text-xs leading-relaxed text-[oklch(48%_0.01_90)]">
-        {/* TODO OPEN: real charter content/URL not specified yet — club to provide. */}
-        Le texte de la charte n'est pas encore disponible ici.
-      </div>
-
+    <AuthCard title="Charte du club" subtitle="Lisez les deux documents jusqu’en bas pour pouvoir les valider.">
+      <h2 className="text-sm font-extrabold text-auth-text">Charte AS Caribbean 2026–2027</h2>
+      <ScrollToReadBox intro={CHARTER_INTRO} sections={CHARTER_SECTIONS} onReachedEnd={vm.markCharterRead} />
       <Label htmlFor="charter-accept" className="items-start gap-2.5 text-[12.5px] font-semibold text-auth-text">
         <Checkbox
           id="charter-accept"
-          checked={vm.hasRead}
-          onCheckedChange={(checked) => vm.setHasRead(checked === true)}
+          checked={vm.charterAccepted}
+          disabled={!vm.hasScrolledCharter}
+          onCheckedChange={(checked) => vm.setCharterAccepted(checked === true)}
           className="mt-0.5 size-4.5 border-auth-border data-[state=checked]:border-auth-primary data-[state=checked]:bg-auth-primary"
         />
-        J'ai lu et j'accepte la charte du club
+        J’ai lu la charte de l’AS Caribbean et je m’engage à la respecter.
       </Label>
+
+      <h2 className="mt-2 text-sm font-extrabold text-auth-text">Autorisation de droit à l’image</h2>
+      <p className="text-xs text-auth-text-muted">Choix facultatif, distinct de l’acceptation de la charte.</p>
+      <ScrollToReadBox intro={IMAGE_RIGHTS_INTRO} sections={IMAGE_RIGHTS_SECTIONS} onReachedEnd={vm.markImageRightsRead} />
+      <RadioGroup
+        value={vm.imageRightsChoice}
+        disabled={!vm.hasScrolledImageRights}
+        onValueChange={(value) => vm.setImageRightsChoice(value === 'authorize' ? 'authorize' : 'refuse')}
+        className="gap-3"
+      >
+        <Label htmlFor="image-rights-authorize" className="items-start gap-2.5 text-[12.5px] font-semibold text-auth-text">
+          <RadioGroupItem id="image-rights-authorize" value="authorize" className="mt-0.5" />
+          {IMAGE_RIGHTS_CONSENT_LABEL}
+        </Label>
+        <Label htmlFor="image-rights-refuse" className="items-start gap-2.5 text-[12.5px] font-semibold text-auth-text">
+          <RadioGroupItem id="image-rights-refuse" value="refuse" className="mt-0.5" />
+          {IMAGE_RIGHTS_REFUSAL_LABEL}
+        </Label>
+      </RadioGroup>
 
       <Button
         type="button"

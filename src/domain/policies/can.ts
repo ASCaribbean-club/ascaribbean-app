@@ -53,7 +53,8 @@ function grants(
         action === 'match_goals:view' ||
         // specs/player-unavailability.md §2 — team-scoped (unlike the person-scoped
         // player-stats actions): without it a player of team A passes for team B.
-        action === 'availability:read-team'
+        action === 'availability:read-team' ||
+        action === 'mission:self-assign'
       return !requiresTeamScope || assignment.teamId === context.teamId
     }
     case 'coach': {
@@ -102,7 +103,8 @@ function grants(
         action === 'meeting_details:update' ||
         // specs/player-unavailability.md §2 — both team-scoped.
         action === 'availability:declare' ||
-        action === 'availability:read-team'
+        action === 'availability:read-team' ||
+        action === 'mission:manage'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))
     }
     case 'section-manager':
@@ -147,7 +149,11 @@ function grants(
         // (rbacMatrix['match_lineup:write'] is ['coach']-only, PO-MC-10).
         action === 'match_lineup:write' ||
         // specs/web-create-convocation.md §2 — pre-wired, inert today.
-        action === 'meeting_details:update'
+        action === 'meeting_details:update' ||
+        // specs/match-details-missions.md §3 — LIVE (unlike the pre-wired
+        // entries above): a section-manager manages missions of their own
+        // section's teams, same scope as 'convocation:create'.
+        action === 'mission:manage'
       ) {
         // The use case resolves the target's sectionId (via TeamRepository
         // for a team-scoped target, or directly for a section-scoped one)

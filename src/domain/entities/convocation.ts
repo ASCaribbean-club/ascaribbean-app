@@ -7,7 +7,7 @@ export interface Convocation {
   id: string
   teamId: string
   type: ConvocationType
-  date: string // ISO date
+  date: string // ISO timestamp (timestamptz) — carries the START TIME (kickoff / training or meeting start), not only the day
   // specs/web-localizations.md §2.2 — free text, now nullable: set for
   // match, meeting and training convocations created BEFORE the
   // training_locations table existed (legacy rows); null for a training

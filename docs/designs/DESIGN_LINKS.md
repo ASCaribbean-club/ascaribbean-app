@@ -41,6 +41,7 @@ Deux niveaux de référence, dans cet ordre de préférence :
 | team-opponents — **backoffice desktop : adversaires d'une équipe (ligne dépliée + dialogue d'ajout)** (`[Admin] Web - opponent`, `[Admin] Web - opponent - creation`) | — aucun lien fourni | 2026-09-30 | `docs/designs/desktop/opponents/[Admin] Web - opponent{, - creation}.png` | **instantané seul** |
 | mobile-leaderboard — **classements de l'équipe (buteurs, jaunes, rouges), vue joueur et vue coach** (`Mob - Classements - {1,2,3}`) | — aucun lien fourni | 2026-10-01 | `docs/designs/learderboard/Mob - Classements - {1,2,3}.png` | **instantané seul** |
 | player-unavailability — **page Équipe mobile, disponibilités** (`[v1] Mob - Équipe (Disponibilités)-{1,2,3,4,5}`) | — aucun lien fourni | 2026-10-01 | `docs/designs/team-availability/[v1] Mob - Équipe (Disponibilités)-{1,2,3,4,5}.png` | **instantané seul** |
+| web-mission-templates — **backoffice desktop : référentiel des missions (onglets par type, liste, dialogue d'ajout)** (`[Admin] Web - Référentiel mission  {1,2,3,4}`) | — aucun lien fourni | 2026-10-02 | `docs/designs/desktop/mission-template/[Admin] Web - Référentiel mission  {1,2,3,4}.png` | **instantané seul** |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 

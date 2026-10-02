@@ -8,7 +8,10 @@ import { MatchDetailsInfos } from '@presentation/features/convocation/components
 import { MeetingDetailsInfos } from '@presentation/features/convocation/components/MeetingDetailsInfos'
 import { EditMatchDetailsButton } from './EditMatchDetailsButton'
 import type { MatchDetailsFormValues } from './MatchDetailsEditForm'
+import { TrainingEditForm, type TrainingFormValues } from './TrainingEditForm'
 import { getConvocationLocationAddress, getConvocationLocationLabel } from '@domain/rules/convocation-location'
+
+const TRAINING_WINDOW_CLOSED_MESSAGE = 'La séance a commencé, ces informations ne sont plus modifiables.'
 
 // specs/edit-match-details.md — bundles useConvocationDetailViewModel's
 // match-details-edit fields into one prop instead of ten loose ones.
@@ -38,11 +41,29 @@ export interface MatchDetailsEditProps {
   windowClosed: boolean
 }
 
+// Coach edit of a training's start time — same shape as MatchDetailsEditProps,
+// `canEdit` already composed by the ViewModel.
+export interface TrainingEditProps {
+  canEdit: boolean
+  isEditing: boolean
+  onStartEdit: () => void
+  onCancel: () => void
+  formValues: TrainingFormValues | null
+  onChangeDate: (value: string) => void
+  onChangeTime: (value: string) => void
+  canSubmit: boolean
+  isSaving: boolean
+  onSubmit: () => void
+  saveError: UiError | null
+  windowClosed: boolean
+}
+
 interface InfosTabProps {
   convocation: Convocation
   matchDetails: MatchDetails | null
   meetingDetails: MeetingDetails | null
   matchDetailsEdit: MatchDetailsEditProps
+  trainingEdit: TrainingEditProps
 }
 
 // UI design §"Structure de l'écran", point 3. Identity rows (Coup d'envoi /
@@ -50,7 +71,7 @@ interface InfosTabProps {
 // type-conditional and mutually exclusive — a `training` convocation
 // renders NOTHING past "Lieu" (AC-MD-02, "pas d'espace vide compensatoire"),
 // so there's no empty match/meeting block left dangling for that case.
-export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetailsEdit }: InfosTabProps) {
+export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetailsEdit, trainingEdit }: InfosTabProps) {
   // docs/designs/coach-match-details/[v3] [Coach] Mob - Match editing infos.png
   // — while editing, the card's own MATCH/LIEU MATCH rows (rendered inside
   // MatchDetailsEditForm) already carry the SAME Convocation.date/location
@@ -61,6 +82,7 @@ export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetai
   // unaffected (isEditingMatchDetails can only ever be true for a match,
   // canEditMatchDetails requires convocation.type === 'match').
   const isEditingMatch = convocation.type === 'match' && matchDetailsEdit.isEditing
+  const isEditingTraining = convocation.type === 'training' && trainingEdit.isEditing && trainingEdit.formValues !== null
   const locationAddress = getConvocationLocationAddress(convocation)
 
   return (
@@ -78,11 +100,35 @@ export function InfosTab({ convocation, matchDetails, meetingDetails, matchDetai
         </div>
       )}
 
+      {trainingEdit.canEdit && (
+        <div className="flex items-center justify-between">
+          <h2 className="text-[13px] font-bold tracking-wide text-white/60 uppercase">Informations</h2>
+          {!trainingEdit.isEditing && (
+            <EditMatchDetailsButton onClick={trainingEdit.onStartEdit} label="Modifier les informations de l’entraînement" />
+          )}
+        </div>
+      )}
+
       {/* Identity + type-specific rows sit inside one bordered card, per the
           mockup (docs/designs/player-match-details/.../selection_1.png) —
           InfoRow itself only draws the row dividers, not the outer card. */}
       <div className="flex flex-col rounded-2xl border border-white/10 bg-white/5 px-4">
-        {!isEditingMatch && (
+        {isEditingTraining && trainingEdit.formValues && (
+          <TrainingEditForm
+            values={trainingEdit.formValues}
+            onChangeDate={trainingEdit.onChangeDate}
+            onChangeTime={trainingEdit.onChangeTime}
+            canSubmit={trainingEdit.canSubmit}
+            isSaving={trainingEdit.isSaving}
+            onSubmit={trainingEdit.onSubmit}
+            onCancel={trainingEdit.onCancel}
+            saveError={trainingEdit.saveError}
+            windowClosed={trainingEdit.windowClosed}
+            windowClosedMessage={TRAINING_WINDOW_CLOSED_MESSAGE}
+          />
+        )}
+
+        {!isEditingMatch && !isEditingTraining && (
           <>
             {/* Match uses "Coup d'envoi" for the same Convocation.date field a
                 training/meeting calls "Date" — the label changes, the underlying

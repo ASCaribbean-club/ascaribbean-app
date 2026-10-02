@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { LeaderboardPlayerCounts } from '@domain/entities/leaderboard'
+import type { LeaderboardPlayerCounts, PresencePlayerCounts } from '@domain/entities/leaderboard'
 import type { LeaderboardRepository } from '@domain/repositories/leaderboard-repository'
-import type { TeamLeaderboardPlayerDto } from '@data/dto/team-leaderboard-dto'
+import type { TeamLeaderboardPlayerDto, TeamPresenceLeaderboardPlayerDto } from '@data/dto/team-leaderboard-dto'
 import { mapSupabaseError } from '@data/errors/map-supabase-error'
-import { toLeaderboardPlayerCounts } from '@data/mappers/team-leaderboard-mapper'
+import { toLeaderboardPlayerCounts, toPresencePlayerCounts } from '@data/mappers/team-leaderboard-mapper'
 
 // `get_team_leaderboard` — supabase/migrations/20261001161553_team_leaderboard_rpc.sql.
 // The function's own is_team_member predicate is the real boundary.
@@ -15,5 +15,13 @@ export class LeaderboardRepositoryImpl implements LeaderboardRepository {
 
     if (error) throw mapSupabaseError(error)
     return ((data ?? []) as TeamLeaderboardPlayerDto[]).map(toLeaderboardPlayerCounts)
+  }
+
+  // `get_team_presence_leaderboard` — supabase/migrations/20261002174659_team_presence_leaderboard_rpc.sql.
+  async listTeamPresenceCounts(teamId: string): Promise<PresencePlayerCounts[]> {
+    const { data, error } = await this.client.rpc('get_team_presence_leaderboard', { p_team_id: teamId })
+
+    if (error) throw mapSupabaseError(error)
+    return ((data ?? []) as TeamPresenceLeaderboardPlayerDto[]).map(toPresencePlayerCounts)
   }
 }

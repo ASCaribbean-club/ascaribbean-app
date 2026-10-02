@@ -32,6 +32,7 @@ export function PlayerDashboardPage() {
 
         <NextConvocationCard
           data={vm.nextConvocation}
+          missionsLine={vm.missionsLine}
           canRespond={vm.canRespond}
           onRespondPresent={vm.onRespondPresent}
           onRespondAbsent={vm.onRespondAbsent}

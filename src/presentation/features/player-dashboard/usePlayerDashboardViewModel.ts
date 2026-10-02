@@ -25,6 +25,7 @@ export function usePlayerDashboardViewModel() {
     respondToConvocationUseCase,
     listUserMissingOrRejectedDocumentsUseCase,
     getTeamRecentFormUseCase,
+    listConvocationMissionsUseCase,
   } = usePlayerDashboardDependencies()
 
   // The 'player' RoleAssignment carries a single teamId (domain/entities/
@@ -67,6 +68,23 @@ export function usePlayerDashboardViewModel() {
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
   const nextConvocation: ConvocationForPlayer | undefined = upcomingConvocations[0]
   const upcomingList: ConvocationForPlayer[] = upcomingConvocations.filter((c) => c !== nextConvocation)
+
+  // specs/match-details-missions.md AC-MM-23 — the player's own missions on
+  // the next convocation. Deliberately NOT part of isLoading/error above: a
+  // failing or slow missions read must never hide the card, the line is then
+  // simply absent.
+  const nextConvocationId = nextConvocation?.convocation.id
+  const missionsQuery = useQuery({
+    queryKey: queryKeys.convocationMissions(nextConvocationId ?? ''),
+    queryFn: () => listConvocationMissionsUseCase.execute(nextConvocationId!),
+    enabled: !!nextConvocationId,
+  })
+  // PO-MM-11 (open): every label is listed, comma-separated, until decided.
+  // Null (not an empty string) when the player has no mission: nothing renders.
+  const myMissionLabels = (missionsQuery.data ?? [])
+    .filter((entry) => entry.assignees.some((assignee) => assignee.userId === user?.id))
+    .map((entry) => entry.mission.label)
+  const missionsLine = myMissionLabels.length > 0 ? myMissionLabels.join(', ') : null
 
   const hasMissingDocument = hasMissingOrRejectedDocument(documentsQuery.data ?? [])
 
@@ -141,6 +159,7 @@ export function usePlayerDashboardViewModel() {
 
     /// --- "Prochaine convocation" card ---
     nextConvocation,
+    missionsLine,
     canRespond,
     respondError,
     // Guards against a duplicate upsert for the same convocation/status:

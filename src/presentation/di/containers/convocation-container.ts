@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRecordRepositoryImpl'
+import { ConvocationMissionRepositoryImpl } from '@data/repositories/ConvocationMissionRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
@@ -21,6 +22,7 @@ import { VoteCategoryRepositoryImpl } from '@data/repositories/VoteCategoryRepos
 import { VoteRepositoryImpl } from '@data/repositories/VoteRepositoryImpl'
 import { VoteTallyRepositoryImpl } from '@data/repositories/VoteTallyRepositoryImpl'
 import type { AttendanceRecordRepository } from '@domain/repositories/attendance-record-repository'
+import type { ConvocationMissionRepository } from '@domain/repositories/convocation-mission-repository'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { ConvocationRespondersRepository } from '@domain/repositories/convocation-responders-repository'
 import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
@@ -46,6 +48,14 @@ import { GetConvocationWithDetailsUseCase } from '@domain/usecases/convocation/G
 import { ListConvocationRespondersUseCase } from '@domain/usecases/convocation/ListConvocationRespondersUseCase'
 import { UpdateMatchDetailsUseCase } from '@domain/usecases/convocation/UpdateMatchDetailsUseCase'
 import { UpdateTrainingScheduleUseCase } from '@domain/usecases/convocation/UpdateTrainingScheduleUseCase'
+// specs/match-details-missions.md §2.7 — missions tab use cases.
+import { AddAdHocMissionUseCase } from '@domain/usecases/convocation-missions/AddAdHocMissionUseCase'
+import { AssignMemberToMissionUseCase } from '@domain/usecases/convocation-missions/AssignMemberToMissionUseCase'
+import { ClaimMissionUseCase } from '@domain/usecases/convocation-missions/ClaimMissionUseCase'
+import { ListConvocationMissionsUseCase } from '@domain/usecases/convocation-missions/ListConvocationMissionsUseCase'
+import { ReleaseMissionUseCase } from '@domain/usecases/convocation-missions/ReleaseMissionUseCase'
+import { RemoveMemberFromMissionUseCase } from '@domain/usecases/convocation-missions/RemoveMemberFromMissionUseCase'
+import { RemoveMissionUseCase } from '@domain/usecases/convocation-missions/RemoveMissionUseCase'
 import { GetMatchLineupUseCase } from '@domain/usecases/match-lineup/GetMatchLineupUseCase'
 import { SaveMatchLineupUseCase } from '@domain/usecases/match-lineup/SaveMatchLineupUseCase'
 import { CastVoteUseCase } from '@domain/usecases/player-vote/CastVoteUseCase'
@@ -127,6 +137,15 @@ export interface ConvocationContainer {
   // specs/coach-match-composition.md — "Composition" tab read/write.
   getMatchLineupUseCase: GetMatchLineupUseCase
   saveMatchLineupUseCase: SaveMatchLineupUseCase
+  // specs/match-details-missions.md — "Missions" tab.
+  convocationMissionRepository: ConvocationMissionRepository
+  listConvocationMissionsUseCase: ListConvocationMissionsUseCase
+  claimMissionUseCase: ClaimMissionUseCase
+  releaseMissionUseCase: ReleaseMissionUseCase
+  assignMemberToMissionUseCase: AssignMemberToMissionUseCase
+  removeMemberFromMissionUseCase: RemoveMemberFromMissionUseCase
+  addAdHocMissionUseCase: AddAdHocMissionUseCase
+  removeMissionUseCase: RemoveMissionUseCase
 }
 
 export function createConvocationContainer(supabaseClient: SupabaseClient): ConvocationContainer {
@@ -177,6 +196,37 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const getMatchEventsUseCase = new GetMatchEventsUseCase(matchEventRepository)
   const getMatchLineupUseCase = new GetMatchLineupUseCase(matchLineupRepository)
   const saveMatchLineupUseCase = new SaveMatchLineupUseCase(convocationRepository, convocationRespondersRepository, matchLineupRepository)
+  const convocationMissionRepository = new ConvocationMissionRepositoryImpl(supabaseClient)
+  const listConvocationMissionsUseCase = new ListConvocationMissionsUseCase(convocationMissionRepository)
+  const claimMissionUseCase = new ClaimMissionUseCase(
+    userRepository,
+    convocationRepository,
+    teamRepository,
+    convocationRespondersRepository,
+    convocationMissionRepository,
+  )
+  const releaseMissionUseCase = new ReleaseMissionUseCase(
+    userRepository,
+    convocationRepository,
+    teamRepository,
+    convocationRespondersRepository,
+    convocationMissionRepository,
+  )
+  const assignMemberToMissionUseCase = new AssignMemberToMissionUseCase(
+    userRepository,
+    convocationRepository,
+    teamRepository,
+    convocationRespondersRepository,
+    convocationMissionRepository,
+  )
+  const removeMemberFromMissionUseCase = new RemoveMemberFromMissionUseCase(
+    userRepository,
+    convocationRepository,
+    teamRepository,
+    convocationMissionRepository,
+  )
+  const addAdHocMissionUseCase = new AddAdHocMissionUseCase(userRepository, convocationRepository, teamRepository, convocationMissionRepository)
+  const removeMissionUseCase = new RemoveMissionUseCase(userRepository, convocationRepository, teamRepository, convocationMissionRepository)
 
   return {
     userRepository,
@@ -216,5 +266,13 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     getMatchEventsUseCase,
     getMatchLineupUseCase,
     saveMatchLineupUseCase,
+    convocationMissionRepository,
+    listConvocationMissionsUseCase,
+    claimMissionUseCase,
+    releaseMissionUseCase,
+    assignMemberToMissionUseCase,
+    removeMemberFromMissionUseCase,
+    addAdHocMissionUseCase,
+    removeMissionUseCase,
   }
 }

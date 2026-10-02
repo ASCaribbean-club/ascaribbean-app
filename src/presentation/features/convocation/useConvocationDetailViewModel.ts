@@ -27,6 +27,7 @@ import { useConvocationDependencies } from '@presentation/di/hooks/use-convocati
 import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
 import type { TrainingFormValues } from './components/TrainingEditForm'
 import { useMatchLineupViewModel } from './lineup/useMatchLineupViewModel'
+import { useConvocationMissionsViewModel } from './missions/useConvocationMissionsViewModel'
 
 // specs/edit-match-details.md UI design §3, docs/designs/coach-match-details/
 // [v3] [Coach] Mob - Match editing infos.png — the edit form's own local
@@ -44,7 +45,7 @@ import { useMatchLineupViewModel } from './lineup/useMatchLineupViewModel'
 // `isValidMatchSchedule` (still enforced by UpdateMatchDetailsUseCase,
 // unchanged) requires it.
 
-export type ConvocationDetailTab = 'infos' | 'composition' | 'effectif' | 'votes' | 'resultat'
+export type ConvocationDetailTab = 'infos' | 'composition' | 'effectif' | 'missions' | 'votes' | 'resultat'
 
 // specs/match_details_page.md §7 — this hook is the "câblage presentation/"
 // the correction pass explicitly deferred (docs/convocation_visibility_rls_correction.md
@@ -183,6 +184,19 @@ export function useConvocationDetailViewModel() {
     isTabActive: activeTab === 'composition',
     now,
     onLeave: () => navigate(-1),
+  })
+
+  // specs/match-details-missions.md — the "Missions" tab's own ViewModel,
+  // called HERE (page level) for the same reason as the lineup one: its open
+  // panel/form state must survive Radix unmounting an inactive tab.
+  const missions = useConvocationMissionsViewModel({
+    convocationId,
+    convocation,
+    sectionId: teamQuery.data?.sectionId,
+    activeRole,
+    roleMatchesConvocationTeam,
+    isTabActive: activeTab === 'missions',
+    now,
   })
 
   // specs/coach-attendance-confirmation.md §2 — RBAC-only render gate,
@@ -1002,6 +1016,7 @@ export function useConvocationDetailViewModel() {
     // asks for confirmation before the screen is left (UI design §4).
     goBack: lineup.requestLeave,
     lineup,
+    missions,
 
     convocation,
     teamName: teamQuery.data?.name,

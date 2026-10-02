@@ -29,6 +29,8 @@ import { InvitationTargetNotInvitedError } from '@domain/errors/invitation-targe
 import { MatchNotStartedError } from '@domain/errors/match-not-started-error'
 import { MatchScoreMissingError } from '@domain/errors/match-score-missing-error'
 import { MembershipActivationRequirementsNotMetError } from '@domain/errors/membership-activation-requirements-error'
+import { MissionDeadlinePassedError } from '@domain/errors/mission-deadline-passed-error'
+import { MissionFullError } from '@domain/errors/mission-full-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
@@ -50,6 +52,11 @@ import type { UiError } from './ui-error'
 // so the second call site reuses this exact string rather than a
 // hand-copied duplicate that could drift from this one.
 export const MATCH_ARRANGEMENTS_WINDOW_CLOSED_MESSAGE = 'Le coup d’envoi est passé, ces informations ne sont plus modifiables.'
+
+// specs/match-details-missions.md UI design "Échéance dépassée" — one string
+// for the banner (MissionsClosedBanner) AND for MissionDeadlinePassedError's
+// toast, word for word (same reasoning as the constant above).
+export const MISSIONS_CLOSED_MESSAGE = 'Les missions sont fermées. En cas d’empêchement, contactez directement un référent de l’équipe.'
 
 // Next hop after data/errors/map-supabase-error.ts: that file stops at
 // DomainError, this one goes from DomainError to what a screen shows.
@@ -505,6 +512,26 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
       message: 'Ce lieu n’est plus disponible. Choisissez un autre lieu.',
       variant: 'inline',
       retryable: true,
+    }
+  }
+
+  // specs/match-details-missions.md AC-MM-17 — kept above the DomainError
+  // fallback. Full: the list is reloaded, the player simply sees the mission
+  // as complete.
+  if (error instanceof MissionFullError) {
+    return {
+      message: 'Cette mission est déjà complète.',
+      variant: 'toast',
+      retryable: false,
+    }
+  }
+
+  // Same wording as the "missions fermées" banner of the player variant.
+  if (error instanceof MissionDeadlinePassedError) {
+    return {
+      message: MISSIONS_CLOSED_MESSAGE,
+      variant: 'toast',
+      retryable: false,
     }
   }
 

@@ -8,6 +8,9 @@ import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface NextConvocationCardProps {
   data: ConvocationForPlayer | undefined
+  // specs/match-details-missions.md AC-MM-23 — already composed by the
+  // ViewModel (PO-MM-11); null renders nothing.
+  missionsLine: string | null
   canRespond: boolean
   onRespondPresent: () => void
   onRespondAbsent: () => void
@@ -26,7 +29,7 @@ interface NextConvocationCardProps {
 //     never a separate status label (§3, "évite de dupliquer
 //     l'information entre un libellé de statut et l'état visuel des
 //     boutons").
-export function NextConvocationCard({ data, canRespond, onRespondPresent, onRespondAbsent, onOpen }: NextConvocationCardProps) {
+export function NextConvocationCard({ data, missionsLine, canRespond, onRespondPresent, onRespondAbsent, onOpen }: NextConvocationCardProps) {
   if (!data) return null // AC-PD-02 : état vide géré par le parent (aucune échéance à venir)
 
   const { convocation, matchDetails, opponent, meetingDetails, myResponse } = data
@@ -66,6 +69,8 @@ export function NextConvocationCard({ data, canRespond, onRespondPresent, onResp
       </div>
 
       <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
+
+      {missionsLine && <p className="truncate text-[12.5px] text-white/60">Votre mission : {missionsLine}</p>}
 
       <div onClick={(event) => event.stopPropagation()}>
         <ResponseActions

@@ -13,6 +13,8 @@ import { InvalidSeasonInputError } from "@domain/errors/invalid-season-input-err
 import { MatchArrangementsWindowClosedError } from "@domain/errors/match-arrangements-window-closed-error";
 import { MatchNotStartedError } from "@domain/errors/match-not-started-error";
 import { MatchScoreMissingError } from "@domain/errors/match-score-missing-error";
+import { MissionDeadlinePassedError } from "@domain/errors/mission-deadline-passed-error";
+import { MissionFullError } from "@domain/errors/mission-full-error";
 import { NotFoundError } from "@domain/errors/not-found-error";
 import { OverlappingSeasonError } from "@domain/errors/overlapping-season-error";
 import { TrainingLocationArchivedError } from "@domain/errors/training-location-archived-error";
@@ -251,6 +253,21 @@ describe("mapDomainErrorToUiError", () => {
       variant: "inline",
       retryable: true,
     });
+  });
+
+  // specs/match-details-missions.md AC-MM-17
+  it("maps MissionFullError to its dedicated message, not the generic fallback", () => {
+    const result = mapDomainErrorToUiError(new MissionFullError("mission_full"));
+
+    expect(result.message).toBe("Cette mission est déjà complète.");
+    expect(result.retryable).toBe(false);
+  });
+
+  it("maps MissionDeadlinePassedError to a message inviting to contact a referent of the team", () => {
+    const result = mapDomainErrorToUiError(new MissionDeadlinePassedError("closed"));
+
+    expect(result.message).toContain("contactez directement un référent de l’équipe");
+    expect(result.retryable).toBe(false);
   });
 
   it("falls back to a generic non-retryable toast error for an unmapped DomainError subclass", () => {

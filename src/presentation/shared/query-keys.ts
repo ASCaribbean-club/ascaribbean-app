@@ -296,6 +296,10 @@ export const queryKeys = {
   // query filtered by type client-side, so every write invalidates the root.
   missionTemplatesRoot: () => ['mission-templates'] as const,
 
+  // specs/match-details-missions.md §2.7 — dedicated root, invalidated after
+  // every mission mutation of that convocation.
+  convocationMissions: (convocationId: string) => ['convocation-missions', convocationId] as const,
+
   // specs/coach-match-composition.md — one lineup per convocation. The read
   // differs per role only through the server (player window, AC-MC-09), so a
   // single key per convocation is right: a session has one active role at a

@@ -5,11 +5,13 @@ import { useAuth } from '../../../shared/hooks/use-auth'
 import { useAuthDependencies } from '../../../di/hooks/use-auth-dependencies'
 
 export type ImageRightsChoice = 'authorize' | 'refuse'
+export type CharterStep = 'charter' | 'image-rights'
 
 export function useCharterViewModel() {
   const { acceptCharterUseCase } = useAuthDependencies()
   const { user, refreshUser } = useAuth()
   const navigate = useNavigate()
+  const [step, setStep] = useState<CharterStep>('charter')
   // "Read" = scrolled to the bottom of the document; unlocks its control.
   const [hasScrolledCharter, setHasScrolledCharter] = useState(false)
   const [hasScrolledImageRights, setHasScrolledImageRights] = useState(false)
@@ -32,6 +34,10 @@ export function useCharterViewModel() {
   })
 
   return {
+    step,
+    goToImageRights: () => setStep('image-rights'),
+    backToCharter: () => setStep('charter'),
+    canContinue: charterAccepted,
     hasScrolledCharter,
     hasScrolledImageRights,
     markCharterRead,
@@ -41,7 +47,7 @@ export function useCharterViewModel() {
     imageRightsChoice,
     setImageRightsChoice,
     accept: () => acceptCharter.mutate(),
-    canAccept: charterAccepted && imageRightsChoice !== undefined && !acceptCharter.isPending,
+    canAccept: step === 'image-rights' && charterAccepted && imageRightsChoice !== undefined && !acceptCharter.isPending,
     isAccepting: acceptCharter.isPending,
   }
 }

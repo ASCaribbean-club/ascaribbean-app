@@ -23,6 +23,7 @@ import { BackofficeSectionsPage } from '../features/backoffice/sections/Backoffi
 import { BackofficeTeamsPage } from '../features/backoffice/teams/BackofficeTeamsPage'
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
 import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
+import { BackofficeMissionTemplatesPage } from '../features/backoffice/mission-templates/BackofficeMissionTemplatesPage'
 import { BackofficeLocalizationsPage } from '../features/backoffice/localizations/BackofficeLocalizationsPage'
 import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
 import { BackofficeAuditPage } from '../features/backoffice/audit/BackofficeAuditPage'
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
                   { path: 'convocations/new', element: <BackofficeConvocationFormPage /> },
                   { path: 'convocations/:convocationId/edit', element: <BackofficeConvocationFormPage /> },
                   { path: 'convocations/:convocationId/attendance', element: <BackofficeAttendancePage /> },
+                  { path: 'mission-templates', element: <BackofficeMissionTemplatesPage /> },
                   { path: 'news', element: <BackofficeNewsPage /> },
                   { path: 'locations', element: <BackofficeLocalizationsPage /> },
                   { path: 'audit', element: <BackofficeAuditPage /> },

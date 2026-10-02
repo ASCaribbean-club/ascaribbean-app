@@ -1,6 +1,7 @@
 import {
   IconCalendarEvent,
   IconCalendarStats,
+  IconChecklist,
   IconCreditCard,
   IconHistory,
   IconLayoutDashboard,
@@ -12,7 +13,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'convocations' | 'locations' | 'audit'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'convocations' | 'mission-templates' | 'locations' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -108,6 +109,17 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/convocations',
     icon: IconCalendarEvent,
     emptyStateTitle: 'Aucune convocation à afficher pour l’instant',
+  },
+  {
+    // specs/web-mission-templates.md UI design "Où ça vit" — "Référentiel
+    // missions", right after 'convocations' and before 'news' (mockup
+    // position). Same guards (AC-MT-12), no badge. `IconChecklist` is a
+    // replaceable proposal. The mockup's "Statistiques" entry is NOT added.
+    id: 'mission-templates',
+    label: 'Référentiel missions',
+    path: '/admin/mission-templates',
+    icon: IconChecklist,
+    emptyStateTitle: 'Aucune mission à afficher pour l’instant',
   },
   {
     id: 'news',

@@ -1,6 +1,6 @@
 import type { Convocation, ConvocationArrangements, ConvocationResponse } from '@domain/entities/convocation'
 import { toTrainingLocation } from './training-location-mapper'
-import type { ConvocationArrangementsUpdateRow, ConvocationResponseRow, ConvocationRow } from '../dto/convocation-dto'
+import type { ConvocationArrangementsUpdateRow, ConvocationDateUpdateRow, ConvocationResponseRow, ConvocationRow } from '../dto/convocation-dto'
 
 export function toConvocation(row: ConvocationRow): Convocation {
   return {
@@ -31,6 +31,10 @@ export function toConvocationArrangementsUpdateRow(arrangements: ConvocationArra
     date: arrangements.date,
     location: arrangements.location,
   }
+}
+
+export function toConvocationDateUpdateRow(date: string): ConvocationDateUpdateRow {
+  return { date }
 }
 
 export function toConvocationResponse(row: ConvocationResponseRow): ConvocationResponse {

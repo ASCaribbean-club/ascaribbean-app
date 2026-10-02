@@ -41,6 +41,9 @@ export interface ConvocationRow {
 // must never be able to write null.
 export type ConvocationArrangementsUpdateRow = { date: string; location: string }
 
+// Date-only variant for a training (no free-text location to write).
+export type ConvocationDateUpdateRow = Pick<ConvocationRow, 'date'>
+
 // Raw shape of public.convocation_responses — last-value-wins "current
 // state" table, not an append-only log (CLAUDE.md §6).
 export interface ConvocationResponseRow {

@@ -365,6 +365,20 @@ export function ConvocationDetailPage() {
               saveError: vm.matchDetailsSaveError,
               windowClosed: vm.matchDetailsWindowClosed,
             }}
+            trainingEdit={{
+              canEdit: vm.canEditTraining,
+              isEditing: vm.isEditingTraining,
+              onStartEdit: vm.onStartEditTraining,
+              onCancel: vm.onCancelEditTraining,
+              formValues: vm.trainingFormValues,
+              onChangeDate: vm.setTrainingDate,
+              onChangeTime: vm.setTrainingTime,
+              canSubmit: vm.canSubmitTraining,
+              isSaving: vm.isSavingTraining,
+              onSubmit: vm.onSubmitTraining,
+              saveError: vm.trainingSaveError,
+              windowClosed: vm.trainingWindowClosed,
+            }}
           />
         </TabsContent>
 

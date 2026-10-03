@@ -10,7 +10,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 // same DI hook (belongs to the auth feature, not a new `menu-container.ts`).
 export function useMenuViewModel() {
   const { signOutUseCase } = useAuthDependencies()
-  const { activeRole } = useActiveRole()
+  const { activeRole, isOfficerView } = useActiveRole()
   const availabilityTeamId = useAvailabilityTeamId()
   const canReadTeamAvailability = usePermission('availability:read-team', { teamId: availabilityTeamId })
 
@@ -27,6 +27,9 @@ export function useMenuViewModel() {
     // player-stats destination (/stats). No RBAC check here — same reason
     // MenuNavCard itself has none (AC-PS-15): the destination screen does
     // its own can() gate.
+    // The Dirigeant habilité has neither a player nor a team-stats screen:
+    // the card is absent for that role (never greyed out).
+    canViewStatistics: !isOfficerView,
     statisticsHref: activeRole === 'coach' ? '/team-stats' : '/stats',
 
     // AC-MN-09 — `APP_VERSION` is a Vite `define` (vite.config.ts) fed by

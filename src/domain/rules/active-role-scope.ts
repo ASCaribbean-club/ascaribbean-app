@@ -7,10 +7,10 @@ import type { User } from '../entities/user'
 //
 // Mirrors presentation/app/providers/active-role-provider.tsx's
 // `DashboardRole` structurally (not imported from there — domain/ never
-// imports presentation/, CLAUDE.md §3). Both are `'coach' | 'player'`
-// string unions, so a `DashboardRole` value from useActiveRole() is
-// assignable here with no cast at the call site.
-export type ActiveDashboardRole = 'coach' | 'player'
+// imports presentation/, CLAUDE.md §3). Both are string unions and must be
+// changed in the SAME change (AC-DH-04): a `DashboardRole` value from
+// useActiveRole() is assignable here with no cast at the call site.
+export type ActiveDashboardRole = 'coach' | 'player' | 'authorized-officer'
 
 /**
  * Does the user's currently active dashboard role tab even apply to this
@@ -22,7 +22,10 @@ export type ActiveDashboardRole = 'coach' | 'player'
  * active role relevant to this specific convocation's team, so the
  * corresponding variant should render instead of an empty state?"
  *
- * Only 'player' and 'coach' are handled today — this screen has no
+ * Only 'player' and 'coach' are handled today ('authorized-officer' is a
+ * dashboard role since specs/mobile-dirigeant-habilite.md but its convocation
+ * detail variant is deferred — PO-DH-15 — so it deliberately falls through
+ * to `default: false`; do not pre-fill that branch) — this screen has no
  * player/coach dashboard tabs that need something else. Add a branch only
  * when a concrete screen need appears for another role; don't pre-fill the
  * switch.

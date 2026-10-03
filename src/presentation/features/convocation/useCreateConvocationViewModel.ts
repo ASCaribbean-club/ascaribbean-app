@@ -5,12 +5,16 @@ import type { ConvocationType } from '@domain/entities/convocation'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
+import { filterTeamsBySection } from '@domain/rules/club-schedule-rules'
 import { isPastDate } from '@domain/rules/convocation-rules'
 import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import { mapDomainErrorToUiError } from '../../shared/errors/map-domain-error-to-ui-error'
+import { useClubOverviewDependencies } from '../../di/hooks/use-club-overview-dependencies'
 import { useConvocationDependencies } from '../../di/hooks/use-convocation-dependencies'
 import { combineDateAndTime, toDateInputValue } from '../../shared/formatters/date-input'
+import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useAuth } from '../../shared/hooks/use-auth'
+import { useSectionFilter } from '../../shared/hooks/use-section-filter'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
 
@@ -118,7 +122,32 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const { createConvocationUseCase, opponentRepository, listAvailableTrainingLocationsUseCase } = useConvocationDependencies()
 
   const routeState = location.state as CreateConvocationRouteState | null
-  const teamId = routeState?.teamId
+
+  // specs/mobile-dirigeant-habilite.md §1.4/PO-DH-18 — two sources for the
+  // target team coexist: the coach inherits it through router state (flow
+  // unchanged), the Dirigeant (no current team) picks Section then Équipe on
+  // this screen. The picker only exists when no teamId came through the route
+  // AND the active role is the Dirigeant (AC-DH-17).
+  const { isOfficerView } = useActiveRole()
+  const { sectionFilter } = useSectionFilter()
+  const { sectionRepository, listClubTeamsUseCase } = useClubOverviewDependencies()
+  const needsTeamPicker = !routeState?.teamId && isOfficerView
+  // Pre-filled with the dashboard's active filter when it is not "Toutes".
+  const [pickedSectionId, setPickedSectionId] = useState<string | null>(sectionFilter)
+  const [pickedTeamId, setPickedTeamId] = useState<string | null>(null)
+  const teamId = routeState?.teamId ?? (needsTeamPicker ? (pickedTeamId ?? undefined) : undefined)
+
+  const sectionsQuery = useQuery({
+    queryKey: queryKeys.clubSections(),
+    queryFn: () => sectionRepository.findAll(),
+    enabled: needsTeamPicker,
+  })
+  const clubTeamsQuery = useQuery({
+    queryKey: queryKeys.clubTeams(),
+    queryFn: () => listClubTeamsUseCase.execute(),
+    enabled: needsTeamPicker,
+  })
+  const sectionTeams = filterTeamsBySection(clubTeamsQuery.data ?? [], pickedSectionId)
 
   const canCreateConvocation = usePermission('convocation:create', { teamId })
 
@@ -131,6 +160,18 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   // Controlled-form state — mechanical wiring (ARCHITECTURE.md §6 still
   // applies to what happens WITH these values, see the TODOs below).
   const [values, setValues] = useState<ConvocationFormValues>({ ...EMPTY_VALUES, ...initialValues })
+
+  // Changing section clears the team; changing team resets the opponent
+  // (an opponent belongs to a team, §1.4).
+  function onPickSection(sectionId: string) {
+    setPickedSectionId(sectionId)
+    setPickedTeamId(null)
+    setValues((current) => ({ ...current, opponentId: '' }))
+  }
+  function onPickTeam(nextTeamId: string) {
+    setPickedTeamId(nextTeamId)
+    setValues((current) => ({ ...current, opponentId: '' }))
+  }
 
   // Local, immediate-feedback error — set by the client-side pre-checks in
   // `onSubmit` below (isPastDate / isValidMatchSchedule, same mirror rules
@@ -176,6 +217,8 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       if (teamId) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.teamUpcomingConvocations(teamId) })
       }
+      // AC-DH-18: the Dirigeant's dashboard and calendar share this key.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clubSchedule() })
       // Reset before navigating away, not after: `navigate(-1)` only pops
       // the history entry, it doesn't guarantee this component unmounts —
       // a gesture-based back/forward can return here with the same
@@ -186,7 +229,9 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     },
   })
 
-  const canSubmit = isFormComplete(values, selectedTrainingLocationId) && !createConvocation.isPending
+  // The team is mandatory: always true for the coach flow (it came through
+  // the route), only becomes meaningful for the Dirigeant's picker.
+  const canSubmit = !!teamId && isFormComplete(values, selectedTrainingLocationId) && !createConvocation.isPending
 
   // The "venue no longer available" refusal is shown inline under the venue
   // field, not in the bottom message.
@@ -196,6 +241,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       : undefined
 
   const fieldError =
+    (needsTeamPicker && !teamId ? 'Choisissez une section puis une équipe.' : undefined) ??
     scheduleError ??
     (createConvocation.error && !trainingLocationError ? toFieldErrorMessage(createConvocation.error) : undefined)
 
@@ -288,7 +334,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     // bouncing back is arguably fine) or whether teamId needs to survive a
     // refresh (e.g. a route param + a fresh lookup) — not decided by the
     // spec, don't guess silently either way.
-    hasTeam: !!teamId,
+    hasTeam: !!teamId || needsTeamPicker,
     canCreateConvocation,
 
     values,
@@ -326,6 +372,26 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     retryLoadTrainingLocations: () => void trainingLocationsQuery.refetch(),
 
     recipientsCount: routeState?.activeMemberCount,
+
+    // specs/mobile-dirigeant-habilite.md §1.4 — null for the coach (flow
+    // unchanged: no picker, RecipientsCard kept). For the Dirigeant:
+    // PO-DH-17 default, RecipientsCard is omitted (hasRecipientsCard false).
+    hasRecipientsCard: !needsTeamPicker,
+    hasSelectedTeam: !!teamId,
+    teamPicker: needsTeamPicker
+      ? {
+          sections: sectionsQuery.data ?? [],
+          selectedSectionId: pickedSectionId,
+          selectedTeamId: pickedTeamId,
+          teams: sectionTeams,
+          isLoadingTeams: clubTeamsQuery.isLoading,
+          hasTeamsError: clubTeamsQuery.isError,
+          hasNoTeamInSection: !!pickedSectionId && !clubTeamsQuery.isLoading && !clubTeamsQuery.isError && sectionTeams.length === 0,
+          retryLoadTeams: () => void clubTeamsQuery.refetch(),
+          onPickSection,
+          onPickTeam,
+        }
+      : null,
 
     canSubmit,
     fieldError,

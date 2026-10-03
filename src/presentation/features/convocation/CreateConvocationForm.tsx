@@ -7,6 +7,7 @@ import { FIELD_CLASSNAME, FIELD_ROW_CLASSNAME } from './components/field-style'
 import { FormField } from './components/FormField'
 import { MeetingAgendaField } from './components/MeetingAgendaField'
 import { RecipientsCard } from './components/RecipientsCard'
+import { SectionTeamPicker } from './components/SectionTeamPicker'
 import { SegmentedToggle } from '@presentation/shared/components/SegmentedToggle'
 import { TypeSelector } from './components/TypeSelector'
 import { useCreateConvocationViewModel, type ConvocationFormValues } from './useCreateConvocationViewModel'
@@ -51,14 +52,17 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
       <BackHeader title="Nouvelle convocation" onBack={vm.goBack} />
 
       <div className="flex flex-1 flex-col gap-6 px-5.5 pt-5.5 pb-20">
+        {/* Dirigeant only (vm.teamPicker is null for the coach): Section then Équipe. */}
+        {vm.teamPicker && <SectionTeamPicker {...vm.teamPicker} />}
+
         <TypeSelector value={values.type} onChange={vm.setType} />
 
         {values.type === 'match' && (
           <div className="flex flex-col gap-5">
             <FormField label="Adversaire" htmlFor="opponentId">
-              <Select value={values.opponentId} onValueChange={vm.setOpponentId}>
+              <Select value={values.opponentId} onValueChange={vm.setOpponentId} disabled={!vm.hasSelectedTeam}>
                 <SelectTrigger id="opponentId" className={FIELD_CLASSNAME}>
-                  <SelectValue placeholder="Choisir un adversaire" />
+                  <SelectValue placeholder={vm.hasSelectedTeam ? 'Choisir un adversaire' : 'Choisir d’abord une équipe'} />
                 </SelectTrigger>
                 <SelectContent>
                   {vm.opponents.map((opponent) => (
@@ -143,10 +147,18 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
               <Select
                 value={vm.selectedTrainingLocationId}
                 onValueChange={vm.setTrainingLocationId}
-                disabled={vm.isLoadingTrainingLocations || vm.hasTrainingLocationsError || vm.hasNoTrainingLocations}
+                disabled={!vm.hasSelectedTeam || vm.isLoadingTrainingLocations || vm.hasTrainingLocationsError || vm.hasNoTrainingLocations}
               >
                 <SelectTrigger id="trainingLocationId" className={FIELD_CLASSNAME}>
-                  <SelectValue placeholder={vm.isLoadingTrainingLocations ? 'Chargement des lieux…' : 'Choisir un lieu'} />
+                  <SelectValue
+                    placeholder={
+                      !vm.hasSelectedTeam
+                        ? 'Choisir d’abord une équipe'
+                        : vm.isLoadingTrainingLocations
+                          ? 'Chargement des lieux…'
+                          : 'Choisir un lieu'
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {vm.trainingLocations.map((option) => (
@@ -215,7 +227,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
           </div>
         )}
 
-        <RecipientsCard count={vm.recipientsCount} />
+        {vm.hasRecipientsCard && <RecipientsCard count={vm.recipientsCount} />}
       </div>
 
       {/* Anchored submit button (UI design §"Structure de l'écran", point 5)

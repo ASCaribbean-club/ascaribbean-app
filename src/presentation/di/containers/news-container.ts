@@ -5,6 +5,7 @@ import type { NewsRepository } from '@domain/repositories/news-repository'
 import type { UserRepository } from '@domain/repositories/user-repository'
 import { ArchiveClubNewsUseCase } from '@domain/usecases/news/ArchiveClubNewsUseCase'
 import { CreateClubNewsUseCase } from '@domain/usecases/news/CreateClubNewsUseCase'
+import { ListManageableNewsUseCase } from '@domain/usecases/news/ListManageableNewsUseCase'
 import { ListPublishedNewsUseCase } from '@domain/usecases/news/ListPublishedNewsUseCase'
 import { UpdateClubNewsUseCase } from '@domain/usecases/news/UpdateClubNewsUseCase'
 
@@ -16,6 +17,8 @@ export interface NewsContainer {
   // rather than a single shared instance across containers.
   userRepository: UserRepository
   listPublishedNewsUseCase: ListPublishedNewsUseCase
+  // specs/mobile-dirigeant-habilite.md §1.3 — the Dirigeant's mobile console list.
+  listManageableNewsUseCase: ListManageableNewsUseCase
   createClubNewsUseCase: CreateClubNewsUseCase
   updateClubNewsUseCase: UpdateClubNewsUseCase
   // 2026-09-17 developer decision (resolves PO-WA-06) — "Supprimer" action.
@@ -26,6 +29,7 @@ export function createNewsContainer(supabaseClient: SupabaseClient): NewsContain
   const newsRepository = new NewsRepositoryImpl(supabaseClient)
   const userRepository = new UserRepositoryImpl(supabaseClient)
   const listPublishedNewsUseCase = new ListPublishedNewsUseCase(newsRepository)
+  const listManageableNewsUseCase = new ListManageableNewsUseCase(newsRepository)
   const createClubNewsUseCase = new CreateClubNewsUseCase(userRepository, newsRepository)
   const updateClubNewsUseCase = new UpdateClubNewsUseCase(userRepository, newsRepository)
   const archiveClubNewsUseCase = new ArchiveClubNewsUseCase(userRepository, newsRepository)
@@ -34,6 +38,7 @@ export function createNewsContainer(supabaseClient: SupabaseClient): NewsContain
     newsRepository,
     userRepository,
     listPublishedNewsUseCase,
+    listManageableNewsUseCase,
     createClubNewsUseCase,
     updateClubNewsUseCase,
     archiveClubNewsUseCase,

@@ -42,6 +42,7 @@ export default defineConfig([
             'DependenciesContext',
             'useActiveRoleContext',
             'useActiveTeamContext',
+            'useSectionFilterContext',
           ],
         },
       ],

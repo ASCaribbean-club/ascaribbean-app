@@ -29,7 +29,7 @@ export function NewsDiscardDialog({ open, onStay, onDiscard }: NewsDiscardDialog
           <AlertDialogCancel onClick={onStay} className="h-11 rounded-full">
             Continuer
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onDiscard} className="h-11 rounded-full bg-white font-bold text-black hover:bg-white/90">
+          <AlertDialogAction onClick={onDiscard} variant="destructive" className="h-11 rounded-full font-bold">
             Abandonner
           </AlertDialogAction>
         </AlertDialogFooter>

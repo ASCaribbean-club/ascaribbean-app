@@ -86,4 +86,19 @@ describe('GetTeamAvailabilityUseCase', () => {
       new GetTeamAvailabilityUseCase(repoReturning(rows)).execute({ user: makeUser([{ role: 'treasurer' }]), teamId: 't-1' }),
     ).rejects.toBeInstanceOf(ForbiddenError)
   })
+
+  it('authorized-officer: teammate projection for any team — medical shown as unavailable, no medical dates', async () => {
+    const repo = repoReturning([
+      { userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: null, endsOn: null },
+      { userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: null, endsOn: null },
+    ])
+    const result = await new GetTeamAvailabilityUseCase(repo).execute({
+      user: makeUser([{ role: 'authorized-officer' }]),
+      teamId: 't-9',
+    })
+    expect(result.view).toBe('teammate')
+    expect(result.entries.map((e) => e.userId)).toEqual(['p-1', 'p-2'])
+    expect(result.entries[1]).toMatchObject({ status: 'unavailable', startsOn: null, endsOn: null })
+    expect(repo.calls).toEqual(['t-9'])
+  })
 })

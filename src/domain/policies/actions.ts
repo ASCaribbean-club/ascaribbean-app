@@ -37,6 +37,13 @@ export type Action =
   // distinct action keeps that a two-step decision instead of a silent
   // side effect of the first one.
   | 'news:write'
+  // specs/mobile-dirigeant-habilite.md §2 (PO-DH-04, option B) — the news
+  // write permission is split so the Dirigeant habilité can create and edit
+  // (draft/published only) WITHOUT gaining 'news:write', which now guards
+  // archiving and the backoffice console only. Both are club-wide: no scope
+  // check is needed in can.ts (the `default` branch suffices).
+  | 'news:create'
+  | 'news:update'
   // specs/web-seasons.md §3 — "Entrée de matrice proposée": presentation/
   // must decide whether to render "+ Nouvelle saison" and the per-row edit
   // pencil, independently of 'backoffice:access' AND of 'section:manage'

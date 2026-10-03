@@ -11,6 +11,10 @@ function adminUser(): User {
   return { id: 'admin-1', fullName: 'Admin', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
+function officerUser(): User {
+  return { id: 'officer-1', fullName: 'Officer', email: 'officer@example.com', roles: [{ role: 'authorized-officer' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
+}
+
 function coachUser(): User {
   return { id: 'coach-1', fullName: 'Coach', email: 'coach@example.com', roles: [{ role: 'coach', teamIds: [] }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
@@ -120,5 +124,15 @@ describe('CreateClubNewsUseCase', () => {
         createdBy: 'admin-1',
       }),
     )
+  })
+
+  // specs/mobile-dirigeant-habilite.md AC-DH-20 — guarded by 'news:create'.
+  it('lets an authorized-officer create a draft and records them as the author', async () => {
+    const create = vi.fn(async (input: CreateClubNewsInput) => ({ id: 'news-1', createdAt: '2026-09-17T00:00:00.000Z', ...input }) satisfies ClubNews)
+    const useCase = new CreateClubNewsUseCase(fakeUserRepository(officerUser()), fakeNewsRepository({ create }))
+
+    await useCase.execute(validInput({ actorId: 'officer-1', status: 'draft', publishedAt: null }))
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ status: 'draft', createdBy: 'officer-1' }))
   })
 })

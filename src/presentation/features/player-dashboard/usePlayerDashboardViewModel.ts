@@ -6,7 +6,6 @@ import { canPlayerRespond } from '@domain/policies/response-deadline'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { getFirstName, getInitials } from '@presentation/shared/formatters/greeting'
-import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
@@ -18,7 +17,6 @@ export function usePlayerDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { toggleActiveRole } = useActiveRole()
   const {
     getPlayerTeamUseCase,
     listUpcomingConvocationsForPlayerUseCase,
@@ -146,8 +144,6 @@ export function usePlayerDashboardViewModel() {
     firstName: user ? getFirstName(user.fullName) : '',
     initials: user ? getInitials(user.fullName) : '',
     teamName: teamQuery.data?.name,
-    hasMultipleRoles: (user?.roles.length ?? 0) > 1,
-    onRoleClick: toggleActiveRole,
 
     /// --- "Document manquant" alert ---
     hasMissingDocument,

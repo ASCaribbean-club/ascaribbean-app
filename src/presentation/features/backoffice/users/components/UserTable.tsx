@@ -49,8 +49,10 @@ interface UserTableProps {
 }
 
 // specs/web-users.md §1/UI design "Tableau à six colonnes"
-// (specs/web-users-membership-column.md amendment) — exact order: NOM,
-// EMAIL, STATUT, RÔLES, ADHÉSION SAISON, ACTIONS. The new column sits
+// (specs/web-users-membership-column.md amendment) — order: NOM, STATUT,
+// RÔLES, ADHÉSION SAISON, ACTIONS. The EMAIL column was removed from the
+// table to save width: the email is only shown, read-only, in
+// UserEditDialog. The membership column sits
 // between RÔLES and ACTIONS, never between NOM and STATUT (it would be
 // visually confused with the activation pastille there).
 export function UserTable({
@@ -74,7 +76,6 @@ export function UserTable({
       <TableHeader>
         <TableRow>
           <TableHead>Nom</TableHead>
-          <TableHead>Email</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Rôles</TableHead>
           <TableHead>Adhésion saison</TableHead>
@@ -99,7 +100,6 @@ export function UserTable({
                 <UserMissingElementIndicator facts={row.missingElementFacts} />
               </div>
             </TableCell>
-            <TableCell className="text-muted-foreground">{row.email}</TableCell>
             <TableCell>
               <UserStatusBadge charterAcceptedAt={row.charterAcceptedAt} />
             </TableCell>

@@ -1,6 +1,8 @@
 import { IconCalendarOff } from '@tabler/icons-react'
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
 import { EmptyState } from '@presentation/shared/components/EmptyState'
+import { ActiveSectionChip } from './components/ActiveSectionChip'
+import { CalendarSectionFilter } from './components/CalendarSectionFilter'
 import { CalendarHeader } from './components/CalendarHeader'
 import { CalendarRangeNav } from './components/CalendarRangeNav'
 import { CalendarConvocationList } from './components/CalendarConvocationList'
@@ -21,7 +23,25 @@ export function CalendarPage() {
 
   return (
     <div className="flex flex-col text-white pt-10">
-      <CalendarHeader monthYearLabel={vm.monthYearLabel} />
+      <CalendarHeader
+        monthYearLabel={vm.monthYearLabel}
+        filterSlot={
+          vm.sectionFilter && (
+            <CalendarSectionFilter
+              sections={vm.sectionFilter.sections}
+              selectedSectionId={vm.sectionFilter.selectedSectionId}
+              ariaLabel={vm.sectionFilter.ariaLabel}
+              onSelect={vm.sectionFilter.onSelect}
+            />
+          )
+        }
+      />
+
+      {vm.sectionFilter?.activeSectionName && (
+        <div className="px-5.5 pb-2">
+          <ActiveSectionChip sectionName={vm.sectionFilter.activeSectionName} onClear={vm.sectionFilter.onClear} />
+        </div>
+      )}
 
       {!vm.hasAnyConvocationInScope ? (
         // AC-CA-11 — aucune équipe / aucune saison en cours / aucune
@@ -57,6 +77,8 @@ export function CalendarPage() {
             mode={vm.rangeMode}
             selectedDate={vm.selectedDate}
             onOpen={vm.goToConvocationDetail}
+            emptyFilteredLabel={vm.sectionFilter?.emptyDayLabel}
+            onClearFilter={vm.sectionFilter?.onClear}
           />
         </div>
       )}

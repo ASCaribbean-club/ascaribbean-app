@@ -50,4 +50,11 @@ describe('hasActiveRoleForConvocation', () => {
     const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
     expect(hasActiveRoleForConvocation(user, 'player', convocationForTeam('team-1'))).toBe(false)
   })
+
+  // specs/mobile-dirigeant-habilite.md PO-DH-15 — the officer's detail
+  // variant is deferred: the branch must stay false, not pre-filled.
+  it('denies an authorized-officer active role (detail variant deferred)', () => {
+    const user = userWith([{ role: 'authorized-officer' }])
+    expect(hasActiveRoleForConvocation(user, 'authorized-officer', convocationForTeam('team-1'))).toBe(false)
+  })
 })

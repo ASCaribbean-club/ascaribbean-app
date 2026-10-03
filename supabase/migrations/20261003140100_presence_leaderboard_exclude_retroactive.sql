@@ -12,6 +12,11 @@
 --
 -- Informative indicator only: not coupled to ASC Legacy points.
 --
+-- Keeps the club-wide read of the authorized-officer added by
+-- 20261003135000_leaderboard_read_officer.sql (this function is replaced whole,
+-- so that predicate is repeated here: dropping it would silently remove the
+-- Dirigeant's presence ranking).
+--
 -- Depends on 20261003140000_retroactive_convocations.sql (created_at).
 -- NOT APPLIED by the agent that wrote it: to be reviewed and applied by the
 -- developer.
@@ -59,13 +64,13 @@ as $$
   where ur.team_id = p_team_id
     and ur.role = 'player'
     and t.season_id = (select id from public.current_season())
-    and private.is_team_member(p_team_id);
+    and (private.is_team_member(p_team_id) or private.has_role('authorized-officer'));
 $$;
 
 comment on function public.get_team_presence_leaderboard(uuid) is
   'Rule leaderboard:view-team-presence. Presence + response counters per '
   'player of the caller''s current-season team; boundary = '
-  'private.is_team_member(p_team_id). Response counters exclude retroactive '
+  'private.is_team_member(p_team_id) or the club-wide authorized-officer role. Response counters exclude retroactive '
   'convocations (created_at >= date). Mirrored client-side by '
   'domain/policies/presence-leaderboard-rules.ts (ranking only).';
 

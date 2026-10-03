@@ -6,6 +6,8 @@ import { AttendanceConfirmationAlert } from '@presentation/shared/components/Att
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
+import { SectionLabel } from '@presentation/shared/components/SectionLabel'
+import type { SectionLabelView } from '@presentation/shared/formatters/section-label'
 import { Badge } from '@presentation/shared/components/ui/badge'
 import { StatusBadge } from '@presentation/features/convocation/components/StatusBadge'
 import { CONVOCATION_TYPE_ACCENT } from '@presentation/shared/formatters/convocation-type-accent'
@@ -26,7 +28,11 @@ interface CalendarConvocationRowProps {
   responseBlock: CalendarResponseBlock
   matchResult: CalendarMatchResult | null
   attendanceConfirmationMissing: boolean
-  onOpen: (convocationId: string) => void
+  // Dirigeant rows only (specs/mobile-dirigeant-habilite.md §1.2).
+  sectionLabel?: SectionLabelView | null
+  // Optional: absent => the row is NOT a button (no role, no tabIndex, no
+  // tap target) — AC-DH-16, the officer's detail is deferred (PO-DH-15).
+  onOpen?: (convocationId: string) => void
 }
 
 // specs/calendar.md UI design §"Structure de l'écran" point 3 — the "long"
@@ -50,6 +56,7 @@ export function CalendarConvocationRow({
   responseBlock,
   matchResult,
   attendanceConfirmationMissing,
+  sectionLabel,
   onOpen,
 }: CalendarConvocationRowProps) {
   const accent = CONVOCATION_TYPE_ACCENT[convocation.type]
@@ -68,10 +75,10 @@ export function CalendarConvocationRow({
     // (ResponseActions/ResponseBar render inside a wrapping div below that
     // does so), same split already established by NextConvocationCard.
     <li
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(convocation.id)}
-      className="relative flex min-h-11 flex-col gap-2.5 border-b border-white/8 py-3 pl-3.5 last:border-b-0"
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      onClick={onOpen ? () => onOpen(convocation.id) : undefined}
+      className={cn('relative flex flex-col gap-2.5 border-b border-white/8 py-3 pl-3.5 last:border-b-0', onOpen && 'min-h-11')}
     >
       <span aria-hidden className={`absolute top-0.5 bottom-3.5 left-0 w-[3px] rounded-full ${accent.rail}`} />
 
@@ -100,11 +107,13 @@ export function CalendarConvocationRow({
               returns nothing for 'open'/'closed', so no extra branch needed
               here. */}
           <StatusBadge status={convocation.status} />
+          {sectionLabel && <SectionLabel name={sectionLabel.name} type={sectionLabel.type} />}
         </div>
       </div>
 
       <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 
+      {responseBlock.kind !== 'none' && (
       <div onClick={(event) => event.stopPropagation()}>
         {responseBlock.kind === 'coach' && <ResponseBar counts={responseBlock.counts} />}
         {responseBlock.kind === 'coach-past' && <ResponseCountsRecap counts={responseBlock.counts} />}
@@ -122,6 +131,7 @@ export function CalendarConvocationRow({
           </div>
         )}
       </div>
+      )}
     </li>
   )
 }

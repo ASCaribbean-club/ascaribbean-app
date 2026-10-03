@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { Convocation, DeclaredStatus } from '@domain/entities/convocation'
 import type { MatchDetails } from '@domain/entities/match-details'
+import type { Section } from '@domain/entities/section'
+import { filterBySection } from '@domain/rules/club-schedule-rules'
+import type { ClubScheduleItem } from '@domain/usecases/club-overview/ListClubScheduleUseCase'
 import { dayKey, groupConvocationTypesByDay, isPastDate } from '@domain/rules/convocation-rules'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
 import { getMatchOutcome } from '@domain/policies/match-outcome-rules'
@@ -18,6 +21,9 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { addMonths, addWeeks, formatMonthYear, getMonthGridDates, getWeekDates, isSameDay } from '@presentation/shared/formatters/calendar-date'
 import { useCalendarDependencies } from '@presentation/di/hooks/use-calendar-dependencies'
+import { useClubOverviewDependencies } from '@presentation/di/hooks/use-club-overview-dependencies'
+import { toSectionLabelView } from '@presentation/shared/formatters/section-label'
+import { useSectionFilter } from '@presentation/shared/hooks/use-section-filter'
 import type { CalendarRangeMode } from './components/RangeModeToggle'
 import type { CalendarDayInfo } from './components/calendar-day'
 import type { CalendarListItem, CalendarMatchResult } from './components/calendar-list-item'
@@ -63,6 +69,29 @@ function buildCoachDayItems(items: ConvocationForCoach[], selectedDate: Date, no
       // useConvocationDetailViewModel's attendanceConfirmationMissing, coach
       // view only (this function is never called for a player item).
       attendanceConfirmationMissing: item.convocation.status === 'open' && isPastDate(item.convocation.date, now),
+      sectionLabel: null,
+      isOpenable: true,
+    }))
+}
+
+// specs/mobile-dirigeant-habilite.md §1.2 — Dirigeant rows: same row content
+// as the coach (rail, title, ScheduleInfo, opponent/RDV, cancelled badge, past
+// match score) plus the section tag; NO response block, NO attendance alert
+// (AC-DH-16), and NOT openable until the officer's detail variant exists
+// (PO-DH-15). The section filter was already applied upstream.
+function buildOfficerDayItems(items: ClubScheduleItem[], selectedDate: Date, now: Date, sectionsById: Map<string, Section>): CalendarListItem[] {
+  return items
+    .filter((item) => isSameDay(new Date(item.convocation.date), selectedDate))
+    .map((item): CalendarListItem => ({
+      convocation: item.convocation,
+      matchDetails: item.matchDetails,
+      opponent: item.opponent,
+      meetingDetails: item.meetingDetails,
+      responseBlock: { kind: 'none' },
+      matchResult: buildMatchResult(item.convocation, item.matchDetails, now),
+      attendanceConfirmationMissing: false,
+      sectionLabel: toSectionLabelView(item.team, sectionsById),
+      isOpenable: false,
     }))
 }
 
@@ -96,6 +125,8 @@ function buildPlayerDayItems(
         // AC-CA-09 unaffected: a player never sees this signal (coach-only,
         // same reasoning as the coach-side computation above).
         attendanceConfirmationMissing: false,
+        sectionLabel: null,
+        isOpenable: true,
       }
     })
 }
@@ -117,12 +148,16 @@ function buildSelectedDayItems(
   role: DashboardRole,
   coachItems: ConvocationForCoach[],
   playerItems: ConvocationForPlayer[],
+  officerItems: ClubScheduleItem[],
+  sectionsById: Map<string, Section>,
   selectedDate: Date,
   now: Date,
   hasRbacPermission: boolean,
   onRespond: (convocationId: string, status: Extract<DeclaredStatus, 'present' | 'absent'>) => void,
 ): CalendarListItem[] {
   switch (role) {
+    case 'authorized-officer':
+      return buildOfficerDayItems(officerItems, selectedDate, now, sectionsById)
     case 'coach':
       return buildCoachDayItems(coachItems, selectedDate, now)
     case 'player':
@@ -136,8 +171,10 @@ export function useCalendarViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { activeRole } = useActiveRole()
+  const { activeRole, isOfficerView } = useActiveRole()
   const { selectedCoachTeamId } = useActiveTeam()
+  const { sectionFilter, selectSection } = useSectionFilter()
+  const { sectionRepository, listClubScheduleUseCase } = useClubOverviewDependencies()
   const {
     getCoachTeamsUseCase,
     getPlayerTeamUseCase,
@@ -190,6 +227,26 @@ export function useCalendarViewModel() {
     enabled: activeRole === 'player' && !!playerTeamId && !!user,
   })
 
+  /// --- Dirigeant scope (specs/mobile-dirigeant-habilite.md §1.2) ---
+  // Every convocation of the current-season teams. The section filter is
+  // applied client-side on this cached list (shared with the dashboard,
+  // AC-DH-15), so changing it never refetches.
+  const officerScheduleQuery = useQuery({
+    queryKey: queryKeys.clubSchedule(),
+    queryFn: () => listClubScheduleUseCase.execute({ includePast: true, now: new Date() }),
+    enabled: isOfficerView,
+  })
+  const officerSectionsQuery = useQuery({
+    queryKey: queryKeys.clubSections(),
+    queryFn: () => sectionRepository.findAll(),
+    enabled: isOfficerView,
+  })
+  const officerSections = officerSectionsQuery.data ?? []
+  const sectionsById = new Map<string, Section>(officerSections.map((section) => [section.id, section]))
+  const allOfficerItems = officerScheduleQuery.data ?? []
+  const officerItems = filterBySection(allOfficerItems, sectionFilter)
+  const activeSection = sectionFilter ? sectionsById.get(sectionFilter) : undefined
+
   /// --- Range navigation state (Sem/Mois, selected day) ---
   // Plain UI state, not a business rule (ARCHITECTURE.md §6 draws the line
   // at "decides what's true", and which toggle position or which day is
@@ -221,8 +278,9 @@ export function useCalendarViewModel() {
   // (coach sees the team's, player sees their own team's), then each date
   // in the skeleton is paired with its distinct types via `dayKey` — the
   // same key both sides agree on.
-  const convocationsInScope: Convocation[] =
-    activeRole === 'coach'
+  const convocationsInScope: Convocation[] = isOfficerView
+    ? officerItems.map((item) => item.convocation)
+    : activeRole === 'coach'
       ? (coachConvocationsQuery.data ?? []).map((item) => item.convocation)
       : (playerConvocationsQuery.data ?? []).map((item) => item.convocation)
   const typesByDay = groupConvocationTypesByDay(convocationsInScope)
@@ -264,9 +322,11 @@ export function useCalendarViewModel() {
   /// --- Selected day's list, role-branched ---
   // See buildSelectedDayItems above for the per-role derivation itself.
   const selectedDayItems = buildSelectedDayItems(
-    activeRole,
+    isOfficerView ? 'authorized-officer' : activeRole,
     coachConvocationsQuery.data ?? [],
     playerConvocationsQuery.data ?? [],
+    officerItems,
+    sectionsById,
     selectedDate,
     now,
     hasRbacPermission,
@@ -282,8 +342,13 @@ export function useCalendarViewModel() {
   // checked — CalendarContainer wires a SeasonRepository but nothing reads
   // it yet, and no other screen in the app currently derives this from a
   // ViewModel either, so it's flagged here rather than faked.
-  const hasResolvedTeam = activeRole === 'coach' ? !!currentCoachTeam : !!playerTeamId
-  const hasAnyConvocationInScope = hasResolvedTeam && convocationsInScope.length > 0
+  // Dirigeant: the "scope" is the whole club (unfiltered) — an active filter
+  // that matches nothing keeps the range nav and shows the filtered-empty
+  // state of the list instead of collapsing the screen.
+  const hasResolvedTeam = isOfficerView ? true : activeRole === 'coach' ? !!currentCoachTeam : !!playerTeamId
+  const hasAnyConvocationInScope = isOfficerView
+    ? allOfficerItems.length > 0
+    : hasResolvedTeam && convocationsInScope.length > 0
 
   /// --- Respond action (player only) ---
   // Same mechanism as usePlayerDashboardViewModel.respondMutation
@@ -329,8 +394,18 @@ export function useCalendarViewModel() {
   }
 
   return {
-    isLoading: coachTeamsQuery.isLoading || playerTeamQuery.isLoading || coachConvocationsQuery.isLoading || playerConvocationsQuery.isLoading,
-    error: coachTeamsQuery.error ?? playerTeamQuery.error ?? coachConvocationsQuery.error ?? playerConvocationsQuery.error,
+    isLoading:
+      coachTeamsQuery.isLoading ||
+      playerTeamQuery.isLoading ||
+      coachConvocationsQuery.isLoading ||
+      playerConvocationsQuery.isLoading ||
+      officerScheduleQuery.isLoading,
+    error:
+      coachTeamsQuery.error ??
+      playerTeamQuery.error ??
+      coachConvocationsQuery.error ??
+      playerConvocationsQuery.error ??
+      officerScheduleQuery.error,
 
     hasAnyConvocationInScope,
 
@@ -354,6 +429,19 @@ export function useCalendarViewModel() {
     hasRespondPermission: hasRbacPermission,
     onRespond,
     respondError,
+
+    /// --- Dirigeant section filter (null for every other view) ---
+    sectionFilter: isOfficerView
+      ? {
+          sections: officerSections,
+          selectedSectionId: sectionFilter,
+          activeSectionName: activeSection?.name ?? null,
+          ariaLabel: activeSection ? `Filtrer par section, ${activeSection.name} actif` : 'Filtrer par section',
+          emptyDayLabel: activeSection ? `Aucun événement pour ${activeSection.name} ce jour` : null,
+          onSelect: selectSection,
+          onClear: () => selectSection(null),
+        }
+      : null,
 
     /// --- Navigation ---
     goToConvocationDetail: (convocationId: string) => {

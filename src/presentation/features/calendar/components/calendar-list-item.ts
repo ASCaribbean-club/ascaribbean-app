@@ -2,6 +2,7 @@ import type { Convocation } from '@domain/entities/convocation'
 import type { MatchDetails } from '@domain/entities/match-details'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { Opponent } from '@domain/entities/opponent'
+import type { SectionLabelView } from '@presentation/shared/formatters/section-label'
 import type { MatchOutcome } from '@domain/policies/match-outcome-rules'
 import type { CalendarResponseBlock } from './calendar-response-block'
 
@@ -38,4 +39,10 @@ export interface CalendarListItem {
   // attendanceConfirmationMissing, computed the same way (past + still
   // `open`).
   attendanceConfirmationMissing: boolean
+  // specs/mobile-dirigeant-habilite.md §1.2 — Dirigeant rows only (null for
+  // coach/player): the section tag, text always (AC-DH-11).
+  sectionLabel: SectionLabelView | null
+  // false for the Dirigeant rows until the detail variant exists (PO-DH-15):
+  // a non-openable row is not a button, has no tabIndex and no tap target.
+  isOpenable: boolean
 }

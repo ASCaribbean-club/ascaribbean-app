@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Convocation, ConvocationArrangements } from '@domain/entities/convocation'
+import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type {
@@ -133,6 +134,14 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
 
     if (error) throw mapSupabaseError(error)
     return toConvocation(data)
+  }
+
+  async delete(id: string): Promise<void> {
+    // `.select('id')` so a row RLS filtered out (window closed, other team)
+    // comes back empty instead of looking like a silent success.
+    const { data, error } = await this.client.from('convocations').delete().eq('id', id).select('id')
+    if (error) throw mapSupabaseError(error)
+    if (!data || data.length === 0) throw new ConvocationNotEditableError(`Convocation ${id} could not be deleted.`)
   }
 
   async updateDate(id: string, date: string): Promise<Convocation> {

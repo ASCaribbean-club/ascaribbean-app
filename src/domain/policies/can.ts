@@ -95,6 +95,7 @@ function grants(
         action === 'match_staff_events:view' ||
         action === 'match_details:update' ||
         action === 'convocation:update' ||
+        action === 'convocation:delete' ||
         action === 'team_stats:view' ||
         // specs/coach-match-composition.md §2 — team-scoped, same gap class as above.
         action === 'match_lineup:write' ||

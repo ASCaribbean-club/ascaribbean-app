@@ -8,6 +8,7 @@ import { formatConvocationType } from '../../shared/formatters/convocation-label
 import { formatRole } from '../../shared/formatters/role-labels'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../shared/components/ui/tabs'
 import { ConvocationHero } from './components/ConvocationHero'
+import { ConvocationActionsMenu } from './components/ConvocationActionsMenu'
 import { EffectifTab } from './components/EffectifTab'
 import { InfosTab } from './components/InfosTab'
 import { LineupDiscardDialog } from './lineup/LineupDiscardDialog'
@@ -247,7 +248,19 @@ export function ConvocationDetailPage() {
               name, even for a match (UI design §"Structure de l'écran",
               point 1: "la maquette... affiche seulement «Match», jamais le
               nom de l'adversaire en titre"). */}
-          <BackHeader title={formatConvocationType(convocation.type)} onBack={vm.goBack} />
+          <BackHeader
+            title={formatConvocationType(convocation.type)}
+            onBack={vm.goBack}
+            action={
+              vm.canDeleteConvocation && (
+                <ConvocationActionsMenu
+                  onDelete={vm.onDeleteConvocation}
+                  isDeleting={vm.isDeletingConvocation}
+                  errorMessage={vm.deleteError?.message ?? null}
+                />
+              )
+            }
+          />
 
           <ConvocationHero
             convocation={convocation}

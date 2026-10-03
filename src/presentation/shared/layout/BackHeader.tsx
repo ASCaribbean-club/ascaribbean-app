@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { IconChevronLeft } from '@tabler/icons-react'
 import { Button } from '@presentation/shared/components/ui/button'
 
@@ -11,6 +12,8 @@ interface BackHeaderProps {
   // Optional second line under the title (e.g. "Seniors · 12 licenciés").
   subtitle?: string
   onBack: () => void
+  // Optional control pinned to the right edge (e.g. a burger menu).
+  action?: ReactNode
 }
 
 // Moved here from features/convocation/components/BackHeader.tsx
@@ -35,7 +38,7 @@ interface BackHeaderProps {
 //
 // `h-11`/`size-11` (~44px minimum touch target, CLAUDE.md §6) — bumped from
 // the original `size-9.5` mockup size (AC-MD-23).
-export function BackHeader({ title, subtitle, onBack }: BackHeaderProps) {
+export function BackHeader({ title, subtitle, onBack, action }: BackHeaderProps) {
   return (
     <header className="sticky top-0 z-10 flex items-center gap-3 bg-coach-bg px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-2">
       <Button
@@ -53,6 +56,7 @@ export function BackHeader({ title, subtitle, onBack }: BackHeaderProps) {
           {subtitle && <p className="truncate text-[13px] text-white/60">{subtitle}</p>}
         </div>
       )}
+      {action && <div className="ml-auto shrink-0">{action}</div>}
     </header>
   )
 }

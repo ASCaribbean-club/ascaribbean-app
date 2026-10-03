@@ -31,7 +31,7 @@ export function getConvocationCreationWindow(
 // against players' RESPONSE rate (attendance, a coach-confirmed fact, is
 // unaffected). Manual mirror of the `c.created_at < c.date` filter on the
 // response counters of get_team_presence_leaderboard
-// (supabase/migrations/20261003140100_presence_leaderboard_exclude_retroactive.sql).
+// (supabase/migrations/20261003165053_presence_leaderboard_exclude_retroactive.sql).
 export function isRetroactiveConvocation(convocation: Pick<Convocation, 'date' | 'createdAt'>): boolean {
   return new Date(convocation.createdAt) >= new Date(convocation.date)
 }

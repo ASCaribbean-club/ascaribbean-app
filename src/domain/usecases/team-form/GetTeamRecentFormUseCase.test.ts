@@ -50,6 +50,7 @@ function fakeConvocationRepository(convocations: Convocation[]): ConvocationRepo
     updateMatch: async () => { throw new Error('not used in this test') },
     updateDate: async () => { throw new Error('not used in this test') },
     updateMeeting: async () => { throw new Error('not used in this test') },
+    delete: async () => { throw new Error('not used in this test') },
   }
 }
 

@@ -311,6 +311,12 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // outside every grant. Migration:
   // supabase/migrations/20261001120000_web_create_convocation.sql.
   'convocation:update': ['coach', 'admin'],
+  // Coach deletes an UPCOMING, open convocation of one of their own teams
+  // (match detail screen's burger menu). Mirrors convocations_delete_coach
+  // (RLS DELETE: private.is_coach_of_team(team_id) and date > now() and
+  // status = 'open'). Migration:
+  // supabase/migrations/20261003170000_coach_delete_convocation.sql.
+  'convocation:delete': ['coach'],
 
   // specs/player-stats.md §2/§6.3 — "Deux actions nouvelles — et exactement
   // deux", the ONLY RBAC change this feature is allowed to make. Both scoped

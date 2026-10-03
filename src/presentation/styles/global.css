@@ -248,3 +248,20 @@ a,
     @apply font-sans;
   }
 }
+/* Scrollable but without a visible scrollbar — backoffice drawer, page scroll
+   regions and tables. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* shadcn's Table wraps <table> in a container with horizontal scroll; hide its
+   bar inside the backoffice without editing the vendored primitive. */
+.font-backoffice [data-slot='table-container'] {
+  scrollbar-width: none;
+}
+.font-backoffice [data-slot='table-container']::-webkit-scrollbar {
+  display: none;
+}

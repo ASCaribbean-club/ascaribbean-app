@@ -317,4 +317,20 @@ export interface Team {
 
 ---
 
+## Fenêtre de réponse étroite non pénalisée
+
+**Où** : `domain/policies/` (`convocation-creation-window.ts`, fenêtre de création) et `get_team_presence_leaderboard`.
+
+**Valeur actuelle** : une convocation créée juste avant la date limite de réponse (ex. 5 min avant) est autorisée et comptée dans le taux de réponse, même si les joueurs n'ont presque pas eu le temps de répondre.
+
+**Pourquoi cette valeur, provisoirement** : cas jugé rare ; une fenêtre minimale imposerait une valeur arbitraire sans donnée d'usage réel.
+
+**Ce qu'il faudrait challenger** :
+- Faut-il une fenêtre minimale de réponse (création interdite, ou convocation exclue du taux, en dessous de N heures avant la date limite) ?
+- Sur quelle base fixer N ?
+
+**Priorité de revisite** : après premiers retours réels — déclencheur : un coach ou un joueur signale un taux de réponse pénalisé par une convocation créée trop tard.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

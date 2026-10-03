@@ -2,6 +2,7 @@ import { IconCalendarOff, IconUsers, IconUsersGroup } from '@tabler/icons-react'
 import { EmptyState } from '@presentation/shared/components/EmptyState'
 import { Button } from '@presentation/shared/components/ui/button'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
+import { LeaderboardFilters } from './components/LeaderboardFilters'
 import { LeaderboardRow } from './components/LeaderboardRow'
 import { LeaderboardSkeleton } from './components/LeaderboardSkeleton'
 import { PresenceRow } from './components/PresenceRow'
@@ -33,15 +34,47 @@ export function LeaderboardPage() {
 
   const header = <BackHeader title="Classements" onBack={vm.goBack} />
 
+  // Dirigeant only: which team's ranking to read (section, then team).
+  const filters = vm.isOfficerView ? (
+    <div className="px-5.5 pb-4">
+      <LeaderboardFilters
+        isExpanded={vm.areFiltersVisible}
+        onToggle={vm.toggleFilters}
+        summary={vm.filtersSummary}
+        sections={vm.sections}
+        areSectionsLoading={vm.areSectionsLoading}
+        selectedSectionId={vm.selectedSectionId}
+        onSelectSection={vm.onSelectSection}
+        teamOptions={vm.teamOptions}
+        selectedTeamId={vm.selectedTeamId}
+        onSelectTeam={vm.onSelectTeam}
+      />
+    </div>
+  ) : null
+
   if (vm.error) {
     return (
       <div className="relative isolate flex min-h-screen flex-col bg-coach-bg text-white">
         {backdrop}
         {header}
+        {filters}
         <div className="flex flex-col items-center gap-4 px-5.5 py-16 text-center">
           <p role="alert" className="text-[14.5px] font-semibold">Impossible de charger le classement.</p>
           <Button onClick={vm.refetch} className="h-11 px-6">Réessayer</Button>
         </div>
+      </div>
+    )
+  }
+
+  if (vm.needsTeamSelection && !vm.noCurrentSeason) {
+    return (
+      <div className="relative isolate flex min-h-screen flex-col bg-coach-bg text-white">
+        {backdrop}
+        {header}
+        {filters}
+        <p className="px-5.5 py-8 text-center text-[14px] text-white/60">
+          {vm.selectedSectionId ? 'Choisissez une équipe.' : 'Choisissez une section, puis une équipe.'}
+        </p>
       </div>
     )
   }
@@ -51,6 +84,7 @@ export function LeaderboardPage() {
       <div className="relative isolate flex min-h-screen flex-col bg-coach-bg text-white">
         {backdrop}
         {header}
+        {filters}
         {vm.noCurrentSeason ? (
           <EmptyState icon={IconCalendarOff} message="Aucune saison en cours actuellement." />
         ) : vm.noTeam ? (
@@ -66,6 +100,7 @@ export function LeaderboardPage() {
     <div className="relative isolate flex min-h-screen flex-col bg-coach-bg text-white">
       {backdrop}
       {header}
+      {filters}
 
       <div className={`flex flex-1 flex-col px-5.5 pt-1 ${vm.youBar ? 'pb-4' : 'pb-10'}`}>
         <LeaderboardTabs tab={vm.tab} onTabChange={vm.onTabChange}>

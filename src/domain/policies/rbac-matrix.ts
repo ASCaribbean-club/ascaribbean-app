@@ -81,7 +81,27 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // supabase/migrations/<timestamp>_web_actus_news_write_policies.sql.
   // PO-WA-08 stays open: widening beyond 'admin' is a product decision, not
   // made here.
+  //
+  // specs/mobile-dirigeant-habilite.md §2 (PO-DH-04): the scope of this
+  // action NARROWED to archiving a news item (ArchiveClubNewsUseCase) and the
+  // backoffice console. Creating and editing moved to 'news:create' /
+  // 'news:update' below. Still ['admin'] only — the authorized-officer must
+  // not archive (the RLS update policy for that role refuses status
+  // 'archived').
   'news:write': ['admin'],
+
+  // specs/mobile-dirigeant-habilite.md §2 — mirrors the RLS policies
+  // club_news_insert_admin + club_news_insert_authorized_officer
+  // (supabase/migrations/20261003123047_dirigeant_news_write_policies.sql).
+  // Club-wide: no RoleAssignment scope field, no can.ts branch needed.
+  // Still requires the Bureau's confirmation (PO-WA-08 / PO-DH-04).
+  'news:create': ['admin', 'authorized-officer'],
+
+  // Mirrors club_news_update_admin + club_news_update_authorized_officer
+  // (same migration). The officer's policy limits status to draft/published;
+  // the use case's CreatableClubNewsStatus type is the TypeScript side of
+  // that same limit.
+  'news:update': ['admin', 'authorized-officer'],
 
   // specs/web-seasons.md §3 — "le cas le mieux étayé du dépôt à ce jour":
   // roles-personas-as-caribbean.md lists "saisons" literally in the

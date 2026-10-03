@@ -642,4 +642,27 @@ describe('can — mission actions', () => {
       expect(can(userWith([role]), 'mission:manage', { teamId: 'team-1' })).toBe(false)
     }
   })
+
+  // 'convocation:create_retroactive' — admin only, club-wide, no scope check.
+  it('allows an admin to create a retroactive convocation', () => {
+    const user = userWith([{ role: 'admin' }])
+    expect(can(user, 'convocation:create_retroactive')).toBe(true)
+  })
+
+  it('allows a multi-role account holding admin to create a retroactive convocation', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }, { role: 'admin' }])
+    expect(can(user, 'convocation:create_retroactive')).toBe(true)
+  })
+
+  const NON_ADMIN_ASSIGNMENTS: Array<[string, User['roles'][number]]> = [
+    ['coach', { role: 'coach', teamIds: ['team-1'] }],
+    ['section-manager', { role: 'section-manager', sectionId: 'section-a' }],
+    ['authorized-officer', { role: 'authorized-officer' }],
+    ['player', { role: 'player', teamId: 'team-1' }],
+    ['treasurer', { role: 'treasurer' }],
+  ]
+  it.each(NON_ADMIN_ASSIGNMENTS)('denies a %s from creating a retroactive convocation', (_label, assignment) => {
+    const user = userWith([assignment])
+    expect(can(user, 'convocation:create_retroactive', { teamId: 'team-1' })).toBe(false)
+  })
 })

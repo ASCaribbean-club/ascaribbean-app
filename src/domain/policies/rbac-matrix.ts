@@ -21,6 +21,8 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // here without that scope check would let a section-manager create a
   // convocation for ANY team, not just one in their own section.
   'convocation:create': ['coach', 'section-manager', 'authorized-officer', 'admin'],
+  // Mirrors convocations_insert_create (RLS) — `date > now() or is_admin()`.
+  'convocation:create_retroactive': ['admin'],
   'convocation:respond': ['player'],
   'section:manage': ['section-manager', 'admin'],
 

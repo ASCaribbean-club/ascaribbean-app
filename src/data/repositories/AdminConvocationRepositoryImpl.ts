@@ -13,7 +13,7 @@ import { toAdminConvocationListItem } from '../mappers/admin-convocation-mapper'
 // (AC-WC-01), nothing here widens that.
 const ADMIN_CONVOCATION_COLUMNS = [
   'id, team_id, type, date, location, training_location_id, status, closed_at, closed_by,',
-  'cancelled_at, cancelled_by, cancellation_reason, created_by,',
+  'cancelled_at, cancelled_by, cancellation_reason, created_by, created_at,',
   'training_location:training_locations(id, name, address, is_archived),',
   'teams!inner(id, name, section_id, season_id, user_roles(role)),',
   'match_details(opponent_id, is_home, meeting_point_time, meeting_point_location, opponents(name)),',

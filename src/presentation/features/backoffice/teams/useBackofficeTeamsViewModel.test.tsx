@@ -13,6 +13,9 @@ import { useBackofficeTeamsViewModel } from './useBackofficeTeamsViewModel'
 // canAssignCoach must stay two independently-computed booleans, never
 // collapsed into one canWrite.
 
+vi.mock('@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed', () => ({
+  useBackofficeFiltersCollapsed: () => ({ areFiltersCollapsed: false, toggleFiltersCollapsed: vi.fn() }),
+}))
 vi.mock('@presentation/di/hooks/use-section-and-teams-dependencies')
 vi.mock('@presentation/shared/hooks/use-permission')
 

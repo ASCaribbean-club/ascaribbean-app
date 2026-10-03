@@ -43,7 +43,9 @@ export function MenuPage() {
       <section className="flex flex-col gap-2.5">
         <MenuSectionTitle>Suivi de l'équipe</MenuSectionTitle>
         <div className="grid grid-cols-2 gap-3">
-          <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
+          {vm.canViewStatistics && (
+            <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
+          )}
           <MenuNavCard icon={IconTrophy} title="Classement" subtitle="Buts, cartons" to="/leaderboard" />
           {/* specs/player-unavailability.md UI design §1 — the card disappears
               (never greyed out) when can('availability:read-team') is false. */}

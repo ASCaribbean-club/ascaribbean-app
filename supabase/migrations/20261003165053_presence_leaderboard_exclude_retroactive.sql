@@ -17,7 +17,7 @@
 -- so that predicate is repeated here: dropping it would silently remove the
 -- Dirigeant's presence ranking).
 --
--- Depends on 20261003140000_retroactive_convocations.sql (created_at).
+-- Depends on 20261003165047_retroactive_convocations.sql (created_at).
 -- NOT APPLIED by the agent that wrote it: to be reviewed and applied by the
 -- developer.
 create or replace function public.get_team_presence_leaderboard(p_team_id uuid)

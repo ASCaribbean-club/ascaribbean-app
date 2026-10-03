@@ -14,6 +14,7 @@ import { UserEditDialog } from './components/UserEditDialog'
 import { UserTable } from './components/UserTable'
 import { UserTableSkeleton } from './components/UserTableSkeleton'
 import { useBackofficeUsersViewModel } from './useBackofficeUsersViewModel'
+import { BackofficeFiltersToggle } from '@presentation/features/backoffice/components/BackofficeFiltersToggle'
 
 const navItem = BACKOFFICE_NAV_ITEMS.find((item) => item.id === 'users')!
 
@@ -27,107 +28,114 @@ export function BackofficeUsersPage() {
   const vm = useBackofficeUsersViewModel()
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
+      <div className="flex shrink-0 items-start justify-between gap-4">
         <h2 className="text-xl font-bold text-foreground">Utilisateurs</h2>
         {/* AC-WU-19 — rendered only if canInviteUser, never grayed out. */}
-        {vm.canInviteUser && (
-          <Button
-            type="button"
-            onClick={vm.openInviteDialog}
-            className="h-11 shrink-0 rounded-full bg-coach-green px-4 font-bold text-white hover:bg-coach-green"
-          >
-            <IconPlus className="size-4" aria-hidden />
-            Inviter un utilisateur
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <BackofficeFiltersToggle isCollapsed={vm.areFiltersCollapsed} hasActiveFilters={vm.isFilterActive} onToggle={vm.toggleFiltersCollapsed} />
+          {vm.canInviteUser && (
+            <Button
+              type="button"
+              onClick={vm.openInviteDialog}
+              className="h-11 shrink-0 rounded-full bg-coach-green px-4 font-bold text-white hover:bg-coach-green"
+            >
+              <IconPlus className="size-4" aria-hidden />
+              Inviter un utilisateur
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* §1/UI design "Écran liste" — search + two filters side by side,
           each h-11, each min-w-0 (CLAUDE.md §6, same piège already
           documented on NewsFormDialog/TeamTable's own filters). */}
-      <div className="flex flex-wrap gap-3">
-        <div className="min-w-[240px] flex-[2] min-w-0">
-          <Input
-            type="search"
-            placeholder="Rechercher par nom ou email…"
-            value={vm.search}
-            onChange={(event) => vm.setSearch(event.target.value)}
-            className="h-11 rounded-xl"
-            aria-label="Rechercher par nom ou email"
-          />
-        </div>
+      {!vm.areFiltersCollapsed && (
+        <div className="flex shrink-0 flex-wrap gap-3">
+          <div className="min-w-[240px] flex-[2] min-w-0">
+            <Input
+              type="search"
+              placeholder="Rechercher par nom ou email…"
+              value={vm.search}
+              onChange={(event) => vm.setSearch(event.target.value)}
+              className="h-11 rounded-xl"
+              aria-label="Rechercher par nom ou email"
+            />
+          </div>
 
-        <div className="min-w-[200px] flex-1 min-w-0">
-          <Select value={vm.roleFilter} onValueChange={(value) => vm.setRoleFilter(value as UserRoleFilterValue)}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
-              <SelectValue placeholder="Tous les rôles" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les rôles</SelectItem>
-              {ALL_ROLES.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {formatRole(role)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="min-w-[200px] flex-1 min-w-0">
+            <Select value={vm.roleFilter} onValueChange={(value) => vm.setRoleFilter(value as UserRoleFilterValue)}>
+              <SelectTrigger className="h-11 w-full rounded-xl">
+                <SelectValue placeholder="Tous les rôles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les rôles</SelectItem>
+                {ALL_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {formatRole(role)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="min-w-[200px] flex-1 min-w-0">
-          <Select value={vm.statusFilter} onValueChange={(value) => vm.setStatusFilter(value as UserStatusFilterValue)}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              {/* AC-WU-09 — exactly the two values of the status predicate,
+          <div className="min-w-[200px] flex-1 min-w-0">
+            <Select value={vm.statusFilter} onValueChange={(value) => vm.setStatusFilter(value as UserStatusFilterValue)}>
+              <SelectTrigger className="h-11 w-full rounded-xl">
+                <SelectValue placeholder="Tous les statuts" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* AC-WU-09 — exactly the two values of the status predicate,
                   never Suspendu/Désactivé. */}
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="invited">Invité</SelectItem>
-              <SelectItem value="active">Actif</SelectItem>
-            </SelectContent>
-          </Select>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="invited">Invité</SelectItem>
+                <SelectItem value="active">Actif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+      )}
+
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto no-scrollbar">
+        {vm.isLoading && <UserTableSkeleton />}
+
+        {!vm.isLoading && vm.error && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription>{vm.error.message}</AlertDescription>
+          </Alert>
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length === 0 && vm.isFilterActive && (
+          <BackofficeEmptyState
+            icon={navItem.icon}
+            title="Aucun utilisateur ne correspond à ces critères"
+            description="Réinitialisez la recherche ou les filtres pour voir tous les utilisateurs."
+          />
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length === 0 && !vm.isFilterActive && (
+          <BackofficeEmptyState icon={navItem.icon} title={navItem.emptyStateTitle} />
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length > 0 && (
+          <UserTable
+            rows={vm.rows}
+            teamsById={vm.teamsById}
+            sectionsById={vm.sectionsById}
+            currentSeasonId={vm.currentSeasonId}
+            canAssignRole={vm.canAssignRole}
+            canWriteUser={vm.canWriteUser}
+            onAssignRole={vm.openAssignRoleDialog}
+            onGoToMembership={vm.goToMembership}
+            onEdit={vm.openEditDialog}
+            onSelectRoleAssignment={vm.openEditRoleAssignmentDialog}
+            canReissueInvitation={vm.canInviteUser}
+            onReissueInvitation={vm.openReissueInvitationDialog}
+            canGeneratePasswordResetLink={vm.canInviteUser}
+            onGeneratePasswordResetLink={vm.openPasswordResetDialog}
+          />
+        )}
       </div>
-
-      {vm.isLoading && <UserTableSkeleton />}
-
-      {!vm.isLoading && vm.error && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{vm.error.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length === 0 && vm.isFilterActive && (
-        <BackofficeEmptyState
-          icon={navItem.icon}
-          title="Aucun utilisateur ne correspond à ces critères"
-          description="Réinitialisez la recherche ou les filtres pour voir tous les utilisateurs."
-        />
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length === 0 && !vm.isFilterActive && (
-        <BackofficeEmptyState icon={navItem.icon} title={navItem.emptyStateTitle} />
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length > 0 && (
-        <UserTable
-          rows={vm.rows}
-          teamsById={vm.teamsById}
-          sectionsById={vm.sectionsById}
-          currentSeasonId={vm.currentSeasonId}
-          canAssignRole={vm.canAssignRole}
-          canWriteUser={vm.canWriteUser}
-          onAssignRole={vm.openAssignRoleDialog}
-          onGoToMembership={vm.goToMembership}
-          onEdit={vm.openEditDialog}
-          onSelectRoleAssignment={vm.openEditRoleAssignmentDialog}
-          canReissueInvitation={vm.canInviteUser}
-          onReissueInvitation={vm.openReissueInvitationDialog}
-          canGeneratePasswordResetLink={vm.canInviteUser}
-          onGeneratePasswordResetLink={vm.openPasswordResetDialog}
-        />
-      )}
 
       <InviteUserDialog target={vm.inviteDialogTarget} onClose={vm.closeInviteDialog} />
       <UserEditDialog target={vm.editTarget} onClose={vm.closeEditDialog} />

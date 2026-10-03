@@ -9,6 +9,7 @@ import { useSectionAndTeamsDependencies } from '@presentation/di/hooks/use-secti
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { useBackofficeFiltersCollapsed } from '@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed'
 
 export type TeamDialogState = { mode: 'create' } | { mode: 'edit'; team: Team } | null
 
@@ -59,7 +60,10 @@ export function useBackofficeTeamsViewModel() {
   const [addOpponentTarget, setAddOpponentTarget] = useState<Team | null>(null)
 
   const teamsQuery = useQuery({ queryKey: queryKeys.teamsAdminList(), queryFn: () => teamRepository.findAllForAdmin() })
-  const sectionsQuery = useQuery({ queryKey: queryKeys.sectionsAdminList(), queryFn: () => sectionRepository.findAll() })
+  const sectionsQuery = useQuery({
+    queryKey: queryKeys.sectionsAdminList(),
+    queryFn: () => sectionRepository.findAll(),
+  })
   const seasonsQuery = useQuery({ queryKey: queryKeys.seasonsAdminList(), queryFn: () => seasonRepository.findAll() })
   const coachAssignmentsQuery = useQuery({
     queryKey: queryKeys.coachAssignmentsAdminList(),
@@ -111,7 +115,11 @@ export function useBackofficeTeamsViewModel() {
   // never a second calculation.
   const isFilterActive = sectionFilter !== 'all' || seasonFilter !== 'all' || coachFilter !== 'all'
 
+  const { areFiltersCollapsed, toggleFiltersCollapsed } = useBackofficeFiltersCollapsed('teams')
+
   return {
+    areFiltersCollapsed,
+    toggleFiltersCollapsed,
     isLoading,
     error,
     rows,

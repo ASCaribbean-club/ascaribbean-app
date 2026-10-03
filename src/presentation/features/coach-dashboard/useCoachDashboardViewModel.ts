@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getFirstName, getInitials } from '../../shared/formatters/greeting'
-import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useActiveTeam } from '../../shared/hooks/use-active-team'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
@@ -11,7 +10,6 @@ import { useCoachDashboardDependencies } from '../../di/hooks/use-coach-dashboar
 export function useCoachDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { toggleActiveRole } = useActiveRole()
   const { selectedCoachTeamId, selectCoachTeam } = useActiveTeam()
   const {
     getCoachTeamsUseCase,
@@ -88,8 +86,6 @@ export function useCoachDashboardViewModel() {
     // It's the number of matchday + 1 but not implemented in P0 because not sure it's useful
     dayMarker: undefined as string | undefined,
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,
-    hasMultipleRoles: (user?.roles.length ?? 0) > 1,
-    onRoleClick: toggleActiveRole,
     // PO-6/AC-CD-14: real team list + selection, driven by ActiveTeamProvider.
     teams: teamsQuery.data?.map((summary) => summary.team) ?? [],
     onSelectTeam: selectCoachTeam,

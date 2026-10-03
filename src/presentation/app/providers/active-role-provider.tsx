@@ -1,26 +1,38 @@
 import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react'
 import { useAuth } from '../../shared/hooks/use-auth'
 
-// Only 'player'/'coach' — a section-manager/authorized-officer/admin
-// account (no player/coach role) never gets a dashboard tab here, so it can
+// 'player' / 'coach' / 'authorized-officer' — a section-manager/admin
+// account (none of these roles) never gets a dashboard tab here, so it can
 // never reach a screen gated by useActiveRole() (e.g. the convocation
-// detail screen). Pre-existing, app-wide gap (no admin dashboard exists
-// yet), not introduced by that screen — tracked as
-// specs/match_details_page.md §"Questions ouvertes UI" #1, not resolved
-// here.
-export type DashboardRole = 'coach' | 'player'
+// detail screen). Pre-existing, app-wide gap, tracked as
+// specs/match_details_page.md §"Questions ouvertes UI" #1 (PO-CA-06 /
+// PO-MN-07 stay open for the other roles). 'authorized-officer' was added by
+// specs/mobile-dirigeant-habilite.md; it is the structural twin of
+// domain/rules/active-role-scope.ts's ActiveDashboardRole and both MUST be
+// changed together (AC-DH-04).
+export type DashboardRole = 'coach' | 'player' | 'authorized-officer'
 
 interface ActiveRoleState {
   activeRole: DashboardRole
+  // Distinct dashboard roles the account holds, in switch order.
+  dashboardRoles: DashboardRole[]
+  setActiveRole: (role: DashboardRole) => void
   toggleActiveRole: () => void
+  // True only when the account really holds 'authorized-officer' AND that is
+  // the active dashboard role — AC-DH-03: forcing `activeRole` without the
+  // role never reaches the Dirigeant variants.
+  isOfficerView: boolean
+  // At least two distinct dashboard roles: the role pill is a real switch.
+  hasMultipleDashboardRoles: boolean
 }
 
 const ActiveRoleContext = createContext<ActiveRoleState | null>(null)
 
 // Order matters: player-first, so a dual-role account defaults to the
-// Player dashboard.
+// Player dashboard. Switch order: joueur -> coach -> dirigeant (PO-DH-08,
+// default retained). An officer-only account opens on the Dirigeant view.
 function getDashboardRoles(roles: { role: string }[]): DashboardRole[] {
-  return (['player', 'coach'] as const).filter((role) => roles.some((assignment) => assignment.role === role))
+  return (['player', 'coach', 'authorized-officer'] as const).filter((role) => roles.some((assignment) => assignment.role === role))
 }
 
 export function ActiveRoleProvider({ children }: PropsWithChildren) {
@@ -36,7 +48,15 @@ export function ActiveRoleProvider({ children }: PropsWithChildren) {
     })
   }
 
-  return <ActiveRoleContext.Provider value={{ activeRole, toggleActiveRole }}>{children}</ActiveRoleContext.Provider>
+  const isOfficerView = activeRole === 'authorized-officer' && dashboardRoles.includes('authorized-officer')
+
+  return (
+    <ActiveRoleContext.Provider
+      value={{ activeRole, dashboardRoles, setActiveRole, toggleActiveRole, isOfficerView, hasMultipleDashboardRoles: dashboardRoles.length > 1 }}
+    >
+      {children}
+    </ActiveRoleContext.Provider>
+  )
 }
 
 export function useActiveRoleContext(): ActiveRoleState {

@@ -3,6 +3,7 @@ import { cn } from '@presentation/shared/lib/utils'
 import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffice-nav'
 import { useMembershipsNavBadge } from '@presentation/features/backoffice/memberships/useMembershipsNavBadge'
 import { useUsersNavBadge } from '@presentation/features/backoffice/users/useUsersNavBadge'
+import { BackofficeBrandMark } from './BackofficeBrandMark'
 import { BackofficeLogoutButton } from './BackofficeLogoutButton'
 import { MembershipsAndInvitationsAlert } from './MembershipsAndInvitationsAlert'
 import { MissingRoleAlert } from './MissingRoleAlert'
@@ -28,42 +29,54 @@ import { MissingRoleAlert } from './MissingRoleAlert'
 // /admin/overview (§2.5's own "chrome partagé, pas la page"). Each is its
 // own isolated component so its query only ever runs for itself, same
 // reasoning as the two nav badges above.
-export function BackofficeSidebar() {
-  return (
-    <nav aria-label="Navigation du backoffice" className="flex w-64 shrink-0 flex-col border-r border-border px-3 py-6">
-      <ul className="flex flex-col gap-1">
-        {BACKOFFICE_NAV_ITEMS.map((item) => (
-          <li key={item.id}>
-            <NavLink
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  // min-h-11 (44px, CLAUDE.md §6 touch-target rule) and the
-                  // whole row is the link — not just the label — so the
-                  // clickable area is the full width of the sidebar, not a
-                  // narrow text hitbox.
-                  'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                  isActive && 'bg-muted text-foreground'
-                )
-              }
-            >
-              <item.icon className="size-4.5 shrink-0" aria-hidden />
-              {item.label}
-              {item.id === 'memberships' && <MembershipsNavBadge />}
-              {item.id === 'users' && <UsersNavBadge />}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
+//
+// Fixed-height column (the layout pins it to the viewport): brand header and
+// logout stay put, only the middle region (nav entries + alerts) scrolls when
+// it doesn't fit — small laptop screens.
+interface BackofficeSidebarProps {
+  fullName: string
+}
 
-      {/* CLAUDE.md §6 — same `sticky bottom-0` + opaque background pattern
-          already used for anchored submit bars: the sidebar's own <ul> can
-          in principle grow past the viewport (a future 8th destination), so
-          this footer is pinned to the visible bottom of the column rather
-          than merely trailing after it in normal flow. */}
-      <div className="sticky bottom-0 mt-auto flex flex-col gap-3 bg-background pt-6">
-        <MembershipsAndInvitationsAlert />
-        <MissingRoleAlert />
+export function BackofficeSidebar({ fullName }: BackofficeSidebarProps) {
+  return (
+    <nav aria-label="Navigation du backoffice" className="flex h-full w-64 shrink-0 flex-col border-r border-border">
+      <div className="shrink-0 px-6 py-4">
+        <BackofficeBrandMark variant="inline" caption={fullName} />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 no-scrollbar py-2">
+        <ul className="flex flex-col gap-1">
+          {BACKOFFICE_NAV_ITEMS.map((item) => (
+            <li key={item.id}>
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    // min-h-11 (44px, CLAUDE.md §6 touch-target rule) and the
+                    // whole row is the link — not just the label — so the
+                    // clickable area is the full width of the sidebar, not a
+                    // narrow text hitbox.
+                    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                    isActive && 'bg-muted text-foreground',
+                  )
+                }
+              >
+                <item.icon className="size-4.5 shrink-0" aria-hidden />
+                {item.label}
+                {item.id === 'memberships' && <MembershipsNavBadge />}
+                {item.id === 'users' && <UsersNavBadge />}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto flex flex-col gap-3">
+          <MembershipsAndInvitationsAlert />
+          <MissingRoleAlert />
+        </div>
+      </div>
+
+      <div className="shrink-0 px-3 py-4">
         <BackofficeLogoutButton />
       </div>
     </nav>
@@ -78,11 +91,7 @@ function MembershipsNavBadge() {
   const { count } = useMembershipsNavBadge()
   if (count <= 0) return null
 
-  return (
-    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">
-      {count}
-    </span>
-  )
+  return <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">{count}</span>
 }
 
 // specs/web-users.md §2.8/UI design "Badge de navigation" — twin of
@@ -94,10 +103,5 @@ function UsersNavBadge() {
   const { count } = useUsersNavBadge()
   if (count <= 0) return null
 
-  return (
-    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">
-      {count}
-    </span>
-  )
+  return <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">{count}</span>
 }
-

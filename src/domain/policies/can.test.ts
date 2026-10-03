@@ -544,7 +544,6 @@ describe('can — match_lineup:write', () => {
 
     it.each([
       { role: 'section-manager', sectionId: 'section-a' },
-      { role: 'authorized-officer' },
       { role: 'treasurer' },
       { role: 'medical-referent' },
       { role: 'volunteer' },
@@ -554,6 +553,15 @@ describe('can — match_lineup:write', () => {
       for (const action of ['availability:declare', 'availability:read-team'] as const) {
         expect(can(user, action, { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
       }
+    })
+
+    // Developer decision: the Dirigeant habilité reads any team's availability
+    // (teammate projection), club-wide, but never declares one.
+    it('allows an authorized-officer to read-team for any team, and denies declare', () => {
+      const officer = userWith([{ role: 'authorized-officer' }])
+      expect(can(officer, 'availability:read-team', { teamId: 'team-9' })).toBe(true)
+      expect(can(officer, 'availability:read-team')).toBe(true)
+      expect(can(officer, 'availability:declare', { teamId: 'team-9' })).toBe(false)
     })
 
     it('grants a player-coach multi-role account declare via the coach assignment only', () => {

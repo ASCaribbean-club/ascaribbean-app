@@ -389,9 +389,13 @@ export const rbacMatrix: Record<Action, Role[]> = {
   'availability:declare': ['coach'],
 
   // specs/player-unavailability.md §2 — player (own team) and coach (own
-  // teams). Players see the teammate projection only. SQL mirror: future
-  // migration, not built in the domain-only pass.
-  'availability:read-team': ['player', 'coach'],
+  // teams). Players see the teammate projection only. SQL mirror:
+  // get_team_availability. Widened to 'authorized-officer' (developer
+  // decision, Dirigeant availability screen): club-wide, no team scope in
+  // can.ts (the `default` branch), teammate projection only — medical shown as
+  // 'unavailable', no dates. Mirrors the officer branch of
+  // get_team_availability (supabase/migrations/20261003150000_availability_read_officer.sql).
+  'availability:read-team': ['player', 'coach', 'authorized-officer'],
 
   // specs/match-details-missions.md §3 — the only two entries of that feature.
   'mission:self-assign': ['player'],

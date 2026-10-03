@@ -15,6 +15,8 @@ dev-dist
 
 # Environment
 .env
+.env-prod
+.mcp.json
 
 # Database backups (contain member personal/health data)
 backup/

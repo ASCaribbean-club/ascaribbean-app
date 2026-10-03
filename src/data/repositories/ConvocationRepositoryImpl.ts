@@ -21,7 +21,7 @@ import { toUpdateMatchRpcParams, toUpdateMeetingRpcParams, toUpdateTrainingRpcPa
 // resolved by a PostgREST embedded join on the FK, never copied onto the
 // convocation. It runs under the caller's RLS (training_locations is readable
 // by every authenticated account), so no security-definer view is involved.
-const CONVOCATION_COLUMNS =
+export const CONVOCATION_COLUMNS =
   'id, team_id, type, date, location, training_location_id, training_location:training_locations(id, name, address, is_archived), status, closed_at, closed_by, cancelled_at, cancelled_by, cancellation_reason, created_by'
 
 export class ConvocationRepositoryImpl implements ConvocationRepository {

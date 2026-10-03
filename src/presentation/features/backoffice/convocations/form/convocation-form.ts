@@ -1,5 +1,6 @@
 import type { AdminConvocationListItem } from '@domain/entities/admin-convocation'
 import type { ConvocationType } from '@domain/entities/convocation'
+import { getConvocationCreationWindow, type ConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import type { UpdateConvocationUseCaseInput } from '@domain/usecases/convocation/UpdateConvocationUseCase'
@@ -110,6 +111,13 @@ export function valuesEqual(a: ConvocationFormValues, b: ConvocationFormValues):
   )
 }
 
+// Creation window of the form's current type + start time, or null while the
+// date or time is still missing. The ViewModel turns it into booleans.
+export function getFormCreationWindow(values: ConvocationFormValues, now: Date): ConvocationCreationWindow | null {
+  const kickoff = kickoffIso(values)
+  return kickoff ? getConvocationCreationWindow(values.type, new Date(kickoff), now) : null
+}
+
 function kickoffIso(values: ConvocationFormValues): string | null {
   if (!values.date || !values.time) return null
   return combineDateAndTime(values.date, values.time)
@@ -126,8 +134,11 @@ export function validateConvocationForm(values: ConvocationFormValues, mode: 'cr
   if (!values.date) errors.date = REQUIRED_FIELD_MESSAGE
   if (!values.time) errors.time = REQUIRED_FIELD_MESSAGE
 
+  // Edit only: an edit works on an upcoming convocation. At creation a past
+  // kickoff is a valid (retroactive) entry — the creation window, not this
+  // check, decides (getFormCreationWindow, CreateConvocationUseCase).
   const kickoff = kickoffIso(values)
-  if (kickoff && new Date(kickoff) <= now) errors.date = PAST_DATE_MESSAGE
+  if (mode === 'edit' && kickoff && new Date(kickoff) <= now) errors.date = PAST_DATE_MESSAGE
 
   switch (values.type) {
     case 'training':

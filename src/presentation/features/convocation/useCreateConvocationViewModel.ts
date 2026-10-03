@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { ConvocationType } from '@domain/entities/convocation'
+import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
+import { getConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import { filterTeamsBySection } from '@domain/rules/club-schedule-rules'
 import { isPastDate } from '@domain/rules/convocation-rules'
@@ -110,6 +112,9 @@ function isFormComplete(values: ConvocationFormValues, selectedTrainingLocationI
 function toFieldErrorMessage(error: unknown): string {
   if (error instanceof InvalidScheduleError) {
     return 'Le rendez-vous doit précéder le coup d’envoi, le même jour.'
+  }
+  if (error instanceof ConvocationCreationWindowClosedError) {
+    return 'Les réponses des joueurs sont closes pour ce créneau : choisissez une heure plus tardive.'
   }
   return 'Impossible de créer la convocation. Réessayez.'
 }
@@ -229,9 +234,23 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     },
   })
 
+  // Boolean for the form: the slot sits inside the type's closed response
+  // window (deadline <= now < kickoff), refused for everyone by the use case.
+  // A past kickoff stays refused for a coach by the isPastDate check on submit
+  // — retroactive creation is an admin-only web action.
+  const isResponseWindowClosed =
+    !!values.date &&
+    !!values.time &&
+    getConvocationCreationWindow(values.type, new Date(combineDateAndTime(values.date, values.time)), new Date()) ===
+      'response_closed'
+
   // The team is mandatory: always true for the coach flow (it came through
   // the route), only becomes meaningful for the Dirigeant's picker.
-  const canSubmit = !!teamId && isFormComplete(values, selectedTrainingLocationId) && !createConvocation.isPending
+  const canSubmit =
+    !!teamId &&
+    isFormComplete(values, selectedTrainingLocationId) &&
+    !isResponseWindowClosed &&
+    !createConvocation.isPending
 
   // The "venue no longer available" refusal is shown inline under the venue
   // field, not in the bottom message.
@@ -243,6 +262,9 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const fieldError =
     (needsTeamPicker && !teamId ? 'Choisissez une section puis une équipe.' : undefined) ??
     scheduleError ??
+    (isResponseWindowClosed
+      ? 'Les réponses des joueurs sont closes pour ce créneau : choisissez une heure plus tardive.'
+      : undefined) ??
     (createConvocation.error && !trainingLocationError ? toFieldErrorMessage(createConvocation.error) : undefined)
 
   function onSubmit() {

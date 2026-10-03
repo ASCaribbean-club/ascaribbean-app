@@ -1,4 +1,5 @@
 import { AttendanceWindowClosedError } from '@domain/errors/attendance-window-closed-error'
+import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
@@ -483,6 +484,16 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   if (error instanceof ConvocationNotEditableError) {
     return {
       message: 'Cette convocation n’est plus modifiable : elle est passée ou son statut a changé.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  // Non-retryable: resubmitting the same slot is refused again. The way out is
+  // another date/time, not a retry.
+  if (error instanceof ConvocationCreationWindowClosedError) {
+    return {
+      message: 'Les réponses des joueurs sont déjà closes pour ce créneau : la convocation ne peut plus être créée.',
       variant: 'inline',
       retryable: false,
     }

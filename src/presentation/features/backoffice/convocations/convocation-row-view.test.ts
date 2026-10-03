@@ -28,6 +28,7 @@ function itemOf(
       cancelledBy: null,
       cancellationReason: null,
       createdBy: 'u1',
+      createdAt: '2026-01-01T00:00:00.000Z',
       ...overrides,
     },
     teamName: 'Équipe A',

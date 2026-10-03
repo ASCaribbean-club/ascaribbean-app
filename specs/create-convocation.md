@@ -461,3 +461,25 @@ Aucune n'est bloquante pour la transmission à mentor-agent — les 3 variantes 
 2. **Confirmation de sortie sur formulaire rempli.** Aucune maquette ni section de spec ne traite le cas d'un tap sur la flèche retour après saisie partielle (perte de saisie silencieuse vs. confirmation) — non demandé, donc non conçu ici ; à lever seulement si signalé en usage réel, cohérent avec la philosophie « pas de garde-fou avant besoin constaté » déjà appliquée ailleurs dans ce spec (§2, limite du compteur « en attente »).
 
 **Prêt pour transmission à mentor-agent : oui.**
+
+---
+
+## Addendum — Retroactive convocations and creation window
+
+Append-only. Decided in a mentoring session; replaces the earlier "created_at < starts_at filter + N-hour grace window" proposal (the filter is kept, the grace window is dropped). Informative only: the presence leaderboard does not feed ASC Legacy points.
+
+### D1 — "Retroactive" is derived, never stored
+A convocation is retroactive iff `created_at >= date` (the entity field is `date`; there is no `starts_at`). No `is_retroactive` or `response_deadline_at` column. `isRetroactiveConvocation` (`domain/policies/convocation-creation-window.ts`) mirrors the `c.created_at < c.date` filter that `get_team_presence_leaderboard` applies to its two RESPONSE counters only (`convoked_count`, `responded_count`). Attendance counters are unchanged. Each side's comment names the other (manual mirror, CLAUDE.md §7).
+
+### D2 — Creation window, enforced in the use case
+Relative to the type's response deadline (`getResponseDeadline`, shared with `canPlayerRespond`, never duplicated) and kickoff: `open` (before the deadline) is allowed for anyone holding `convocation:create`; `response_closed` (deadline inclusive to kickoff exclusive) is forbidden for everyone, admin included (`ConvocationCreationWindowClosedError`); `retroactive` (from kickoff inclusive) requires `convocation:create_retroactive` (`ForbiddenError` otherwise). `now` is injected (clock dependency of `CreateConvocationUseCase`), never read by the policy. The time window lives in the use case only, not in RLS or a trigger — the same accepted risk as the player response deadline.
+
+### D3 — `convocation:create_retroactive`
+New RBAC action, Administrateur only. Mirrored in RLS: the `convocations_insert_create` policy rejects `date <= now()` unless `private.is_admin()`. Only the PERMISSION is mirrored in RLS; the `response_closed` window is use-case only, by design.
+
+### D4 — `created_at` is unforgeable
+`convocations` had no `created_at`: the migration adds it (`timestamptz not null default now()`), backfills existing rows to `least(now(), date - 1 second)` so none is flagged retroactive (every earlier creation path refused a past date), and adds a `BEFORE INSERT OR UPDATE` trigger forcing `now()` on insert and `old.created_at` on update.
+
+### UI
+The web form ViewModel exposes `isResponseWindowClosed` (submit disabled, inline message) and `isRetroactive` (hint: player responses will not be counted). The mobile coach form only exposes `isResponseWindowClosed`: a past kickoff stays refused for a coach, retroactive creation is an admin web action. At creation the web form no longer refuses a past date; editing still does.
+

@@ -43,6 +43,7 @@ Deux niveaux de référence, dans cet ordre de préférence :
 | player-unavailability — **page Équipe mobile, disponibilités** (`[v1] Mob - Équipe (Disponibilités)-{1,2,3,4,5}`) | — aucun lien fourni | 2026-10-01 | `docs/designs/team-availability/[v1] Mob - Équipe (Disponibilités)-{1,2,3,4,5}.png` | **instantané seul** |
 | web-mission-templates — **backoffice desktop : référentiel des missions (onglets par type, liste, dialogue d'ajout)** (`[Admin] Web - Référentiel mission  {1,2,3,4}`) | — aucun lien fourni | 2026-10-02 | `docs/designs/desktop/mission-template/[Admin] Web - Référentiel mission  {1,2,3,4}.png` | **instantané seul** |
 | match-details-missions — **missions d'une convocation, vue coach (gestion) et vue joueur (inscription)** (`[v3] [Coach] Mob - Match details - Missions {1,2,3,4,5}`, `[v3] [Joueur] Mob - Match details - Missions {1,2}`) | — aucun lien fourni | 2026-10-02 | `docs/designs/match-missions/[v3] [Coach] Mob - Match details - Missions {1,2,3,4,5}.png`, `docs/designs/match-missions/[v3] [Joueur] Mob - Match details - Missions {1,2}.png` | **instantané seul** |
+| mobile-dirigeant-habilite — **vue Dirigeant habilité : tableau de bord mobile club-wide, filtre par section** (`[v4] [Dirigeant] Mob - Dashboard`) | — aucun lien fourni | 2026-10-03 | `docs/designs/authorized-officer/[v4] [Dirigeant] Mob - Dashboard.png` | **instantané seul** |
 
 Une ligne par feature ayant une maquette associée. `Statut` prend une des valeurs suivantes :
 

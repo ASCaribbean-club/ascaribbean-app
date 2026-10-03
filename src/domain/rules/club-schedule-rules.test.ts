@@ -18,6 +18,7 @@ function convocation(id: string, date: string, overrides: Partial<Convocation> =
     cancelledBy: null,
     cancellationReason: null,
     createdBy: 'u1',
+    createdAt: '2026-10-01T08:00:00.000Z',
     ...overrides,
   }
 }

@@ -25,6 +25,7 @@ function convocation(id: string, teamId: string, type: Convocation['type'], date
     cancelledBy: null,
     cancellationReason: null,
     createdBy: 'u1',
+    createdAt: '2026-10-01T08:00:00.000Z',
   }
 }
 

@@ -8,6 +8,10 @@ interface CalendarConvocationListProps {
   mode: CalendarRangeMode
   selectedDate: Date
   onOpen: (convocationId: string) => void
+  // Dirigeant filtered-empty state (UI design §2): shown instead of the plain
+  // "Aucun événement ce jour" when a section filter is active.
+  emptyFilteredLabel?: string | null
+  onClearFilter?: () => void
 }
 
 // UI design §"Structure de l'écran" points 3–4 — the list for whichever
@@ -23,7 +27,7 @@ interface CalendarConvocationListProps {
 //     whole-screen "no team/season/convocations at all" case (AC-CA-11),
 //     rendered one level up in CalendarPage so this component doesn't need
 //     to know the difference between "empty day" and "empty everything".
-export function CalendarConvocationList({ items, mode, selectedDate, onOpen }: CalendarConvocationListProps) {
+export function CalendarConvocationList({ items, mode, selectedDate, onOpen, emptyFilteredLabel, onClearFilter }: CalendarConvocationListProps) {
   return (
     <section className="flex flex-col gap-1">
       {mode === 'month' && (
@@ -31,7 +35,16 @@ export function CalendarConvocationList({ items, mode, selectedDate, onOpen }: C
       )}
 
       {items.length === 0 ? (
-        <p className="py-6 text-center text-[13px] text-white/50">Aucun événement ce jour</p>
+        emptyFilteredLabel ? (
+          <div className="flex flex-col items-center gap-2 py-6">
+            <p className="text-center text-[13px] text-white/50">{emptyFilteredLabel}</p>
+            <button type="button" onClick={onClearFilter} className="h-11 text-[13px] font-semibold text-coach-green-link">
+              Afficher toutes les sections
+            </button>
+          </div>
+        ) : (
+          <p className="py-6 text-center text-[13px] text-white/50">Aucun événement ce jour</p>
+        )
       ) : (
         <ul className="m-0 flex list-none flex-col p-0">
           {items.map((item) => (
@@ -44,7 +57,8 @@ export function CalendarConvocationList({ items, mode, selectedDate, onOpen }: C
               responseBlock={item.responseBlock}
               matchResult={item.matchResult}
               attendanceConfirmationMissing={item.attendanceConfirmationMissing}
-              onOpen={onOpen}
+              sectionLabel={item.sectionLabel}
+              onOpen={item.isOpenable ? onOpen : undefined}
             />
           ))}
         </ul>

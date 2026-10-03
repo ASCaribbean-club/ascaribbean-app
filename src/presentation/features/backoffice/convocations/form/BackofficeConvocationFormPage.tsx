@@ -92,6 +92,18 @@ export function BackofficeConvocationFormPage() {
           <AlertDescription>Cette convocation n’est plus modifiable : elle est passée ou son statut a changé.</AlertDescription>
         </Alert>
       )}
+      {vm.isResponseWindowClosed && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            Les réponses des joueurs sont closes pour ce créneau : la convocation ne peut plus être créée.
+          </AlertDescription>
+        </Alert>
+      )}
+      {vm.isRetroactive && (
+        <Alert role="status">
+          <AlertDescription>Les réponses des joueurs ne seront pas comptabilisées pour cette convocation.</AlertDescription>
+        </Alert>
+      )}
       {vm.submitError && (
         <Alert variant="destructive" role="alert">
           <AlertDescription>{vm.submitError}</AlertDescription>

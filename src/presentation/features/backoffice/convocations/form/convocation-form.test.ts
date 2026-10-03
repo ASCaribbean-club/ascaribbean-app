@@ -4,6 +4,7 @@ import {
   EMPTY_CONVOCATION_FORM_VALUES,
   MEETING_POINT_MESSAGE,
   PAST_DATE_MESSAGE,
+  getFormCreationWindow,
   REQUIRED_FIELD_MESSAGE,
   buildCreateInput,
   buildUpdateInput,
@@ -48,11 +49,15 @@ describe('validateConvocationForm', () => {
     expect(errors.time).toBe(REQUIRED_FIELD_MESSAGE)
   })
 
-  it('refuses a date/time in the past, and one equal to now', () => {
-    expect(validateConvocationForm(values({ date: '2026-09-30', trainingLocationId: 'l1' }), 'create', NOW).date).toBe(PAST_DATE_MESSAGE)
-    expect(validateConvocationForm(values({ date: '2026-10-01', time: '12:00', trainingLocationId: 'l1' }), 'create', NOW).date).toBe(
+  it('refuses a date/time in the past, and one equal to now, when editing', () => {
+    expect(validateConvocationForm(values({ date: '2026-09-30', trainingLocationId: 'l1' }), 'edit', NOW).date).toBe(PAST_DATE_MESSAGE)
+    expect(validateConvocationForm(values({ date: '2026-10-01', time: '12:00', trainingLocationId: 'l1' }), 'edit', NOW).date).toBe(
       PAST_DATE_MESSAGE,
     )
+  })
+
+  it('accepts a past date/time when creating (retroactive entry, decided by the creation window)', () => {
+    expect(validateConvocationForm(values({ date: '2026-09-30', trainingLocationId: 'l1' }), 'create', NOW).date).toBeUndefined()
   })
 
   it('accepts a complete training', () => {
@@ -248,6 +253,7 @@ describe('valuesFromItem / valuesEqual (edit prefill and dirty check)', () => {
       cancelledBy: null,
       cancellationReason: null,
       createdBy: 'u1',
+      createdAt: '2026-01-01T00:00:00.000Z',
     },
     teamName: 'Équipe A',
     sectionId: 's1',
@@ -283,5 +289,23 @@ describe('valuesFromItem / valuesEqual (edit prefill and dirty check)', () => {
     expect(valuesEqual(base, valuesFromItem(item))).toBe(true)
     expect(valuesEqual(base, { ...base, isHome: true })).toBe(false)
     expect(valuesEqual(base, { ...base, agenda: ['x'] })).toBe(false)
+  })
+})
+
+describe('getFormCreationWindow', () => {
+  it('is null while the date or time is missing', () => {
+    expect(getFormCreationWindow(values({ date: '', time: '' }), NOW)).toBeNull()
+  })
+
+  it('is open well before the response deadline', () => {
+    expect(getFormCreationWindow(values({ date: '2026-10-02', time: '18:00' }), NOW)).toBe('open')
+  })
+
+  it('is response_closed inside the training deadline (10 min)', () => {
+    expect(getFormCreationWindow(values({ type: 'training', date: '2026-10-01', time: '12:05' }), NOW)).toBe('response_closed')
+  })
+
+  it('is retroactive once the kickoff has passed', () => {
+    expect(getFormCreationWindow(values({ date: '2026-09-30', time: '18:00' }), NOW)).toBe('retroactive')
   })
 })

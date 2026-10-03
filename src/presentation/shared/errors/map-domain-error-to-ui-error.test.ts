@@ -6,6 +6,7 @@ import { InvalidCredentialsError } from "@domain/errors/invalid-credentials-erro
 import { InvalidNewsInputError } from "@domain/errors/invalid-news-input-error";
 import { InvalidOpponentInputError } from "@domain/errors/invalid-opponent-input-error";
 import { InvalidRoleScopeError } from "@domain/errors/invalid-role-scope-error";
+import { ConvocationCreationWindowClosedError } from "@domain/errors/convocation-creation-window-closed-error";
 import { InvalidScheduleError } from "@domain/errors/invalid-schedule-error";
 import { InvalidMissionTemplateError } from "@domain/errors/invalid-mission-template-error";
 import { InvalidTrainingLocationInputError } from "@domain/errors/invalid-training-location-input-error";
@@ -104,6 +105,19 @@ describe("mapDomainErrorToUiError", () => {
       message: "Identifiants incorrects. Vérifiez votre saisie et réessayez.",
       variant: "inline",
       retryable: true,
+    });
+  });
+
+  it("maps ConvocationCreationWindowClosedError to a non-retryable inline error", () => {
+    const result = mapDomainErrorToUiError(
+      new ConvocationCreationWindowClosedError("closed window"),
+    );
+
+    expect(result).toEqual({
+      message:
+        "Les réponses des joueurs sont déjà closes pour ce créneau : la convocation ne peut plus être créée.",
+      variant: "inline",
+      retryable: false,
     });
   });
 

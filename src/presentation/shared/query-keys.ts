@@ -334,4 +334,17 @@ export const queryKeys = {
   // get_team_availability from the caller, so it never differs for the same
   // session and team.
   teamAvailability: (teamId: string) => ['availability', 'team', teamId] as const,
+
+  // specs/mobile-dirigeant-habilite.md — club-wide Dirigeant keys. All
+  // DISTINCT from the coach/player/admin ones above (different row sets and
+  // shapes; sharing an entry would leak club-wide data into a coach view for
+  // a coach+officer multi-role account). The section filter is NOT a
+  // discriminant: filtering happens client-side on the cached list.
+  clubOverview: () => ['club', 'overview'] as const,
+  clubSchedule: () => ['convocations', 'club', 'schedule'] as const,
+  clubTeams: () => ['teams', 'club', 'current-season'] as const,
+  clubSections: () => ['sections', 'club', 'list'] as const,
+  // The mobile console list (drafts + published, never archived) — distinct
+  // from newsAdminList (everything) and newsFeed (visible only).
+  newsManageList: () => ['news', 'manage', 'list'] as const,
 }

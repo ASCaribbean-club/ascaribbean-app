@@ -6,6 +6,7 @@ import { useLeaderboardDependencies } from '@presentation/di/hooks/use-leaderboa
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useActiveTeam } from '@presentation/shared/hooks/use-active-team'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
+import { useOfficerTeamSelection } from '@presentation/shared/hooks/use-officer-team-selection'
 import { queryKeys } from '@presentation/shared/query-keys'
 
 export interface LeaderboardCounter {
@@ -70,11 +71,15 @@ export function ownRowElementId(userId: string): string {
 export function useLeaderboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { activeRole } = useActiveRole()
+  const { activeRole, isOfficerView } = useActiveRole()
   const { selectedCoachTeamId } = useActiveTeam()
   const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase, getTeamPresenceLeaderboardUseCase } = useLeaderboardDependencies()
 
   const [tab, setTab] = useState<LeaderboardTab>('goals')
+  // Dirigeant habilité: section then team, in a collapsible panel that is open
+  // by default for them (it is how they pick a team). Not persisted.
+  const officer = useOfficerTeamSelection(isOfficerView)
+  const [areFiltersVisible, setAreFiltersVisible] = useState(isOfficerView)
   const isPresenceTab = tab === 'presence'
   // Counter tabs keep their metric; on the presence tab the (unused) counter
   // list falls back to goals so one query result serves every counter tab.
@@ -94,11 +99,11 @@ export function useLeaderboardViewModel() {
   const coachTeamsQuery = useQuery({
     queryKey: queryKeys.coachTeams(user?.id ?? ''),
     queryFn: () => getCoachTeamsUseCase.execute({ coachTeamIds }),
-    enabled: !!user && !isPlayerView && coachTeamIds.length > 0,
+    enabled: !!user && !isPlayerView && !isOfficerView && coachTeamIds.length > 0,
   })
   const currentCoachTeam = coachTeamsQuery.data?.find((summary) => summary.team.id === selectedCoachTeamId) ?? coachTeamsQuery.data?.[0]
 
-  const teamId = isPlayerView ? playerTeamId : currentCoachTeam?.team.id
+  const teamId = isOfficerView ? officer.teamId : isPlayerView ? playerTeamId : currentCoachTeam?.team.id
 
   const seasonQuery = useQuery({
     queryKey: queryKeys.seasonCurrent(),
@@ -121,7 +126,9 @@ export function useLeaderboardViewModel() {
 
   // "No team" is only meaningful once the coach-teams query settled (or was
   // never needed): never flashed while it is still loading.
-  const noTeam = !teamId && !coachTeamsQuery.isLoading && !seasonQuery.isLoading
+  const noTeam = !isOfficerView && !teamId && !coachTeamsQuery.isLoading && !seasonQuery.isLoading
+  // Officer with no team chosen yet: prompt instead of an empty state.
+  const needsTeamSelection = isOfficerView && !officer.teamId
 
   const entries = leaderboardQuery.data?.[metric] ?? []
   const rows: LeaderboardRowModel[] = entries.map((entry) => ({
@@ -169,7 +176,22 @@ export function useLeaderboardViewModel() {
       if (isPresenceTab) void presenceQuery.refetch()
     },
     noTeam,
+    needsTeamSelection,
     noCurrentSeason,
+
+    // Dirigeant section -> team filters (booleans/lists only).
+    isOfficerView,
+    areFiltersVisible,
+    toggleFilters: () => setAreFiltersVisible((current) => !current),
+    filtersSummary: [officer.selectedSectionName, officer.selectedTeamName].filter((part): part is string => part !== null).join(' · '),
+    sections: officer.sections,
+    areSectionsLoading: officer.areSectionsLoading,
+    selectedSectionId: officer.selectedSectionId,
+    onSelectSection: officer.onSelectSection,
+    teamOptions: officer.teamOptions,
+    selectedTeamId: officer.teamId ?? null,
+    onSelectTeam: officer.onSelectTeam,
+
     isRosterEmpty: leaderboardQuery.isSuccess && (leaderboardQuery.data?.goals.length ?? 0) === 0,
 
     tab,

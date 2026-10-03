@@ -5,6 +5,9 @@ interface BackofficeBrandMarkProps {
   // two-line text block, left-aligned — the sidebar header in
   // `[Admin] Web - Dashboard-3.png`, sitting above the 5 nav entries.
   variant?: 'stacked' | 'inline'
+  // Extra line under the subtitle (inline variant only) — the signed-in
+  // admin's name in the sidebar header.
+  caption?: string
 }
 
 // The app icon (public/icons/icon-512.png) + "AS Caribbean" wordmark,
@@ -18,7 +21,7 @@ interface BackofficeBrandMarkProps {
 // improvised one-offs. `subtitle` defaults to the mockup's "Espace admin";
 // pass an empty string to omit it (used by the two fallback screens, which
 // have their own heading right below).
-export function BackofficeBrandMark({ subtitle = 'Espace admin', variant = 'stacked' }: BackofficeBrandMarkProps) {
+export function BackofficeBrandMark({ subtitle = 'Espace admin', variant = 'stacked', caption }: BackofficeBrandMarkProps) {
   const logoSize = variant === 'stacked' ? 'size-14' : 'size-10'
   const logo = <img src="/icons/icon-512.png" alt="" aria-hidden className={`${logoSize} shrink-0 rounded-full object-cover`} />
 
@@ -29,6 +32,7 @@ export function BackofficeBrandMark({ subtitle = 'Espace admin', variant = 'stac
         <div className="flex flex-col leading-tight">
           <span className="text-sm font-extrabold text-foreground">AS Caribbean</span>
           {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
+          {caption && <span className="text-xs font-semibold text-foreground">{caption}</span>}
         </div>
       </div>
     )

@@ -17,11 +17,7 @@ interface NewsTableProps {
 
 // specs/web-actus.md UI design, "Écran — liste (/admin/news)": six columns
 // in mockup order (TITRE, CONTENU, DATE, EXPIRATION, LIEN, STATUT) plus an
-// edit action column — sticky header (top-16, under BackofficeTopBar's own
-// sticky h-16), opaque background so scrolling rows don't show through.
-// z-index kept BELOW BackofficeTopBar's z-10 (spec: "z-index inférieur à
-// celui de BackofficeTopBar pour que les deux se superposent dans le bon
-// ordre") — both were previously z-10, which let them tie/overlap on scroll.
+// edit action column.
 export function NewsTable({ rows, canWrite, onEdit, onDelete }: NewsTableProps) {
   return (
     <Table>
@@ -55,17 +51,10 @@ export function NewsTable({ rows, canWrite, onEdit, onDelete }: NewsTableProps) 
             </TableCell>
             {/* AC-WA-15 — published_at, NEVER created_at. */}
             <TableCell>{news.publishedAt ? toDateInputValue(new Date(news.publishedAt)) : '—'}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {news.expiresAt ? toDateInputValue(new Date(news.expiresAt)) : '—'}
-            </TableCell>
+            <TableCell className="text-muted-foreground">{news.expiresAt ? toDateInputValue(new Date(news.expiresAt)) : '—'}</TableCell>
             <TableCell>
               {news.link ? (
-                <a
-                  href={news.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-coach-green-link underline-offset-2 hover:underline"
-                >
+                <a href={news.link} target="_blank" rel="noopener noreferrer" className="text-coach-green-link underline-offset-2 hover:underline">
                   Voir le lien
                 </a>
               ) : (

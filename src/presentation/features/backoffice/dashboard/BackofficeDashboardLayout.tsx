@@ -1,9 +1,8 @@
 import { Outlet } from 'react-router-dom'
 import { BackofficeSidebar } from '@presentation/features/backoffice/components/BackofficeSidebar'
-import { BackofficeTopBar } from '@presentation/features/backoffice/components/BackofficeTopBar'
 import { useBackofficeDashboardViewModel } from './useBackofficeDashboardViewModel'
 
-// The dashboard shell (`/admin`): top bar + sidebar are fixed chrome,
+// The dashboard shell (`/admin`): the sidebar is fixed chrome (no top bar),
 // <Outlet/> renders whichever of the 6 sub-routes (overview/users/sections/
 // seasons/memberships/news) is currently active — the same "layout route
 // wraps an Outlet" shape as the mobile AppShell
@@ -31,14 +30,11 @@ export function BackofficeDashboardLayout() {
   const vm = useBackofficeDashboardViewModel()
 
   return (
-    <div className="dark flex min-h-svh flex-col bg-background font-backoffice text-foreground antialiased">
-      <BackofficeTopBar fullName={vm.fullName} initials={vm.initials} />
-      <div className="flex flex-1">
-        <BackofficeSidebar />
-        <main className="flex flex-1 flex-col gap-6 p-8">
-          <Outlet />
-        </main>
-      </div>
+    <div className="dark flex h-svh overflow-hidden bg-background font-backoffice text-foreground antialiased">
+      <BackofficeSidebar fullName={vm.fullName} />
+      <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto no-scrollbar p-8">
+        <Outlet />
+      </main>
     </div>
   )
 }

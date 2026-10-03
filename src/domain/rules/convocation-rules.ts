@@ -9,8 +9,15 @@ export interface ResponseCounts {
   pending: number
 }
 
+// A convocation stays "current" (dashboard's next convocation) until 6h after
+// its start, even once every attendance record is set — it only closes then.
+// ⚠️ Mirrored in SQL: private.close_convocation_if_complete and
+// private.close_elapsed_convocations (same 6h delay).
+export const CONVOCATION_CLOSURE_DELAY_MS = 6 * 60 * 60 * 1000
+
 export function isUpcoming(convocation: Convocation, now: Date): boolean {
-  return convocation.status === 'open' && new Date(convocation.date) > now
+  return convocation.status === 'open'
+    && new Date(convocation.date).getTime() + CONVOCATION_CLOSURE_DELAY_MS > now.getTime()
 }
 
 export function isPastDate(date: string, now: Date): boolean {

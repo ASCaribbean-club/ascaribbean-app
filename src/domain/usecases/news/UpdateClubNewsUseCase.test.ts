@@ -11,6 +11,10 @@ function adminUser(id = 'admin-1'): User {
   return { id, fullName: 'Admin', email: 'admin@example.com', roles: [{ role: 'admin' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
 
+function officerUser(): User {
+  return { id: 'officer-1', fullName: 'Officer', email: 'officer@example.com', roles: [{ role: 'authorized-officer' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
+}
+
 function coachUser(): User {
   return { id: 'coach-1', fullName: 'Coach', email: 'coach@example.com', roles: [{ role: 'coach', teamIds: [] }], position: null, age: null, handedness: null, charterAcceptedAt: null }
 }
@@ -140,5 +144,16 @@ describe('UpdateClubNewsUseCase', () => {
     )
     const [, passedInput] = update.mock.calls[0]
     expect(passedInput).not.toHaveProperty('createdBy')
+  })
+
+  // specs/mobile-dirigeant-habilite.md AC-DH-20/PO-DH-14 — guarded by
+  // 'news:update', no author comparison.
+  it('lets an authorized-officer update a news item authored by someone else', async () => {
+    const update = vi.fn(async (id: string, input: UpdateClubNewsInput) => ({ ...existingNews(), id, ...input }) satisfies ClubNews)
+    const useCase = new UpdateClubNewsUseCase(fakeUserRepository(officerUser()), fakeNewsRepository({ update }))
+
+    await useCase.execute(validInput({ actorId: 'officer-1' }))
+
+    expect(update).toHaveBeenCalledOnce()
   })
 })

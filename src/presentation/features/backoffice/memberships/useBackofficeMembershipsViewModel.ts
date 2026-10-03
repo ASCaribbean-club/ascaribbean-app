@@ -10,6 +10,7 @@ import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { assembleMembershipAdminRows, type MembershipAdminRow } from './membership-admin-row'
+import { useBackofficeFiltersCollapsed } from '@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed'
 
 export type MembershipStatusFilterValue = MembershipStatus | 'all'
 export type MembershipCotisationFilterValue = MembershipPaymentStatus | 'all'
@@ -62,6 +63,8 @@ export function useBackofficeMembershipsViewModel() {
   // below from currentSeasonQuery.data once it resolves.
   const [seasonFilter, setSeasonFilter] = useState<string | null>(null)
 
+  const { areFiltersCollapsed, toggleFiltersCollapsed } = useBackofficeFiltersCollapsed('memberships')
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   // Deep link from /admin/users' ADHÉSION SAISON redirect: `?newFor=<id>`
   // opens the creation dialog pre-selected on that account. Ignored without
@@ -75,16 +78,25 @@ export function useBackofficeMembershipsViewModel() {
   const [paymentTarget, setPaymentTarget] = useState<MembershipAdminRow | null>(null)
   const [pendingArchive, setPendingArchive] = useState<MembershipAdminRow | null>(null)
 
-  const membershipsQuery = useQuery({ queryKey: queryKeys.membershipsAdminList(), queryFn: () => membershipRepository.findAllForAdmin() })
+  const membershipsQuery = useQuery({
+    queryKey: queryKeys.membershipsAdminList(),
+    queryFn: () => membershipRepository.findAllForAdmin(),
+  })
   const usersQuery = useQuery({ queryKey: queryKeys.usersAdminList(), queryFn: () => userRepository.findAll() })
   const seasonsQuery = useQuery({ queryKey: queryKeys.seasonsAdminList(), queryFn: () => seasonRepository.findAll() })
-  const currentSeasonQuery = useQuery({ queryKey: queryKeys.seasonCurrent(), queryFn: () => seasonRepository.findCurrent() })
+  const currentSeasonQuery = useQuery({
+    queryKey: queryKeys.seasonCurrent(),
+    queryFn: () => seasonRepository.findCurrent(),
+  })
   // specs/web-memberships.md §2.10 (amendement du 2026-09-17) — ONE bulk
   // read for every payment across every membership, grouped below, rather
   // than one request per row (N+1). Backs the COTISATION column/filter for
   // every row AND the archive-confirmation dialog's own "already paid"
   // phrase (no separate per-target read needed anymore).
-  const allPaymentsQuery = useQuery({ queryKey: queryKeys.membershipPaymentsAdminList(), queryFn: () => paymentRepository.findAllForAdmin() })
+  const allPaymentsQuery = useQuery({
+    queryKey: queryKeys.membershipPaymentsAdminList(),
+    queryFn: () => paymentRepository.findAllForAdmin(),
+  })
 
   // specs/web-users-membership-column.md §2.3b/PO-WU-18 — the filter-applied
   // banner's own account-name lookup, gated on `userFilter` being present.
@@ -122,8 +134,7 @@ export function useBackofficeMembershipsViewModel() {
     },
   })
 
-  const isLoading =
-    membershipsQuery.isLoading || usersQuery.isLoading || seasonsQuery.isLoading || currentSeasonQuery.isLoading || allPaymentsQuery.isLoading
+  const isLoading = membershipsQuery.isLoading || usersQuery.isLoading || seasonsQuery.isLoading || currentSeasonQuery.isLoading || allPaymentsQuery.isLoading
   const queryError = membershipsQuery.error ?? usersQuery.error ?? seasonsQuery.error ?? currentSeasonQuery.error ?? allPaymentsQuery.error
   const error = queryError ? mapDomainErrorToUiError(queryError) : null
 
@@ -196,6 +207,8 @@ export function useBackofficeMembershipsViewModel() {
     error,
     rows,
     isFilterActive,
+    areFiltersCollapsed,
+    toggleFiltersCollapsed,
     canWriteMembership,
     canRecordPayment,
 
@@ -227,19 +240,21 @@ export function useBackofficeMembershipsViewModel() {
     // Drops `newFor` from the URL too, so a reload never re-opens the dialog.
     closeCreateDialog: () => {
       setIsCreateDialogOpen(false)
-      setSearchParams((current) => {
-        const next = new URLSearchParams(current)
-        next.delete('newFor')
-        return next
-      }, { replace: true })
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current)
+          next.delete('newFor')
+          return next
+        },
+        { replace: true },
+      )
     },
 
     // specs/web-memberships.md §1/UI design (amendement du 2026-09-17) — the
     // chevron/pencil toggle in ACTIONS. Expanding a row collapses any other
     // expanded row (single-expansion, see this hook's own state comment).
     expandedMembershipId,
-    toggleEditRow: (row: MembershipAdminRow) =>
-      setExpandedMembershipId((current) => (current === row.membership.id ? null : row.membership.id)),
+    toggleEditRow: (row: MembershipAdminRow) => setExpandedMembershipId((current) => (current === row.membership.id ? null : row.membership.id)),
     collapseEditRow: () => setExpandedMembershipId(null),
 
     paymentTarget,

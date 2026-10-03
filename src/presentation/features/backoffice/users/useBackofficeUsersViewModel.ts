@@ -10,6 +10,7 @@ import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import type { EditRoleAssignmentTarget } from './components/EditRoleAssignmentDialog'
 import type { InviteUserDialogTarget } from './useInviteUserDialogViewModel'
+import { useBackofficeFiltersCollapsed } from '@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed'
 
 export type UserRoleFilterValue = Role | 'all'
 export type UserStatusFilterValue = UserStatus | 'all'
@@ -60,7 +61,10 @@ export function useBackofficeUsersViewModel() {
   // findAdminDirectory() (this hook) and CountUsersRequiringAttentionUseCase
   // (useUsersNavBadge's own, separate read) — never an error when no season
   // is current, criteria 2/3 simply come back false (§2.3).
-  const currentSeasonQuery = useQuery({ queryKey: queryKeys.seasonCurrent(), queryFn: () => seasonRepository.findCurrent() })
+  const currentSeasonQuery = useQuery({
+    queryKey: queryKeys.seasonCurrent(),
+    queryFn: () => seasonRepository.findCurrent(),
+  })
   const currentSeasonId = currentSeasonQuery.data?.id ?? null
 
   const directoryQuery = useQuery({
@@ -74,7 +78,10 @@ export function useBackofficeUsersViewModel() {
   // warms (TanStack Query dedupes the request rather than firing a second
   // one).
   const teamsQuery = useQuery({ queryKey: queryKeys.teamsAdminList(), queryFn: () => teamRepository.findAllForAdmin() })
-  const sectionsQuery = useQuery({ queryKey: queryKeys.sectionsAdminList(), queryFn: () => sectionRepository.findAll() })
+  const sectionsQuery = useQuery({
+    queryKey: queryKeys.sectionsAdminList(),
+    queryFn: () => sectionRepository.findAll(),
+  })
 
   const isLoading = currentSeasonQuery.isLoading || directoryQuery.isLoading || teamsQuery.isLoading || sectionsQuery.isLoading
   const queryError = currentSeasonQuery.error ?? directoryQuery.error ?? teamsQuery.error ?? sectionsQuery.error
@@ -110,7 +117,11 @@ export function useBackofficeUsersViewModel() {
     navigate(`/admin/memberships?newFor=${userId}`)
   }
 
+  const { areFiltersCollapsed, toggleFiltersCollapsed } = useBackofficeFiltersCollapsed('users')
+
   return {
+    areFiltersCollapsed,
+    toggleFiltersCollapsed,
     isLoading,
     error,
     rows,

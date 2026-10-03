@@ -17,6 +17,7 @@ import {
 } from './convocation-filters'
 import { addMonths, monthRange, startOfMonth } from './calendar-grid'
 import { toConvocationRowView } from './convocation-row-view'
+import { useBackofficeFiltersCollapsed } from '@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed'
 
 export type ConvocationsViewMode = 'list' | 'calendar'
 
@@ -29,8 +30,7 @@ export type ConvocationsViewMode = 'list' | 'calendar'
 // the filters, so changing any of them starts that key's own cache entry at
 // page 0 — nothing hand-rolled (same reasoning as useBackofficeAuditViewModel).
 export function useBackofficeConvocationsViewModel() {
-  const { listAdminConvocationsUseCase, adminConvocationRepository, seasonRepository, sectionRepository, teamRepository } =
-    useConvocationAdminDependencies()
+  const { listAdminConvocationsUseCase, adminConvocationRepository, seasonRepository, sectionRepository, teamRepository } = useConvocationAdminDependencies()
   const navigate = useNavigate()
   const now = useNow()
   const canCreate = usePermission('convocation:create')
@@ -128,7 +128,11 @@ export function useBackofficeConvocationsViewModel() {
     })
   }
 
+  const { areFiltersCollapsed, toggleFiltersCollapsed } = useBackofficeFiltersCollapsed('convocations')
+
   return {
+    areFiltersCollapsed,
+    toggleFiltersCollapsed,
     canCreate,
     isLoading,
     error,

@@ -22,8 +22,6 @@ export function PlayerDashboardPage() {
         firstName={vm.firstName}
         initials={vm.initials}
         teamName={vm.teamName}
-        hasMultipleRoles={vm.hasMultipleRoles}
-        onRoleClick={vm.onRoleClick}
         onAvatarClick={vm.goToProfilePage}
       />
 

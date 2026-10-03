@@ -22,8 +22,6 @@ export function CoachDashboardPage() {
         activeMemberCount={vm.activeMemberCount}
         dayMarker={vm.dayMarker}
         hasMultipleTeams={vm.hasMultipleTeams}
-        hasMultipleRoles={vm.hasMultipleRoles}
-        onRoleClick={vm.onRoleClick}
         teams={vm.teams}
         selectedTeamId={vm.currentTeam?.id}
         onSelectTeam={vm.onSelectTeam}

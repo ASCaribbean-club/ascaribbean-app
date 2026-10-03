@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../shared/components/ui/select'
 import { Dot } from '../../../shared/components/Dot'
 import { Pill } from '../../../shared/components/Pill'
-import { formatRole } from '../../../shared/formatters/role-labels'
+import { RoleSwitcher } from '../../../shared/components/RoleSwitcher'
 
 // Reshapes shadcn's Select trigger to look like the role Pill beside it
 // (rounded-full, translucent border/bg, same text size/weight) instead of
@@ -22,8 +22,6 @@ interface CoachHeaderProps {
   activeMemberCount?: number
   dayMarker?: string
   hasMultipleTeams: boolean
-  hasMultipleRoles: boolean
-  onRoleClick: () => void
   // PO-6/AC-CD-14 resolved: real selection, not a click-through. `teams` is
   // the coach's full team list (for the dropdown's options — including the
   // single-team case where nothing renders it, see below), `selectedTeamId`
@@ -57,8 +55,6 @@ export function CoachHeader({
   activeMemberCount,
   dayMarker,
   hasMultipleTeams,
-  hasMultipleRoles,
-  onRoleClick,
   teams,
   selectedTeamId,
   onSelectTeam,
@@ -81,14 +77,7 @@ export function CoachHeader({
       />
 
       <div className="relative flex items-center gap-2">
-        {/* TODO(PO-2, AC-CD-13): no-op in v1 — Real behaviour (switch
-            active role and recompose the dashboard) is a future feature,
-            not this click handler. */}
-        <Pill onClick={onRoleClick}>
-          <img src="/icons/icon-512.png" alt="" aria-hidden className="size-5.5 shrink-0 rounded-full object-cover" />
-          {formatRole('coach')}
-          {hasMultipleRoles && <span className="text-white/60">▾</span>}
-        </Pill>
+        <RoleSwitcher />
 
         {/* Toujours affichée dès qu'une équipe est résolue — mais seule la
             variante multi-équipes est un vrai sélecteur (Select) : rien à

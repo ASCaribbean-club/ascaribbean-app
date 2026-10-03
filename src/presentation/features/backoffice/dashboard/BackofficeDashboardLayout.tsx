@@ -31,7 +31,7 @@ export function BackofficeDashboardLayout() {
 
   return (
     <div className="dark flex h-svh overflow-hidden bg-background font-backoffice text-foreground antialiased">
-      <BackofficeSidebar fullName={vm.fullName} />
+      <BackofficeSidebar fullName={vm.fullName} isCollapsed={vm.isSidebarCollapsed} onToggle={vm.toggleSidebar} />
       <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto no-scrollbar p-8">
         <Outlet />
       </main>

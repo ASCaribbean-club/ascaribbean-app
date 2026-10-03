@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
 import { cn } from '@presentation/shared/lib/utils'
 import { BACKOFFICE_NAV_ITEMS } from '@presentation/features/backoffice/backoffice-nav'
 import { useMembershipsNavBadge } from '@presentation/features/backoffice/memberships/useMembershipsNavBadge'
@@ -7,6 +8,7 @@ import { BackofficeBrandMark } from './BackofficeBrandMark'
 import { BackofficeLogoutButton } from './BackofficeLogoutButton'
 import { MembershipsAndInvitationsAlert } from './MembershipsAndInvitationsAlert'
 import { MissingRoleAlert } from './MissingRoleAlert'
+import { SidebarTooltip } from './SidebarTooltip'
 
 // Vertical nav, 7 fixed entries (specs/web-empty-state.md, "Navigation
 // latérale (Dashboard-3), 5 entrées", grown since by web-seasons/
@@ -35,49 +37,80 @@ import { MissingRoleAlert } from './MissingRoleAlert'
 // it doesn't fit — small laptop screens.
 interface BackofficeSidebarProps {
   fullName: string
+  isCollapsed: boolean
+  onToggle: () => void
 }
 
-export function BackofficeSidebar({ fullName }: BackofficeSidebarProps) {
+// `isCollapsed`: icon-only rail (w-20) — labels move to a tooltip, badges
+// become counts pinned on the icon, alerts shrink to an icon with a count.
+export function BackofficeSidebar({ fullName, isCollapsed, onToggle }: BackofficeSidebarProps) {
   return (
-    <nav aria-label="Navigation du backoffice" className="flex h-full w-64 shrink-0 flex-col border-r border-border">
-      <div className="shrink-0 px-6 py-4">
-        <BackofficeBrandMark variant="inline" caption={fullName} />
+    <nav
+      aria-label="Navigation du backoffice"
+      className={cn('flex h-full shrink-0 flex-col border-r border-border', isCollapsed ? 'w-20' : 'w-64')}
+    >
+      <div className={cn('shrink-0 py-4', isCollapsed ? 'flex justify-center' : 'px-6')}>
+        <BackofficeBrandMark variant={isCollapsed ? 'icon' : 'inline'} caption={fullName} />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 no-scrollbar py-2">
         <ul className="flex flex-col gap-1">
           {BACKOFFICE_NAV_ITEMS.map((item) => (
             <li key={item.id}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    // min-h-11 (44px, CLAUDE.md §6 touch-target rule) and the
-                    // whole row is the link — not just the label — so the
-                    // clickable area is the full width of the sidebar, not a
-                    // narrow text hitbox.
-                    'flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                    isActive && 'bg-muted text-foreground',
-                  )
-                }
-              >
-                <item.icon className="size-4.5 shrink-0" aria-hidden />
-                {item.label}
-                {item.id === 'memberships' && <MembershipsNavBadge />}
-                {item.id === 'users' && <UsersNavBadge />}
-              </NavLink>
+              <SidebarTooltip enabled={isCollapsed} label={item.label}>
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    cn(
+                      // min-h-11 (44px, CLAUDE.md §6 touch-target rule) and the
+                      // whole row is the link — not just the label — so the
+                      // clickable area is the full width of the sidebar, not a
+                      // narrow text hitbox.
+                      'relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                      isCollapsed && 'justify-center',
+                      isActive && 'bg-muted text-foreground',
+                    )
+                  }
+                >
+                  <item.icon className="size-4.5 shrink-0" aria-hidden />
+                  {isCollapsed ? <span className="sr-only">{item.label}</span> : item.label}
+                  {item.id === 'memberships' && <MembershipsNavBadge isCollapsed={isCollapsed} />}
+                  {item.id === 'users' && <UsersNavBadge isCollapsed={isCollapsed} />}
+                </NavLink>
+              </SidebarTooltip>
             </li>
           ))}
         </ul>
 
         <div className="mt-auto flex flex-col gap-3">
-          <MembershipsAndInvitationsAlert />
-          <MissingRoleAlert />
+          <MembershipsAndInvitationsAlert isCollapsed={isCollapsed} />
+          <MissingRoleAlert isCollapsed={isCollapsed} />
         </div>
       </div>
 
-      <div className="shrink-0 px-3 py-4">
-        <BackofficeLogoutButton />
+      <div className="flex shrink-0 flex-col gap-3 px-3 py-4">
+        <BackofficeLogoutButton isCollapsed={isCollapsed} />
+        <SidebarTooltip enabled={isCollapsed} label="Agrandir le menu">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={isCollapsed ? 'Agrandir le menu' : 'Réduire le menu'}
+            aria-expanded={!isCollapsed}
+            className={cn(
+              'flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+              isCollapsed ? 'size-11 self-center justify-center p-0' : 'w-full',
+            )}
+          >
+            {isCollapsed ? (
+              <IconLayoutSidebarLeftExpand className="size-4.5 shrink-0" aria-hidden />
+            ) : (
+              <>
+                <IconLayoutSidebarLeftCollapse className="size-4.5 shrink-0" aria-hidden />
+                Réduire le menu
+              </>
+            )}
+          </button>
+        </SidebarTooltip>
       </div>
     </nav>
   )
@@ -87,11 +120,20 @@ export function BackofficeSidebar({ fullName }: BackofficeSidebarProps) {
 // its own component (rather than inlined in the loop above) so its query
 // only ever runs once, for the single nav item that needs it — every other
 // BackofficeNavItem never triggers this hook.
-function MembershipsNavBadge() {
+function MembershipsNavBadge({ isCollapsed }: { isCollapsed: boolean }) {
   const { count } = useMembershipsNavBadge()
   if (count <= 0) return null
 
-  return <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">{count}</span>
+  return (
+    <span
+      className={cn(
+        'flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white',
+        isCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto',
+      )}
+    >
+      {count}
+    </span>
+  )
 }
 
 // specs/web-users.md §2.8/UI design "Badge de navigation" — twin of
@@ -99,9 +141,18 @@ function MembershipsNavBadge() {
 // BackofficeNavItem (§2.8's own instruction, backoffice-nav.ts's own comment
 // on why that field doesn't exist). Its own isolated child component so its
 // query only ever runs for THIS nav item.
-function UsersNavBadge() {
+function UsersNavBadge({ isCollapsed }: { isCollapsed: boolean }) {
   const { count } = useUsersNavBadge()
   if (count <= 0) return null
 
-  return <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white">{count}</span>
+  return (
+    <span
+      className={cn(
+        'flex h-5 min-w-5 items-center justify-center rounded-full bg-coach-red px-1.5 text-[11px] font-bold text-white',
+        isCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto',
+      )}
+    >
+      {count}
+    </span>
+  )
 }

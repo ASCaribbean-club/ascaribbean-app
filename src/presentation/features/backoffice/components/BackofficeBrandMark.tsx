@@ -4,7 +4,7 @@ interface BackofficeBrandMarkProps {
   // and the two full-screen fallback states. 'inline': logo beside a
   // two-line text block, left-aligned — the sidebar header in
   // `[Admin] Web - Dashboard-3.png`, sitting above the 5 nav entries.
-  variant?: 'stacked' | 'inline'
+  variant?: 'stacked' | 'inline' | 'icon'
   // Extra line under the subtitle (inline variant only) — the signed-in
   // admin's name in the sidebar header.
   caption?: string
@@ -24,6 +24,9 @@ interface BackofficeBrandMarkProps {
 export function BackofficeBrandMark({ subtitle = 'Espace admin', variant = 'stacked', caption }: BackofficeBrandMarkProps) {
   const logoSize = variant === 'stacked' ? 'size-14' : 'size-10'
   const logo = <img src="/icons/icon-512.png" alt="" aria-hidden className={`${logoSize} shrink-0 rounded-full object-cover`} />
+
+  // 'icon': logo only — the collapsed sidebar's header.
+  if (variant === 'icon') return logo
 
   if (variant === 'inline') {
     return (

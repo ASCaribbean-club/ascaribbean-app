@@ -9,7 +9,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@presentation/shared/components/ui/alert-dialog'
+import { IconLogout } from '@tabler/icons-react'
 import { Button } from '@presentation/shared/components/ui/button'
+import { SidebarTooltip } from './SidebarTooltip'
 import { useBackofficeLogoutButton } from './useBackofficeLogoutButton'
 
 // specs/web-dashboard.md §2.6/PO-WD-08a — the mobile LogoutButton's PATTERN
@@ -20,16 +22,26 @@ import { useBackofficeLogoutButton } from './useBackofficeLogoutButton'
 // treatment already used throughout BackofficeSidebar (`variant="outline"`,
 // full column width, `h-11`). A new, LOCAL component rather than an import
 // of features/menu/components/LogoutButton.tsx, deliberately (§2.6).
-export function BackofficeLogoutButton() {
+interface BackofficeLogoutButtonProps {
+  isCollapsed?: boolean
+}
+
+export function BackofficeLogoutButton({ isCollapsed = false }: BackofficeLogoutButtonProps) {
   const { onLogout } = useBackofficeLogoutButton()
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button variant="outline" className="h-11 w-full justify-start rounded-lg">
-          Déconnexion
-        </Button>
-      </AlertDialogTrigger>
+      <SidebarTooltip enabled={isCollapsed} label="Déconnexion">
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            aria-label="Déconnexion"
+            className={isCollapsed ? 'size-11 self-center rounded-lg p-0' : 'h-11 w-full justify-start rounded-lg'}
+          >
+            {isCollapsed ? <IconLogout className="size-4.5" aria-hidden /> : 'Déconnexion'}
+          </Button>
+        </AlertDialogTrigger>
+      </SidebarTooltip>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>

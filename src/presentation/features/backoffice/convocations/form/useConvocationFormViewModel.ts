@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { ConvocationType } from '@domain/entities/convocation'
+import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { isConvocationEditable } from '@domain/policies/convocation-admin-windows'
@@ -17,6 +18,7 @@ import {
   EMPTY_CONVOCATION_FORM_VALUES,
   buildCreateInput,
   buildUpdateInput,
+  getFormCreationWindow,
   resetTypeSpecificValues,
   validateConvocationForm,
   valuesEqual,
@@ -121,6 +123,13 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     ...serverFieldErrors,
   }
 
+  // Create only — the ViewModel exposes booleans, the component computes no
+  // dates. `response_closed` blocks the submit; `retroactive` only shows a
+  // hint (the use case and RLS decide the permission).
+  const creationWindow = isEdit ? null : getFormCreationWindow(values, now)
+  const isResponseWindowClosed = creationWindow === 'response_closed'
+  const isRetroactive = creationWindow === 'retroactive'
+
   const isDirty = isEdit ? !valuesEqual(values, baseValues) : true
 
   // --- Mutation ---
@@ -159,6 +168,12 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.adminConvocationsRoot(),
         })
+        return
+      }
+      if (error instanceof ConvocationCreationWindowClosedError) {
+        // The slot moved into the closed response window while the form was
+        // open (use case is the authority): same copy as the inline message.
+        setSubmitError(mapDomainErrorToUiError(error).message)
         return
       }
       if (error instanceof TrainingLocationArchivedError) {
@@ -246,7 +261,9 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     submitError,
     // AC-WC-23 — once the window closed there is nothing to retry; for edit,
     // saving is also disabled while nothing changed (form state, not a right).
-    canSubmit: !windowClosed && isDirty,
+    canSubmit: !windowClosed && isDirty && !isResponseWindowClosed,
+    isResponseWindowClosed,
+    isRetroactive,
 
     // Header (edit): plain-text reminder of what can't be changed.
     editSubtitle: item ? `${item.teamName} · ${formatConvocationType(item.convocation.type)}` : '',
@@ -260,7 +277,8 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     trainingLocations,
     hasNoTrainingLocations: !locationsQuery.isLoading && trainingLocations.length === 0,
     archivedCurrentLocation: storedLocation?.isArchived ? storedLocation : null,
-    minDate: toDateInputValue(now),
+    // Create: no lower bound — an admin may enter a forgotten past convocation.
+    minDate: isEdit ? toDateInputValue(now) : undefined,
 
     // Agenda editor
     agendaDraft,

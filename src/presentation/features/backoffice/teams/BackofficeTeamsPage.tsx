@@ -10,6 +10,7 @@ import { TeamFormDialog } from './components/TeamFormDialog'
 import { TeamTable } from './components/TeamTable'
 import { TeamTableSkeleton } from './components/TeamTableSkeleton'
 import { useBackofficeTeamsViewModel } from './useBackofficeTeamsViewModel'
+import { BackofficeFiltersToggle } from '@presentation/features/backoffice/components/BackofficeFiltersToggle'
 
 const navItem = BACKOFFICE_NAV_ITEMS.find((item) => item.id === 'teams')!
 
@@ -22,21 +23,20 @@ export function BackofficeTeamsPage() {
   const vm = useBackofficeTeamsViewModel()
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
+      <div className="flex shrink-0 items-center justify-between gap-4">
         <h2 className="text-xl font-bold text-foreground">Équipes</h2>
         {/* AC-ST-20 — rendered only if canWriteTeams, never grayed out: "une
             carte disparaît, elle n'apparaît pas désactivée". */}
-        {vm.canWriteTeams && (
-          <Button
-            type="button"
-            onClick={vm.openCreateDialog}
-            className="h-11 rounded-full bg-coach-green px-4 font-bold text-white hover:bg-coach-green"
-          >
-            <IconPlus className="size-4" aria-hidden />
-            Équipe
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <BackofficeFiltersToggle isCollapsed={vm.areFiltersCollapsed} hasActiveFilters={vm.isFilterActive} onToggle={vm.toggleFiltersCollapsed} />
+          {vm.canWriteTeams && (
+            <Button type="button" onClick={vm.openCreateDialog} className="h-11 rounded-full bg-coach-green px-4 font-bold text-white hover:bg-coach-green">
+              <IconPlus className="size-4" aria-hidden />
+              Équipe
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* §7/AC-ST-44 — three filters side by side, each needs `min-w-0`
@@ -44,91 +44,92 @@ export function BackofficeTeamsPage() {
           resized down to RequireDesktopViewport's floor, and three
           SelectTrigger without it would overlap the same way a mobile
           Date/Heure pair would. */}
-      <div className="flex flex-wrap gap-3">
-        <div className="min-w-[200px] flex-1 min-w-0">
-          <Select value={vm.sectionFilter} onValueChange={vm.setSectionFilter}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
-              <SelectValue placeholder="Toutes les sections" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les sections</SelectItem>
-              {vm.sections.map((section) => (
-                <SelectItem key={section.id} value={section.id}>
-                  {section.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {!vm.areFiltersCollapsed && (
+        <div className="flex shrink-0 flex-wrap gap-3">
+          <div className="min-w-[200px] flex-1 min-w-0">
+            <Select value={vm.sectionFilter} onValueChange={vm.setSectionFilter}>
+              <SelectTrigger className="h-11 w-full rounded-xl">
+                <SelectValue placeholder="Toutes les sections" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les sections</SelectItem>
+                {vm.sections.map((section) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="min-w-[200px] flex-1 min-w-0">
-          <Select value={vm.seasonFilter} onValueChange={vm.setSeasonFilter}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
-              <SelectValue placeholder="Toutes les saisons" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les saisons</SelectItem>
-              {vm.seasons.map((season) => (
-                <SelectItem key={season.id} value={season.id}>
-                  {season.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="min-w-[200px] flex-1 min-w-0">
+            <Select value={vm.seasonFilter} onValueChange={vm.setSeasonFilter}>
+              <SelectTrigger className="h-11 w-full rounded-xl">
+                <SelectValue placeholder="Toutes les saisons" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les saisons</SelectItem>
+                {vm.seasons.map((season) => (
+                  <SelectItem key={season.id} value={season.id}>
+                    {season.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="min-w-[200px] flex-1 min-w-0">
-          {/* AC-ST-44 — "avec/sans coach" answers the exact same source as
+          <div className="min-w-[200px] flex-1 min-w-0">
+            {/* AC-ST-44 — "avec/sans coach" answers the exact same source as
               the COACH(S) column, never a second calculation (see
               useBackofficeTeamsViewModel's own comment on this filter). */}
-          <Select
-            value={vm.coachFilter}
-            onValueChange={(value) => vm.setCoachFilter(value as typeof vm.coachFilter)}
-          >
-            <SelectTrigger className="h-11 w-full rounded-xl">
-              <SelectValue placeholder="Avec ou sans coach" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Avec ou sans coach</SelectItem>
-              <SelectItem value="with">Avec coach</SelectItem>
-              <SelectItem value="without">Sans coach</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={vm.coachFilter} onValueChange={(value) => vm.setCoachFilter(value as typeof vm.coachFilter)}>
+              <SelectTrigger className="h-11 w-full rounded-xl">
+                <SelectValue placeholder="Avec ou sans coach" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Avec ou sans coach</SelectItem>
+                <SelectItem value="with">Avec coach</SelectItem>
+                <SelectItem value="without">Sans coach</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+      )}
+
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto no-scrollbar">
+        {vm.isLoading && <TeamTableSkeleton />}
+
+        {!vm.isLoading && vm.error && (
+          <Alert variant="destructive" role="alert">
+            <AlertDescription>{vm.error.message}</AlertDescription>
+          </Alert>
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length === 0 && vm.isFilterActive && (
+          <BackofficeEmptyState
+            icon={navItem.icon}
+            title="Aucune équipe ne correspond à ce filtre"
+            description="Réinitialisez les filtres pour voir toutes les équipes."
+          />
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length === 0 && !vm.isFilterActive && (
+          <BackofficeEmptyState icon={navItem.icon} title={navItem.emptyStateTitle} />
+        )}
+
+        {!vm.isLoading && !vm.error && vm.rows.length > 0 && (
+          <TeamTable
+            rows={vm.rows}
+            canWriteTeams={vm.canWriteTeams}
+            canAssignCoach={vm.canAssignCoach}
+            onEdit={vm.openEditDialog}
+            onAssignCoach={vm.openAssignCoachDialog}
+            expandedTeamIds={vm.expandedTeamIds}
+            onToggleExpanded={vm.toggleTeamExpanded}
+            onAddOpponent={vm.openAddOpponentDialog}
+          />
+        )}
       </div>
-
-      {vm.isLoading && <TeamTableSkeleton />}
-
-      {!vm.isLoading && vm.error && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>{vm.error.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length === 0 && vm.isFilterActive && (
-        <BackofficeEmptyState
-          icon={navItem.icon}
-          title="Aucune équipe ne correspond à ce filtre"
-          description="Réinitialisez les filtres pour voir toutes les équipes."
-        />
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length === 0 && !vm.isFilterActive && (
-        <BackofficeEmptyState icon={navItem.icon} title={navItem.emptyStateTitle} />
-      )}
-
-      {!vm.isLoading && !vm.error && vm.rows.length > 0 && (
-        <TeamTable
-          rows={vm.rows}
-          canWriteTeams={vm.canWriteTeams}
-          canAssignCoach={vm.canAssignCoach}
-          onEdit={vm.openEditDialog}
-          onAssignCoach={vm.openAssignCoachDialog}
-          expandedTeamIds={vm.expandedTeamIds}
-          onToggleExpanded={vm.toggleTeamExpanded}
-          onAddOpponent={vm.openAddOpponentDialog}
-        />
-      )}
 
       <TeamFormDialog dialog={vm.dialog} onClose={vm.closeDialog} />
       <AddOpponentDialog targetTeam={vm.addOpponentTarget} teamOptions={vm.teamOptions} onClose={vm.closeAddOpponentDialog} />

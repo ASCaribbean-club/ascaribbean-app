@@ -6,6 +6,7 @@ import { useAuditLogDependencies } from '@presentation/di/hooks/use-audit-log-de
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { toAuditLogDateRange } from './audit-log-date-range'
+import { useBackofficeFiltersCollapsed } from '@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed'
 
 // specs/web-audit-logs.md §2.6/§2.7/AC-AU-12/AC-AU-13/AC-AU-24 — all the
 // logic lives here (ARCHITECTURE.md §6): the two date-only strings and the
@@ -69,7 +70,11 @@ export function useBackofficeAuditViewModel() {
     setSelectedActions([])
   }
 
+  const { areFiltersCollapsed, toggleFiltersCollapsed } = useBackofficeFiltersCollapsed('audit')
+
   return {
+    areFiltersCollapsed,
+    toggleFiltersCollapsed,
     isLoading,
     error,
     entries,

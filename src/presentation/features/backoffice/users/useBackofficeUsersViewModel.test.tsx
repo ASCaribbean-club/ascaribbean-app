@@ -13,6 +13,9 @@ import { useBackofficeUsersViewModel } from './useBackofficeUsersViewModel'
 // others silently), and the four write booleans must stay independently
 // computed, never collapsed into one canManageUsers.
 
+vi.mock('@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed', () => ({
+  useBackofficeFiltersCollapsed: () => ({ areFiltersCollapsed: false, toggleFiltersCollapsed: vi.fn() }),
+}))
 vi.mock('@presentation/di/hooks/use-users-dependencies')
 vi.mock('@presentation/shared/hooks/use-permission')
 

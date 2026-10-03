@@ -13,6 +13,9 @@ import { useBackofficeAuditViewModel } from './useBackofficeAuditViewModel'
 // change must reset pagination back to page 0, never mix pages fetched
 // under two different filter sets.
 
+vi.mock('@presentation/features/backoffice/shared/hooks/use-backoffice-filters-collapsed', () => ({
+  useBackofficeFiltersCollapsed: () => ({ areFiltersCollapsed: false, toggleFiltersCollapsed: vi.fn() }),
+}))
 vi.mock('@presentation/di/hooks/use-audit-log-dependencies')
 
 const mockedUseAuditLogDependencies = vi.mocked(useAuditLogDependencies)

@@ -4,7 +4,7 @@ import { EmptyState } from '@presentation/shared/components/EmptyState'
 import { Button } from '@presentation/shared/components/ui/button'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { AvailabilityCountTiles } from './components/AvailabilityCountTiles'
-import { AvailabilityFilterChips } from './components/AvailabilityFilterChips'
+import { AvailabilityFiltersPanel } from './components/AvailabilityFiltersPanel'
 import { AvailabilityListSkeleton } from './components/AvailabilityListSkeleton'
 import { AvailabilityRow } from './components/AvailabilityRow'
 import { useTeamAvailabilityViewModel } from './useTeamAvailabilityViewModel'
@@ -23,7 +23,31 @@ export function TeamAvailabilityPage() {
       <BackHeader title={vm.title} subtitle={vm.subtitle} onBack={vm.goBack} />
 
       <div className="flex flex-1 flex-col gap-4 px-5.5 pt-2 pb-10">
-        {vm.isLoading ? (
+        {vm.hasFilters && (
+          <AvailabilityFiltersPanel
+            isExpanded={vm.areFiltersVisible}
+            onToggle={vm.toggleFilters}
+            activeFiltersSummary={vm.activeFiltersSummary}
+            isOfficerView={vm.isOfficerView}
+            sections={vm.sections}
+            areSectionsLoading={vm.areSectionsLoading}
+            selectedSectionId={vm.selectedSectionId}
+            onSelectSection={vm.onSelectSection}
+            teamOptions={vm.teamOptions}
+            selectedTeamId={vm.selectedTeamId}
+            onSelectTeam={vm.onSelectTeam}
+            canFilterStatus={vm.canFilterStatus}
+            chips={vm.chips}
+            filter={vm.filter}
+            onFilterChange={vm.onFilterChange}
+          />
+        )}
+
+        {vm.needsTeamSelection ? (
+          <p className="py-8 text-center text-[14px] text-white/60">
+            {vm.needsSectionSelection ? 'Choisissez une section, puis une équipe.' : 'Choisissez une équipe.'}
+          </p>
+        ) : vm.isLoading ? (
           <AvailabilityListSkeleton />
         ) : vm.error ? (
           <div role="alert" className="flex flex-col items-center gap-4 py-16 text-center">
@@ -37,7 +61,6 @@ export function TeamAvailabilityPage() {
         ) : (
           <>
             <AvailabilityCountTiles counts={vm.counts} outLabel={vm.outLabel} />
-            <AvailabilityFilterChips chips={vm.chips} selected={vm.filter} onChange={vm.onFilterChange} />
             {vm.isFilterEmpty ? (
               <p className="py-8 text-center text-[14px] text-white/60">Aucun joueur dans cette catégorie</p>
             ) : (

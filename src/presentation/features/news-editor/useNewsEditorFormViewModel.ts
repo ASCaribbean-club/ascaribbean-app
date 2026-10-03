@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import type { ClubNews } from '@domain/entities/club-news'
 import type { CreatableClubNewsStatus } from '@domain/usecases/news/CreateClubNewsUseCase'
 import { useNewsDependencies } from '@presentation/di/hooks/use-news-dependencies'
@@ -9,32 +10,25 @@ import { toNewsFormValues, type NewsFormValues } from '@presentation/shared/form
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { queryKeys } from '@presentation/shared/query-keys'
 
-export type NewsFormMode = 'create' | 'edit'
-
-export type { NewsFormValues }
-
-const toFormValues = toNewsFormValues
-
-interface UseNewsFormDialogViewModelParams {
-  mode: NewsFormMode
+interface UseNewsEditorFormViewModelParams {
+  mode: 'create' | 'edit'
   // null in 'create' mode; the row being edited in 'edit' mode.
   news: ClubNews | null
-  onSuccess: () => void
 }
 
-// specs/web-actus.md UI design, "Nouveau composant — dialogue de
-// création/modification (NewsFormDialog)": one hook backs BOTH dialog
-// titles the mockups show — the caller (NewsFormDialog) is remounted with a
-// `key` that changes between "create" and the edited row's id, so this
-// hook's own `useState(() => toFormValues(news))` initializer runs exactly
-// once per dialog opening — no useEffect-driven reset that could clobber a
-// half-typed form on an unrelated parent re-render.
-export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFormDialogViewModelParams) {
+// One form, parameterised by mode (same as the backoffice NewsFormDialog).
+// Validation is the domain's (Create/UpdateClubNewsUseCase); `canSubmit` only
+// mirrors it to enable the button. On failure the typed values are kept and a
+// French message is shown, never a raw Supabase message (AC-DH-23).
+export function useNewsEditorFormViewModel({ mode, news }: UseNewsEditorFormViewModelParams) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { createClubNewsUseCase, updateClubNewsUseCase } = useNewsDependencies()
 
-  const [values, setValues] = useState<NewsFormValues>(() => toFormValues(news))
+  const [initialValues] = useState<NewsFormValues>(() => toNewsFormValues(news))
+  const [values, setValues] = useState<NewsFormValues>(initialValues)
+  const [isDiscardDialogOpen, setIsDiscardDialogOpen] = useState(false)
 
   function setField<K extends keyof NewsFormValues>(key: K, value: NewsFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -43,15 +37,9 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) {
-        // Unreachable in practice — RequireBackofficeAccess already gated
-        // this screen on an admin session — but keeps the mutationFn total
-        // rather than calling a use case with an empty actorId.
-        throw new Error('No authenticated admin session.')
+        throw new Error('No authenticated session.')
       }
-
-      // A draft may have no publish date yet (mirrors
-      // club_news_published_has_date, which only constrains 'published'
-      // rows) — only convert to ISO when a date was actually entered.
+      // A draft may have no publish date yet (club_news_published_has_date).
       const publishedAt = values.publishedAt ? combineDateAndTime(values.publishedAt, '00:00') : null
       const expiresAt = values.expiresAt ? combineDateAndTime(values.expiresAt, '00:00') : null
       const link = values.link.trim() || null
@@ -67,9 +55,7 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
           expiresAt,
         })
       }
-
-      // mode === 'edit': `news` is guaranteed non-null by NewsFormDialog's
-      // own prop typing (edit mode always carries the row being edited).
+      // Edit updates the SAME row (AC-DH-23).
       return updateClubNewsUseCase.execute({
         actorId: user.id,
         newsId: news!.id,
@@ -82,26 +68,21 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
       })
     },
     onSuccess: () => {
-      // AC-WA-19 — centralized queryKey, invalidated so the list reflects
-      // the change without a manual page reload.
+      // AC-DH-23: the Dirigeant list and the members' feed are both refreshed.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.newsManageList() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.newsFeed() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.newsAdminList() })
-      onSuccess()
+      navigate('/actus', { replace: true, state: { savedNewsStatus: values.status } })
     },
   })
 
-  // publishedAt is only required once status is 'published' — mirrors
-  // CreateClubNewsUseCase/UpdateClubNewsUseCase's own conditional check.
   const canSubmit =
     !!values.title.trim() &&
     !!values.details.trim() &&
     (values.status !== 'published' || !!values.publishedAt) &&
     !mutation.isPending
 
-  // AC-WA-20 — on failure the dialog stays open with the typed values
-  // untouched (no reset happens anywhere on error, only on the successful
-  // path above) and shows a generic French message translated from the
-  // DomainError, never a raw Supabase message.
-  const errorMessage = mutation.error ? mapDomainErrorToUiError(mutation.error).message : null
+  const isDirty = (Object.keys(values) as (keyof NewsFormValues)[]).some((key) => values[key] !== initialValues[key])
 
   return {
     values,
@@ -112,9 +93,17 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
     setExpiresAt: (value: string) => setField('expiresAt', value),
     setLink: (value: string) => setField('link', value),
 
+    isPublishedDateRequired: values.status === 'published',
     canSubmit,
     isSubmitting: mutation.isPending,
-    errorMessage,
+    errorMessage: mutation.error ? mapDomainErrorToUiError(mutation.error).message : null,
     submit: () => mutation.mutate(),
+    submitLabel: mutation.isPending ? (mode === 'create' ? 'Création…' : 'Enregistrement…') : mode === 'create' ? 'Créer l’actu' : 'Enregistrer',
+
+    // Back arrow: immediate when pristine, confirmation when dirty (Q-UI-05).
+    onBack: () => (isDirty ? setIsDiscardDialogOpen(true) : navigate('/actus')),
+    isDiscardDialogOpen,
+    stayOnForm: () => setIsDiscardDialogOpen(false),
+    discardChanges: () => navigate('/actus'),
   }
 }

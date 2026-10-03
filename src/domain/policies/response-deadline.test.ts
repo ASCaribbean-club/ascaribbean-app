@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Convocation } from '../entities/convocation'
-import { canPlayerRespond } from './response-deadline'
+import { canPlayerRespond, getResponseDeadline } from './response-deadline'
 
 function convocationWith(overrides: Partial<Convocation>): Convocation {
   return {
@@ -17,6 +17,7 @@ function convocationWith(overrides: Partial<Convocation>): Convocation {
     cancelledBy: null,
     cancellationReason: null,
     createdBy: 'coach-1',
+    createdAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   }
 }
@@ -44,5 +45,22 @@ describe('canPlayerRespond', () => {
     const convocation = convocationWith({ type: 'match', date: '2026-08-10T18:00:00.000Z' })
     const now = new Date('2026-08-10T17:30:00.000Z')
     expect(canPlayerRespond(convocation, now)).toBe(false)
+  })
+})
+
+describe('getResponseDeadline', () => {
+  const start = new Date('2026-08-10T18:00:00.000Z')
+
+  it('subtracts 10 min for a training', () => {
+    expect(getResponseDeadline('training', start).toISOString()).toBe('2026-08-10T17:50:00.000Z')
+  })
+
+  it('subtracts 60 min for a match', () => {
+    expect(getResponseDeadline('match', start).toISOString()).toBe('2026-08-10T17:00:00.000Z')
+  })
+
+  it('does not mutate the start date', () => {
+    getResponseDeadline('match', start)
+    expect(start.toISOString()).toBe('2026-08-10T18:00:00.000Z')
   })
 })

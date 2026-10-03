@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationType } from '../../entities/convocation'
 import type { Team } from '../../entities/team'
 import type { User } from '../../entities/user'
+import { ConvocationCreationWindowClosedError } from '../../errors/convocation-creation-window-closed-error'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidTrainingLocationInputError } from '../../errors/invalid-training-location-input-error'
 import { InvalidScheduleError } from '../../errors/invalid-schedule-error'
@@ -34,6 +35,19 @@ function coachUser(teamIds: string[]): User {
     fullName: 'Coach',
     email: 'coach@example.com',
     roles: [{ role: 'coach', teamIds }],
+    position: null,
+    age: null,
+    handedness: null,
+    charterAcceptedAt: new Date('2026-01-01T00:00:00.000Z'),
+  }
+}
+
+function adminUser(): User {
+  return {
+    id: 'admin-1',
+    fullName: 'Admin',
+    email: 'admin@example.com',
+    roles: [{ role: 'admin' }],
     position: null,
     age: null,
     handedness: null,
@@ -114,6 +128,7 @@ function convocationFrom(input: {
     cancelledBy: null,
     cancellationReason: null,
     createdBy: input.createdBy,
+    createdAt: '2026-01-01T00:00:00.000Z',
   }
 }
 
@@ -208,14 +223,55 @@ describe('CreateConvocationUseCase', () => {
     await expect(useCase.execute(trainingInput({ createdBy: 'manager-1' }))).rejects.toThrow(ForbiddenError)
   })
 
-  it('throws when the date is in the past', async () => {
-    const useCase = new CreateConvocationUseCase(
-      fakeUserRepository(coachUser(['team-1'])),
-      fakeTeamRepository([teamWith('team-1')]),
-      fakeConvocationRepository(),
-    )
+  // Creation window — a training's response deadline is 10 min before start.
+  describe('creation window', () => {
+    const KICKOFF = '2026-08-10T18:00:00.000Z'
+    const clockAt = (iso: string) => () => new Date(iso)
 
-    await expect(useCase.execute(trainingInput({ date: '2020-01-01T10:00:00.000Z' }))).rejects.toThrow()
+    function useCaseFor(user: User, nowIso: string) {
+      return new CreateConvocationUseCase(
+        fakeUserRepository(user),
+        fakeTeamRepository([teamWith('team-1')]),
+        fakeConvocationRepository(),
+        clockAt(nowIso),
+      )
+    }
+
+    it('creates a convocation before the response deadline', async () => {
+      const useCase = useCaseFor(coachUser(['team-1']), '2026-08-10T17:49:00.000Z')
+      await expect(useCase.execute(trainingInput({ date: KICKOFF }))).resolves.toBeDefined()
+    })
+
+    it('refuses a coach inside the closed response window', async () => {
+      const useCase = useCaseFor(coachUser(['team-1']), '2026-08-10T17:50:00.000Z')
+      await expect(useCase.execute(trainingInput({ date: KICKOFF }))).rejects.toThrow(
+        ConvocationCreationWindowClosedError,
+      )
+    })
+
+    it('refuses an admin too inside the closed response window', async () => {
+      const useCase = useCaseFor(adminUser(), '2026-08-10T17:59:00.000Z')
+      await expect(useCase.execute(trainingInput({ date: KICKOFF, createdBy: 'admin-1' }))).rejects.toThrow(
+        ConvocationCreationWindowClosedError,
+      )
+    })
+
+    it('refuses a retroactive creation by a coach, with no repository call', async () => {
+      const createTraining = vi.fn()
+      const useCase = new CreateConvocationUseCase(
+        fakeUserRepository(coachUser(['team-1'])),
+        fakeTeamRepository([teamWith('team-1')]),
+        fakeConvocationRepository({ createTraining }),
+        clockAt('2026-08-10T18:00:00.000Z'),
+      )
+      await expect(useCase.execute(trainingInput({ date: KICKOFF }))).rejects.toThrow(ForbiddenError)
+      expect(createTraining).not.toHaveBeenCalled()
+    })
+
+    it('accepts a retroactive creation by an admin', async () => {
+      const useCase = useCaseFor(adminUser(), '2026-08-12T09:00:00.000Z')
+      await expect(useCase.execute(trainingInput({ date: KICKOFF, createdBy: 'admin-1' }))).resolves.toBeDefined()
+    })
   })
 
   it('throws InvalidScheduleError when the RDV time is not before kickoff', async () => {

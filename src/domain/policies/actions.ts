@@ -288,3 +288,9 @@ export type Action =
   // convocation_missions insert/delete policies, the manager branch of
   // claim_mission and the mission_assignments manager delete policy.
   | 'mission:manage'
+  // Create a convocation whose kickoff is already past (forgotten entry).
+  // Admin only, club-wide, no team scope. Mirrors the `date > now() or
+  // private.is_admin()` branch of convocations_insert_create (RLS). Only the
+  // permission is mirrored there: the `response_closed` time window is
+  // CreateConvocationUseCase-only, by design.
+  | 'convocation:create_retroactive'

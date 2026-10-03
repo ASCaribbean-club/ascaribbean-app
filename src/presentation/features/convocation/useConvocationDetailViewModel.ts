@@ -67,6 +67,7 @@ export function useConvocationDetailViewModel() {
     confirmAttendanceUseCase,
     updateMatchDetailsUseCase,
     updateTrainingScheduleUseCase,
+    deleteConvocationUseCase,
     castVoteUseCase,
     getMyVoteUseCase,
     getVoteTallyUseCase,
@@ -637,6 +638,42 @@ export function useConvocationDetailViewModel() {
     saveTrainingMutation.mutate(combineDateAndTime(trainingFormValues.date, trainingFormValues.time))
   }
 
+  // --- Coach deletes an upcoming, open convocation (any type) (burger menu in the
+  // header). Same window as the edit controls; absent, never disabled. ---
+  const hasConvocationDeletePermission = usePermission('convocation:delete', { teamId: convocation?.teamId })
+  const canDeleteConvocation =
+    !!convocation &&
+    activeRole === 'coach' &&
+    roleMatchesConvocationTeam &&
+    convocation.status === 'open' &&
+    !isPastDate(convocation.date, now) &&
+    hasConvocationDeletePermission
+
+  const [deleteError, setDeleteError] = useState<UiError | null>(null)
+
+  const deleteConvocationMutation = useMutation({
+    mutationFn: () => {
+      if (!convocationId) {
+        return Promise.reject(new Error('no convocation to delete yet'))
+      }
+      return deleteConvocationUseCase.execute({ convocationId, now: new Date() })
+    },
+    onMutate: () => setDeleteError(null),
+    onSuccess: () => {
+      // Lists first, then leave: the detail query must not refetch a row that no longer exists.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.convocationsRoot() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminConvocationsRoot() })
+      navigate(-1)
+    },
+    onError: (error) => {
+      setDeleteError(mapDomainErrorToUiError(error))
+      // Window closed between render and write: resync so the menu disappears.
+      if (convocationId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationDetail(convocationId) })
+      }
+    },
+  })
+
   // --- specs/player-vote.md — third tab, net-new in this pass ---
   //
   // AC-PV-16/PO-PV-02 — only the positive category is ever wired here (the
@@ -1070,6 +1107,10 @@ export function useConvocationDetailViewModel() {
     canSubmitMatchDetails: matchDetailsIsDirty && !saveMatchDetailsMutation.isPending && !matchDetailsWindowClosed,
     isSavingMatchDetails: saveMatchDetailsMutation.isPending,
     onSubmitMatchDetails,
+    canDeleteConvocation,
+    onDeleteConvocation: () => deleteConvocationMutation.mutate(),
+    isDeletingConvocation: deleteConvocationMutation.isPending,
+    deleteError,
     canEditTraining,
     isEditingTraining,
     onStartEditTraining,

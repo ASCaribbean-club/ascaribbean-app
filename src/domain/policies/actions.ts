@@ -294,3 +294,4 @@ export type Action =
   // permission is mirrored there: the `response_closed` time window is
   // CreateConvocationUseCase-only, by design.
   | 'convocation:create_retroactive'
+  | 'convocation:delete'

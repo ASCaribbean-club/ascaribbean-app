@@ -260,6 +260,12 @@ describe('can', () => {
   // acting inside their own section (the pre-wired can.ts branch, §2 "quatrième
   // occurrence exacte du même écart" for 'section-manager', stays inert
   // until PO-EM-01 widens the matrix entry).
+  it('allows a coach to delete a convocation for one of their assigned teams only', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation:delete', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'convocation:delete', { teamId: 'team-2' })).toBe(false)
+  })
+
   // specs/web-create-convocation.md AC-WC-04 — 'admin' now holds this action
   // (club-wide); every OTHER non-coach role is still denied.
   it('denies every non-coach, non-admin role from updating match details, including a section-manager acting inside their own section', () => {

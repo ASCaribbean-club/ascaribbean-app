@@ -42,6 +42,7 @@ import { AssembleConvocationDetailFieldsUseCase } from '@domain/usecases/convoca
 import { ConfirmAttendanceUseCase } from '@domain/usecases/convocation/ConfirmAttendanceUseCase'
 import { ListAvailableTrainingLocationsUseCase } from '@domain/usecases/training-locations/ListAvailableTrainingLocationsUseCase'
 import { CreateConvocationUseCase } from '@domain/usecases/convocation/CreateConvocationUseCase'
+import { DeleteConvocationUseCase } from '@domain/usecases/convocation/DeleteConvocationUseCase'
 import { GetConvocationDetailsUseCase } from '@domain/usecases/convocation/GetConvocationDetailsUseCase'
 import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
 import { GetConvocationWithDetailsUseCase } from '@domain/usecases/convocation/GetConvocationWithDetailsUseCase'
@@ -122,6 +123,7 @@ export interface ConvocationContainer {
   // specs/edit-match-details.md §5/§7 — net-new, coach-only write path.
   updateMatchDetailsUseCase: UpdateMatchDetailsUseCase
   updateTrainingScheduleUseCase: UpdateTrainingScheduleUseCase
+  deleteConvocationUseCase: DeleteConvocationUseCase
   castVoteUseCase: CastVoteUseCase
   getMyVoteUseCase: GetMyVoteUseCase
   getVoteTallyUseCase: GetVoteTallyUseCase
@@ -186,6 +188,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const confirmAttendanceUseCase = new ConfirmAttendanceUseCase(userRepository, convocationRepository, attendanceRecordRepository)
   const updateMatchDetailsUseCase = new UpdateMatchDetailsUseCase(convocationRepository, matchDetailsRepository)
   const updateTrainingScheduleUseCase = new UpdateTrainingScheduleUseCase(convocationRepository)
+  const deleteConvocationUseCase = new DeleteConvocationUseCase(convocationRepository)
   const castVoteUseCase = new CastVoteUseCase(userRepository, convocationRepository, voteRepository)
   const getMyVoteUseCase = new GetMyVoteUseCase(voteRepository)
   const getVoteTallyUseCase = new GetVoteTallyUseCase(voteTallyRepository)
@@ -256,6 +259,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     confirmAttendanceUseCase,
     updateMatchDetailsUseCase,
     updateTrainingScheduleUseCase,
+    deleteConvocationUseCase,
     castVoteUseCase,
     getMyVoteUseCase,
     getVoteTallyUseCase,

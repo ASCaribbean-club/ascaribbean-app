@@ -47,4 +47,9 @@ export interface ConvocationRepository {
   updateTraining(payload: UpdateTrainingConvocationPayload): Promise<Convocation>
   updateMatch(payload: UpdateMatchConvocationPayload): Promise<Convocation>
   updateMeeting(payload: UpdateMeetingConvocationPayload): Promise<Convocation>
+
+  // Hard delete — satellites (match_details, responses, attendance, …) go
+  // with it via ON DELETE CASCADE. Only the coach RLS policy
+  // convocations_delete_coach (upcoming + open) lets it through.
+  delete(id: string): Promise<void>
 }

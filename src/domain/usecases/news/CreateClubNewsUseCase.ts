@@ -46,7 +46,7 @@ export class CreateClubNewsUseCase {
 
     // Club-wide action, no team/section scope (§3, 'admin' carries no scope
     // field in RoleAssignment) — no context object needed here.
-    if (!can(user, 'news:write')) {
+    if (!can(user, 'news:create')) {
       throw new ForbiddenError(`User ${input.actorId} is not authorized to write club news`)
     }
 

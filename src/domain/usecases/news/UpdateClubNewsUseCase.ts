@@ -38,7 +38,7 @@ export class UpdateClubNewsUseCase {
       throw new ForbiddenError(`User not found: ${input.actorId}`)
     }
 
-    if (!can(user, 'news:write')) {
+    if (!can(user, 'news:update')) {
       throw new ForbiddenError(`User ${input.actorId} is not authorized to write club news`)
     }
 

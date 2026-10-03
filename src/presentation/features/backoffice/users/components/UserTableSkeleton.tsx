@@ -2,7 +2,7 @@ import { Skeleton } from '@presentation/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@presentation/shared/components/ui/table'
 
 const SKELETON_ROW_COUNT = 4
-const SKELETON_COLUMN_COUNT = 6 // Nom, Email, Statut, Rôles, Adhésion saison, Actions
+const SKELETON_COLUMN_COUNT = 5 // Nom, Statut, Rôles, Adhésion saison, Actions
 
 // specs/web-users.md UI design, "Trois états" — skeleton rows while the
 // admin directory is in flight, never an empty table (AC-WU-22's "jamais un
@@ -13,7 +13,6 @@ export function UserTableSkeleton() {
       <TableHeader>
         <TableRow>
           <TableHead>Nom</TableHead>
-          <TableHead>Email</TableHead>
           <TableHead>Statut</TableHead>
           <TableHead>Rôles</TableHead>
           <TableHead>Adhésion saison</TableHead>

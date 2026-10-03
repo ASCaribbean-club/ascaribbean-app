@@ -20,7 +20,7 @@ import { queryKeys } from '@presentation/shared/query-keys'
 export interface NewsManagementRowView {
   id: string
   title: string
-  excerpt: string
+  details: string
   // publishedAt only, never createdAt; null for a draft with no date yet.
   dateLabel: string | null
   status: NewsConsoleStatus
@@ -60,7 +60,7 @@ export function useNewsManagementViewModel() {
     .map((news) => ({
       id: news.id,
       title: news.title,
-      excerpt: news.details,
+      details: news.details,
       dateLabel: news.publishedAt ? formatNewsDate(news.publishedAt) : null,
       status: getNewsConsoleStatus(news, now),
       canEdit: canUpdateNews,

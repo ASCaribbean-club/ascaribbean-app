@@ -4,6 +4,7 @@ import { Button } from '@presentation/shared/components/ui/button'
 import { cn } from '@presentation/shared/lib/utils'
 import type { NewsManagementRowView } from '../useNewsManagementViewModel'
 import { NEWS_CONSOLE_STATUS_BADGE } from './news-console-status'
+import { NewsDetails } from './NewsDetails'
 
 interface NewsManagementRowProps {
   row: NewsManagementRowView
@@ -30,7 +31,7 @@ export function NewsManagementRow({ row, onEdit }: NewsManagementRowProps) {
           </Badge>
         </div>
         <h3 className="m-0 line-clamp-2 text-[16px] leading-snug font-bold text-white">{row.title}</h3>
-        <p className="m-0 line-clamp-2 text-[13.5px] leading-relaxed text-white/60">{row.excerpt}</p>
+        <NewsDetails details={row.details} />
       </div>
       {row.canEdit && (
         <Button

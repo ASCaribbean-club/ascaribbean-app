@@ -1,13 +1,14 @@
 import type { Convocation } from '@domain/entities/convocation'
+import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-training-location-input-error'
 import { can } from '@domain/policies/can'
+import { getConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
 import type { UserRepository } from '@domain/repositories/user-repository'
-import { isPastDate } from '@domain/rules/convocation-rules'
 
 interface CreateConvocationBaseInput {
   teamId: string
@@ -56,6 +57,9 @@ export class CreateConvocationUseCase {
     private readonly userRepository: UserRepository,
     private readonly teamRepository: TeamRepository,
     private readonly convocationRepository: ConvocationRepository,
+    // Injected so the creation-window boundaries are testable; the policy
+    // functions themselves never read the clock.
+    private readonly now: () => Date = () => new Date(),
   ) { }
 
   async execute(input: CreateConvocationUseCaseInput): Promise<Convocation> {
@@ -81,8 +85,23 @@ export class CreateConvocationUseCase {
       )
     }
 
-    if (isPastDate(input.date, new Date())) {
-      throw new Error(`Convocation the user want to create is in the past: ${input.date}`)
+    // Creation window (domain/policies/convocation-creation-window.ts) —
+    // enforced here only, not in RLS: the closed response window is the same
+    // accepted risk as the player response deadline. Only the PERMISSION to
+    // create after kickoff is mirrored in RLS (convocations_insert_create).
+    //   open            -> allowed for anyone holding 'convocation:create'
+    //   response_closed -> refused for everyone, admin included
+    //   retroactive     -> admin only ('convocation:create_retroactive')
+    const creationWindow = getConvocationCreationWindow(input.type, new Date(input.date), this.now())
+    if (creationWindow === 'response_closed') {
+      throw new ConvocationCreationWindowClosedError(
+        `Player responses are already closed for a ${input.type} starting at ${input.date}`,
+      )
+    }
+    if (creationWindow === 'retroactive' && !can(user, 'convocation:create_retroactive')) {
+      throw new ForbiddenError(
+        `User ${input.createdBy} is not authorized to create a convocation in the past: ${input.date}`,
+      )
     }
 
     switch (input.type) {

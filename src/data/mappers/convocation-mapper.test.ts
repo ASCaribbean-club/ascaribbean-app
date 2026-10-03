@@ -45,7 +45,12 @@ describe('toConvocation', () => {
     cancelled_by: null,
     cancellation_reason: null,
     created_by: 'coach-1',
+    created_at: '2026-01-01T00:00:00.000Z',
   }
+
+  it('maps created_at to createdAt', () => {
+    expect(toConvocation({ ...base, created_at: '2026-03-04T10:00:00.000Z' }).createdAt).toBe('2026-03-04T10:00:00.000Z')
+  })
 
   it('maps a training that references a venue, with the joined name and address', () => {
     const result = toConvocation({

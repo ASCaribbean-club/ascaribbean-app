@@ -19,16 +19,27 @@ const RESPONSE_DEADLINE_MINUTES: Record<ConvocationType, number> = {
 }
 
 /**
+ * The instant from which a player can no longer respond (present/absent) to a
+ * convocation of this type starting at `startsAt`. Single source of truth for
+ * the response deadline: `canPlayerRespond` and `getConvocationCreationWindow`
+ * (convocation-creation-window.ts) both read it, so the delta is never
+ * duplicated.
+ */
+export function getResponseDeadline(type: ConvocationType, startsAt: Date): Date {
+  const deadline = new Date(startsAt)
+  deadline.setMinutes(deadline.getMinutes() - RESPONSE_DEADLINE_MINUTES[type])
+  return deadline
+}
+
+/**
  * Can this player still respond (present/absent) to this convocation?
  *
- * Computes the deadline by subtracting the type's `RESPONSE_DEADLINE_MINUTES`
- * delta from the convocation's date, then checks whether `now` is still
- * before it. Returns `false` once the deadline has passed — the response
- * window is closed, independent of the convocation's actual date/time.
- * Also returns `false` once the convocation is no longer `open`.
+ * Computes the deadline with `getResponseDeadline`, then checks whether `now`
+ * is still before it. Returns `false` once the deadline has passed — the
+ * response window is closed, independent of the convocation's actual
+ * date/time. Also returns `false` once the convocation is no longer `open`.
  */
 export function canPlayerRespond(convocation: Convocation, now: Date): boolean {
-  const deadline = new Date(convocation.date)
-  deadline.setMinutes(deadline.getMinutes() - RESPONSE_DEADLINE_MINUTES[convocation.type])
+  const deadline = getResponseDeadline(convocation.type, new Date(convocation.date))
   return now < deadline && convocation.status === 'open'
 }

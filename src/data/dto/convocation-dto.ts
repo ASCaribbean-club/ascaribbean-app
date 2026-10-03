@@ -25,6 +25,8 @@ export interface ConvocationRow {
   cancelled_by: string | null
   cancellation_reason: string | null
   created_by: string
+  // timestamptz default now(), forced server-side by trigger (never client-set).
+  created_at: string
 }
 
 // specs/edit-match-details.md, developer decision (2026-09-25) — the exact

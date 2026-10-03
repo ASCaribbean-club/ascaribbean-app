@@ -31,6 +31,10 @@ export interface Convocation {
   // fields below, which is why it lives directly here rather than on a
   // satellite entity.
   createdBy: string
+  // Server-set and immutable (BEFORE INSERT OR UPDATE trigger) — never
+  // client-supplied. With `date`, it derives "retroactive" (see
+  // isRetroactiveConvocation, domain/policies/convocation-creation-window.ts).
+  createdAt: string // ISO timestamp (timestamptz)
 }
 
 // specs/edit-match-details.md, developer decision (2026-09-25) widening

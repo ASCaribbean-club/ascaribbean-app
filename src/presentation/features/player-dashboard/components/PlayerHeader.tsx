@@ -1,14 +1,11 @@
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
-import { Pill } from '../../../shared/components/Pill'
-import { formatRole } from '../../../shared/formatters/role-labels'
+import { RoleSwitcher } from '../../../shared/components/RoleSwitcher'
 import { TeamPill } from './TeamPill'
 
 interface PlayerHeaderProps {
   firstName: string
   initials: string
   teamName?: string
-  hasMultipleRoles: boolean
-  onRoleClick: () => void
   onAvatarClick: () => void
 }
 
@@ -25,7 +22,7 @@ interface PlayerHeaderProps {
 //   - no ASC Legacy points line either (§6 correction 1, AC-PD-12) — the
 //     salutation is followed directly by whatever the page renders next
 //     (the alert banner or the convocation card), not by this component.
-export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, onRoleClick, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
+export function PlayerHeader({ firstName, initials, teamName, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
     // scrolling") — same reasoning as CoachHeader: the content below can
@@ -40,15 +37,7 @@ export function PlayerHeader({ firstName, initials, teamName, hasMultipleRoles, 
       />
 
       <div className="relative flex items-center gap-2">
-        {/* TODO(PO-2, AC-PD-18): no-op in v1 — real behaviour (switch
-            active role and recompose the dashboard) is a future feature,
-            not this click handler. Same decision as coach
-            (specs/coach-dashboard.md PO-2), not reopened here. */}
-        <Pill onClick={onRoleClick}>
-          <img src="/icons/icon-512.png" alt="" aria-hidden className="size-5.5 shrink-0 rounded-full object-cover" />
-          {formatRole('player')}
-          {hasMultipleRoles && <span className="text-white/60">▾</span>}
-        </Pill>
+        <RoleSwitcher />
 
         {/* Rendered only once the player's team resolves — absent, not
             grey, while loading/if there's no current-season assignment

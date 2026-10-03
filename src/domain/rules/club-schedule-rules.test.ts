@@ -79,8 +79,13 @@ describe('selectUpcoming', () => {
     expect(selectUpcoming(items, now)).toEqual([])
   })
 
-  it('excludes a convocation starting exactly at now', () => {
-    expect(selectUpcoming([{ convocation: convocation('x', now.toISOString()) }], now)).toEqual([])
+  it('keeps a convocation that started at now (open until 6h after its start)', () => {
+    expect(selectUpcoming([{ convocation: convocation('x', now.toISOString()) }], now)).toHaveLength(1)
+  })
+
+  it('excludes a convocation that started exactly 6h before now', () => {
+    const started = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString()
+    expect(selectUpcoming([{ convocation: convocation('x', started) }], now)).toEqual([])
   })
 })
 

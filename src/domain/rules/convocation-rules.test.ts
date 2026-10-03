@@ -32,8 +32,12 @@ describe('isUpcoming', () => {
     expect(isUpcoming(convocationAt('2026-08-25T18:30:00.000Z'), now)).toBe(true)
   })
 
-  it('is false for a convocation earlier the same day', () => {
-    expect(isUpcoming(convocationAt('2026-08-18T09:00:00.000Z'), now)).toBe(false)
+  it('is true for a convocation that started less than 6h ago', () => {
+    expect(isUpcoming(convocationAt('2026-08-18T09:00:00.000Z'), now)).toBe(true)
+  })
+
+  it('is false for a convocation that started 6h ago or more', () => {
+    expect(isUpcoming(convocationAt('2026-08-18T06:00:00.000Z'), now)).toBe(false)
   })
 
   it('is false for a convocation on a past date', () => {

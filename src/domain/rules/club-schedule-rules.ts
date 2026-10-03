@@ -20,7 +20,7 @@ export function filterTeamsBySection(teams: Team[], sectionId: string | null): T
   return teams.filter((team) => team.sectionId === sectionId)
 }
 
-// Upcoming = open and strictly in the future (same rule as isUpcoming),
+// Upcoming = open and started less than 6h ago or later (same rule as isUpcoming),
 // soonest first. The first element is the "Prochain événement" card (all
 // three types count, PO-DH-07: the label is "événement").
 export function selectUpcoming<T extends { convocation: Convocation }>(items: T[], now: Date): T[] {

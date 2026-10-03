@@ -10,6 +10,8 @@ import type { AttendanceRecord } from '../entities/convocation'
  * opening a migration file. It does NOT trigger any write itself.
  * Any change to this rule must be mirrored in the SQL trigger, and vice versa.
  */
+// Completeness alone no longer closes a convocation: closure also waits for
+// CONVOCATION_CLOSURE_DELAY_MS after its start (rules/convocation-rules.ts).
 export function isConvocationComplete(
   requiredUserIds: string[],
   attendanceRecords: AttendanceRecord[],

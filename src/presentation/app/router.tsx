@@ -5,6 +5,7 @@ import { UpdatePasswordPage } from '../features/auth/update-password/UpdatePassw
 import { ActivationPage } from '../features/auth/activation/ActivationPage'
 import { CharterPage } from '../features/auth/charter/CharterPage'
 import { NewsPage } from '../features/news/NewsPage'
+import { NewsEditorPage } from '../features/news-editor/NewsEditorPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
@@ -32,6 +33,7 @@ import { BackofficeConvocationFormPage } from '../features/backoffice/convocatio
 import { BackofficeAttendancePage } from '../features/backoffice/convocations/attendance/BackofficeAttendancePage'
 import { ActiveRoleProvider } from './providers/active-role-provider'
 import { ActiveTeamProvider } from './providers/active-team-provider'
+import { SectionFilterProvider } from './providers/section-filter-provider'
 import { DashboardIndexPage } from './DashboardIndexPage'
 import { RequireSession } from './RequireSession'
 import { RequireCharterAccepted } from './RequireCharterAccepted'
@@ -141,7 +143,12 @@ export const router = createBrowserRouter([
             element: (
               <ActiveRoleProvider>
                 <ActiveTeamProvider>
-                  <Outlet />
+                  {/* specs/mobile-dirigeant-habilite.md §1.2 — the Dirigeant's
+                      section filter, shared by the dashboard and the calendar
+                      (AC-DH-15), same scope as ActiveTeamProvider. */}
+                  <SectionFilterProvider>
+                    <Outlet />
+                  </SectionFilterProvider>
                 </ActiveTeamProvider>
               </ActiveRoleProvider>
             ),
@@ -221,6 +228,13 @@ export const router = createBrowserRouter([
               // Reached only via CreateConvocationFab today (coach-dashboard);
               // a future Calendrier "+" would push this same element (§7).
               { path: 'convocations/new', element: <CreateConvocationForm /> },
+              // specs/mobile-dirigeant-habilite.md §4 — create / edit a news
+              // item from the Dirigeant's Actus console: full-screen routes
+              // pushed OVER the Actus tab, no bottom nav (not under AppShell).
+              // The page itself refuses any active role other than the
+              // Dirigeant (AC-DH-03); RLS is the real boundary.
+              { path: 'actus/new', element: <NewsEditorPage /> },
+              { path: 'actus/:newsId/edit', element: <NewsEditorPage /> },
               // specs/match_details_page.md UI design, "Emplacement dans la
               // nav": second child of the same full-screen-over-tabs group as
               // convocations/new above, NOT a 5th BottomNav destination —

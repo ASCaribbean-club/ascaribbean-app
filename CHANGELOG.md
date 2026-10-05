@@ -3,6 +3,28 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [0.9.0] — 2026-10-05
+
+### Web
+**Administrateur**
+- Saisie d'un lien de paiement (https) sur la saison, affiché aux membres pour régler leur cotisation.
+
+### Mobile
+**Trésorier**
+- Nouveau tableau de bord des cotisations et liste des cotisations par statut de paiement.
+- Enregistrer un paiement (avec le mode de paiement) depuis la liste.
+- Envoyer des relances de cotisation aux membres concernés.
+
+**Coach**
+- Statistiques d'équipe : le taux de présence se base sur les présences confirmées et ne dépasse plus 100 %.
+- Statistiques d'équipe : nouveau taux de réponse des joueurs aux convocations, pour l'équipe et par joueur.
+- Statistiques d'équipe : le classement des buts est trié du meilleur buteur au moins bon.
+- Statistiques d'équipe : le filtre « Tout », sans effet, est retiré.
+
+**Tous**
+- Profil : ligne cotisation, historique des paiements et accès au lien de paiement.
+- Bandeau de rappel de cotisation, qui ouvre le profil au toucher.
+
 ## [0.8.0] — 2026-10-05
 
 ### Mobile

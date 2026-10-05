@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { useNotificationsDependencies } from "@presentation/di/hooks/use-notifications-dependencies";
 import { formatLongReminderDate } from "@presentation/shared/formatters/dues-reminder-labels";
 import { formatEuroAmount } from "@presentation/shared/formatters/currency";
@@ -20,6 +21,7 @@ const HIDE_ERROR_DURATION_MS = 3000;
 export function useDuesReminderViewModel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { getMyDuesReminderUseCase, markNotificationReadUseCase } =
     useNotificationsDependencies();
 
@@ -73,6 +75,7 @@ export function useDuesReminderViewModel() {
     remindedDateLabel: reminder
       ? formatLongReminderDate(reminder.remindedAt)
       : "",
+    onOpenProfile: () => navigate("/profile"),
     isHiding: hideMutation.isPending,
     hideErrorMessage,
     onHide: () => {

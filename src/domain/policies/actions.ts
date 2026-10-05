@@ -302,3 +302,11 @@ export type Action =
   // CreateConvocationUseCase-only, by design.
   | 'convocation:create_retroactive'
   | 'convocation:delete'
+  // specs/mobile-treasurer.md §3 (amended by the developer's scope update) —
+  // read-only access to the Cotisations screen: menu card and screen itself.
+  // Club-wide by construction (no scope check in can.ts). Earns an entry,
+  // unlike the dashboard routing, because the Menu must show or hide a card.
+  // Mirrors the role check of get_treasurer_dues()
+  // (supabase/migrations/20261005130000_get_treasurer_dues_rpc.sql). Reading
+  // only: no write or reminder action exists for this screen.
+  | 'dues:read'

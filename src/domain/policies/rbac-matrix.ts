@@ -435,4 +435,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // specs/match-details-missions.md §3 — the only two entries of that feature.
   'mission:self-assign': ['player'],
   'mission:manage': ['coach', 'section-manager', 'authorized-officer', 'admin'],
+
+  // specs/mobile-treasurer.md §3 (developer scope update) — read-only view of
+  // every cotisation: treasurer (CDC "Voir le statut de cotisation"),
+  // authorized-officer (developer decision, read mode only) and admin.
+  // Club-wide, no scope check in can.ts. Mirrors the role check of
+  // get_treasurer_dues() (`private.has_role('treasurer') or
+  // private.has_role('authorized-officer') or private.is_admin()`) — see
+  // supabase/migrations/20261005130000_get_treasurer_dues_rpc.sql. No write
+  // or reminder action is added (PO-TR-01).
+  'dues:read': ['treasurer', 'authorized-officer', 'admin'],
 }

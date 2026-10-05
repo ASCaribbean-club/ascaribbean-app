@@ -17,6 +17,10 @@ export function useMenuViewModel() {
   const availabilityTeamId = useAvailabilityTeamId()
   const canReadTeamAvailability = usePermission('availability:read-team', { teamId: availabilityTeamId })
 
+  // specs/mobile-treasurer.md §3 — 'dues:read' (treasurer, authorized-officer,
+  // admin): the Cotisations card is absent, never greyed out, without it.
+  const canViewDues = usePermission('dues:read')
+
   const [isChangelogOpen, setIsChangelogOpen] = useState(false)
   const lastVersionTapAt = useRef(0)
 
@@ -39,6 +43,7 @@ export function useMenuViewModel() {
     // specs/player-unavailability.md §1/UI design §1 — UX only; the RPC is the
     // real boundary.
     canReadTeamAvailability,
+    canViewDues,
 
     // specs/coach-team-stats.md PO-CTS-06 — the "Statistiques" card now
     // branches on the dashboard's active role: a coach reaches their own

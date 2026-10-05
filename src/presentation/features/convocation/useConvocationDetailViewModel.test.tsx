@@ -96,7 +96,7 @@ function renderViewModel(options: {
   })
   mockedUseActiveRole.mockReturnValue({ activeRole: options.activeRole ?? 'player', dashboardRoles: [],
     setActiveRole: vi.fn(),
-    toggleActiveRole: vi.fn(), isOfficerView: false, hasMultipleDashboardRoles: false })
+    toggleActiveRole: vi.fn(), isOfficerView: false, isTreasurerView: false, hasMultipleDashboardRoles: false })
 
   const respondToConvocationUseCase = { execute: vi.fn().mockResolvedValue(undefined) }
   const listConvocationRespondersUseCase = { execute: vi.fn().mockResolvedValue(options.responders ?? []) }

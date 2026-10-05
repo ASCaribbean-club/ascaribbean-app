@@ -1,4 +1,4 @@
-import { IconChartBar, IconFileText, IconTrophy, IconUsers } from '@tabler/icons-react'
+import { IconCoins, IconChartBar, IconFileText, IconTrophy, IconUsers } from '@tabler/icons-react'
 import { ChangelogDialog } from './components/ChangelogDialog'
 import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
@@ -42,7 +42,6 @@ export function MenuPage() {
           in-team ranking, not the championship standing. Neutral subtitle,
           never the mockup's fabricated "4e · 11 pts · J6" (AC-MN-04). */}
       <section className="flex flex-col gap-2.5">
-        <MenuSectionTitle>Suivi de l'équipe</MenuSectionTitle>
         <div className="grid grid-cols-2 gap-3">
           {vm.canViewStatistics && (
             <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
@@ -53,6 +52,9 @@ export function MenuPage() {
           {vm.canReadTeamAvailability && (
             <MenuNavCard icon={IconUsers} title="Disponibilités" subtitle="Effectif de l'équipe" to="/availability" />
           )}
+          {/* specs/mobile-treasurer.md — read-only Cotisations, only with
+              can('dues:read') (treasurer / authorized-officer). */}
+          {vm.canViewDues && <MenuNavCard icon={IconCoins} title="Cotisations" subtitle="Suivi des paiements" to="/dues" />}
         </div>
       </section>
 

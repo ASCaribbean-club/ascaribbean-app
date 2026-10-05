@@ -7,6 +7,7 @@ import { CharterPage } from '../features/auth/charter/CharterPage'
 import { NewsPage } from '../features/news/NewsPage'
 import { NewsEditorPage } from '../features/news-editor/NewsEditorPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
+import { DuesListPage } from '../features/treasurer/dues-list/DuesListPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
@@ -171,6 +172,11 @@ export const router = createBrowserRouter([
                   // confirms this rather than reopening it (§1, "Mon profil
                   // comme entrée de menu").
                   { path: 'menu', element: <MenuPage /> },
+                  // specs/mobile-treasurer.md "Emplacement dans la navigation" —
+                  // read-only Cotisations list, a sub-screen of Dashboard (reached
+                  // from "Gérer les cotisations" and from the Menu card, both
+                  // gated by 'dues:read'); the screen refuses a role without it.
+                  { path: 'dues', element: <DuesListPage /> },
                 ],
               },
               // specs/profile-page.md — pushed OVER a tab, same

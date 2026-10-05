@@ -16,6 +16,8 @@ export interface SeasonRow {
   start_date: string
   end_date: string
   cotisation_amount: number | null
+  // specs/profile-membership-dues.md §2.2 — nullable text, https only (CHECK).
+  payment_url: string | null
 }
 
 // specs/web-seasons.md §2.6/AC-WS-15 — insert payload for
@@ -28,6 +30,8 @@ export interface SeasonInsertRow {
   start_date: string
   end_date: string
   cotisation_amount: number | null
+  // specs/profile-membership-dues.md §2.2 — nullable text, https only (CHECK).
+  payment_url: string | null
 }
 
 // Update payload for SeasonRepositoryImpl.update() — same columns, same
@@ -38,4 +42,6 @@ export interface SeasonUpdateRow {
   start_date: string
   end_date: string
   cotisation_amount: number | null
+  // specs/profile-membership-dues.md §2.2 — nullable text, https only (CHECK).
+  payment_url: string | null
 }

@@ -485,3 +485,13 @@ Aucune primitive à ajouter pour cette passe (§ Sources, point 6) — différen
 - **PO-WS-02** — saisie du `LIBELLÉ` (texte libre validé vs. dérivé des dates) : sans effet sur l'empreinte visuelle retenue ici (un seul champ, une seule ligne), donc non traité plus avant par cette section.
 - **PO-WS-10 / PO-WS-12** *(amendement du 2026-09-17 (2))* — le champ « Cotisation (€) » n'a **aucune référence visuelle** : son placement (proposé en dernier champ du dialogue) et l'opportunité d'une colonne de montant dans la liste (**non ajoutée** ici) restent à confirmer avec la développeuse. Rappel ferme quel que soit l'arbitrage : champ **facultatif**, **jamais pré-rempli à `0`**.
 - Un message d'interface reste à écrire pour le cas `start_date > end_date` (AC-WS-10) **et pour le cas d'un montant invalide** (AC-WS-34) — `mapDomainErrorToUiError` n'a aujourd'hui de variante que pour le chevauchement. Pas une question de conception, mais deux textes manquants à ne pas découvrir en recette.
+
+## Amendement du 2026-10-05 — lien de paiement de la saison (`profile-membership-dues`)
+
+Décision développeuse, détaillée dans `specs/profile-membership-dues.md` (§2.2). Amendement en ajout ; le texte ci-dessus est conservé.
+
+- **§2.1** : « exactement **une** colonne nouvelle » (amendement du 2026-09-17 (2)) devient **deux** : `cotisation_amount_cents` **et** `payment_url` (`text`, nullable, `paymentUrl` côté domaine). `payment_url` est une donnée de **configuration** : l'URL de la page de paiement externe de la cotisation de la saison. Migration `20261005180000_seasons_payment_url.sql`.
+- **Contrainte** : `CHECK` **https uniquement**, longueur **<= 2048**, sans espace ; `http:`, `javascript:`, `data:` et toute valeur vide sont refusés. Miroir de la validation du domaine (`InvalidSeasonInputError`).
+- **AC-WS-31 amendé** : outre le tarif de référence `cotisation_amount_cents`, la feature touche le **lien de paiement** `payment_url`, donnée de configuration ni nominative ni de santé, sans encaissement ni montant par personne. Aucune autre donnée financière.
+- **SeasonFormDialog** : un champ **facultatif** « Lien de paiement » s'ajoute au dialogue (jamais `required`, pré-rempli en modification, vide sinon). Il reste sous la seule garde `can(user, 'season:write')` (AC-WS-19).
+- **AC-WS-35 inchangé sur la liste** : le tableau `/admin/seasons` **reste à quatre colonnes** ; ni le montant ni le lien n'y figurent.

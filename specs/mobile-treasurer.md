@@ -674,3 +674,9 @@ Rendu seulement si le ViewModel expose `canRemind` (`can('dues:remind')`, rôles
 ### Transmission (amendement 4, mise à jour)
 
 Côté Trésorier **et** côté membre : **prêts pour l'implémentation**. La migration (tables, RLS, `send_dues_reminders`, extension de `get_treasurer_dues()`, audit) reste à proposer à l'application, jamais appliquée en silence.
+
+## Amendement du 2026-10-05 (5) — le profil porte désormais la cotisation du membre (`profile-membership-dues`)
+
+- **Dernière phrase d'AC-TR-43 amendée** : « aucune donnée financière sur le profil (AC-MN-06 et AC-PR-10 inchangés) » ne vaut plus. Le profil affiche désormais la **propre cotisation du membre** (ligne Cotisation, son historique de versements, lien de paiement de la saison) ; **AC-PR-10 est remplacé** dans `specs/profile-page.md` §8. Le reste d'AC-TR-43 est inchangé (aucun e-mail, push, badge, Realtime ni polling ; aucune entrée de Menu ; aucun écran « Notifications »).
+- **§H, puce « AC-MN-06 et AC-PR-10 restent inchangés »** : seul **AC-MN-06** reste inchangé (rien n'est ajouté au Menu). AC-PR-10 est remplacé comme ci-dessus ; le profil n'est plus « sans donnée financière ».
+- **AC-TR-39 reste tel quel** : le bandeau de rappel ne porte toujours **pas** le lien de paiement ; le membre le trouve sur son profil (PO-PMD-06).

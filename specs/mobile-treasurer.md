@@ -302,9 +302,66 @@ Remplace, là où ils divergent, le §3 « Lecture — RLS/RPC seule, aucune ent
 
 ## Amendement du 2026-10-05 (2) — moyen de paiement
 
-- Décision développeuse : chaque paiement porte un **moyen de paiement** parmi **CB, Virement, Autre** (`'card' | 'transfer' | 'other'`). Ni espèces ni chèque : le CDC et cette spec ne les demandent pas.
+- Décision développeuse : chaque paiement porte un **moyen de paiement** parmi **CB, Espèces, Virement, Autre** (`'card' | 'cash' | 'transfer' | 'other'`). Pas de chèque. *(Corrigé le 2026-10-05, UI-TR-09 : la version initiale excluait les espèces ; le référentiel à quatre valeurs, migration `20261005150000_payment_method_cash.sql`, fait foi.)*
 - **Référentiel constant** dans le domaine (`domain/entities/payment-method.ts`, `PAYMENT_METHODS` + garde `isPaymentMethod`), sans table de référence ; libellés français dans `presentation/shared/formatters/payment-method-labels.ts`. En base : colonne `membership_payments.payment_method` en TEXT, **nullable** (lignes existantes), contrainte CHECK recopiée à la main (migration `20261005140000_payment_method.sql`, non appliquée), commentée des deux côtés.
 - `get_treasurer_dues()` renvoie le moyen par versement (même migration : suppression puis recréation, le type de retour ne changeant pas de colonnes mais le contenu JSON oui ; règle `dues:read` inchangée).
 - **Liste « Cotisations »** : l'historique des versements affiche « {date} · {moyen} » ; moyen nul = rien d'affiché. Aucun bouton « Modifier » (AC-TR-15 réduit : seul le bouton disparaît du périmètre, le moyen est désormais rendu).
 - **Saisie** : le dialogue admin d'enregistrement de paiement existant gagne un select optionnel « Moyen de paiement » (`h-11`, « Non précisé » par défaut) ; `RecordPaymentUseCase` le valide contre le référentiel et le persiste. Aucune nouvelle entrée de matrice.
 - **Portée vis-à-vis des points ouverts** : cela ne résout que la partie « moyen de paiement » de PO-TR-01(b) / PO-WM-04. La **correction d'un paiement** (modification, suppression) reste ouverte et non construite ; les relances aussi.
+
+## Amendement UI du 2026-10-05 (3) — PO-TR-01(a) ACCEPTÉ : enregistrer un paiement depuis la liste
+
+> Décision développeuse : le Trésorier **ajoute** un paiement depuis la liste « Cotisations » mobile. **Reste hors périmètre** : modifier/supprimer un paiement, relances et notifications, sélection groupée, **bouton flottant `+` / « + Paiement »** (tableau de bord et liste : toujours absents). Remplace, là où ils divergent, l'UI design ci-dessus (« aucun contrôle d'écriture », points 5 et 6 de l'écran B) et AC-TR-16 pour le seul contrôle « + Ajouter un paiement ». Références : `docs/designs/treasurer/[v5] [Trésorier] Mob - Cotisations 3.png` (carte dépliée, bouton vert « + Ajouter un paiement ») et `… 4.png` (confirme le bouton flottant à ne pas reprendre) ; contenu de formulaire : `RecordPaymentDialog` du backoffice (`src/presentation/features/backoffice/memberships/components/RecordPaymentDialog.tsx`). Aucun nouveau patron visuel : le formulaire est le même que celui de l'admin, rendu dans le `Dialog` shadcn déjà installé.
+
+**Droits (voir §3 « Écriture », non redéfini)** : le contrôle est rendu seulement si le ViewModel expose `canRecordPayment` (`can('payment:record')` = `admin` ou `treasurer`). Le Dirigeant habilité en lecture seule (amendement « accès à la liste ») **ne voit jamais** le bouton : absent, pas grisé. Le statut `treasurer`/`admin` d'un compte multi-rôles se lit sur les rôles portés, pas sur le rôle actif seul (même règle que `dues:read`).
+
+### Point d'entrée — carte de licencié dépliée
+
+- Dans le contenu déplié (sous la liste « VERSEMENTS », ou sous « Aucun versement enregistré »), un bouton pleine largeur **« + Ajouter un paiement »** : `Button` shadcn, `h-11`, `rounded-full`, vert `bg-coach-green` comme l'export 3. Il n'existe **que** dans la carte dépliée : une carte pliée n'a aucun bouton (pas de bouton « Enc… » ni sur le tableau de bord ni sur la carte repliée). La ligne de versement n'a toujours **pas** de bouton « Modifier ».
+- Carte **Soldée** : le bouton reste présent (un trop-perçu n'est pas bloqué par le domaine ; voir UI-TR-06).
+- Un tap ouvre le formulaire ci-dessous pour **cette** adhésion ; le nom du licencié et la saison sont rappelés dans l'en-tête du formulaire.
+
+### Formulaire « Enregistrer un paiement »
+
+- **Conteneur** : `Dialog` shadcn existant (le même primitive que `RecordPaymentDialog`), mais **pleine largeur sur mobile** : `max-w` aligné sur le viewport moins marges, ancré en bas d'écran, hauteur max ≈ 90 % du viewport, **corps défilant** (`overflow-y-auto`) et **pied fixe** (voir « Barre d'action »). Fermeture : bouton « Annuler », croix du `Dialog`, Échap ; si un montant a été saisi, la fermeture se fait **sans confirmation** (formulaire court, pas de donnée précieuse). Un `Sheet` shadcn serait équivalent mais ajouterait un primitive : non retenu (UI-TR-07).
+- **En-tête** : titre « Enregistrer un paiement » ; sous-titre `{nom du licencié} · saison {libellé}` (`min-w-0`, `truncate`) ; ligne de situation texte « {encaissé} / {dû} · reste {montant} » (même prédicat `membershipPaymentStatus()`, jamais recalculé, AC-TR-06). L'historique n'est **pas** répété dans le formulaire : il est déjà visible dans la carte, derrière.
+- **Champs** (une colonne, `gap-4`, étiquettes en capitales `text-xs tracking-wider` comme le dialogue admin) :
+  1. **MONTANT** — `Input` `type="number"` `inputMode="decimal"` `step="0.01"` `min="0.01"`, `h-11 rounded-xl`, suffixe « € » en superposition, `autoFocus` non (le clavier ne doit pas masquer l'en-tête à l'ouverture). Obligatoire.
+  2. **DATE DU VERSEMENT** — `Input type="date"`, `h-11 rounded-xl`, `max` = aujourd'hui, **défaut = aujourd'hui**. Obligatoire.
+  3. **MOYEN DE PAIEMENT** — `Select` shadcn, `SelectTrigger` `h-11 w-full rounded-xl`, **facultatif**, valeur par défaut « Non précisé » (sentinelle UI `'none'` → pas de valeur envoyée). Options, issues du référentiel constant `PAYMENT_METHODS` (`card | cash | transfer | other`) avec les libellés de `presentation/shared/formatters/payment-method-labels.ts` : **CB, Espèces, Virement, Autre**, dans cet ordre. Les `SelectItem` ont une hauteur tactile ≥ `h-11` (surcharge au site d'appel).
+- **Côte à côte** : **non**. Montant et date sont **empilés** (pas de `grid-cols-2`) : un `input type="date"` natif a une largeur intrinsèque qui déborderait sur un petit viewport. Si le développeur choisit tout de même Montant/Date côte à côte, **chaque item doit porter `min-w-0`** et se réduire à sa colonne, vérifié à un viewport mobile réel (CLAUDE.md §6) ; défaut recommandé : empilé.
+- **Texte d'aide** (italique, `text-xs text-muted-foreground`) conservé mot pour mot du dialogue admin : « La cotisation peut être versée en plusieurs fois : ce montant s'ajoute aux versements déjà enregistrés. »
+
+### Barre d'action (sticky/ancrée)
+
+- `DialogFooter` **fixe en bas** du conteneur (`sticky bottom-0`, fond opaque `bg-background`, bordure haute, marge de sécurité `pb-[env(safe-area-inset-bottom)]` si utilisée ailleurs), toujours visible même clavier ouvert et corps défilant : le bouton principal ne sort jamais de l'écran (CLAUDE.md §6).
+- Deux boutons `h-11 rounded-full`, côte à côte en `flex` avec **`min-w-0 flex-1`** sur chacun : « Annuler » (`variant="outline"`) à gauche, **« Enregistrer »** (vert `bg-coach-green`, texte blanc gras) à droite. Libellés courts : aucun retour à la ligne.
+
+### États
+
+| État | Rendu |
+|---|---|
+| Initial | Date = aujourd'hui, montant vide, moyen « Non précisé ». « Enregistrer » **désactivé** tant que le montant n'est pas valide (`canSubmit` du ViewModel, validations de `RecordPaymentUseCase`, AC-WM-16) |
+| Validation | Montant vide, ≤ 0 ou > 2 décimales, date vide ou future : message sous le champ (`text-xs`, texte rouge **avec** libellé, pas la couleur seule) affiché à la perte de focus ou au submit ; pas d'`Alert` pour une erreur de champ. `aria-invalid` sur le champ |
+| Envoi | Tous les champs et « Annuler » désactivés ; bouton « Enregistrement… » ; double tap sans effet |
+| Erreur serveur (réseau, refus RLS/42501, autre) | `Alert variant="destructive"` `role="alert"` en haut du corps, message en français ; le formulaire reste ouvert et **les valeurs saisies sont conservées** ; « Enregistrer » redevient actif pour réessayer. Une erreur d'audit n'est jamais montrée (le paiement est enregistré, voir AC-TR-17) |
+| Succès | Fermeture du formulaire, **retour à la carte, toujours dépliée**, et message de confirmation bref (toast/`Alert` non bloquant sous l'en-tête, « Paiement de {montant} enregistré », 3 s, `role="status"`). Pas d'écran de confirmation intermédiaire |
+
+### Rafraîchissement après enregistrement (AC-TR-18)
+
+Le succès invalide, par clés centralisées (`presentation/shared/query-keys.ts`), la lecture `get_treasurer_dues` (donc liste, tableau de bord, bandeau « {n} licenciés avec un reste dû », comptes de statut, sous-titre « {encaissé} / {dû} ») ainsi que les clés admin des adhésions et de `profileMembership`. Visible sur la carte : le nouveau versement apparaît **en tête** de « VERSEMENTS » (plus récent d'abord) avec « {date} · {moyen} » ; la barre, « {encaissé} / {dû} », la pastille de statut (Impayée → Partielle → Soldée) et « reste {montant} » sont recalculés par `membershipPaymentStatus()`. Pendant le rechargement la carte garde ses valeurs précédentes (pas de squelette). Si un filtre de statut est actif (ex. « Impayées ») et que le licencié n'y appartient plus, la carte **disparaît de la liste** après le rafraîchissement : acceptable, signalé par le message de succès (UI-TR-08).
+
+### Ce qui n'est PAS conçu
+
+Bouton flottant `+` / « + Paiement » (dashboard et liste), « Enc… », « Modifier »/suppression d'un versement, « Relancer »/« Tout relancer », « Sélection », notifications, ouverture du formulaire depuis le tableau de bord.
+
+### Points ouverts UI
+
+| Réf. | Question | Défaut proposé | Bloquant ? |
+|---|---|---|---|
+| UI-TR-06 | Autoriser un paiement sur une adhésion Soldée (trop-perçu) ? | Oui, bouton présent, aucun garde-fou supplémentaire (le domaine n'en impose pas) | Non |
+| UI-TR-07 | Conteneur : `Dialog` existant ancré en bas, ou `Sheet` shadcn (`npx shadcn add sheet`) | `Dialog` (aucun primitive ajouté). Si la développeuse veut un vrai tiroir bas, produire d'abord un prototype Claude Design : aucun rendu de ce conteneur n'existe dans `docs/designs/` | Non |
+| UI-TR-08 | Carte qui disparaît d'une liste filtrée après un paiement | Oui, avec message de succès | Non |
+| UI-TR-09 | **Écart de spec** : l'amendement (2) ci-dessus dit « ni espèces ni chèque », alors que le code (`PAYMENT_METHODS`, `payment-method-labels.ts`, migration `20261005150000_payment_method_cash.sql`) et la décision actuelle incluent **Espèces** | Le référentiel à quatre valeurs (CB, Espèces, Virement, Autre) fait foi ; l'amendement (2) est à lire comme caduc sur ce point | Non |
+
+**Question bloquante : aucune.** Rappels côté implémentation (non UI) : élargir `'payment:record'` à `['admin','treasurer']`, politique d'insertion `membership_payments_insert_treasurer` et ouverture de `record_audit_log_entry` pour `membership.payment_recorded` (§3) sont **préalables** ; sans l'audit, un paiement de Trésorier ne serait pas tracé silencieusement. AC-TR-16 devient : aucun contrôle d'écriture **hormis « + Ajouter un paiement »** (conditionné à `canRecordPayment`), aucun contrôle de relance.

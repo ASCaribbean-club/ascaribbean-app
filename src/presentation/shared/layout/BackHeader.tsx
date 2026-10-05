@@ -53,7 +53,7 @@ export function BackHeader({ title, subtitle, onBack, action }: BackHeaderProps)
       {title && (
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-xl font-extrabold text-white">{title}</h1>
-          {subtitle && <p className="truncate text-[13px] text-white/60">{subtitle}</p>}
+          {subtitle && <p className="line-clamp-2 text-[13px] text-white/60">{subtitle}</p>}
         </div>
       )}
       {action && <div className="ml-auto shrink-0">{action}</div>}

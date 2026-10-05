@@ -14,6 +14,7 @@ import { createConvocationContainer, type ConvocationContainer } from './contain
 import { createLeaderboardContainer, type LeaderboardContainer } from './containers/leaderboard-container'
 import { createMembershipsContainer, type MembershipsContainer } from './containers/memberships-container'
 import { createMissionTemplatesContainer, type MissionTemplatesContainer } from './containers/mission-templates-container'
+import { createNotificationsContainer, type NotificationsContainer } from './containers/notifications-container'
 import { createNewsContainer, type NewsContainer } from './containers/news-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createPlayerStatsContainer, type PlayerStatsContainer } from './containers/player-stats-container'
@@ -39,6 +40,7 @@ export interface Container {
   memberships: MembershipsContainer
   missionTemplates: MissionTemplatesContainer
   news: NewsContainer
+  notifications: NotificationsContainer
   playerDashboard: PlayerDashboardContainer
   playerStats: PlayerStatsContainer
   profile: ProfileContainer
@@ -65,6 +67,7 @@ export function createContainer(): Container {
     memberships: createMembershipsContainer(supabaseClient),
     missionTemplates: createMissionTemplatesContainer(supabaseClient),
     news: createNewsContainer(supabaseClient),
+    notifications: createNotificationsContainer(supabaseClient),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     playerStats: createPlayerStatsContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),

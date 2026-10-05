@@ -4,6 +4,7 @@ import { cn } from "@presentation/shared/lib/utils";
 import { CollectionProgressBar } from "../../components/CollectionProgressBar";
 import { PaymentStatusBadge } from "../../components/PaymentStatusBadge";
 import type { DueView } from "../../due-view";
+import { ReminderRow } from "../../components/ReminderRow";
 
 interface DueCardProps {
   due: DueView;
@@ -13,18 +14,28 @@ interface DueCardProps {
   // greyed, for a read-only authorized-officer).
   canRecordPayment: boolean;
   onAddPayment: () => void;
+  // specs/mobile-treasurer.md amendement (4): the "Relancer" button is absent
+  // (not greyed) without it; the state line stays for a read-only role.
+  canRemind: boolean;
+  isReminderBusy: boolean;
+  onRemind: () => void;
 }
 
 // Expandable card: the whole header is the toggle (min h-11). Expanded:
 // payment history, most recent first, each with its payment method when
 // recorded, then "+ Ajouter un paiement" for a role that can record one
-// (amendement UI du 2026-10-05 (3)). No "Modifier", no reminder state.
+// (amendement UI du 2026-10-05 (3)). The reminder row (state line + "Relancer"
+// or the 7-day notice) sits between the header and the history, folded or
+// expanded (amendement (4), UI-TR-14). No "Modifier".
 export function DueCard({
   due,
   isExpanded,
   onToggle,
   canRecordPayment,
   onAddPayment,
+  canRemind,
+  isReminderBusy,
+  onRemind,
 }: DueCardProps) {
   const panelId = `due-payments-${due.id}`;
 
@@ -70,6 +81,15 @@ export function DueCard({
           </span>
         </span>
       </button>
+
+      <ReminderRow
+        memberName={due.name}
+        stateLabel={due.reminderStateLabel}
+        showButton={canRemind && due.isReminderEligible}
+        cooldownNotice={due.reminderCooldownNotice}
+        isBusy={isReminderBusy}
+        onRemind={onRemind}
+      />
 
       {isExpanded && (
         <div

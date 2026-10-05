@@ -1,4 +1,4 @@
-import type { TeamAttendanceSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
+import type { TeamAttendanceSummary, TeamResponseSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
 import type { CardTally } from '@domain/policies/team-stats-rules'
 import { Dot } from '@presentation/shared/components/Dot'
 import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
@@ -12,6 +12,7 @@ interface TeamRosterStatRowProps {
   // AC-CTS-07 — `null` means no AttendanceRecord at all for this player over
   // the period, rendered as an explicit "Aucune donnée" state, never a 0%.
   attendance: TeamAttendanceSummary | null
+  response: TeamResponseSummary | null
   goalsCount: number
   cards: CardTally
 }
@@ -21,7 +22,7 @@ interface TeamRosterStatRowProps {
 // (big value, mise en avant) + a compact secondary line carrying the two
 // OTHER metrics, never a value that disappears from the row entirely
 // (AC-CTS-05).
-export function TeamRosterStatRow({ displayName, filter, attendance, goalsCount, cards }: TeamRosterStatRowProps) {
+export function TeamRosterStatRow({ displayName, filter, attendance, response, goalsCount, cards }: TeamRosterStatRowProps) {
   const cardSummary = formatCardSummary(cards)
 
   return (
@@ -46,7 +47,7 @@ export function TeamRosterStatRow({ displayName, filter, attendance, goalsCount,
       {/* Secondary, compact line — always the two metrics NOT currently
           headlined, never omitted (AC-CTS-05). */}
       <p className="truncate text-[11.5px] font-semibold text-white/45">
-        {filter === 'presence' && `⚽ ${goalsCount} but${goalsCount > 1 ? 's' : ''} · ${cardSummary}`}
+        {filter === 'presence' && `${formatResponseRate(response)} · ⚽ ${goalsCount} but${goalsCount > 1 ? 's' : ''} · ${cardSummary}`}
         {filter === 'goals' && `${formatPresenceFraction(attendance)} · ${cardSummary}`}
         {filter === 'cards' && `${formatPresenceFraction(attendance)} · ⚽ ${goalsCount} but${goalsCount > 1 ? 's' : ''}`}
       </p>
@@ -90,4 +91,9 @@ function CardsHeadline({ cards, cardSummary }: { cards: CardTally; cardSummary: 
 function formatPresenceFraction(attendance: TeamAttendanceSummary | null): string {
   if (attendance === null || attendance.rate === null) return 'Aucune donnée de présence'
   return `${attendance.rate}% (${attendance.tally.presentCount}/${attendance.tally.totalCount})`
+}
+
+function formatResponseRate(response: TeamResponseSummary | null): string {
+  if (response === null || response.rate === null) return 'Réponses : —'
+  return `Réponses : ${response.rate}%`
 }

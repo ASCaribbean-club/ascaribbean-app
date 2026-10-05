@@ -61,11 +61,9 @@ export function useTeamStatsViewModel() {
   })
 
   const roster = teamStatsQuery.data?.roster ?? []
-  // UI-CTS-A left open by the spec (does the roster re-sort per active
-  // filter, or stay fixed?) — this pass keeps the order FIXED regardless of
-  // `filter` (alphabetical), the "safe default" the spec itself names,
-  // never a value-based sort that could read as a Legacy-style ranking
-  // (AC-CTS-08). Change only once UI-CTS-A is actually answered.
+  // Alphabetical by default; the 'goals' filter ranks by goals scored,
+  // descending (alphabetical tie-break keeps the order stable). Sorted after
+  // the map below because goalsCount is only known there.
   const rosterRows = [...roster]
     .sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'))
     .map((player) => ({
@@ -75,12 +73,14 @@ export function useTeamStatsViewModel() {
       // for this player over the period: `null` here, rendered as an
       // explicit "no data" state, never a 0%/absent-by-default.
       attendance: teamStatsQuery.data?.attendance.byPlayer[player.userId] ?? null,
+      response: teamStatsQuery.data?.responses.byPlayer[player.userId] ?? null,
       // Missing from either map means zero — a real, legitimate value for a
       // COUNT (unlike the attendance rate above, "no goal recorded" and "no
       // AttendanceRecord recorded" are not the same kind of absence).
       goalsCount: teamStatsQuery.data?.goals.byPlayer[player.userId] ?? 0,
       cards: teamStatsQuery.data?.cards.byPlayer[player.userId] ?? { yellowCount: 0, redCount: 0 },
     }))
+  if (filter === 'goals') rosterRows.sort((a, b) => b.goalsCount - a.goalsCount)
 
   return {
     isLoading: seasonQuery.isLoading || teamsQuery.isLoading || sectionQuery.isLoading || teamStatsQuery.isLoading,
@@ -101,6 +101,7 @@ export function useTeamStatsViewModel() {
 
     /// --- Présence de l'équipe (agrégat, §4.3) ---
     teamAttendance: teamStatsQuery.data?.attendance.team,
+    teamResponses: teamStatsQuery.data?.responses.team,
 
     /// --- Buts (agrégat d'équipe, §3, statique) ---
     teamGoals: teamStatsQuery.data?.goals.team,

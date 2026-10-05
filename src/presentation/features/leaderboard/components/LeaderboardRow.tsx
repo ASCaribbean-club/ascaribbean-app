@@ -2,7 +2,7 @@ import type { LeaderboardMetric } from '@domain/entities/leaderboard'
 import { Dot } from '@presentation/shared/components/Dot'
 import { cn } from '@presentation/shared/lib/utils'
 import { ownRowElementId, type LeaderboardRowModel } from '../useLeaderboardViewModel'
-import { METRIC_ACCENT, METRIC_SHAPE } from './leaderboard-accent'
+import { COUNTER_DOT, COUNTER_SHAPE, METRIC_ACCENT } from './leaderboard-accent'
 
 interface LeaderboardRowProps {
   row: LeaderboardRowModel
@@ -49,8 +49,8 @@ export function LeaderboardRow({ row, metric, emphasizeOwn }: LeaderboardRowProp
         </p>
         <ul className="flex min-w-0 items-center gap-3 text-[12px] font-semibold">
           {row.counters.map((counter) => (
-            <li key={counter.metric} className={cn('flex shrink-0 items-center gap-1.5', (muted || counter.count === 0) && 'opacity-40')}>
-              <Dot className={cn(METRIC_SHAPE[counter.metric].counter, counter.metric !== 'goals' && METRIC_ACCENT[counter.metric].dot)} />
+            <li key={counter.kind} className={cn('flex shrink-0 items-center gap-1.5', (muted || counter.count === 0) && 'opacity-40')}>
+              <Dot className={cn(COUNTER_SHAPE[counter.kind], counter.kind !== 'goals' && COUNTER_DOT[counter.kind])} />
               <span aria-hidden>{counter.count}</span>
               <span className="sr-only">{counter.label}</span>
             </li>

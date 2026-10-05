@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import type { LeaderboardEntry, LeaderboardMetric } from '@domain/entities/leaderboard'
+import type { LeaderboardCounterKind, LeaderboardEntry, LeaderboardMetric } from '@domain/entities/leaderboard'
 import { useLeaderboardDependencies } from '@presentation/di/hooks/use-leaderboard-dependencies'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useActiveTeam } from '@presentation/shared/hooks/use-active-team'
@@ -10,14 +10,14 @@ import { useOfficerTeamSelection } from '@presentation/shared/hooks/use-officer-
 import { queryKeys } from '@presentation/shared/query-keys'
 
 export interface LeaderboardCounter {
-  metric: LeaderboardMetric
+  kind: LeaderboardCounterKind
   count: number
   // sr-only text, e.g. "2 jaunes" — the colored dot alone means nothing to a
   // screen reader (AC-LB-17).
   label: string
 }
 
-// The three counter tabs plus the presence tab (its own read, own row shape).
+// The two counter tabs plus the presence tab (its own read, own row shape).
 export type LeaderboardTab = LeaderboardMetric | 'presence'
 
 export interface PresenceRowModel {
@@ -44,18 +44,23 @@ export interface LeaderboardRowModel {
   counters: LeaderboardCounter[]
 }
 
-const METRIC_ORDER: LeaderboardMetric[] = ['goals', 'yellow', 'red']
+// Secondary counters shown under each name: the goals tab lists the card
+// split, the cards tab (ranked on the total) lists the yellow/red split.
+const COUNTERS_BY_METRIC: Record<LeaderboardMetric, LeaderboardCounterKind[]> = {
+  goals: ['yellow', 'red'],
+  cards: ['yellow', 'red'],
+}
 
-function counterLabel(metric: LeaderboardMetric, count: number): string {
+function counterLabel(kind: LeaderboardCounterKind, count: number): string {
   const plural = count > 1
-  if (metric === 'goals') return `${count} but${plural ? 's' : ''}`
-  if (metric === 'yellow') return `${count} jaune${plural ? 's' : ''}`
+  if (kind === 'goals') return `${count} but${plural ? 's' : ''}`
+  if (kind === 'yellow') return `${count} jaune${plural ? 's' : ''}`
   return `${count} rouge${plural ? 's' : ''}`
 }
 
-function countOf(entry: LeaderboardEntry, metric: LeaderboardMetric): number {
-  if (metric === 'goals') return entry.goalsCount
-  if (metric === 'yellow') return entry.yellowCount
+function countOf(entry: LeaderboardEntry, kind: LeaderboardCounterKind): number {
+  if (kind === 'goals') return entry.goalsCount
+  if (kind === 'yellow') return entry.yellowCount
   return entry.redCount
 }
 
@@ -138,10 +143,10 @@ export function useLeaderboardViewModel() {
     value: entry.value,
     isMuted: entry.isMuted,
     isOwn: isPlayerView && entry.userId === user?.id,
-    counters: METRIC_ORDER.filter((other) => other !== metric).map((other) => ({
-      metric: other,
-      count: countOf(entry, other),
-      label: counterLabel(other, countOf(entry, other)),
+    counters: COUNTERS_BY_METRIC[metric].map((kind) => ({
+      kind,
+      count: countOf(entry, kind),
+      label: counterLabel(kind, countOf(entry, kind)),
     })),
   }))
 

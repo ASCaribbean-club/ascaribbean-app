@@ -1,4 +1,5 @@
 import type { Payment } from '../../entities/payment'
+import { isPaymentMethod, type PaymentMethod } from '../../entities/payment-method'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidPaymentInputError } from '../../errors/invalid-payment-input-error'
 import { can } from '../../policies/can'
@@ -10,6 +11,8 @@ export interface RecordPaymentUseCaseInput {
   actorId: string
   membershipId: string
   amountCents: number
+  // Optional (the form's select may stay empty); validated against the constant referential.
+  paymentMethod?: PaymentMethod | null
   paidAt: string // ISO date (yyyy-mm-dd) — date the payment was RECEIVED, §2.2.
 }
 
@@ -64,10 +67,16 @@ export class RecordPaymentUseCase {
       throw new InvalidPaymentInputError('paidAt is required')
     }
 
+    const paymentMethod = input.paymentMethod ?? null
+    if (paymentMethod !== null && !isPaymentMethod(paymentMethod)) {
+      throw new InvalidPaymentInputError('paymentMethod must be one of the known payment methods')
+    }
+
     const payment = await this.paymentRepository.create({
       membershipId: input.membershipId,
       amountCents: input.amountCents,
       paidAt: input.paidAt,
+      paymentMethod,
       recordedBy: user.id,
     })
 

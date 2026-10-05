@@ -1,4 +1,4 @@
-import type { TeamAttendanceSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
+import type { TeamAttendanceSummary, TeamResponseSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
 import type { CardTally } from '@domain/policies/team-stats-rules'
 import type { TeamStatsFilter } from '../useTeamStatsViewModel'
 import { TeamRosterStatRow } from './TeamRosterStatRow'
@@ -8,6 +8,7 @@ export interface TeamRosterStatEntry {
   userId: string
   displayName: string
   attendance: TeamAttendanceSummary | null
+  response: TeamResponseSummary | null
   goalsCount: number
   cards: CardTally
 }
@@ -39,6 +40,7 @@ export function TeamRosterSection({ roster, filter, onFilterChange }: TeamRoster
               displayName={entry.displayName}
               filter={filter}
               attendance={entry.attendance}
+              response={entry.response}
               goalsCount={entry.goalsCount}
               cards={entry.cards}
             />

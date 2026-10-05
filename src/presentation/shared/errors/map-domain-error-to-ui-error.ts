@@ -36,6 +36,7 @@ import { NotFoundError } from '@domain/errors/not-found-error'
 import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 import { PasswordResetTargetNotActiveError } from '@domain/errors/password-reset-target-not-active-error'
 import { InvalidMissionTemplateError } from '@domain/errors/invalid-mission-template-error'
+import { InvalidUnavailabilityInputError } from '@domain/errors/invalid-unavailability-input-error'
 import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-training-location-input-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
@@ -464,6 +465,14 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // covering both fields, same reasoning as InvalidSeasonInputError above.
     return {
       message: 'Le nom du lieu et l’adresse sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidUnavailabilityInputError) {
+    return {
+      message: 'Vérifiez les dates (format valide) et le nombre de matchs (entier positif ou nul).',
       variant: 'inline',
       retryable: true,
     }

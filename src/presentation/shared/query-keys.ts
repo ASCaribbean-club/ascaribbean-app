@@ -334,6 +334,9 @@ export const queryKeys = {
   // get_team_availability from the caller, so it never differs for the same
   // session and team.
   teamAvailability: (teamId: string) => ['availability', 'team', teamId] as const,
+  // A player's raw unavailability records, as seen by their coach / the
+  // Dirigeant (edit sheet pre-fill). Per caller: the Dirigeant never gets medical rows.
+  playerUnavailabilities: (playerId: string) => ['availability', 'player', playerId] as const,
 
   // specs/mobile-dirigeant-habilite.md — club-wide Dirigeant keys. All
   // DISTINCT from the coach/player/admin ones above (different row sets and

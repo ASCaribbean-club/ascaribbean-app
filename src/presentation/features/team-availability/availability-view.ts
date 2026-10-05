@@ -36,7 +36,7 @@ export function formatAvailabilityDate(iso: IsoDate): string {
 export function formatAvailabilitySubtitle(startsOn: IsoDate | null, endsOn: IsoDate | null): string | null {
   if (!startsOn) return null
   const from = `Depuis le ${formatAvailabilityDate(startsOn)}`
-  return endsOn ? `${from} · retour le ${formatAvailabilityDate(endsOn)}` : from
+  return endsOn ? `${from} · Retour le ${formatAvailabilityDate(endsOn)}` : from
 }
 
 export function buildAvailabilityRows(availability: TeamAvailability): AvailabilityRowView[] {
@@ -45,7 +45,7 @@ export function buildAvailabilityRows(availability: TeamAvailability): Availabil
       userId: entry.userId,
       displayName: entry.displayName,
       status: entry.status,
-      subtitle: entry.status === 'available' ? 'Aucune indisponibilité' : formatAvailabilitySubtitle(entry.startsOn, entry.endsOn),
+      subtitle: entry.status === 'available' ? null : formatAvailabilitySubtitle(entry.startsOn, entry.endsOn),
     }))
   }
 
@@ -83,4 +83,17 @@ export function filterAvailabilityRows(rows: AvailabilityRowView[], filter: Avai
 
 export function outCategoryLabels(view: TeamAvailability['view']): { tile: string; chip: string } {
   return view === 'coach' ? { tile: 'Malades', chip: 'Malades' } : { tile: 'Indisponibles', chip: 'Indisponibles' }
+}
+
+// A row opens the edit sheet when the viewer may write at least one kind for it.
+// A Dirigeant (suspension only) must not open a row whose status is the
+// teammate-projected 'unavailable': that is a medical record they cannot edit
+// (and cannot read), so the row stays inert rather than offering a sheet that
+// would fail.
+export function isRowEditable(
+  row: AvailabilityRowView,
+  permissions: { canDeclareMedical: boolean; canDeclareSuspension: boolean },
+): boolean {
+  if (permissions.canDeclareMedical) return true
+  return permissions.canDeclareSuspension && row.status !== 'unavailable'
 }

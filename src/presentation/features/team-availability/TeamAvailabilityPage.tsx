@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { EmptyState } from '@presentation/shared/components/EmptyState'
 import { Button } from '@presentation/shared/components/ui/button'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
+import { AvailabilityEditSheet } from './components/AvailabilityEditSheet'
 import { AvailabilityCountTiles } from './components/AvailabilityCountTiles'
 import { AvailabilityFiltersPanel } from './components/AvailabilityFiltersPanel'
 import { AvailabilityListSkeleton } from './components/AvailabilityListSkeleton'
@@ -66,13 +67,23 @@ export function TeamAvailabilityPage() {
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {vm.rows.map((row) => (
-                  <AvailabilityRow key={row.userId} row={row} />
+                  <AvailabilityRow key={row.userId} row={row} onSelect={vm.isRowEditable(row) ? () => vm.openEditor(row) : undefined} />
                 ))}
               </ul>
             )}
           </>
         )}
       </div>
+
+      {vm.editingRow && vm.teamId && (
+        <AvailabilityEditSheet
+          key={vm.editingRow.userId}
+          teamId={vm.teamId}
+          playerId={vm.editingRow.userId}
+          playerName={vm.editingRow.displayName}
+          onClose={vm.closeEditor}
+        />
+      )}
     </div>
   )
 }

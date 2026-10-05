@@ -22,7 +22,7 @@ const seniors = { id: 'section-seniors', name: 'Seniors' }
 const youth = { id: 'section-youth', name: 'Jeunes' }
 
 function due(overrides: Partial<TreasurerDue> = {}): TreasurerDue {
-  return { membershipId: 'm-1', memberName: 'Joueur A', amountDueCents: 10000, sections: [], payments: [], ...overrides }
+  return { membershipId: 'm-1', memberName: 'Joueur A', amountDueCents: 10000, sections: [], payments: [], reminder: { count: 0, lastRemindedAt: null }, ...overrides }
 }
 
 function entry(overrides: Partial<TreasurerDue> = {}, tariff: number | null = null): TreasurerDueEntry {

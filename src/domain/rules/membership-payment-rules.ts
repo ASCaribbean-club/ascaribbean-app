@@ -26,6 +26,9 @@ export function sumPaymentsCents(payments: Pick<Payment, 'amountCents'>[]): numb
 // fourth state exists and is not itself an arbitration of PO-WM-01/PO-WM-02.
 export type MembershipPaymentStatus = 'unpaid' | 'partial' | 'paid' | 'undefined'
 
+// SQL mirror: send_dues_reminders() reapplies this exact rule server-side to
+// refuse a reminder on a settled or undefined membership
+// (supabase/migrations/20261005170200_send_dues_reminders.sql, AC-TR-30).
 // AC-WM-12/AC-WM-13 — the ONE place this is computed; the COTISATION column,
 // the "cotisation" filter AND the activation rule (AC-WM-35, see
 // canSetMembershipActive below) never run a second calculation of their own.
@@ -69,6 +72,26 @@ export function membershipPaymentStatus(paidCents: number, amountDueCents: numbe
   if (paidCents <= 0) return 'unpaid'
   if (paidCents < amountDueCents) return 'partial'
   return 'paid'
+}
+
+// PO-TR-03 — the effective amount due: the membership's own, else the season
+// tariff (euros, converted to integer cents). null when neither exists.
+// Hand-mirrored in SQL by send_dues_reminders()
+// (supabase/migrations/20261005170200_send_dues_reminders.sql, "amount due"
+// block, `coalesce(m.amount_due_cents, round(s.cotisation_amount * 100))`):
+// change both together (specs/mobile-treasurer.md AC-TR-30, CLAUDE.md §7).
+export function effectiveAmountDueCents(ownAmountDueCents: number | null, seasonCotisationAmount: number | null): number | null {
+  if (ownAmountDueCents !== null) return ownAmountDueCents
+  return seasonCotisationAmount !== null ? Math.round(seasonCotisationAmount * 100) : null
+}
+
+// max(0, due - paid); 0 when the amount due is unknown. A reminder is only
+// ever sent when this is > 0 AND the status is 'unpaid' or 'partial'
+// (membershipPaymentStatus above) — mirrored in SQL by send_dues_reminders()
+// ("no_balance" branch). Single implementation of the remaining amount on the
+// TypeScript side (AC-TR-06).
+export function remainingDueCents(paidCents: number, amountDueCents: number | null): number {
+  return amountDueCents === null ? 0 : Math.max(0, amountDueCents - paidCents)
 }
 
 // specs/web-memberships.md §2.4/AC-WM-35 — règle d'activation, posée par la

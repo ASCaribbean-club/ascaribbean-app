@@ -13,7 +13,9 @@
 // may" one.
 import type { Payment } from '../entities/payment'
 
-export function sumPaymentsCents(payments: Payment[]): number {
+// Structural parameter (not Payment[]): the Treasurer's read model carries
+// only the amount and date of each payment (specs/mobile-treasurer.md §3).
+export function sumPaymentsCents(payments: Pick<Payment, 'amountCents'>[]): number {
   return payments.reduce((total, payment) => total + payment.amountCents, 0)
 }
 

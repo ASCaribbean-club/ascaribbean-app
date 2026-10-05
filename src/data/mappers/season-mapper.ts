@@ -9,6 +9,7 @@ export function toSeason(row: SeasonRow): Season {
     startDate: row.start_date,
     endDate: row.end_date,
     cotisationAmount: row.cotisation_amount,
+    paymentUrl: row.payment_url,
   }
 }
 
@@ -22,6 +23,7 @@ export function toSeasonInsertRow(input: CreateSeasonInput): SeasonInsertRow {
     start_date: input.startDate,
     end_date: input.endDate,
     cotisation_amount: input.cotisationAmount,
+    payment_url: input.paymentUrl,
   }
 }
 
@@ -32,5 +34,6 @@ export function toSeasonUpdateRow(input: UpdateSeasonInput): SeasonUpdateRow {
     start_date: input.startDate,
     end_date: input.endDate,
     cotisation_amount: input.cotisationAmount,
+    payment_url: input.paymentUrl,
   }
 }

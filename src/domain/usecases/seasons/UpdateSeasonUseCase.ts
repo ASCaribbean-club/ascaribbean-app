@@ -2,6 +2,7 @@ import type { Season, SeasonLabel } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
 import { can } from '../../policies/can'
+import { normalizePaymentUrl } from '../../rules/dues-payment-link-rules'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { SeasonRepository } from '../../repositories/season-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -18,6 +19,11 @@ export interface UpdateSeasonUseCaseInput {
   // other column, on a season whose end_date has passed (§2.7 — "le montant
   // d'une saison terminée est figé").
   cotisationAmount: number | null
+  // specs/profile-membership-dues.md AC-PMD-17 — optional payment link; a
+  // blank string means "no link" (normalized to null), anything else must be
+  // an https URL (normalizePaymentUrl, mirrored by the seasons.payment_url
+  // CHECK).
+  paymentUrl: string | null
 }
 
 // specs/web-seasons.md §2.3/§3, "La règle « saison terminée non modifiable »
@@ -84,11 +90,15 @@ export class UpdateSeasonUseCase {
     }
 
     // AC-WS-24 — updates the SAME row, never creates a duplicate.
+    // AC-PMD-17 — rejected from the domain before any network call.
+    const paymentUrl = normalizePaymentUrl(input.paymentUrl)
+
     const season = await this.seasonRepository.update(input.seasonId, {
       label: label as SeasonLabel,
       startDate: input.startDate,
       endDate: input.endDate,
       cotisationAmount: input.cotisationAmount,
+      paymentUrl,
     })
 
     // See this class's own top comment for why a rejection here does not

@@ -5,7 +5,7 @@ import type { UserMissingElementFactsEntry, UserRepository } from '../../reposit
 import { CountUsersRequiringAttentionUseCase } from './CountUsersRequiringAttentionUseCase'
 
 function currentSeason(): Season {
-  return { id: 'season-1', label: '2025-2026', startDate: '2025-09-01', endDate: '2026-06-30', cotisationAmount: null }
+  return { id: 'season-1', label: '2025-2026', startDate: '2025-09-01', endDate: '2026-06-30', cotisationAmount: null, paymentUrl: null }
 }
 
 function fakeSeasonRepository(overrides: Partial<SeasonRepository> = {}): SeasonRepository {

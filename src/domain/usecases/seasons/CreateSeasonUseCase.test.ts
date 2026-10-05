@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Season } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
-import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
+import { InvalidSeasonInputError, PaymentUrlTooLongError } from '../../errors/invalid-season-input-error'
 import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { CreateSeasonInput, SeasonRepository } from '../../repositories/season-repository'
 import type { User } from '../../entities/user'
@@ -72,6 +72,7 @@ function validInput(overrides: Partial<CreateSeasonUseCaseInput> = {}): CreateSe
     startDate: '2026-08-01',
     endDate: '2027-06-30',
     cotisationAmount: null,
+    paymentUrl: null,
     ...overrides,
   }
 }
@@ -141,6 +142,7 @@ describe('CreateSeasonUseCase', () => {
       startDate: '2026-08-01',
       endDate: '2027-06-30',
       cotisationAmount: null,
+      paymentUrl: null,
     })
   })
 
@@ -229,4 +231,59 @@ describe('CreateSeasonUseCase', () => {
 
     consoleErrorSpy.mockRestore()
   })
+
+  // specs/profile-membership-dues.md §2.2/AC-PMD-17 — payment link.
+  describe('paymentUrl validation (AC-PMD-17)', () => {
+    it('writes an https URL through as typed', async () => {
+      const create = vi.fn(async (input: CreateSeasonInput) => ({ id: 'season-1', ...input }) satisfies Season)
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: 'https://pay.example.org/cotisation' }))
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ paymentUrl: 'https://pay.example.org/cotisation' }))
+    })
+
+    it('normalizes an empty string to null', async () => {
+      const create = vi.fn(async (input: CreateSeasonInput) => ({ id: 'season-1', ...input }) satisfies Season)
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: '' }))
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ paymentUrl: null }))
+    })
+
+    it('normalizes a blank string to null', async () => {
+      const create = vi.fn(async (input: CreateSeasonInput) => ({ id: 'season-1', ...input }) satisfies Season)
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: '   ' }))
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ paymentUrl: null }))
+    })
+
+    it('rejects an http URL before any network call', async () => {
+      const create = vi.fn()
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: 'http://pay.example.org' }))).rejects.toThrow(InvalidSeasonInputError)
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    it('rejects a javascript: URL before any network call', async () => {
+      const create = vi.fn()
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: 'javascript:alert(1)' }))).rejects.toThrow(InvalidSeasonInputError)
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    it('rejects a URL longer than 2048 characters before any network call', async () => {
+      const create = vi.fn()
+      const useCase = new CreateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ create }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: `https://a.io/${'x'.repeat(2048)}` }))).rejects.toThrow(PaymentUrlTooLongError)
+      expect(create).not.toHaveBeenCalled()
+    })
+  })
+
 })

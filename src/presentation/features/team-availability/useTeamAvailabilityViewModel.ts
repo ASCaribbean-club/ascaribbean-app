@@ -13,7 +13,9 @@ import {
   countAvailability,
   filterAvailabilityRows,
   outCategoryLabels,
+  isRowEditable,
   type AvailabilityFilter,
+  type AvailabilityRowView,
 } from './availability-view'
 
 // specs/player-unavailability.md UI design §2 — the team availability list.
@@ -38,6 +40,11 @@ export function useTeamAvailabilityViewModel() {
   // Routing decision made BEFORE the query fires (`enabled`), never merely
   // hiding a result that was fetched anyway. UX only — the RPC re-checks.
   const canReadTeam = usePermission('availability:read-team', { teamId })
+  // Edit (declare / modify / lift): UX only, the RLS policies are the gate.
+  // Coach = medical + suspension on own teams; Dirigeant = suspension, club-wide.
+  const canDeclareMedical = usePermission('availability:declare', { teamId })
+  const canDeclareSuspension = usePermission('availability:declare-suspension', { teamId })
+  const [editingRow, setEditingRow] = useState<AvailabilityRowView | null>(null)
 
   const teamQuery = useQuery({
     queryKey: queryKeys.team(teamId ?? ''),
@@ -113,6 +120,12 @@ export function useTeamAvailabilityViewModel() {
     isRosterEmpty: availability !== undefined && rows.length === 0,
     isFilterEmpty: rows.length > 0 && visibleRows.length === 0,
     rows: visibleRows,
+
+    isRowEditable: (row: AvailabilityRowView) => isRowEditable(row, { canDeclareMedical, canDeclareSuspension }),
+    editingRow,
+    teamId,
+    openEditor: (row: AvailabilityRowView) => setEditingRow(row),
+    closeEditor: () => setEditingRow(null),
 
     goBack: () => navigate(-1),
   }

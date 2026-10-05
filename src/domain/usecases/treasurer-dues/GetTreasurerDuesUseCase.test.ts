@@ -15,7 +15,7 @@ function duesRepository(dues: TreasurerDue[]): TreasurerDueRepository {
   return { listCurrentSeasonDues: vi.fn(async () => dues) }
 }
 
-const noAmountDue: TreasurerDue = { membershipId: 'm-1', memberName: 'Joueur A', amountDueCents: null, sections: [], payments: [] }
+const noAmountDue: TreasurerDue = { membershipId: 'm-1', memberName: 'Joueur A', amountDueCents: null, sections: [], payments: [], reminder: { count: 0, lastRemindedAt: null } }
 
 describe('GetTreasurerDuesUseCase', () => {
   it('returns a null season and no entries, without reading dues, when no season is in progress', async () => {

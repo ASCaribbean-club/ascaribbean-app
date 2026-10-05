@@ -7,6 +7,7 @@ export interface TreasurerDueSection {
   name: string
 }
 
+import type { DuesReminderState } from './dues-reminder'
 import type { PaymentMethod } from './payment-method'
 
 export interface TreasurerDuePayment {
@@ -26,4 +27,6 @@ export interface TreasurerDue {
   // season (PO-TR-02): none, one, or several.
   sections: TreasurerDueSection[]
   payments: TreasurerDuePayment[]
+  // specs/mobile-treasurer.md amendement (4): reminder count and last date.
+  reminder: DuesReminderState
 }

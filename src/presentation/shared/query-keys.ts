@@ -356,4 +356,9 @@ export const queryKeys = {
   // distinct from the admin keys (`membershipsAdminList`, ...) and from
   // `profileMembership`: different projection and different RPC.
   treasurerDues: () => ['treasurer', 'dues'] as const,
+
+  // specs/mobile-treasurer.md AC-TR-18 — PREFIX of every `profileMembership(userId)`
+  // entry, used only to invalidate them after a treasurer records a payment
+  // (the due list does not carry the member's user id).
+  profileAll: () => ['profile'] as const,
 }

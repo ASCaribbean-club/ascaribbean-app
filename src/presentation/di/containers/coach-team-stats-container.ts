@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRecordRepositoryImpl'
+import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepositoryImpl'
 import { MatchEventRepositoryImpl } from '@data/repositories/MatchEventRepositoryImpl'
@@ -8,6 +9,7 @@ import { SectionRepositoryImpl } from '@data/repositories/SectionRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import { TeamRosterRepositoryImpl } from '@data/repositories/TeamRosterRepositoryImpl'
 import type { AttendanceRecordRepository } from '@domain/repositories/attendance-record-repository'
+import type { ConvocationResponseRepository } from '@domain/repositories/convocation-response-repository'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { MatchDetailsRepository } from '@domain/repositories/match-details-repository'
 import type { MatchEventRepository } from '@domain/repositories/match-event-repository'
@@ -30,6 +32,7 @@ export interface CoachTeamStatsContainer {
   sectionRepository: SectionRepository
   convocationRepository: ConvocationRepository
   attendanceRecordRepository: AttendanceRecordRepository
+  convocationResponseRepository: ConvocationResponseRepository
   matchEventRepository: MatchEventRepository
   matchDetailsRepository: MatchDetailsRepository
   // specs/coach-team-stats.md §1 — net-new, no implementation existed
@@ -47,6 +50,7 @@ export function createCoachTeamStatsContainer(supabaseClient: SupabaseClient): C
   const sectionRepository = new SectionRepositoryImpl(supabaseClient)
   const convocationRepository = new ConvocationRepositoryImpl(supabaseClient)
   const attendanceRecordRepository = new AttendanceRecordRepositoryImpl(supabaseClient)
+  const convocationResponseRepository = new ConvocationResponseRepositoryImpl(supabaseClient)
   const matchEventRepository = new MatchEventRepositoryImpl(supabaseClient)
   const matchDetailsRepository = new MatchDetailsRepositoryImpl(supabaseClient)
   const teamRosterRepository = new TeamRosterRepositoryImpl(supabaseClient)
@@ -57,6 +61,7 @@ export function createCoachTeamStatsContainer(supabaseClient: SupabaseClient): C
     sectionRepository,
     convocationRepository,
     attendanceRecordRepository,
+    convocationResponseRepository,
     matchEventRepository,
     matchDetailsRepository,
     teamRosterRepository,
@@ -67,6 +72,7 @@ export function createCoachTeamStatsContainer(supabaseClient: SupabaseClient): C
       attendanceRecordRepository,
       matchEventRepository,
       matchDetailsRepository,
+      convocationResponseRepository,
     ),
   }
 }

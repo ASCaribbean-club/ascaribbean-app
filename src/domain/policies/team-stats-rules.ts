@@ -1,4 +1,4 @@
-import type { AttendanceRecord } from '../entities/convocation'
+import type { AttendanceRecord, ConvocationResponse } from '../entities/convocation'
 import type { MatchDetails } from '../entities/match-details'
 import type { MatchEvent } from '../entities/match-event'
 
@@ -18,24 +18,16 @@ export interface AttendanceTally {
 // and `note` are never read off `record`: this function's own return shape
 // has no field for either, so there is nothing to accidentally surface.
 //
-// PO-CTS-04(a)/(d) partiellement tranché (développeuse, 2026-09-29): only
-// `status === 'open'` convocations count toward the team-wide total — a
-// cancelled convocation never happened, and GetTeamStatsUseCase filters
-// `records` to open convocations' rows before calling this function.
-// `totalCount` is the number of QUALIFYING CONVOCATIONS (`openCount`), not
-// `records.length` — with several players on a roster, summing every
-// player's individual AttendanceRecord rows produced a number with no
-// intuitive meaning (e.g. "27/90" for 3 sessions × ~10 players), whereas
-// this reads as "how many of the open sessions". `presentCount` stays the
-// raw count of 'present' rows across every player, which is a KNOWN,
-// ACCEPTED unit mismatch (developer decision) — the resulting rate can
-// exceed 100% for a multi-player roster; nothing here should be read as an
-// attendance percentage in the strict sense. PO-CTS-04(b)/(c) (reference
-// headcount, how an unrecorded player counts) remain OPEN — this still
-// never derives a roster-based "expected attendees" figure.
-export function tallyAttendance(records: AttendanceRecord[], openCount: number): AttendanceTally {
+// Only `status === 'open'` convocations count — a cancelled convocation
+// never happened, and GetTeamStatsUseCase filters `records` to open
+// convocations' rows before calling this function. `totalCount` is the
+// number of RECORDED attendance rows (player × session), the same unit as
+// `presentCount`, so the rate is a true percentage that can never exceed
+// 100% (PO-CTS-04(b)/(c) — a roster-based "expected attendees" headcount —
+// stay OPEN: a player with no row for a session is simply not counted).
+export function tallyAttendance(records: AttendanceRecord[]): AttendanceTally {
   const presentCount = records.filter((record) => record.actualStatus === 'present').length
-  return { presentCount, totalCount: openCount }
+  return { presentCount, totalCount: records.length }
 }
 
 // AC-CTS-16/AC-CTS-17 — `null` (never `0`) when nothing was ever recorded:
@@ -62,6 +54,45 @@ export function tallyAttendanceByPlayer(records: AttendanceRecord[]): Record<str
     byPlayer[record.userId] = tally
   }
   return byPlayer
+}
+
+export interface ResponseTally {
+  respondedCount: number
+  expectedCount: number
+}
+
+// Response rate — built EXCLUSIVELY from ConvocationResponse (intention
+// déclarée par le joueur), never mixed into the attendance tally above
+// (CLAUDE.md §6). A response counts once it is no longer 'pending' (present
+// or absent, both are an answer). Only roster players are counted, so a
+// former player's rows never inflate the rate; each roster player is
+// expected to answer every open convocation, hence expectedCount is
+// rosterSize × openCount and the rate can never exceed 100%.
+export function tallyResponses(responses: ConvocationResponse[], rosterUserIds: string[], openCount: number): ResponseTally {
+  const roster = new Set(rosterUserIds)
+  const respondedCount = responses.filter((response) => response.status !== 'pending' && roster.has(response.userId)).length
+  return { respondedCount, expectedCount: rosterUserIds.length * openCount }
+}
+
+export function tallyResponsesByPlayer(
+  responses: ConvocationResponse[],
+  rosterUserIds: string[],
+  openCount: number,
+): Record<string, ResponseTally> {
+  const byPlayer: Record<string, ResponseTally> = {}
+  for (const userId of rosterUserIds) byPlayer[userId] = { respondedCount: 0, expectedCount: openCount }
+  for (const response of responses) {
+    if (response.status === 'pending') continue
+    const tally = byPlayer[response.userId]
+    if (tally) tally.respondedCount += 1
+  }
+  return byPlayer
+}
+
+// `null` (never 0) when nobody was expected to answer anything.
+export function responseRate(tally: ResponseTally): number | null {
+  if (tally.expectedCount === 0) return null
+  return Math.round((tally.respondedCount / tally.expectedCount) * 100)
 }
 
 export interface CardTally {

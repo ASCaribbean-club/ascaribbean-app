@@ -1,10 +1,15 @@
 import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
+import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
 import type { TeamRosterPlayer, TeamRosterRepository } from '../../repositories/team-roster-repository'
 import {
   attendanceRate,
+  responseRate,
+  tallyResponses,
+  tallyResponsesByPlayer,
+  type ResponseTally,
   sumTeamGoals,
   tallyAttendance,
   tallyAttendanceByPlayer,
@@ -26,6 +31,12 @@ export interface TeamAttendanceSummary {
   rate: number | null
 }
 
+export interface TeamResponseSummary {
+  tally: ResponseTally
+  // null exactly when tally.expectedCount === 0.
+  rate: number | null
+}
+
 export interface TeamStats {
   roster: TeamRosterPlayer[]
   attendance: {
@@ -35,6 +46,13 @@ export interface TeamStats {
     // source of truth for who's on the list; the presentation layer renders
     // an explicit "no data" state for any roster entry missing from this map.
     byPlayer: Record<string, TeamAttendanceSummary>
+  }
+  // Declared intent (ConvocationResponse), kept apart from `attendance`
+  // above (coach-confirmed fact). byPlayer has an entry for EVERY roster
+  // player: not answering is a real 0, unlike attendance's missing key.
+  responses: {
+    team: TeamResponseSummary
+    byPlayer: Record<string, TeamResponseSummary>
   }
   goals: {
     team: number
@@ -79,6 +97,7 @@ export class GetTeamStatsUseCase {
     private readonly attendanceRecordRepository: AttendanceRecordRepository,
     private readonly matchEventRepository: MatchEventRepository,
     private readonly matchDetailsRepository: MatchDetailsRepository,
+    private readonly convocationResponseRepository: ConvocationResponseRepository,
   ) {}
 
   async execute(input: GetTeamStatsInput): Promise<TeamStats> {
@@ -106,14 +125,19 @@ export class GetTeamStatsUseCase {
     // (AC-MS-18).
     const matchConvocationIds = convocations.filter((convocation) => convocation.type === 'match').map((convocation) => convocation.id)
 
-    const [attendanceRecords, matchEvents, matchDetails] = await Promise.all([
+    const [attendanceRecords, matchEvents, matchDetails, responses] = await Promise.all([
       this.attendanceRecordRepository.findByConvocations(convocationIds),
       this.matchEventRepository.findByConvocations(matchConvocationIds),
       this.matchDetailsRepository.findByConvocations(matchConvocationIds),
+      this.convocationResponseRepository.findByConvocations(convocationIds),
     ])
 
-    const teamAttendanceTally = tallyAttendance(attendanceRecords, openConvocations.length)
+    const teamAttendanceTally = tallyAttendance(attendanceRecords)
     const attendanceByPlayerTally = tallyAttendanceByPlayer(attendanceRecords)
+
+    const rosterUserIds = roster.map((player) => player.userId)
+    const teamResponseTally = tallyResponses(responses, rosterUserIds, openConvocations.length)
+    const responsesByPlayerTally = tallyResponsesByPlayer(responses, rosterUserIds, openConvocations.length)
 
     return {
       roster,
@@ -121,6 +145,12 @@ export class GetTeamStatsUseCase {
         team: { tally: teamAttendanceTally, rate: attendanceRate(teamAttendanceTally) },
         byPlayer: Object.fromEntries(
           Object.entries(attendanceByPlayerTally).map(([userId, tally]) => [userId, { tally, rate: attendanceRate(tally) }]),
+        ),
+      },
+      responses: {
+        team: { tally: teamResponseTally, rate: responseRate(teamResponseTally) },
+        byPlayer: Object.fromEntries(
+          Object.entries(responsesByPlayerTally).map(([userId, tally]) => [userId, { tally, rate: responseRate(tally) }]),
         ),
       },
       goals: {

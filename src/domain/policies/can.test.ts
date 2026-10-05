@@ -738,3 +738,33 @@ describe('can — payment:record', () => {
     expect(can(userWith([{ role: 'treasurer' }]), 'membership:write')).toBe(false)
   })
 })
+
+// specs/mobile-treasurer.md amendement (4), AC-TR-27 — exactly the treasurer:
+// not admin (PO-TR-14), not authorized-officer (read-only). Mirrors the role
+// check of send_dues_reminders().
+describe('can — dues:remind', () => {
+  it('allows a treasurer with no context', () => {
+    expect(can(userWith([{ role: 'treasurer' }]), 'dues:remind')).toBe(true)
+  })
+
+  it.each([
+    { role: 'admin' },
+    { role: 'authorized-officer' },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'dues:remind', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows a multi-role account as soon as the treasurer role is carried', () => {
+    expect(can(userWith([{ role: 'player', teamId: 'team-1' }, { role: 'treasurer' }]), 'dues:remind')).toBe(true)
+  })
+
+  it('does not widen dues:read or payment:record', () => {
+    expect(can(userWith([{ role: 'authorized-officer' }]), 'dues:remind')).toBe(false)
+    expect(can(userWith([{ role: 'authorized-officer' }]), 'dues:read')).toBe(true)
+  })
+})

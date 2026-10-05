@@ -457,4 +457,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // supabase/migrations/20261005130000_get_treasurer_dues_rpc.sql. No write
   // or reminder action is added (PO-TR-01).
   'dues:read': ['treasurer', 'authorized-officer', 'admin'],
+
+  // specs/mobile-treasurer.md amendement (4), §D (PO-TR-01(c) accepted;
+  // PO-TR-14 settled by the developer): TREASURER ONLY — not admin (the CDC
+  // gives them "paramétrage", not the sending), not authorized-officer (CDC
+  // ❌, read-only). Club-wide, read from the CARRIED roles like 'dues:read'.
+  // Mirrors the `private.has_role('treasurer')` check of send_dues_reminders()
+  // (supabase/migrations/20261005170200_send_dues_reminders.sql, commented
+  // 'dues:remind'). The member-side alert needs no entry: RLS-only
+  // (notifications_select_own / notifications_update_own_read).
+  'dues:remind': ['treasurer'],
 }

@@ -711,3 +711,30 @@ describe('can — dues:read', () => {
     expect(can(userWith([{ role: 'player', teamId: 'team-1' }, { role: 'treasurer' }]), 'dues:read')).toBe(true)
   })
 })
+
+// specs/mobile-treasurer.md §3 "Écriture" (PO-TR-01(a) accepted) — exactly
+// admin and treasurer; mirrors the RLS insert policies on membership_payments.
+describe('can — payment:record', () => {
+  it.each([{ role: 'treasurer' }, { role: 'admin' }] as User['roles'])('allows %j with no context', (role) => {
+    expect(can(userWith([role]), 'payment:record')).toBe(true)
+  })
+
+  it.each([
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'authorized-officer' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'payment:record', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows a multi-role account as soon as one role grants it', () => {
+    expect(can(userWith([{ role: 'player', teamId: 'team-1' }, { role: 'treasurer' }]), 'payment:record')).toBe(true)
+  })
+
+  it('does not widen membership:write to the treasurer', () => {
+    expect(can(userWith([{ role: 'treasurer' }]), 'membership:write')).toBe(false)
+  })
+})

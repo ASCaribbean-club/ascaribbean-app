@@ -60,7 +60,23 @@ function validInput(overrides: Partial<RecordPaymentUseCaseInput> = {}): RecordP
   }
 }
 
+function treasurerUser(): User {
+  return { id: 'treasurer-1', fullName: 'Trésorier', email: 'treasurer@example.com', roles: [{ role: 'treasurer' }], position: null, age: null, handedness: null, charterAcceptedAt: null }
+}
+
 describe('RecordPaymentUseCase', () => {
+  // specs/mobile-treasurer.md AC-TR-17 — 'payment:record' = admin or treasurer.
+  it('lets a treasurer record a payment, attributing recordedBy and the audit entry to them', async () => {
+    const create = vi.fn(async (input: CreatePaymentInput) => ({ id: 'payment-1', recordedAt: '2026-09-17T10:00:00.000Z', ...input }) satisfies Payment)
+    const record = vi.fn(async (_entry: RecordAuditLogEntryInput) => {})
+    const useCase = new RecordPaymentUseCase(fakeUserRepository(treasurerUser()), fakePaymentRepository({ create }), fakeAuditLogRepository({ record }))
+
+    await useCase.execute(validInput({ actorId: 'treasurer-1' }))
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ recordedBy: 'treasurer-1' }))
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ action: 'membership.payment_recorded', targetId: 'membership-1' }))
+  })
+
   it('throws ForbiddenError when the actor does not exist', async () => {
     const useCase = new RecordPaymentUseCase(fakeUserRepository(null), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput())).rejects.toThrow(ForbiddenError)

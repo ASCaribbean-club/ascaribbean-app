@@ -1,4 +1,5 @@
 import { IconChartBar, IconFileText, IconTrophy, IconUsers } from '@tabler/icons-react'
+import { ChangelogDialog } from './components/ChangelogDialog'
 import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
@@ -84,7 +85,8 @@ export function MenuPage() {
 
       <LogoutButton onLogout={vm.onLogout} />
 
-      <VersionFooter version={vm.appVersion} className="mt-auto pb-2" />
+      <VersionFooter version={vm.appVersion} onVersionTap={vm.onVersionTap} className="mt-auto pb-2" />
+      <ChangelogDialog open={vm.isChangelogOpen} onOpenChange={vm.setIsChangelogOpen} />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Payment } from '../entities/payment'
-import { canSetMembershipActive, membershipPaymentStatus, sumPaymentsCents } from './membership-payment-rules'
+import { canSetMembershipActive, effectiveAmountDueCents, membershipPaymentStatus, remainingDueCents, sumPaymentsCents } from './membership-payment-rules'
 
 function payment(overrides: Partial<Payment> = {}): Payment {
   return {
@@ -120,5 +120,34 @@ describe('canSetMembershipActive', () => {
   // here).
   it('rejects when amountDueCents is exactly 0, even with a valid licence', () => {
     expect(canSetMembershipActive('FR-12345', 0, 0)).toBe(false)
+  })
+})
+
+describe('effectiveAmountDueCents', () => {
+  it('prefers the membership own amount, even 0', () => {
+    expect(effectiveAmountDueCents(15000, 80)).toBe(15000)
+    expect(effectiveAmountDueCents(0, 80)).toBe(0)
+  })
+
+  it('falls back to the season tariff, converted from euros to cents', () => {
+    expect(effectiveAmountDueCents(null, 80)).toBe(8000)
+    expect(effectiveAmountDueCents(null, 45.1)).toBe(4510)
+  })
+
+  it('is null when neither exists', () => {
+    expect(effectiveAmountDueCents(null, null)).toBeNull()
+  })
+})
+
+describe('remainingDueCents', () => {
+  it.each([
+    [0, 10000, 10000],
+    [4000, 10000, 6000],
+    [10000, 10000, 0],
+    [12000, 10000, 0],
+    [0, null, 0],
+    [0, 0, 0],
+  ])('paid %i of %s leaves %i', (paid, due, expected) => {
+    expect(remainingDueCents(paid, due)).toBe(expected)
   })
 })

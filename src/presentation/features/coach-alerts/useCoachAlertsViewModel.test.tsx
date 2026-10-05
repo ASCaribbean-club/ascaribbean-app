@@ -77,7 +77,7 @@ function renderViewModel(alerts: CoachAlertItem[]) {
   })
   mockedUseActiveRole.mockReturnValue({ activeRole: 'coach', dashboardRoles: [],
     setActiveRole: vi.fn(),
-    toggleActiveRole: vi.fn(), isOfficerView: false, hasMultipleDashboardRoles: false })
+    toggleActiveRole: vi.fn(), isOfficerView: false, isTreasurerView: false, hasMultipleDashboardRoles: false })
   mockedUseActiveTeam.mockReturnValue({ selectedCoachTeamId: TEAM_ID, selectCoachTeam: vi.fn() })
   mockedUsePermission.mockReturnValue(true)
   mockedUseCoachAlertsDependencies.mockReturnValue({

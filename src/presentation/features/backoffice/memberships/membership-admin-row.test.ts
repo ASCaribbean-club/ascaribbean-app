@@ -30,7 +30,7 @@ function buildUser(overrides: Partial<UserSummary> = {}): UserSummary {
 }
 
 function buildSeason(overrides: Partial<Season> = {}): Season {
-  return { id: 'season-1', label: '2025-2026', startDate: '2025-08-01', endDate: '2026-07-31', cotisationAmount: null, ...overrides }
+  return { id: 'season-1', label: '2025-2026', startDate: '2025-08-01', endDate: '2026-07-31', cotisationAmount: null, paymentUrl: null, ...overrides }
 }
 
 function buildPayment(overrides: Partial<Payment> = {}): Payment {

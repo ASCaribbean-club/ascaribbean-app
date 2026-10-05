@@ -7,19 +7,12 @@ import { formatEuros } from "@presentation/shared/formatters/currency";
 import { getInitials } from "@presentation/shared/formatters/greeting";
 import { formatPaymentMethod } from '@presentation/shared/formatters/payment-method-labels'
 import { formatLongDate } from "@presentation/shared/formatters/long-date";
+import { PAYMENT_STATUS_LABELS } from "@presentation/shared/formatters/payment-status-labels";
 import { isReminderEligible } from "@domain/rules/dues-reminder-rules";
 import {
   formatCooldownNotice,
   formatReminderState,
 } from "@presentation/shared/formatters/dues-reminder-labels";
-
-// Text label of each status — never colour alone (AC-TR-19).
-export const PAYMENT_STATUS_LABELS: Record<MembershipPaymentStatus, string> = {
-  paid: "Soldée",
-  partial: "Partielle",
-  unpaid: "Impayée",
-  undefined: "Montant non défini",
-};
 
 export interface DueView {
   id: string;

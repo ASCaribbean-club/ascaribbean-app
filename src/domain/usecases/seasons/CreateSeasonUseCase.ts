@@ -2,6 +2,7 @@ import type { Season, SeasonLabel } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
 import { can } from '../../policies/can'
+import { normalizePaymentUrl } from '../../rules/dues-payment-link-rules'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { SeasonRepository } from '../../repositories/season-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -16,6 +17,11 @@ export interface CreateSeasonUseCaseInput {
   // cents — a developer call, unlike Membership.amountDueCents). Optional:
   // null means "tarif non fixé", distinct from 0 ("gratuit").
   cotisationAmount: number | null
+  // specs/profile-membership-dues.md AC-PMD-17 — optional payment link; a
+  // blank string means "no link" (normalized to null), anything else must be
+  // an https URL (normalizePaymentUrl, mirrored by the seasons.payment_url
+  // CHECK).
+  paymentUrl: string | null
 }
 
 // specs/web-seasons.md §2.4/§3 — same authorization-before-validation
@@ -89,6 +95,9 @@ export class CreateSeasonUseCase {
       throw new InvalidSeasonInputError('cotisationAmount must be a non-negative number, or null')
     }
 
+    // AC-PMD-17 — rejected from the domain before any network call.
+    const paymentUrl = normalizePaymentUrl(input.paymentUrl)
+
     const season = await this.seasonRepository.create({
       // SeasonLabel is a template literal type (`${number}-${number}`), not
       // `string` (§2.1/AC-WS-11) — this cast doesn't widen the domain type,
@@ -99,6 +108,7 @@ export class CreateSeasonUseCase {
       startDate: input.startDate,
       endDate: input.endDate,
       cotisationAmount: input.cotisationAmount,
+      paymentUrl,
     })
 
     // See this class's own top comment for why a rejection here does not

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Season } from '../../entities/season'
 import { ForbiddenError } from '../../errors/forbidden-error'
-import { InvalidSeasonInputError } from '../../errors/invalid-season-input-error'
+import { InvalidSeasonInputError, PaymentUrlTooLongError } from '../../errors/invalid-season-input-error'
 import type { AuditLogRepository, RecordAuditLogEntryInput } from '../../repositories/audit-log-repository'
 import type { SeasonRepository, UpdateSeasonInput } from '../../repositories/season-repository'
 import type { User } from '../../entities/user'
@@ -73,6 +73,7 @@ function validInput(overrides: Partial<UpdateSeasonUseCaseInput> = {}): UpdateSe
     startDate: '2026-08-01',
     endDate: '2027-06-30',
     cotisationAmount: null,
+    paymentUrl: null,
     ...overrides,
   }
 }
@@ -133,6 +134,7 @@ describe('UpdateSeasonUseCase', () => {
       startDate: '2026-08-01',
       endDate: '2027-06-30',
       cotisationAmount: null,
+      paymentUrl: null,
     })
   })
 
@@ -211,4 +213,59 @@ describe('UpdateSeasonUseCase', () => {
 
     consoleErrorSpy.mockRestore()
   })
+
+  // specs/profile-membership-dues.md §2.2/AC-PMD-17 — payment link.
+  describe('paymentUrl validation (AC-PMD-17)', () => {
+    it('writes an https URL through as typed', async () => {
+      const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: 'https://pay.example.org/cotisation' }))
+
+      expect(update).toHaveBeenCalledWith('season-1', expect.objectContaining({ paymentUrl: 'https://pay.example.org/cotisation' }))
+    })
+
+    it('normalizes an empty string to null', async () => {
+      const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: '' }))
+
+      expect(update).toHaveBeenCalledWith('season-1', expect.objectContaining({ paymentUrl: null }))
+    })
+
+    it('normalizes a blank string to null', async () => {
+      const update = vi.fn(async (id: string, input: UpdateSeasonInput) => ({ id, ...input }) satisfies Season)
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput({ paymentUrl: '   ' }))
+
+      expect(update).toHaveBeenCalledWith('season-1', expect.objectContaining({ paymentUrl: null }))
+    })
+
+    it('rejects an http URL before any network call', async () => {
+      const update = vi.fn()
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: 'http://pay.example.org' }))).rejects.toThrow(InvalidSeasonInputError)
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('rejects a javascript: URL before any network call', async () => {
+      const update = vi.fn()
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: 'javascript:alert(1)' }))).rejects.toThrow(InvalidSeasonInputError)
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('rejects a URL longer than 2048 characters before any network call', async () => {
+      const update = vi.fn()
+      const useCase = new UpdateSeasonUseCase(fakeUserRepository(adminUser()), fakeSeasonRepository({ update }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ paymentUrl: `https://a.io/${'x'.repeat(2048)}` }))).rejects.toThrow(PaymentUrlTooLongError)
+      expect(update).not.toHaveBeenCalled()
+    })
+  })
+
 })

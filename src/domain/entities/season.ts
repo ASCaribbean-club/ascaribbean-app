@@ -13,4 +13,10 @@ export interface Season {
   // by web-memberships — this feature never computes a payment status
   // from it.
   cotisationAmount: number | null
+  // specs/profile-membership-dues.md §2.2 — URL of the external page where
+  // members pay this season's cotisation (a plain redirect, nothing is
+  // collected in the app). Nullable: a season without a link is normal.
+  // https only, at most 2 048 chars (normalizePaymentUrl, mirrored by the
+  // seasons.payment_url CHECK).
+  paymentUrl: string | null
 }

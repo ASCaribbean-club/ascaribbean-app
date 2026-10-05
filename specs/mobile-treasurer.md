@@ -365,3 +365,312 @@ Bouton flottant `+` / « + Paiement » (dashboard et liste), « Enc… », « Mo
 | UI-TR-09 | **Écart de spec** : l'amendement (2) ci-dessus dit « ni espèces ni chèque », alors que le code (`PAYMENT_METHODS`, `payment-method-labels.ts`, migration `20261005150000_payment_method_cash.sql`) et la décision actuelle incluent **Espèces** | Le référentiel à quatre valeurs (CB, Espèces, Virement, Autre) fait foi ; l'amendement (2) est à lire comme caduc sur ce point | Non |
 
 **Question bloquante : aucune.** Rappels côté implémentation (non UI) : élargir `'payment:record'` à `['admin','treasurer']`, politique d'insertion `membership_payments_insert_treasurer` et ouverture de `record_audit_log_entry` pour `membership.payment_recorded` (§3) sont **préalables** ; sans l'audit, un paiement de Trésorier ne serait pas tracé silencieusement. AC-TR-16 devient : aucun contrôle d'écriture **hormis « + Ajouter un paiement »** (conditionné à `canRecordPayment`), aucun contrôle de relance.
+
+## Amendement du 2026-10-05 (4) — PO-TR-01(c) ACCEPTÉ : relances de cotisation et alerte in-app du membre
+
+> **Décision développeuse (2026-10-05)** : le Trésorier **relance** les licenciés qui ont un reste dû ; le membre relancé voit une **alerte dans l'application**. **Canal unique : notification in-app.** Ni e-mail (Brevo), ni push. **Aucun système de notification n'existe** dans le code ni dans les migrations (vérifié : aucune table, aucun repository ; les seules occurrences de « relance »/« reminder » sont des commentaires d'exclusion). Cet amendement spécifie donc un **socle de notification minimal**, borné à un seul type, « relance de cotisation ».
+> **Remplace, là où ils divergent** : §1 « Conditionné à PO-TR-01 » point (c) ; §3, ligne « Gérer échéanciers et relances » (« non construites ») et phrase « non proposées tant qu'ils ne sont pas tranchés » pour (c) ; AC-TR-16 et la fin de l'amendement (3) pour les **contrôles de relance** ; UI-TR-01 (libellé « À relancer » rétabli) ; UI design écran B points 1 (« Sélection »), 4 (bandeau) et 5 (ligne de relance) ; « Ce qui n'est PAS conçu » de l'amendement (3) pour « Relancer », « Tout relancer », « Sélection » et notifications. **Ne remplace pas** : modification/suppression d'un paiement (PO-WM-04, toujours ouvert) ; bouton flottant `+` / « + Paiement » (toujours absent).
+> **Maquettes, côté Trésorier** : `docs/designs/treasurer/[v5] [Trésorier] Mob - Cotisations 3.png` (ligne « Jamais relancé » / « 2 relances · dernière il y a 9 j », bouton « Relancer » sur la carte repliée, bandeau « 8 licenciés à relancer — 1335 € restant · 7 sans relance depuis 7 j » + « Tout relancer », bouton « Sélection »), `… 5.png` et `… 6.png` (mode sélection : 2 puis 3 sélectionnés, la bascule « Tout » devient « Aucun » quand tout est coché, filtre « Impayées » actif). `… 1.png` : le bouton tronqué « Enc… » de la ligne « À relancer » est vraisemblablement « Encaisser », **pas** « Relancer », et n'illustre donc pas la relance depuis le tableau de bord. Registre : la ligne `instantané seul` du §0 **est toujours absente de `DESIGN_LINKS.md`** au 2026-10-05 (PO-TR-09 reconduit). **Côté membre : aucune maquette** dans `docs/designs/` et aucune ligne de registre → PO-TR-11.
+
+### A. Périmètre
+
+**Entre au périmètre :**
+
+1. **Relance unitaire** par le Trésorier : bouton « Relancer » sur la carte de licencié de la liste « Cotisations » (export 3) et sur une ligne du bloc « À relancer » du tableau de bord (demande développeuse ; non illustré, voir UI-TR-10).
+2. **Relance groupée** : (a) « Tout relancer » dans le bandeau de la liste ; (b) **mode sélection** (exports 5 et 6), entré par « Sélection ».
+3. **État de relance visible par le Trésorier** : « Jamais relancé » / « {n} relance(s) · dernière il y a {n} j », compteur « {m} sans relance depuis 7 j » du bandeau.
+4. **Règle anti-relance** (§B), appliquée côté serveur et reflétée dans l'UI.
+5. **Alerte du membre relancé** : un bandeau dans l'application, avec lu/non lu, masquage et résolution automatique au paiement (§H).
+6. **Socle de notification minimal** : une table de notifications par destinataire, un seul `kind` (`'dues_reminder'`), sans texte libre (§C).
+
+**Non-objectifs (explicitement hors périmètre) :**
+
+- **E-mail** (Brevo ou autre), **push** (Web Push, service worker), **SMS**, badge d'icône PWA (`setAppBadge`), notification système.
+- **Envoi par le Dirigeant habilité** : il garde la liste en lecture seule, voit l'état de relance mais aucun contrôle de relance. Pas d'envoi par l'**administrateur** non plus (PO-TR-14).
+- **Modification ou suppression d'un paiement** (PO-WM-04).
+- **Message rédigé par le Trésorier** : le texte est fixe, aucun champ libre.
+- **Relances automatiques ou planifiées**, échéancier, rappel à date.
+- **Boîte de réception / écran « Notifications »**, historique des notifications côté membre, badge de Menu, pastille sur l'avatar (PO-TR-12).
+- **Préférences par canal** et désinscription (module Communication, PO-TR-17).
+- **Temps réel** (Supabase Realtime, polling) : l'alerte apparaît au prochain chargement ou à la prochaine reprise de focus de l'écran.
+- **Relance d'une adhésion d'une saison passée** (PO-TR-08 reconduit).
+- **Annulation d'une relance envoyée.**
+
+### B. Règles métier (domaine, fonctions pures testées par Vitest)
+
+- **Éligibilité d'une adhésion à la relance** : une seule fonction pure du domaine, nom indicatif `reminderEligibility(due, lastRemindedAt, now)`. Elle renvoie `'eligible'` ou un motif d'exclusion :
+  - `'no_balance'` : statut `paid`, ou statut `'undefined'` (montant dû absent ou nul, PO-TR-03). Le reste dû est calculé par `membershipPaymentStatus()` / `sumPaymentsCents()`, jamais recalculé ailleurs (AC-TR-06).
+  - `'cooldown'` : une relance a déjà été envoyée pour cette adhésion **dans les 7 jours précédents** (fenêtre glissante, `sent_at > now − 7 jours`).
+  - Adhésion archivée ou hors saison en cours : non éligible (déjà exclue de la lecture).
+- **Constante anti-relance** : `REMINDER_COOLDOWN_DAYS = 7`, alignée sur le « sans relance depuis 7 j » de la maquette. **Miroir SQL manuel** dans la fonction d'envoi, commenté des deux côtés (`CLAUDE.md` §7). Valeur à confirmer : PO-TR-13.
+- **Garde côté serveur** : la règle d'éligibilité (reste dû > 0 + fenêtre de 7 jours) est **réappliquée par la fonction d'envoi**. Le calcul du reste dû existe donc en SQL **et** en TypeScript. Cette duplication est assumée : c'est la seule façon d'empêcher une relance hors règle par un appel direct. Les deux implémentations doivent porter un commentaire de renvoi mutuel et être couvertes par les mêmes cas de test (soldée, partielle, impayée, montant indéfini, tarif de saison en repli).
+- **Libellé d'état** (fonction pure) : 0 relance → « Jamais relancé » ; sinon « {n} relance(s) · dernière {quand} », où {quand} vaut « aujourd'hui », « hier » ou « il y a {n} j » en jours calendaires de l'heure locale de l'appareil.
+- **Visibilité de l'alerte membre** (fonction pure, nom indicatif `isDuesAlertVisible`) : vraie si et seulement si (1) une notification `dues_reminder` du membre est **non lue**, (2) elle porte sur une adhésion **non archivée de la saison en cours**, et (3) cette adhésion a un **reste dû > 0** au moment de la lecture.
+
+### C. Modèle de données (proposé, signalé ; migration à écrire, **non appliquée**)
+
+Deux tables aux rôles distincts. On ne les fusionne pas : l'une est un journal append-only, l'autre un état courant (même distinction que `ConvocationResponse` / `AttendanceRecord`, `CLAUDE.md` §6).
+
+| Table | Rôle | Colonnes (indicatives) | Écriture |
+|---|---|---|---|
+| `public.dues_reminders` | **Historique** des relances (append-only), source de « {n} relances · dernière il y a {n} j » | `id`, `membership_id` → `memberships` (`on delete cascade`, comme `membership_payments`), `sent_by` → `users`, `sent_at timestamptz default now()` | Insertion **uniquement** par la fonction d'envoi ; aucun `update`/`delete` |
+| `public.notifications` | **État courant** de l'alerte d'un destinataire (socle minimal) | `id`, `recipient_id` → `users` (`on delete cascade`), `kind text check (kind in ('dues_reminder'))`, `membership_id` → `memberships` (requis si `kind = 'dues_reminder'`, contrainte CHECK), `sent_at timestamptz` (dernière relance), `read_at timestamptz null`, `expires_at timestamptz` (§F). **Unique** `(recipient_id, kind, membership_id)` | **Upsert sur conflit** par la fonction d'envoi : une nouvelle relance remet `sent_at = now()` et `read_at = null`. Pas de nouvelle ligne à chaque relance |
+
+- **Aucun montant, aucun texte, aucun nom d'expéditeur** n'est stocké dans `notifications`. Le montant affiché au membre est **lu en direct** depuis sa propre adhésion et ses propres versements. Il est donc toujours à jour, et l'alerte se résout seule au paiement.
+- **Fonction d'envoi** (nom indicatif `send_dues_reminders(p_membership_ids uuid[])`), `security definer`, `set search_path = ''` :
+  - Vérifie elle-même `private.has_role('treasurer')` (commentée `'dues:remind'`) et lève `42501` sinon.
+  - L'expéditeur est lu depuis `auth.uid()`, jamais reçu en paramètre. Le nombre d'identifiants accepté est borné (valeur au développement).
+  - Pour chaque adhésion, verrouille la ligne (`for update`) pour éviter un double envoi concurrent, puis applique l'éligibilité (§B).
+  - Si l'adhésion est éligible, insère une ligne `dues_reminders` et fait l'upsert de la ligne `notifications` du titulaire (`memberships.user_id`).
+  - Renvoie une ligne par identifiant reçu, `(membership_id, outcome)`, avec `outcome ∈ {'sent', 'no_balance', 'cooldown', 'not_found'}`. Un appel est **atomique** : soit tous les envois réussis de l'appel sont enregistrés, soit aucun.
+  - **Pourquoi une fonction et pas une politique d'insertion** : le Trésorier écrit une ligne destinée à un **autre** utilisateur. Une politique `insert` sur `notifications` lui permettrait d'écrire n'importe quelle notification à n'importe qui, sans règle d'éligibilité ni fenêtre de 7 jours.
+- **Lecture côté Trésorier** : `get_treasurer_dues()` est étendue pour renvoyer, par adhésion, `reminder_count` et `last_reminded_at`. Pas l'expéditeur. La règle `dues:read` est inchangée, le Dirigeant habilité reçoit donc aussi ces deux champs (PO-TR-15).
+- **Lecture côté membre** : sous la RLS du compte. Les politiques existantes `memberships_select_own` et `membership_payments_select_own_or_admin` suffisent pour le montant ; il faut en plus `notifications_select_own`. Aucune fonction `security definer` n'est nécessaire.
+- **Domaine** : nouvelles entités (`DuesReminderState`, `Notification`), nouvelles interfaces de repository, use cases `SendDuesRemindersUseCase` (unitaire = lot de 1), `GetMyDuesAlertUseCase`, `MarkNotificationReadUseCase`, plus un mapper entre chaque DTO et son entité. Clés de requête centralisées, distinctes des clés `dues`.
+
+### D. RBAC
+
+| Changement | Détail | Statut |
+|---|---|---|
+| **Nouvelle entrée de matrice** `'dues:remind': ['treasurer']` | Fondée sur la ligne CDC « Gérer échéanciers et relances » (Trésorier ✅). Nécessaire selon le critère de `rbac-matrix.ts` : `presentation/` doit afficher ou masquer « Relancer », « Tout relancer » et « Sélection » **avant** toute requête. Club-wide, aucune branche de portée dans `can.ts`. Se lit sur les **rôles portés**, comme `dues:read`. **Admin exclu** (le CDC lui donne « ✅ (paramétrage) », pas l'envoi : PO-TR-14). **Dirigeant habilité exclu** (CDC ❌) | **⚠️ À signaler : seule entrée de matrice ajoutée** |
+| Miroir SQL de `'dues:remind'` | Contrôle de rôle de `send_dues_reminders()`, commenté du nom de l'action | Nouveau |
+| RLS `dues_reminders` | RLS activée ; **aucune** politique pour `authenticated` (ni select, ni insert, ni update, ni delete). Lecture agrégée via `get_treasurer_dues()` seulement ; écriture via la fonction d'envoi seulement | Nouveau, sans entrée de matrice |
+| RLS `notifications` | `notifications_select_own` : `using (recipient_id = (select auth.uid()))`. `notifications_update_own_read` : même `using`/`with check`, avec `revoke update` puis `grant update (read_at)` (seule colonne modifiable). **Aucune** politique insert/delete pour `authenticated`, Trésorier et admin compris. **RLS seule, aucune entrée de matrice** : l'écran rend ce que renvoie la lecture, le masquage porte sur sa propre ligne | Nouveau |
+| `record_audit_log_entry` | Garde élargie : `private.has_role('treasurer') and p_action in ('membership.payment_recorded', 'dues.reminder_sent')` | **⚠️ À signaler** |
+
+Aucun autre rôle, aucune autre action. `'dues:read'`, `'payment:record'` et `'membership:write'` sont inchangées.
+
+### E. Journal d'audit (action métier, depuis le use case)
+
+- **Nouveau code** `'dues.reminder_sent'`, ajouté à `AUDIT_ACTIONS` (`domain/policies/audit-actions.ts`, avec la mention « wired: SendDuesRemindersUseCase ») **et** à la contrainte `audit_log_action_check`, en miroir manuel. **⚠️ À signaler.**
+- C'est `SendDuesRemindersUseCase` qui l'émet, **jamais un composant ni la fonction SQL** (`CLAUDE.md` §6 : action métier). Une entrée par relance **effectivement envoyée** (`outcome = 'sent'`), aucune pour une relance écartée. `target_type = 'membership'`, `target_id` = l'adhésion. `metadata` minimale : `{ "mode": "single" | "bulk", "batch_size": n }`. **Ni montant, ni nom** (minimisation : l'admin lit déjà le montant ailleurs).
+- **Faille héritée, signalée** : comme pour `RecordPaymentUseCase`, un échec d'écriture d'audit est attrapé et seulement passé à `console.error`. Une relance peut donc être envoyée sans être tracée. AC-TR-32 exige une vérification **contre la base**. L'écriture transactionnelle de l'audit dans la fonction SQL serait plus sûre, mais elle contredirait la règle « action métier → use case » : non retenue sans arbitrage (PO-TR-19).
+- **Lecture des notifications par le membre** : non tracée (donnée du membre lui-même, hors CDC §11.3).
+
+### F. Rétention (`docs/RETENTION_PURGE.md`)
+
+| Donnée | Catégorie proposée | Durée / action proposée | Statut |
+|---|---|---|---|
+| `dues_reminders` | **Données financières** (relance d'une cotisation) | Durée de conservation comptable, **archivage froid obligatoire avant purge** ; `expires_at` nullable tant que la durée n'est pas confirmée par le Trésorier / l'expert-comptable (RETENTION §6.2) | Ouvert : PO-TR-16 |
+| `notifications` | État d'interface, **dérivable** (l'historique fait foi dans `dues_reminders`) | `expires_at` posé à la création ou au réarmement (proposition : `sent_at` + 12 mois) ; purge **sans archivage froid** (dérogation au §1 de RETENTION, à valider) ; une notification dont l'adhésion est archivée ou soldée est purgeable dès l'échéance | Ouvert : PO-TR-16 |
+| Audit `dues.reminder_sent` | Proposition : **actions sensibles** (demande financière nominative, litige possible), donc 3 ans et archivage froid. Absente de la liste CDC §11.3 | À trancher (PO-TR-16, avec PO-AU-03) | Ouvert |
+
+- Conformément à `CLAUDE.md` §6, **aucune logique d'expiration dans `domain/`** : la purge relève du job planifié Supabase, **non construit dans cette passe**. Seule la colonne `expires_at` est posée.
+- `docs/RETENTION_PURGE.md` (doc club, en français) devra recevoir ces deux catégories. Le PO n'écrit pas hors de `specs/` : à faire par la développeuse.
+
+### G. UI côté Trésorier (cadrage, pas de décision visuelle)
+
+- **Carte de licencié (liste)**, carte repliée comme dans l'export 3 :
+  - Ligne d'état « Jamais relancé » / « {n} relance(s) · dernière il y a {n} j ».
+  - Bouton « Relancer » (`h-11`) si `canRemind` et éligible.
+  - En fenêtre de 7 jours : **pas de bouton** ; la ligne d'état est complétée par « prochaine relance possible le {date} ». C'est un **état** de l'adhésion, pas un défaut de droit : pas de bouton grisé.
+  - Carte **Soldée** : ni ligne d'état ni bouton (export 3, carte soldée).
+  - Dirigeant habilité : ligne d'état visible, aucun bouton (PO-TR-15).
+- **Bloc « À relancer » du tableau de bord** : titre de la maquette rétabli (UI-TR-01 caduc). Bouton « Relancer » par ligne si `canRemind` et éligible (UI-TR-10).
+- **Bandeau de la liste**, texte de la maquette rétabli : « {n} licenciés à relancer — {montant} restant · {m} sans relance depuis 7 j ».
+  - `n` = adhésions avec reste > 0 ; `m` = adhésions **éligibles**.
+  - Calculés sur les filtres actifs (statut, section), pas sur la recherche, comme les comptes de statut.
+  - « Tout relancer » vise **exactement les m éligibles** ; il est absent si `m = 0` ou sans `canRemind`.
+- **Mode sélection** (exports 5 et 6), entré par « Sélection » (en-tête, absent sans `canRemind`) :
+  - « Annuler » remplace « Sélection » et vide la sélection.
+  - Consigne de la maquette. Seules les adhésions avec reste > 0 sont listées ; filtres et recherche restent actifs.
+  - Une adhésion en fenêtre de 7 jours est **listée mais non sélectionnable**, avec la mention « Relancé il y a {n} j ».
+  - Pas de dépliage ni de bouton de paiement en mode sélection.
+  - Barre basse `sticky bottom-0` à fond opaque : « {k} sélectionné(s) » · « Tout » (coche tous les éligibles visibles) / « Aucun » (quand tout est coché) · « Relancer ». « Relancer » est inactif à `k = 0` : c'est un état, pas un droit. `min-w-0` sur les éléments de la barre.
+- **Confirmation**, avant tout envoi (unitaire comme groupé) : `AlertDialog` « Relancer {k} licencié(s) ? — Chacun verra un rappel de cotisation dans l'application. », avec « Annuler » / « Relancer ».
+- **Retour après envoi** :
+  - Message non bloquant `role="status"` : « {x} relance(s) envoyée(s) », plus, le cas échéant, « {y} non envoyée(s) : déjà relancé(s) il y a moins de 7 jours ou soldé(s) entre-temps ».
+  - Sortie du mode sélection.
+  - Invalidation de la lecture `dues` : l'état de relance, le compteur `m` et les boutons se mettent à jour sans rechargement.
+  - Erreur réseau ou refus : `Alert` destructive, rien n'est envoyé (appel atomique), nouvel essai possible.
+
+### H. Alerte côté membre (cadrage ; emplacement à confirmer, PO-TR-11)
+
+- **Destinataire** : le **titulaire de l'adhésion** (`memberships.user_id`), **quel que soit son rôle**. Un membre relancé peut être joueur, coach, dirigeant, trésorier, bénévole…
+- **Emplacement par défaut** : un **bandeau en tête de l'écran Dashboard**, rendu au niveau partagé au-dessus de la vue du rôle actif. Il apparaît donc pour **tous les rôles actifs**, y compris les rôles sans tableau de bord dédié. Pas d'écran « Notifications », pas de badge de Menu, pas de pastille d'avatar (PO-TR-12).
+- **Contenu** : registre financier sobre, uniquement les données du membre lui-même. Texte par défaut, à valider (PO-TR-18) :
+  - titre « Rappel de cotisation » ;
+  - corps « Saison {libellé} : il vous reste {montant} à régler. Rapprochez-vous du trésorier du club pour régulariser. » ;
+  - ligne secondaire « Rappel du {date de la dernière relance} ».
+  - **Jamais** : nom de l'expéditeur, nombre de relances, historique des versements, montant total dû, statut d'adhésion, licence, données d'un tiers, lien de paiement (paiement en ligne P2).
+- **Lu / masquage** : un bouton « Masquer » (`h-11`, `aria-label` explicite) pose `read_at`. Le bandeau disparaît sur tous les appareils du compte. Une **nouvelle relance** réarme la notification (`read_at = null`) et le bandeau réapparaît. Aucun autre état (« non lu » = visible, « lu » = masqué).
+- **Résolution au paiement** : **dérivée à la lecture**, sans écriture. Dès que le reste dû est nul (adhésion soldée), ou que l'adhésion est archivée ou n'est plus de la saison en cours, le bandeau n'est plus rendu, même non lu. La notification n'est pas modifiée ; elle expire selon le §F.
+- **États** : en chargement ou en erreur de cette lecture, **rien n'est rendu**. Pas de squelette, pas d'erreur visible : l'alerte est secondaire et ne doit pas dégrader le tableau de bord. Pas de faux « à jour ».
+- **Accessibilité** : `role="status"` (pas `alert`, pour ne pas interrompre la lecture d'écran à chaque ouverture), information portée par le texte et pas par la couleur seule, contraste AA, cibles ≥ `h-11`.
+- **Specs voisines amendées par conséquence** (à reporter dans leurs fichiers par un amendement daté ; ce n'est pas fait ici) :
+  - AC-PD-07 (`player-dashboard`) : « aucune donnée financière » devient « aucune donnée financière **hormis le bandeau de rappel portant sur la propre cotisation du compte** ».
+  - Même réserve pour la vue Coach, et pour AC-DH-25 (`mobile-dirigeant-habilite`) **si** le bandeau s'affiche sur le tableau de bord Dirigeant.
+  - AC-MN-06 (`menu`) et AC-PR-10 (`profile-page`) restent **inchangés** : rien n'est ajouté au Menu ni au profil.
+
+### I. Critères d'acceptation (suite)
+
+**Droits et sécurité**
+
+| Réf. | Critère |
+|---|---|
+| AC-TR-27 | `'dues:remind'` vaut exactement `['treasurer']` ; c'est la seule entrée de matrice ajoutée par cet amendement. Sans elle (Dirigeant habilité, admin sans `treasurer`, tout autre rôle), « Relancer », « Tout relancer » et « Sélection » sont **absents**, pas grisés, sur le tableau de bord comme sur la liste |
+| AC-TR-28 | Contre la base : `send_dues_reminders()` lève `42501` avec un jeton Joueur, Coach, Responsable de section, Dirigeant habilité ou Administrateur sans `treasurer`. Avec un jeton Trésorier, `dues_reminders.sent_by` vaut l'appelant, sans aucun paramètre d'expéditeur |
+| AC-TR-29 | Contre la base : aucun rôle authentifié (Trésorier et admin compris) ne peut `insert`/`update`/`delete` directement dans `dues_reminders`, ni `insert`/`delete` dans `notifications`. Un membre ne lit que les notifications où `recipient_id` = lui-même, et ne peut modifier que `read_at` de ses propres lignes |
+| AC-TR-30 | Contre la base, la fonction d'envoi n'enregistre **rien** pour une adhésion soldée, à montant indéfini, archivée, hors saison en cours, ou relancée dans les 7 jours précédents, et renvoie le motif correspondant. Le calcul SQL du reste dû et `membershipPaymentStatus()` donnent le même résultat sur les mêmes cas de test, et les deux portent un commentaire de renvoi mutuel |
+| AC-TR-31 | Chaque relance envoyée crée **une** ligne `dues_reminders` et fait l'upsert d'**une seule** ligne `notifications` par (destinataire, adhésion) : après deux relances espacées de plus de 7 jours, il y a 2 lignes d'historique et 1 ligne de notification, `read_at` remis à null. Deux envois concurrents sur la même adhésion n'en produisent qu'un |
+| AC-TR-32 | Une entrée `dues.reminder_sent` (cible = l'adhésion, acteur = le Trésorier, `metadata` sans montant ni nom) apparaît dans le journal d'audit **pour chaque relance effectivement envoyée et seulement celles-là**, vérifié contre la base. Elle est émise par `SendDuesRemindersUseCase`. `AUDIT_ACTIONS` et `audit_log_action_check` sont modifiés dans le même changement ; `record_audit_log_entry` admet le Trésorier pour ce seul code en plus de `membership.payment_recorded` |
+
+**Trésorier**
+
+| Réf. | Critère |
+|---|---|
+| AC-TR-33 | Chaque carte non soldée affiche « Jamais relancé » ou « {n} relance(s) · dernière aujourd'hui / hier / il y a {n} j », alimenté par `reminder_count` et `last_reminded_at` de `get_treasurer_dues()`. Une carte soldée n'a ni ligne d'état ni bouton. Libellé produit par une fonction pure testée |
+| AC-TR-34 | Relance unitaire (carte ou ligne « À relancer ») : confirmation, envoi, message de résultat ; la carte passe à « 1 relance · dernière aujourd'hui » et son bouton disparaît sans rechargement. Une adhésion relancée il y a moins de 7 jours n'a pas de bouton et affiche la date de prochaine relance possible |
+| AC-TR-35 | Le bandeau affiche `n` (reste > 0) et `m` (éligibles), selon les filtres actifs et sans la recherche. « Tout relancer » envoie exactement aux `m` éligibles après confirmation, et il est absent si `m = 0` |
+| AC-TR-36 | Mode sélection : seules les adhésions avec reste > 0 sont listées. Celles en fenêtre de 7 jours sont visibles mais non sélectionnables, avec leur mention. « Tout » coche tous les éligibles visibles et devient « Aucun ». Le compteur est exact. « Relancer » est inactif à 0. « Annuler » sort du mode et vide la sélection. La barre basse est `sticky bottom-0` à fond opaque, cibles `h-11`, `min-w-0`, vérifiée à un viewport mobile réel |
+| AC-TR-37 | Un envoi groupé partiellement écarté côté serveur (par exemple une adhésion soldée entre-temps) affiche « {x} envoyée(s) » et « {y} non envoyée(s) » avec motif. Une erreur réseau ou un refus n'enregistre aucune relance de l'appel et laisse pouvoir réessayer |
+
+**Membre**
+
+| Réf. | Critère |
+|---|---|
+| AC-TR-38 | Après une relance, le titulaire de l'adhésion voit le bandeau en tête du Dashboard **quel que soit son rôle actif**, au prochain chargement ou à la reprise de focus. Aucun autre compte ne le voit |
+| AC-TR-39 | Le bandeau affiche uniquement : la saison, le **reste dû courant** (calculé par `membershipPaymentStatus()` à la lecture, pas une valeur figée à l'envoi) et la date de la dernière relance. **Jamais** le nom de l'expéditeur, le nombre de relances, les versements, le total dû, une donnée de dossier ou d'un tiers, ni de lien de paiement |
+| AC-TR-40 | « Masquer » pose `read_at`. Le bandeau disparaît et reste masqué après rechargement et sur un autre appareil du même compte. Une nouvelle relance le fait réapparaître |
+| AC-TR-41 | Quand l'adhésion devient soldée (paiement enregistré par le Trésorier ou l'admin), ou qu'elle est archivée, le bandeau n'est plus rendu à la lecture suivante, sans action du membre ni écriture sur la notification. Prédicat `isDuesAlertVisible` testé par Vitest (non lu / lu, soldée, partielle, archivée, autre saison) |
+| AC-TR-42 | Le chargement ou l'échec de la lecture de l'alerte ne rend rien et ne bloque ni ne dégrade le reste du tableau de bord. Le bandeau utilise `role="status"`, un texte lisible sans la couleur, un contraste AA et une cible « Masquer » `h-11` |
+| AC-TR-43 | Aucun e-mail, push, notification système, badge d'icône, abonnement Realtime ou polling n'est déclenché ni configuré. Aucune entrée de Menu, aucun écran « Notifications », aucune donnée financière sur le profil (AC-MN-06 et AC-PR-10 inchangés) |
+
+**Transverse**
+
+| Réf. | Critère |
+|---|---|
+| AC-TR-44 | `expires_at` est posée sur `notifications` à la création et au réarmement. Aucune logique d'expiration n'existe dans `domain/`. Aucun job de purge n'est construit dans cette passe |
+| AC-TR-45 | Non-régression : enregistrement de paiement (AC-TR-17/18), lecture Dirigeant (AC-TR-26), `/admin/memberships` et vues Joueur/Coach inchangées hors bandeau. Aucun import `data/` depuis `presentation/` ; booléens `canRemind`, `isEligible`, `showDuesAlert` calculés dans les ViewModels ; clés de requête dans `query-keys.ts` ; aucun nom de personne des maquettes dans le code ni les fixtures |
+
+AC-TR-16 devient : **aucun contrôle d'écriture hormis « + Ajouter un paiement » (`canRecordPayment`) ; contrôles de relance conditionnés à `canRemind`** ; toujours ni « Modifier » ni bouton flottant.
+
+### J. Points ouverts (cet amendement)
+
+| Réf. | Question | Défaut proposé | Pour qui | Bloquant ? |
+|---|---|---|---|---|
+| **PO-TR-11** | **Alerte côté membre : existe-t-il une maquette ?** Le registre n'a aucune ligne pour cette vue : selon `DESIGN_LINKS.md` §4, la question se pose **une seule fois** à la développeuse. Sans maquette, **confirmer l'emplacement par défaut** : bandeau en tête du Dashboard, pour tous les rôles actifs, sans boîte de réception ni badge. Ce choix amende AC-PD-07 (et AC-DH-25 si le bandeau s'affiche pour un Dirigeant) | Pas de maquette ; bandeau Dashboard tous rôles ; ligne de registre `absent` à ajouter (« conçu par composition, ne plus demander ») | **Développeuse** | **OUI : bloque la conception côté membre.** Ne bloque pas la conception côté Trésorier |
+| PO-TR-12 | Faut-il en plus un point d'accès persistant (badge de Menu, écran « Notifications », pastille d'avatar) pour retrouver une alerte masquée ? | Non dans cette passe | Développeuse | Non |
+| PO-TR-13 | Fenêtre anti-relance : 7 jours glissants par adhésion ? Faut-il aussi un plafond par saison ? | 7 jours, pas de plafond | Trésorier / Bureau | Non (constante unique, mirroir SQL) |
+| PO-TR-14 | L'administrateur peut-il relancer ? Le CDC lui donne « ✅ (paramétrage) », pas l'envoi | Non. Pas d'écran de paramétrage non plus : constante et texte figés dans le code | Bureau | Non |
+| PO-TR-15 | Le Dirigeant habilité (lecture seule) voit-il l'état de relance (« n relances… ») ? | Oui, en lecture, sans bouton | Développeuse | Non |
+| PO-TR-16 | Rétention : durée comptable de `dues_reminders` ; purge de `notifications` sans archivage froid (dérogation au §1 de RETENTION) ; catégorie d'audit de `dues.reminder_sent` (« sensible », 3 ans ?) | Voir §F | Référent RGPD / Trésorier / expert-comptable | Non pour concevoir ni construire, **à trancher avant mise en production** |
+| PO-TR-17 | Un membre peut-il refuser ces alertes (préférence par canal, module Communication) ? | Non : canal in-app unique, non intrusif | Référent RGPD / Bureau | Non |
+| PO-TR-18 | Texte exact du bandeau (§H) | Texte du §H | Bureau / Trésorier | Non (texte modifiable sans changer la conception) |
+| PO-TR-19 | Audit hors transaction : une relance peut être envoyée sans être tracée si l'écriture d'audit échoue (faille déjà présente pour les paiements) | Accepter comme pour `membership.payment_recorded` et surveiller `/admin/audit` | Développeuse | Non |
+| PO-TR-10 (étendu) | Le Trésorier peut-il se relancer lui-même si sa propre adhésion a un reste dû ? | Oui, sans traitement particulier (défaut de PO-TR-10) | Développeuse / Bureau | Non |
+| UI-TR-10 | Relance depuis le tableau de bord : le bouton de l'export 1 (« Enc… ») n'est pas « Relancer » | Bouton « Relancer » par ligne du bloc « À relancer », même règle que la carte | Designer-agent | Non |
+| PO-TR-09 (reconduit) | Ligne du §0 toujours absente de `DESIGN_LINKS.md` | La recopier avec la ligne côté membre de PO-TR-11 | Designer-agent / développeuse | Non |
+
+### K. Transmission (amendement 4)
+
+- **Côté Trésorier** (relance unitaire, « Tout relancer », mode sélection, état de relance) : **prêt pour designer-agent**, maquettes 3, 5 et 6 en `instantané seul`, aucun lien à demander.
+- **Côté membre** (bandeau d'alerte) : **NON prêt.** **PO-TR-11 bloque** : il faut une réponse unique de la développeuse (« pas de maquette » + confirmation du bandeau Dashboard tous rôles, ou bien le lien d'une maquette) avant de le concevoir.
+- **Avant mise en production, sans bloquer la conception** : PO-TR-16 (rétention) et PO-TR-07 (journalisation de la consultation).
+- **Implémentation** : la migration (tables, RLS, fonction d'envoi, extension de `get_treasurer_dues()`, élargissement d'`audit_log_action_check` et de `record_audit_log_entry`) est à écrire puis à **proposer à l'application**, jamais appliquée en silence.
+
+## Amendement UI du 2026-10-05 (4) — relances de cotisation et bandeau de rappel du membre
+
+> Conçoit l'amendement (4) ci-dessus (§G et §H, qui restent le cadrage fonctionnel ; les droits, règles d'éligibilité et critères AC-TR-27 à AC-TR-45 ne sont pas redéfinis ici). Aucun nouveau patron visuel : tout est une variation de composants existants, donc pas de pause « prototype Claude Design ».
+
+### Décisions développeuse enregistrées (2026-10-05)
+
+- **PO-TR-11 RÉSOLU : aucune maquette côté membre.** Emplacement par défaut retenu : **bandeau fermable en tête du Dashboard, pour tout rôle actif** ; « Masquer » le marque lu ; une **nouvelle relance le fait revenir** ; **ni boîte de réception, ni badge de Menu, ni pastille d'avatar** (PO-TR-12 reste « Non »). La mention de transmission « côté membre : NON prêt » du §K est **levé**. Ligne de registre `absent` ajoutée à `docs/designs/DESIGN_LINKS.md` (« ne plus redemander »), ainsi que la ligne `instantané seul` du §0 (PO-TR-09 **clos** : les deux lignes sont dans le registre ; `docs/designs/treasurer/` reste à committer).
+- **`'dues:remind'` = Trésorier seulement** (confirmé) : ni admin, ni dirigeant habilité (PO-TR-14 tranché).
+- Références ouvertes : `docs/designs/treasurer/[v5] [Trésorier] Mob - Cotisations 3.png` (boutons « Relancer », lignes d'état, bandeau + « Tout relancer », bouton « Sélection »), `… 5.png` et `… 6.png` (mode sélection, 2 puis 3 cochés, « Tout » devenant « Aucun ») ; côté membre : `docs/designs/player-dashboard/v2_joueur_dashboard.png` (bandeau « ALERTE » plein largeur, dont `MissingDocumentAlert.tsx` est l'implémentation) pour la **géométrie** seulement.
+
+### (a) Côté Trésorier
+
+Rendu seulement si le ViewModel expose `canRemind` (`can('dues:remind')`, rôles portés). Sans lui : **tout ce qui suit est absent** (bouton, bandeau « Tout relancer », « Sélection »), la ligne d'état restant visible pour le Dirigeant habilité (PO-TR-15).
+
+**1. Bouton « Relancer » unique, par carte (liste « Cotisations »)**
+- Placement comme l'export 3 : sur la carte, **sous** l'en-tête (nom, pastille, barre), une rangée à deux éléments : ligne d'état à gauche (`min-w-0`, retour à la ligne autorisé), bouton « Relancer » à droite (`shrink-0`, `h-11`, `rounded-full`, contour/teinte ambre de l'export 3, `Button` shadcn `variant="outline"`). Présent que la carte soit pliée ou dépliée (l'export 3 le montre dans les deux cas) : « carte dépliée » dans la demande est lu comme « carte de la liste ».
+- **Pas de bouton imbriqué dans la zone de dépliage** : la rangée de relance est un **frère** de la zone d'en-tête qui déplie (AC-TR-15), jamais son enfant, pour qu'un tap sur « Relancer » ne déplie pas la carte.
+- **Ligne d'état** (fonction pure du §B) : « Jamais relancé » ou « {n} relance(s) · dernière il y a {n} j », en ambre comme l'export 3. Carte **Soldée** : ni ligne ni bouton. Le bouton « Relancer » est inclus dans la carte dépliée au-dessus de « VERSEMENTS » : l'ordre déplié est donc en-tête, rangée de relance, VERSEMENTS, « + Ajouter un paiement ».
+- **Fenêtre de 7 jours (remplacement, pas un grisé)** : le bouton est **remplacé** par un texte en couleur normale (même couleur que le reste de la ligne secondaire, pas de style désactivé) : « Relancé il y a {n} j · prochaine relance le {date courte, ex. 14 oct.} ». Il occupe la place du bouton (sur la même rangée si la largeur le permet, sinon sous la ligne d'état), jamais d'icône de cadenas, jamais de bouton `disabled`. La ligne d'état reste affichée au-dessus.
+
+**2. Bloc « À relancer » du tableau de bord (rangées « Restes dus »)**
+- Titre : **« À relancer »** (amendement (4) : UI-TR-01 caduc) ; le lien reste « Gérer les cotisations » (`h-11`). Si la développeuse préfère garder « Restes dus » comme dans sa demande, c'est un changement de libellé seul (UI-TR-11).
+- Chaque rangée gagne, à droite, le **même** « Relancer » (`h-11`, `shrink-0`) ; nom et montants dans un bloc `min-w-0` à troncature (pas de passage du nom sous le montant). En fenêtre de 7 jours : le même texte de remplacement que la liste, sur la ligne secondaire de la rangée, sans bouton. Rangée soldée : n'existe pas (reste > 0 seulement). Le reste de la rangée reste non interactif (UI-TR-03) ; le bouton « Enc… » reste écarté (UI-TR-10).
+- Le plafond de 5 rangées (UI-TR-04) s'applique avant tout tri sur l'éligibilité : l'ordre reste « plus gros reste d'abord ».
+
+**3. Bandeau de synthèse et « Tout relancer »**
+- Texte de l'export 3 : « {n} licenciés à relancer — {montant} restant · {m} sans relance depuis 7 j » (`n` reste > 0, `m` éligibles, selon filtres actifs sans la recherche). Bouton « Tout relancer » à droite (ambre plein, `h-11`, `rounded-full`) ; sous 360 px de large, il passe **sous** le texte, pleine largeur, plutôt que d'écraser le texte (texte `min-w-0`, bouton `shrink-0` sinon). Absent si `m = 0`.
+
+**4. Mode sélection (exports 5 et 6)**
+- **Entrée** : bouton « Sélection » en haut à droite de l'en-tête (`h-11`, contour). Il **réduit** le titre : bloc titre/sous-titre `min-w-0` avec sous-titre sur deux lignes (comme l'export 3). L'en-tête reste `sticky top-0` à fond opaque (CLAUDE.md §6) ; en mode sélection, « **Annuler** » (fond clair, `h-11`) remplace « Sélection », vide la sélection et revient à la liste normale.
+- **Contenu** : le panneau « Filtres » reste utilisable (ouvert ou replié, état conservé) et la recherche aussi ; la consigne de l'export : « Touchez les licenciés à relancer. Seuls ceux avec un reste dû sont affichés. » Cartes **réduites** : initiales remplacées par une **case ronde** à gauche, puis nom, pastille de statut, barre, « {encaissé} / {dû} », « {section si visible} · reste {montant} ». **Pas de dépliage, pas de ligne d'état, pas de « Relancer » individuel, pas de « + Ajouter un paiement »** dans ce mode.
+- **Case** : la **carte entière** est la cible (`role="checkbox"`, `aria-checked`, ≥ `h-11`), la case ronde est son indicateur (coche ambre pleine, comme l'export 5) ; le `Checkbox` shadcn existant sert de primitive si son style rond peut être surchargé au site d'appel, sinon un indicateur décoratif sur un `<button>` (même résultat accessible). La sélection ne repose pas sur la couleur seule : la coche est un glyphe.
+- **Carte non sélectionnable** (relancée il y a moins de 7 jours) : listée, **sans case** (emplacement conservé, aligné), mention « Relancé il y a {n} j · prochaine relance le {date} » à la place de la ligne secondaire ; texte normal, pas de grisé, pas de réaction au tap.
+- **Barre basse** (reprend la barre arrondie des exports 5/6) : « {k} sélectionné(s) » à gauche, bascule **« Tout »** (coche tous les éligibles visibles) qui devient **« Aucun »** quand tout est coché, bouton **« Relancer »** ambre plein à droite. Chaque élément `min-w-0`, cibles `h-11`, libellés sans retour à la ligne. « Relancer » **inactif à `k = 0`** (état, pas droit : le bouton reste visible). Barre `sticky bottom-0`, fond opaque.
+  - **Écart avec les exports (conflit nav)** : `/dues` est rendue dans `AppShell` avec la `BottomNav` fixe (`pb-24`, nav `fixed` à 0,8 rem du bas), alors que les exports 5/6 n'en montrent pas. **La barre est décalée au-dessus de la nav** (décalage équivalent à `pb-24`, plus la marge de sécurité), et la nav n'est **ni masquée ni modifiée** (contrainte des 4 entrées). Le dernier élément de la liste garde une marge basse suffisante pour ne pas passer sous la barre. Vérifier à un viewport mobile réel que la barre ne chevauche pas la nav (UI-TR-12).
+
+**5. Confirmation** (unitaire, « Tout relancer », sélection) : `AlertDialog` shadcn (déjà installé), centré, boutons `h-11`.
+- Titre : « Relancer {k} licencié(s) ? ». Corps : « Chacun verra un rappel de cotisation dans l'application. » (texte du §G.) Pour un envoi unitaire : « Relancer {nom} ? », même corps. Boutons côte à côte, `min-w-0 flex-1` : « Annuler » (`outline`) / « Relancer » (ambre plein).
+- Pendant l'envoi : les deux boutons désactivés, libellé « Envoi… », double tap sans effet, fermeture par Échap/clic extérieur bloquée.
+- **Erreur** (réseau, refus 42501) : le dialogue se ferme, `Alert variant="destructive"` `role="alert"` sous l'en-tête (« Aucune relance n'a été envoyée. Réessayez. »), la sélection est **conservée** pour réessayer (appel atomique, AC-TR-37).
+
+**6. Retour après envoi** : message non bloquant `role="status"` sous l'en-tête (même mécanisme que « Paiement de {montant} enregistré », 3 s, mais **plus long à lire si deux lignes : le garder 5 s** quand une ligne « non envoyée » est présente).
+- Tout envoyé : « {x} relance(s) envoyée(s) ».
+- Partiel : « {x} relance(s) envoyée(s) » **et** « {y} non envoyée(s) : déjà relancé(s) il y a moins de 7 jours ou soldé(s) entre-temps » (texte du §G ; le détail par motif `no_balance` / `cooldown` / `not_found` n'est pas listé nominativement dans cette passe).
+- Rien envoyé (`x = 0`) : un seul `Alert` neutre « Aucune relance envoyée : … » (même motif).
+- Sortie du mode sélection ; lecture `dues` invalidée : état de relance, `m`, boutons et rangées du tableau de bord se mettent à jour sans squelette (valeurs précédentes conservées pendant le rechargement, comme l'amendement (3)). Une carte relancée **reste visible** (le filtre de statut ne dépend pas de la relance) ; elle passe en « fenêtre de 7 jours ».
+
+**7. États** : chargement initial inchangé (squelettes) ; pendant un envoi, seuls les contrôles de relance sont désactivés (la liste reste lisible) ; aucune relance possible → `m = 0` : ni bandeau « Tout relancer », ni « Relancer » éligible, mais « Sélection » reste visible tant qu'au moins une carte non soldée existe (pour montrer l'état), et masquée sinon.
+
+### (b) Côté membre : bandeau « Rappel de cotisation »
+
+**Où**
+- Écran **Dashboard**, tous rôles actifs : joueur (`PlayerDashboardPage`), coach (`CoachDashboardPage`), dirigeant (`DirigeantDashboardPage`) et trésorier (`TreasurerDashboardPage`), pour le compte dont **sa propre adhésion** a un reste dû relancé. Aucune autre destination, aucun Menu, aucun profil (AC-TR-43).
+- **Emplacement exact** : le spec du §H dit « au-dessus de la vue du rôle actif ». Monté tel quel dans `DashboardIndexPage`, le bandeau passerait **au-dessus de la pastille de rôle et de l'en-tête** et décalerait le sélecteur de rôle d'un écran à l'autre. **Choix de conception : un composant partagé `DuesReminderBanner` + un hook ViewModel partagé, monté sous l'en-tête de chacune des quatre vues**, au même emplacement que `MissingDocumentAlert` (sous « Bonjour, … », avant la première carte de contenu, cf. `v2_joueur_dashboard.png`). Le composant est unique, un seul `useDuesReminderViewModel`, quatre montages d'une ligne. Équivalent pour l'utilisateur, mais l'en-tête et la bascule de rôle ne bougent pas. Si le développeur tient au montage unique dans `DashboardIndexPage`, le bandeau devra vivre **sous** un en-tête extrait, ce qui est un refactor hors de cette passe (UI-TR-13).
+- Quand le bandeau du **document manquant** (joueur) est présent, les deux s'empilent : « Alerte document » **d'abord**, bandeau de cotisation **ensuite**, espacement standard entre cartes. Jamais fusionnés.
+
+**Géométrie et style** (variation de `MissingDocumentAlert`, **pas** le même rouge) : carte pleine largeur, `rounded-[20px]`, icône ronde à gauche dans un disque `size-10`, trois lignes de texte, **bouton « Masquer » à droite**. Teinte : **ambre sobre** (fond sombre teinté et contour ambre, comme le bandeau de synthèse de l'export 3), pas le rouge plein de `coach-red`, réservé à l'alerte bloquante « Document manquant » et à la pastille « Impayée » ; icône `IconReceipt` ou équivalent déjà dans `@tabler/icons-react`. Information portée par le **texte**, jamais par la teinte (AC-TR-19, AA sur fond sombre).
+
+**Contenu** (texte par défaut du §H, PO-TR-18) :
+- Surtitre : « RAPPEL DE COTISATION » (même style `text-[10.5px] font-extrabold tracking-wider uppercase` que « ALERTE »).
+- Ligne principale : « Saison {libellé} : il vous reste {montant} à régler. » (`min-w-0`, retour à la ligne autorisé).
+- Ligne secondaire : « Rapprochez-vous du trésorier du club pour régulariser. »
+- Ligne discrète : « Rappel du {date longue} ».
+- **Jamais** : expéditeur, nombre de relances, versements, total dû, lien de paiement, donnée d'un tiers (AC-TR-39). La carte n'est **pas** cliquable (aucune destination : pas de route de paiement, P2) ; la seule action est « Masquer ».
+
+**« Masquer »**
+- `Button` shadcn `variant="ghost"` ou `outline`, **`h-11`** (cible 44 px), libellé visible « Masquer » (pas une croix seule), `aria-label` « Masquer le rappel de cotisation ». Il se place à droite, `shrink-0`, le texte à sa gauche en `min-w-0 flex-1` pour que les deux rangées ne se chevauchent pas sur 360 px. Si la largeur est insuffisante (< 340 px), le bouton passe **sous** le texte, aligné à droite, plutôt que de comprimer le texte.
+- Tap : pose `read_at` (`MarkNotificationReadUseCase`) ; mise à jour **optimiste** (le bandeau disparaît immédiatement) ; si l'écriture échoue, le bandeau **réapparaît** avec un `Alert` destructive non bloquant « Impossible de masquer le rappel. Réessayez. » (3 s). Aucune confirmation, aucun « Annuler ».
+- Masqué = masqué sur tous les appareils du compte (donnée serveur, AC-TR-40). Une nouvelle relance (`read_at = null`) le fait **revenir** au prochain chargement ou à la reprise de focus (pas de temps réel).
+
+**États**
+| État | Rendu |
+|---|---|
+| Chargement de la lecture | **Rien** (pas de squelette) : le reste du Dashboard ne bouge pas et ne dépend pas de cette lecture (AC-TR-42) |
+| Erreur de la lecture | **Rien**, pas d'`Alert` ; pas de faux « à jour » |
+| Aucune notification, ou notification lue, ou adhésion soldée / archivée / hors saison | **Rien** (absence, jamais un état vide ni grisé) ; résolution dérivée de `isDuesAlertVisible` à la lecture |
+| Notification non lue + reste dû > 0 | Bandeau visible (ci-dessus) |
+| Masquage en cours | Bouton désactivé, bandeau retiré en optimiste |
+| Nouvelle relance après masquage | Bandeau revient avec la nouvelle date « Rappel du … » |
+- Le montant est le **reste dû courant** lu en direct : si le Trésorier enregistre un paiement partiel, le bandeau affiche le nouveau reste, et disparaît si le reste est nul.
+- Rôle Trésorier : si le Trésorier est lui-même relancé, il voit ce bandeau sur son tableau de bord **en plus** de ses cartes, comme tout autre membre (PO-TR-10 étendu).
+- `role="status"` (pas `alert`) ; texte entièrement lisible sans couleur ; AA.
+
+### Composants nouveaux (variations, aucun nouveau patron)
+
+- **`DuesReminderBanner`** (+ `useDuesReminderViewModel`) : variation de `MissingDocumentAlert` (même géométrie de carte plein largeur, teinte ambre, ajout d'un bouton « Masquer » : c'est l'unique différence structurelle, un bandeau fermable existe déjà ailleurs sous la forme des `Alert` non bloquantes).
+- **Rangée de relance** de `DueCard` (ligne d'état + « Relancer » / texte de fenêtre) : variation de la carte de licencié existante.
+- **Mode sélection** (cartes à case, barre basse) : variation de la liste + `Checkbox` shadcn ; la barre basse reprend le patron `sticky bottom-0` à fond opaque déjà utilisé (`YouBar`, barres d'envoi de formulaire), décalée au-dessus de la `BottomNav`.
+- **Confirmation** : `AlertDialog` shadcn existant. Aucun composant à installer.
+
+### Points ouverts UI (cet amendement)
+
+| Réf. | Question | Défaut proposé | Bloquant ? |
+|---|---|---|---|
+| UI-TR-11 | Titre du bloc du tableau de bord : « À relancer » (amendement (4), maquette) ou « Restes dus » (formulation de la demande) ? | « À relancer » ; changement de libellé seul si « Restes dus » est préféré | Non |
+| UI-TR-12 | Barre de sélection au-dessus de la `BottomNav` fixe (les exports 5/6 n'ont pas de nav) | Barre décalée au-dessus de la nav, nav intacte (contrainte des 4 entrées) ; vérifier à un viewport mobile réel | Non |
+| UI-TR-13 | Bandeau membre monté sous l'en-tête de chaque vue (4 montages, 1 composant) plutôt qu'au-dessus de la pastille de rôle dans `DashboardIndexPage` | Sous l'en-tête | Non |
+| UI-TR-14 | « Relancer » visible sur carte pliée **et** dépliée (export 3) : la demande parle de « carte dépliée » seulement | Les deux, comme l'export 3 | Non |
+| UI-TR-15 | « Sélection » masqué quand aucune carte non soldée n'existe | Masqué | Non |
+
+**Question bloquante : aucune.** PO-TR-11 est levé par la décision développeuse. Restent à trancher avant mise en production, sans bloquer la conception ni la construction : PO-TR-16 (rétention) et PO-TR-07 (journalisation de la consultation). Texte exact du bandeau : PO-TR-18, modifiable sans changer la conception.
+
+### Transmission (amendement 4, mise à jour)
+
+Côté Trésorier **et** côté membre : **prêts pour l'implémentation**. La migration (tables, RLS, `send_dues_reminders`, extension de `get_treasurer_dues()`, audit) reste à proposer à l'application, jamais appliquée en silence.

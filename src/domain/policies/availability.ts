@@ -1,4 +1,6 @@
 import type { IsoDate, Unavailability } from '@domain/entities/unavailability'
+import type { User } from '@domain/entities/user'
+import { can } from './can'
 
 // specs/player-unavailability.md §1.
 //
@@ -15,7 +17,7 @@ import type { IsoDate, Unavailability } from '@domain/entities/unavailability'
 export type AvailabilityStatus = 'available' | 'medical' | 'suspended'
 export type TeammateAvailabilityStatus = 'available' | 'unavailable' | 'suspended'
 
-function toLocalIsoDate(now: Date): IsoDate {
+export function toLocalIsoDate(now: Date): IsoDate {
   const y = String(now.getFullYear()).padStart(4, '0')
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
@@ -63,4 +65,12 @@ export function toTeammateStatus(status: AvailabilityStatus): TeammateAvailabili
       return unreachable
     }
   }
+}
+
+// Who may write which kind (declare / edit / lift). Medical needs
+// 'availability:declare' (coach, own team); a suspension is also open to the
+// Dirigeant habilité, club-wide. UX + use-case guard — RLS is the real gate.
+export function canWriteUnavailability(user: User, kind: Unavailability['kind'], teamId: string): boolean {
+  if (kind === 'medical') return can(user, 'availability:declare', { teamId })
+  return can(user, 'availability:declare', { teamId }) || can(user, 'availability:declare-suspension', { teamId })
 }

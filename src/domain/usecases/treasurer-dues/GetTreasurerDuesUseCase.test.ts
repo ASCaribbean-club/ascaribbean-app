@@ -5,7 +5,7 @@ import type { SeasonRepository } from '../../repositories/season-repository'
 import type { TreasurerDueRepository } from '../../repositories/treasurer-due-repository'
 import { GetTreasurerDuesUseCase } from './GetTreasurerDuesUseCase'
 
-const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-09-01', endDate: '2027-06-30', cotisationAmount: 80 }
+const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-09-01', endDate: '2027-06-30', cotisationAmount: 80, paymentUrl: null }
 
 function seasonRepository(current: Season | null): SeasonRepository {
   return { findCurrent: async () => current } as unknown as SeasonRepository

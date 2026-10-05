@@ -9,7 +9,7 @@ import type { PaymentRepository } from '../../repositories/payment-repository'
 import type { SeasonRepository } from '../../repositories/season-repository'
 import { GetMyDuesReminderUseCase } from './GetMyDuesReminderUseCase'
 
-const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-09-01', endDate: '2027-06-30', cotisationAmount: null }
+const season: Season = { id: 'season-1', label: '2026-2027', startDate: '2026-09-01', endDate: '2027-06-30', cotisationAmount: null, paymentUrl: null }
 
 const membership: Membership = {
   id: 'm-1',

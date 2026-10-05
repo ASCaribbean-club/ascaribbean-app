@@ -5,15 +5,29 @@ import type { DueView } from "../../due-view";
 interface OutstandingListProps {
   items: DueView[];
   onManage: () => void;
+  // "Relancer" is rendered only when the ViewModel's canRemind is true and
+  // the row is eligible (absent, never greyed).
+  canRemind: boolean;
+  isReminderBusy: boolean;
+  onRemind: (id: string, name: string) => void;
 }
 
-// "Restes dus": read-only, non-interactive rows (UI-TR-03) — no reminder or
-// payment button. Only the link to the full list is actionable.
-export function OutstandingList({ items, onManage }: OutstandingListProps) {
+// "À relancer" (UI-TR-11: the mockup's title restored by amendement (4)).
+// Rows stay non-interactive (UI-TR-03) except the per-row "Relancer"; during
+// the 7-day window the button is replaced by the notice, on the secondary
+// line. The "Enc…" button of the mockup is NOT "Relancer" and stays out
+// (UI-TR-10).
+export function OutstandingList({
+  items,
+  onManage,
+  canRemind,
+  isReminderBusy,
+  onRemind,
+}: OutstandingListProps) {
   return (
-    <section aria-label="Restes dus" className="flex flex-col gap-3">
+    <section aria-label="À relancer" className="flex flex-col gap-3">
       <div className="flex min-w-0 items-center justify-between gap-3">
-        <h2 className="text-[16px] font-extrabold text-white">Restes dus</h2>
+        <h2 className="text-[16px] font-extrabold text-white">À relancer</h2>
         <Button
           type="button"
           variant="ghost"
@@ -50,10 +64,27 @@ export function OutstandingList({ items, onManage }: OutstandingListProps) {
                     {item.sectionLabel ? `${item.sectionLabel} · ` : ""}
                     {item.amountsLabel}
                   </span>
+                  {item.reminderCooldownNotice && (
+                    <span className="text-[12px] text-white/65">
+                      {item.reminderCooldownNotice}
+                    </span>
+                  )}
                 </div>
                 <span className="shrink-0 text-[13px] font-extrabold text-coach-red-text">
                   {item.remainingLabel}
                 </span>
+                {canRemind && item.isReminderEligible && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onRemind(item.id, item.name)}
+                    disabled={isReminderBusy}
+                    aria-label={`Relancer ${item.name}`}
+                    className="h-11 shrink-0 rounded-full border-amber-300/50 bg-transparent px-4 font-bold text-amber-200 hover:bg-amber-500/15 hover:text-amber-100"
+                  >
+                    Relancer
+                  </Button>
+                )}
               </div>
               <CollectionProgressBar
                 percent={item.percent}

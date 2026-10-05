@@ -13,14 +13,19 @@ import {
   getFirstName,
   getInitials,
 } from "@presentation/shared/formatters/greeting";
+import { useNow } from "@presentation/shared/hooks/use-now";
+import { usePermission } from "@presentation/shared/hooks/use-permission";
 import { useActiveRole } from "@presentation/shared/hooks/use-active-role";
 import { useAuth } from "@presentation/shared/hooks/use-auth";
 import { useSectionFilter } from "@presentation/shared/hooks/use-section-filter";
 import { toDueView } from "../due-view";
+import { useDuesReminderFlow } from "../use-dues-reminder-flow";
 import { useTreasurerDues } from "../use-treasurer-dues";
 
-// Specs/mobile-treasurer.md "Écran A" — read-only. Every figure comes from
-// the domain rules; this hook only picks, formats and exposes booleans.
+// Specs/mobile-treasurer.md "Écran A". Every figure comes from the domain
+// rules; this hook only picks, formats and exposes booleans. The only write
+// control is "Relancer" on the "À relancer" rows ('dues:remind', amendement
+// (4)) — UX only, the use case and send_dues_reminders() are the real gate.
 const OUTSTANDING_LIMIT = 5; // UI-TR-04
 
 export function useTreasurerDashboardViewModel() {
@@ -29,6 +34,9 @@ export function useTreasurerDashboardViewModel() {
   const { isTreasurerView } = useActiveRole();
   const { sectionFilter, selectSection } = useSectionFilter();
   const duesQuery = useTreasurerDues(isTreasurerView);
+  const canRemind = usePermission("dues:remind");
+  const now = useNow();
+  const reminderFlow = useDuesReminderFlow();
 
   const report = duesQuery.data;
   const entries = report?.entries ?? [];
@@ -100,10 +108,20 @@ export function useTreasurerDashboardViewModel() {
         }))
       : [],
 
-    /// --- Restes dus ---
+    /// --- À relancer (UI-TR-11: label restored) ---
     outstanding: outstanding
       .slice(0, OUTSTANDING_LIMIT)
-      .map((entry) => toDueView(entry, showSectionFilter)),
+      .map((entry) => toDueView(entry, showSectionFilter, now)),
+    canRemind,
+    isReminderBusy: reminderFlow.isSending,
+    onRemindOne: (id: string, name: string) =>
+      reminderFlow.requestReminder([id], name),
+    confirmTitle: reminderFlow.confirmTitle,
+    isConfirmOpen: reminderFlow.isConfirmOpen,
+    onConfirmReminder: reminderFlow.confirm,
+    onCancelReminder: reminderFlow.cancel,
+    reminderFeedback: reminderFlow.feedback,
+    reminderErrorMessage: reminderFlow.errorMessage,
     hasOutstanding: outstanding.length > 0,
     goToDuesList: () => navigate("/dues"),
   };

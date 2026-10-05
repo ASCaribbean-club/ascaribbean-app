@@ -1,4 +1,5 @@
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconChevronDown, IconPlus } from "@tabler/icons-react";
+import { Button } from "@presentation/shared/components/ui/button";
 import { cn } from "@presentation/shared/lib/utils";
 import { CollectionProgressBar } from "../../components/CollectionProgressBar";
 import { PaymentStatusBadge } from "../../components/PaymentStatusBadge";
@@ -8,13 +9,23 @@ interface DueCardProps {
   due: DueView;
   isExpanded: boolean;
   onToggle: () => void;
+  // Rendered only when the ViewModel's canRecordPayment is true (absent, never
+  // greyed, for a read-only authorized-officer).
+  canRecordPayment: boolean;
+  onAddPayment: () => void;
 }
 
-// Read-only expandable card: the whole header is the toggle (min h-11).
-// Expanded: payment history, most recent first, each with its payment method
-// when recorded — no "Modifier", no "Ajouter un paiement", no reminder state
-// (AC-TR-15/16).
-export function DueCard({ due, isExpanded, onToggle }: DueCardProps) {
+// Expandable card: the whole header is the toggle (min h-11). Expanded:
+// payment history, most recent first, each with its payment method when
+// recorded, then "+ Ajouter un paiement" for a role that can record one
+// (amendement UI du 2026-10-05 (3)). No "Modifier", no reminder state.
+export function DueCard({
+  due,
+  isExpanded,
+  onToggle,
+  canRecordPayment,
+  onAddPayment,
+}: DueCardProps) {
   const panelId = `due-payments-${due.id}`;
 
   return (
@@ -89,6 +100,16 @@ export function DueCard({ due, isExpanded, onToggle }: DueCardProps) {
                 </li>
               ))}
             </ul>
+          )}
+          {canRecordPayment && (
+            <Button
+              type="button"
+              onClick={onAddPayment}
+              className="mt-1 h-11 w-full min-w-0 rounded-full bg-coach-green font-bold text-white hover:bg-coach-green"
+            >
+              <IconPlus aria-hidden />
+              Ajouter un paiement
+            </Button>
           )}
         </div>
       )}

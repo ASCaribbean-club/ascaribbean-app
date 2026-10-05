@@ -1,17 +1,19 @@
 import { IconSearch, IconSearchOff } from "@tabler/icons-react";
 import { EmptyState } from "@presentation/shared/components/EmptyState";
+import { Alert, AlertDescription } from "@presentation/shared/components/ui/alert";
 import { Button } from "@presentation/shared/components/ui/button";
 import { Input } from "@presentation/shared/components/ui/input";
 import { Skeleton } from "@presentation/shared/components/ui/skeleton";
 import { BackHeader } from "@presentation/shared/layout/BackHeader";
 import { TreasurerStateMessage } from "../components/TreasurerStateMessage";
 import { DueCard } from "./components/DueCard";
+import { RecordDuePaymentDialog } from "./components/RecordDuePaymentDialog";
 import { DuesFilters } from "./components/DuesFilters";
 import { useDuesListViewModel } from "./useDuesListViewModel";
 
 // No logic here: only branches on booleans the ViewModel already computed.
-// Read-only (PO-TR-01): no "Sélection", "Relancer", "+ Paiement" or floating
-// button, for the treasurer and the authorized-officer alike.
+// Only "+ Ajouter un paiement" (in an expanded card, behind canRecordPayment)
+// writes (PO-TR-01(a)): no "Sélection", "Relancer", floating "+" button.
 export function DuesListPage() {
   const vm = useDuesListViewModel();
 
@@ -32,6 +34,14 @@ export function DuesListPage() {
       <BackHeader title={vm.title} subtitle={vm.subtitle} onBack={vm.goBack} />
 
       <div className="flex flex-col gap-4 px-5.5 pt-4 pb-28">
+        {vm.successMessage && (
+          <Alert role="status" className="border-white/10 bg-white/10 text-white">
+            <AlertDescription className="text-white">
+              {vm.successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {vm.isLoading && (
           <div className="flex flex-col gap-3" aria-hidden>
             {[0, 1, 2, 3].map((index) => (
@@ -118,6 +128,8 @@ export function DuesListPage() {
                       due={due}
                       isExpanded={vm.expandedIds.has(due.id)}
                       onToggle={() => vm.toggleExpanded(due.id)}
+                      canRecordPayment={vm.canRecordPayment}
+                      onAddPayment={() => vm.openPayment(due.id)}
                     />
                   ))}
                 </ul>
@@ -125,6 +137,13 @@ export function DuesListPage() {
             </>
           )}
       </div>
+
+      <RecordDuePaymentDialog
+        due={vm.paymentTarget}
+        seasonLabel={vm.seasonLabel}
+        onClose={vm.closePayment}
+        onRecorded={vm.onPaymentRecorded}
+      />
     </div>
   );
 }

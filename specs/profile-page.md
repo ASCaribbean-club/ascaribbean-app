@@ -353,3 +353,11 @@ C'est le seul des cinq points qui entre en conflit frontal avec une règle *dure
 ### État d'implémentation vs. maquette — même situation que charte/documents
 
 Comme déjà noté par `useProfileViewModel.ts`/`ProfilePage.tsx` pour la charte et les documents (§1 point 4/5, écart maquette/spec déjà flaggé) : `coachNames`, `membership` et `membershipSeasonLabel` sont désormais résolus et exposés par le ViewModel, mais **`ProfilePage.tsx` ne les rend pas encore** — aucune des deux maquettes enregistrées ne montre de bloc adhésion/coach (§"Réserve maquettes", ce spec n'a jamais pu les ouvrir). ViewModel en avance sur le rendu, situation déjà tolérée ailleurs dans ce fichier plutôt qu'un blocage — le rendu reste à concevoir (nouveau composant, ou extension de `RoleScopeBlock`/nouveau bloc « Adhésion » à la suite du bloc rôles).
+
+## 8. Amendement du 2026-10-05 — cotisation du membre sur son propre profil (`profile-membership-dues`)
+
+Décision développeuse, détaillée dans `specs/profile-membership-dues.md`. **AC-PR-10 est remplacé** par la rédaction ci-dessous ; la rédaction d'origine (§4) est conservée pour mémoire.
+
+- **AC-PR-10 (remplacé le 2026-10-05)** — La **seule** donnée financière rendue sur le profil est la **cotisation du compte lui-même** : la ligne Cotisation du bloc Adhésion (versé, dû, statut), **son propre** historique de versements et, si la cotisation n'est pas soldée, le **lien de paiement** de la saison. Les données financières **des autres membres** restent **exclues** de l'écran et des réponses API qui l'alimentent, pour tous les rôles, y compris trésorier et administrateur. Aucun échéancier, aucune relance, aucun solde global n'est ajouté.
+- **Ne valent plus pour la cotisation du membre lui-même** : §1 « Hors périmètre » (puce « Le statut de cotisation »), §2 (ligne Trésorier : « Aucune donnée financière n'est rendue pour autant »), §3 « Données financières — aucune », la mention de §6 qui écarte statut de cotisation, solde et échéancier des maquettes, et la phrase de §7 « AC-PR-10 reste intact ». Ces passages restent vrais pour toute donnée financière d'un tiers.
+- Le Trésorier n'est pas traité à part : sa propre cotisation s'affiche comme celle de tout autre rôle (PO-PMD-02 résolu).

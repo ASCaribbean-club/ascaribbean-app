@@ -1,5 +1,9 @@
-// specs/mobile-leaderboard.md — read-only team ranking, three metrics.
-export type LeaderboardMetric = 'goals' | 'yellow' | 'red'
+// specs/mobile-leaderboard.md — read-only team ranking. `cards` ranks on the
+// total of yellow + red; the split stays visible as secondary counters.
+export type LeaderboardMetric = 'goals' | 'cards'
+
+// The raw counters a row can display (a metric is ranked, a counter is shown).
+export type LeaderboardCounterKind = 'goals' | 'yellow' | 'red'
 
 // One roster player's raw counters for the current season (what the
 // get_team_leaderboard function returns, mapped).

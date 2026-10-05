@@ -26,6 +26,20 @@ export class ConvocationResponseRepositoryImpl implements ConvocationResponseRep
     return (data ?? []).map(toConvocationResponse)
   }
 
+  // Short-circuits on an empty array, same as AttendanceRecordRepositoryImpl.findByConvocations.
+  async findByConvocations(convocationIds: string[]): Promise<ConvocationResponse[]> {
+    if (convocationIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('convocation_responses')
+      .select('id, convocation_id, user_id, status, reason, responded_at')
+      .in('convocation_id', convocationIds)
+      .overrideTypes<ConvocationResponseRow[]>()
+
+    if (error) throw mapSupabaseError(error)
+    return (data ?? []).map(toConvocationResponse)
+  }
+
   async upsert(response: Omit<ConvocationResponse, 'id'>): Promise<ConvocationResponse> {
     const { data, error } = await this.client
       .from('convocation_responses')

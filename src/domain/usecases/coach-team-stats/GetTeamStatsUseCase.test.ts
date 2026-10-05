@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AttendanceRecord, Convocation } from '../../entities/convocation'
+import type { AttendanceRecord, Convocation, ConvocationResponse } from '../../entities/convocation'
 import type { MatchDetails } from '../../entities/match-details'
 import type { MatchEvent } from '../../entities/match-event'
 import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
+import type { ConvocationResponseRepository } from '../../repositories/convocation-response-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
@@ -102,6 +103,16 @@ function fakeMatchDetailsRepository(matchDetails: MatchDetails[] = []): MatchDet
   }
 }
 
+function fakeConvocationResponseRepository(responses: ConvocationResponse[] = []): ConvocationResponseRepository {
+  return {
+    upsert: vi.fn(),
+    findByConvocationAndUser: vi.fn(),
+    findByConvocation: async () => responses,
+    findByConvocations: async () => responses,
+    getOwnResponseSummary: vi.fn(),
+  } as unknown as ConvocationResponseRepository
+}
+
 describe('GetTeamStatsUseCase', () => {
   it('returns the roster from TeamRosterRepository unchanged', async () => {
     const roster: TeamRosterPlayer[] = [{ userId: 'player-1', displayName: 'Joueur 1' }]
@@ -111,6 +122,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(),
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -128,6 +140,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository([]),
       fakeMatchEventRepository(),
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -153,11 +166,12 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository([]),
       fakeMatchEventRepository(),
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
-    expect(result.attendance.team).toEqual({ tally: { presentCount: 0, totalCount: 1 }, rate: 0 })
+    expect(result.attendance.team).toEqual({ tally: { presentCount: 0, totalCount: 0 }, rate: null })
   })
 
   it('aggregates attendance across every player, keeping a player with no record entirely out of byPlayer (AC-CTS-07)', async () => {
@@ -180,13 +194,14 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(records),
       fakeMatchEventRepository(),
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
     // PO-CTS-04(a)/(d) tranché — team totalCount is the OPEN CONVOCATION
     // count (3 here), never records.length (2).
-    expect(result.attendance.team).toEqual({ tally: { presentCount: 1, totalCount: 3 }, rate: 33 })
+    expect(result.attendance.team).toEqual({ tally: { presentCount: 1, totalCount: 2 }, rate: 50 })
     // Per-player totalCount is unaffected by this change: records.length
     // still matches 1:1 with "convocations this player has a row for",
     // since the use case only ever fetches rows for open convocations now.
@@ -206,6 +221,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(events),
       fakeMatchDetailsRepository([{ convocationId: 'c2', goalsFor: 1, goalsAgainst: 0 } as MatchDetails]),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -238,6 +254,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(events),
       fakeMatchDetailsRepository(matchDetails),
+      fakeConvocationResponseRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1' })
@@ -270,6 +287,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(),
       matchEventRepository,
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1' })
@@ -297,6 +315,7 @@ describe('GetTeamStatsUseCase', () => {
       fakeAttendanceRecordRepository(),
       fakeMatchEventRepository(),
       matchDetailsRepository,
+      fakeConvocationResponseRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1' })
@@ -324,10 +343,45 @@ describe('GetTeamStatsUseCase', () => {
       attendanceRecordRepository,
       fakeMatchEventRepository(),
       fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1' })
 
     expect(findByConvocations).toHaveBeenCalledExactlyOnceWith(['training-1', 'match-1', 'meeting-1'])
+  })
+
+  it('computes the response rate from ConvocationResponse over roster × open convocations, ignoring pending and non-roster rows', async () => {
+    const roster: TeamRosterPlayer[] = [
+      { userId: 'player-1', displayName: 'Joueur 1' },
+      { userId: 'player-2', displayName: 'Joueur 2' },
+    ]
+    const response = (userId: string, convocationId: string, status: ConvocationResponse['status']): ConvocationResponse => ({
+      id: `r-${userId}-${convocationId}`,
+      convocationId,
+      userId,
+      status,
+      reason: null,
+      respondedAt: null,
+    })
+    const useCase = new GetTeamStatsUseCase(
+      fakeTeamRosterRepository(roster),
+      fakeConvocationRepository([convocationWith({ id: 'c1' }), convocationWith({ id: 'c2' })]),
+      fakeAttendanceRecordRepository(),
+      fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository([
+        response('player-1', 'c1', 'present'),
+        response('player-1', 'c2', 'absent'),
+        response('player-2', 'c1', 'pending'),
+        response('former-player', 'c1', 'present'),
+      ]),
+    )
+
+    const result = await useCase.execute({ teamId: 'team-1' })
+
+    expect(result.responses.team).toEqual({ tally: { respondedCount: 2, expectedCount: 4 }, rate: 50 })
+    expect(result.responses.byPlayer['player-1']).toEqual({ tally: { respondedCount: 2, expectedCount: 2 }, rate: 100 })
+    expect(result.responses.byPlayer['player-2']).toEqual({ tally: { respondedCount: 0, expectedCount: 2 }, rate: 0 })
   })
 })

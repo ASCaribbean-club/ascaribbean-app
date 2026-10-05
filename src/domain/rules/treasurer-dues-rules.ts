@@ -5,7 +5,14 @@
 // membershipPaymentStatus()/sumPaymentsCents() stay the single
 // implementation (AC-TR-06).
 import type { TreasurerDue, TreasurerDuePayment, TreasurerDueSection } from '../entities/treasurer-due'
-import { membershipPaymentStatus, sumPaymentsCents, type MembershipPaymentStatus } from './membership-payment-rules'
+import type { DuesReminderState } from '../entities/dues-reminder'
+import {
+  effectiveAmountDueCents,
+  membershipPaymentStatus,
+  remainingDueCents,
+  sumPaymentsCents,
+  type MembershipPaymentStatus,
+} from './membership-payment-rules'
 
 // null = "Toutes". A concrete value is a public.sections id.
 export type TreasurerSectionFilter = string | null
@@ -24,13 +31,14 @@ export interface TreasurerDueEntry {
   status: MembershipPaymentStatus
   // Most recent first.
   payments: TreasurerDuePayment[]
+  // Reminder history aggregate (specs/mobile-treasurer.md amendement (4)).
+  reminder: DuesReminderState
 }
 
 // PO-TR-03 default: same effective amount as /admin/memberships. The season
 // tariff is in euros (Season.cotisationAmount), converted to integer cents.
 export function toDueEntry(due: TreasurerDue, seasonCotisationAmount: number | null): TreasurerDueEntry {
-  const amountDueCents =
-    due.amountDueCents ?? (seasonCotisationAmount !== null ? Math.round(seasonCotisationAmount * 100) : null)
+  const amountDueCents = effectiveAmountDueCents(due.amountDueCents, seasonCotisationAmount)
   const paidCents = sumPaymentsCents(due.payments)
   const status = membershipPaymentStatus(paidCents, amountDueCents)
   return {
@@ -39,9 +47,10 @@ export function toDueEntry(due: TreasurerDue, seasonCotisationAmount: number | n
     sections: due.sections,
     amountDueCents,
     paidCents,
-    remainingCents: amountDueCents === null ? 0 : Math.max(0, amountDueCents - paidCents),
+    remainingCents: remainingDueCents(paidCents, amountDueCents),
     status,
     payments: [...due.payments].sort(byPaidAtDescending),
+    reminder: due.reminder,
   }
 }
 

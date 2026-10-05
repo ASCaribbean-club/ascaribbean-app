@@ -2,7 +2,7 @@
   "name": "as-caribbean-club",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.1.1",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

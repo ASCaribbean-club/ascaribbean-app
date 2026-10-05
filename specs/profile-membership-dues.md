@@ -1,6 +1,6 @@
 # Spec — Profil : cotisation du membre et lien de paiement (`profile-membership-dues`)
 
-> Statut : **rédaction initiale, 2026-10-05.** Un point ouvert **bloque la transmission à designer-agent** : PO-PMD-01 (registre des maquettes, une seule réponse de la développeuse suffit). Voir §6 et « Transmission ».
+> Statut : **PO-PMD-01 et PO-PMD-02 résolus par la développeuse le 2026-10-05 ; plus aucun point bloquant, prêt pour l'implémentation.** Rédaction initiale du 2026-10-05, amendée le même jour (voir « Transmission, amendement 2026-10-05 »). Voir §6.
 > Demande (développeuse) : sur « Mon profil », dans le bloc **Adhésion**, ajouter une ligne **Cotisation** dépliable qui montre l'historique de ses propres versements ; sous cette ligne, si la cotisation **n'est pas soldée**, un **lien de paiement** que le membre peut toucher pour payer.
 > Décisions développeuse reprises telles quelles : (1) le lien est une **URL par saison**, stockée en base, saisie par l'administrateur sur la saison (colonne + champ de backoffice minimal) ; **simple renvoi externe**, aucun parcours de paiement dans l'application. (2) Ligne repliée : « Cotisation · {versé} € / {dû} € » + pastille **Soldée / Partielle / Impayée** ; ligne dépliée : **ses propres** versements (date, montant, libellé du moyen de paiement s'il existe), du plus récent au plus ancien. Données du membre lui-même uniquement.
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P1 « Cotisations — sans encaissement en ligne (7.2) », P2 « Paiement en ligne intégré », matrice RBAC, §11.3), `docs/roles-personas-as-caribbean.md`, `docs/RETENTION_PURGE.md`, `specs/profile-page.md` (§1-§3, AC-PR-10, addendum §7), `specs/mobile-treasurer.md` (amendements (2) moyen de paiement, (3) enregistrement, (4) relances et bandeau membre, AC-TR-18/39/43), `specs/web-seasons.md` (§2.5, §2.7, AC-WS-31/35), `specs/web-memberships.md` (PO-WM-02).
@@ -240,6 +240,13 @@ Préfixe **`AC-PMD-`**. AC-01/AC-02 (CDC §17.2) s'appliquent tels quels.
 - **Avant mise en production, sans bloquer conception ni construction** : PO-PMD-03 (accord du Bureau sur le paiement externe, encadrement RGPD du prestataire).
 - **Implémentation** : la migration `seasons.payment_url` (colonne + CHECK) est à écrire puis à **proposer à l'application**, jamais appliquée en silence. Aucune autre migration.
 - **Amendements datés** à reporter dans `specs/profile-page.md` (AC-PR-10 et paragraphes liés), `specs/mobile-treasurer.md` (AC-TR-43, §H) et `specs/web-seasons.md` (§2.1, AC-WS-31) : voir §1.
+
+### Transmission, amendement du 2026-10-05 (résolution de PO-PMD-01 et PO-PMD-02)
+
+- **PO-PMD-01 résolu** par la développeuse le 2026-10-05 : **aucune maquette**, conception par composition. La ligne `absent` pré-rédigée au §0 est **remplacée** (superseded) par la ligne déjà inscrite dans `docs/designs/DESIGN_LINKS.md` (§2) ; ne plus redemander.
+- **PO-PMD-02 résolu** par la développeuse le 2026-10-05 : chaque rôle voit **sa propre** cotisation. Aucune entrée de matrice, mise en page unique pour les 8 rôles (AC-PMD-04 tient).
+- Le paragraphe « Prêt pour designer-agent : NON » ci-dessus est **caduc** : la transmission est faite, la section « UI design » existe. Le reste de cette section (PO-PMD-03 avant mise en production, migration `seasons.payment_url` à proposer et jamais appliquée en silence) reste valable.
+- Les amendements datés dans `specs/profile-page.md`, `specs/mobile-treasurer.md` et `specs/web-seasons.md` sont reportés le 2026-10-05.
 
 ## UI design
 

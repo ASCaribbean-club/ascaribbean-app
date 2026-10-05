@@ -7,6 +7,9 @@ export interface ConvocationResponseRepository {
   // Added for specs/coach-dashboard.md — response bar + "À venir" rates need
   // every response for a convocation, not just one user's.
   findByConvocation(convocationId: string): Promise<ConvocationResponse[]>
+  // Bulk read for the coach team-stats response rate — same RLS boundary as
+  // findByConvocation (convocation_responses_select_own_or_coach).
+  findByConvocations(convocationIds: string[]): Promise<ConvocationResponse[]>
 
   // specs/player-stats.md §6.3/PO-PS-02 — backed by get_my_response_summary(),
   // a SECURITY INVOKER RPC (convocation_responses_select_own_or_coach

@@ -2,7 +2,18 @@ import { describe, expect, it } from 'vitest'
 import type { AttendanceRecord } from '../entities/convocation'
 import type { MatchEvent } from '../entities/match-event'
 import type { MatchDetails } from '../entities/match-details'
-import { attendanceRate, sumTeamGoals, tallyAttendance, tallyAttendanceByPlayer, tallyCardsByPlayer, tallyGoalsByPlayer, tallyTeamCards } from './team-stats-rules'
+import {
+  attendanceRate,
+  responseRate,
+  sumTeamGoals,
+  tallyAttendance,
+  tallyAttendanceByPlayer,
+  tallyCardsByPlayer,
+  tallyGoalsByPlayer,
+  tallyResponses,
+  tallyResponsesByPlayer,
+  tallyTeamCards,
+} from './team-stats-rules'
 
 function attendanceRecord(userId: string, actualStatus: AttendanceRecord['actualStatus'], overrides: Partial<AttendanceRecord> = {}): AttendanceRecord {
   return {
@@ -33,31 +44,27 @@ function matchEvent(userId: string, eventType: MatchEvent['eventType'], override
 
 describe('tallyAttendance', () => {
   it('returns zeroed counts when no records exist and no open convocations (AC-CTS-16, "aucune séance constatée")', () => {
-    expect(tallyAttendance([], 0)).toEqual({ presentCount: 0, totalCount: 0 })
+    expect(tallyAttendance([])).toEqual({ presentCount: 0, totalCount: 0 })
   })
 
-  // PO-CTS-04(a)/(d) tranché — totalCount is the OPEN CONVOCATION count
-  // passed in by the caller, never records.length: with several players on
-  // a roster, summing every player's own rows produces a number with no
-  // "how many sessions" meaning.
-  it('counts present across every record regardless of player, and totalCount from the open-convocation count, not records.length', () => {
+  it('counts present rows across every player, with totalCount as the number of recorded rows', () => {
     const records = [
       attendanceRecord('player-1', 'present'),
       attendanceRecord('player-2', 'absent'),
       attendanceRecord('player-1', 'present'),
     ]
-    expect(tallyAttendance(records, 2)).toEqual({ presentCount: 2, totalCount: 2 })
+    expect(tallyAttendance(records)).toEqual({ presentCount: 2, totalCount: 3 })
   })
 
-  it('counts a record with actualStatus "absent" toward presentCount as zero, independently of the open-convocation count', () => {
-    expect(tallyAttendance([attendanceRecord('player-1', 'absent')], 1)).toEqual({ presentCount: 0, totalCount: 1 })
+  it('counts a record with actualStatus "absent" as zero present', () => {
+    expect(tallyAttendance([attendanceRecord('player-1', 'absent')])).toEqual({ presentCount: 0, totalCount: 1 })
   })
 
   // AC-CTS-06 — never derives from anything but actualStatus itself; a
   // record carrying absenceValidity/note must not change the count.
   it('ignores absenceValidity and note entirely (AC-CTS-06/AC-CTS-10)', () => {
     const records = [attendanceRecord('player-1', 'absent', { absenceValidity: 'excused', note: 'Blessé' })]
-    expect(tallyAttendance(records, 1)).toEqual({ presentCount: 0, totalCount: 1 })
+    expect(tallyAttendance(records)).toEqual({ presentCount: 0, totalCount: 1 })
   })
 })
 
@@ -188,5 +195,34 @@ describe('sumTeamGoals', () => {
   // recorded goals than attributed scorer events (AC-MS-05/17).
   it('does not depend on match_events at all — only the primary goalsFor fact', () => {
     expect(sumTeamGoals([{ goalsFor: 5 }])).toBe(5)
+  })
+})
+
+describe('response rate', () => {
+  const response = (userId: string, status: 'pending' | 'present' | 'absent') => ({
+    id: `r-${userId}`,
+    convocationId: 'c1',
+    userId,
+    status,
+    reason: null,
+    respondedAt: null,
+  })
+
+  it('counts present/absent answers from roster players only, over roster × open sessions', () => {
+    const responses = [response('p1', 'present'), response('p2', 'pending'), response('gone', 'absent')]
+    expect(tallyResponses(responses, ['p1', 'p2'], 1)).toEqual({ respondedCount: 1, expectedCount: 2 })
+  })
+
+  it('gives every roster player an entry, 0 when they never answered', () => {
+    expect(tallyResponsesByPlayer([response('p1', 'absent')], ['p1', 'p2'], 3)).toEqual({
+      p1: { respondedCount: 1, expectedCount: 3 },
+      p2: { respondedCount: 0, expectedCount: 3 },
+    })
+  })
+
+  it('returns null when nobody was expected to answer, a real 0 otherwise', () => {
+    expect(responseRate({ respondedCount: 0, expectedCount: 0 })).toBeNull()
+    expect(responseRate({ respondedCount: 0, expectedCount: 4 })).toBe(0)
+    expect(responseRate({ respondedCount: 1, expectedCount: 3 })).toBe(33)
   })
 })

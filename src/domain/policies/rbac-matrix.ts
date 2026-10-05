@@ -172,7 +172,19 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // (membership_payments_insert_admin) — see
   // supabase/migrations/20260917174652_web_memberships_write_policies.sql.
   'membership:write': ['admin'],
-  'payment:record': ['admin'],
+  // specs/mobile-treasurer.md §3 "Écriture" (PO-TR-01(a) ACCEPTÉ, amendement
+  // UI du 2026-10-05 (3)) — widened from ['admin'] to ['admin', 'treasurer']:
+  // the ONLY matrix entry touched, 'membership:write' above stays
+  // ['admin']. Partially answers PO-WM-08 (option b) — the paragraph above
+  // describes the earlier ['admin']-only position. Club-wide, no scope check
+  // in can.ts. Mirrors the RLS policies
+  // membership_payments_insert_admin (admin) and
+  // membership_payments_insert_treasurer (treasurer) on
+  // public.membership_payments, plus the audit entry
+  // 'membership.payment_recorded' opened to treasurers in
+  // public.record_audit_log_entry — see
+  // supabase/migrations/20261005160000_treasurer_record_payment.sql.
+  'payment:record': ['admin', 'treasurer'],
 
   // specs/web-users.md §3 (amendement du 2026-09-18, PO-WU-01/02/03
   // résolus) — "le cas le plus simple du backoffice à ce jour": the CDC's

@@ -267,6 +267,13 @@ export type Action =
   // coach branch). Coach/Staff declares or lifts an unavailability for a
   // player of their team.
   | 'availability:declare'
+  // Suspension-only twin of 'availability:declare': the Dirigeant habilité can
+  // declare, edit or lift a SUSPENSION club-wide (a suspension is not health
+  // data), never a medical unavailability. Coach branch is team-scoped
+  // (can.ts requiresTeamScope); the officer falls through to the club-wide
+  // default. Mirrors the *_officer_suspension policies of
+  // supabase/migrations/20261005120000_availability_write_officer.sql.
+  | 'availability:declare-suspension'
   // specs/player-unavailability.md §2 — team-scoped (can.ts requiresTeamScope,
   // player AND coach branches). Players only ever get the teammate projection
   // (toTeammateStatus).

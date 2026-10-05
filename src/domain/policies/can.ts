@@ -104,6 +104,7 @@ function grants(
         action === 'meeting_details:update' ||
         // specs/player-unavailability.md §2 — both team-scoped.
         action === 'availability:declare' ||
+        action === 'availability:declare-suspension' ||
         action === 'availability:read-team' ||
         action === 'mission:manage'
       return !requiresTeamScope || (context.teamId !== undefined && assignment.teamIds.includes(context.teamId))

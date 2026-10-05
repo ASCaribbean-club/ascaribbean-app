@@ -12,8 +12,7 @@ import { useLeaderboardViewModel } from './useLeaderboardViewModel'
 
 const EMPTY_TAB_HINT = {
   goals: 'Aucun but cette saison pour l\'instant.',
-  yellow: 'Aucun carton jaune cette saison pour l\'instant.',
-  red: 'Aucun carton rouge cette saison pour l\'instant.',
+  cards: 'Aucun carton cette saison pour l\'instant.',
 } as const
 
 // Same red/green backdrop as ConvocationDetailPage (fixed, behind content;

@@ -7,10 +7,8 @@ export function metricValue(player: LeaderboardPlayerCounts, metric: Leaderboard
   switch (metric) {
     case 'goals':
       return player.goalsCount
-    case 'yellow':
-      return player.yellowCount
-    case 'red':
-      return player.redCount
+    case 'cards':
+      return player.yellowCount + player.redCount
   }
 }
 

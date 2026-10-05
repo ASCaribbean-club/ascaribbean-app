@@ -2,7 +2,7 @@ import type { LeaderboardTab } from '../useLeaderboardViewModel'
 import type { LeaderboardMetric } from '@domain/entities/leaderboard'
 import { Dot } from '@presentation/shared/components/Dot'
 import { Tabs, TabsList, TabsTrigger } from '@presentation/shared/components/ui/tabs'
-import { METRIC_ACCENT, METRIC_LABEL, METRIC_SHAPE } from './leaderboard-accent'
+import { METRIC_ACCENT, METRIC_LABEL, METRIC_TAB_SHAPE } from './leaderboard-accent'
 
 interface LeaderboardTabsProps {
   tab: LeaderboardTab
@@ -11,7 +11,7 @@ interface LeaderboardTabsProps {
   children: React.ReactNode
 }
 
-const METRICS: LeaderboardMetric[] = ['goals', 'yellow', 'red']
+const METRICS: LeaderboardMetric[] = ['goals', 'cards']
 
 // UI design §4 — underlined tabs, overridden at the call site (tabs.tsx is
 // vendored). One list panel re-rendered per tab, data already loaded.
@@ -25,7 +25,7 @@ export function LeaderboardTabs({ tab, onTabChange, children }: LeaderboardTabsP
             value={value}
             className={`h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-0 text-[15px] font-bold text-white/60 shadow-none data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none ${METRIC_ACCENT[value].underline}`}
           >
-            <Dot className={`${METRIC_SHAPE[value].tab} ${METRIC_ACCENT[value].dot}`} />
+            <Dot className={`${METRIC_TAB_SHAPE[value]} ${METRIC_ACCENT[value].dot}`} />
             {METRIC_LABEL[value]}
           </TabsTrigger>
         ))}

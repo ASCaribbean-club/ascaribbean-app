@@ -14,5 +14,6 @@ export function toTreasurerDue(dto: TreasurerDueDto): TreasurerDue {
       paidAt: payment.paid_at,
       paymentMethod: isPaymentMethod(payment.payment_method) ? payment.payment_method : null,
     })),
+    reminder: { count: dto.reminder_count ?? 0, lastRemindedAt: dto.last_reminded_at },
   }
 }

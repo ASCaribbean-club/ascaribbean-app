@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PAYMENT_METHODS, type PaymentMethod } from '@domain/entities/payment-method'
 import { membershipPaymentStatus, sumPaymentsCents } from '@domain/rules/membership-payment-rules'
 import { useMembershipsDependencies } from '@presentation/di/hooks/use-memberships-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
+import { formatPaymentMethod } from '@presentation/shared/formatters/payment-method-labels'
 import { toDateInputValue } from '@presentation/shared/formatters/date-input'
 import { eurosToCents } from '@presentation/shared/formatters/currency'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
@@ -45,6 +47,8 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
   const paymentStatus = membershipPaymentStatus(paidCents, target.effectiveAmountDueCents)
 
   const [amountEuros, setAmountEuros] = useState('')
+  // '' = no method chosen (optional field).
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [paidAt, setPaidAt] = useState(() => toDateInputValue(new Date()))
 
   const mutation = useMutation({
@@ -63,6 +67,7 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
         membershipId: target.membership.id,
         amountCents: eurosToCents(Number(amountEuros)),
         paidAt,
+        paymentMethod: paymentMethod === '' ? null : paymentMethod,
       })
     },
     onSuccess: () => {
@@ -74,6 +79,7 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipPaymentsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() })
       setAmountEuros('')
+      setPaymentMethod('')
       setPaidAt(toDateInputValue(new Date()))
     },
   })
@@ -100,6 +106,9 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
     setAmountEuros,
     paidAt,
     setPaidAt,
+    paymentMethod,
+    setPaymentMethod,
+    paymentMethodOptions: PAYMENT_METHODS.map((method) => ({ value: method, label: formatPaymentMethod(method) })),
 
     canSubmit,
     isSubmitting: mutation.isPending,

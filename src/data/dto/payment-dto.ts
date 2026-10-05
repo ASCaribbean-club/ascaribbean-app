@@ -8,6 +8,8 @@ export interface PaymentRow {
   membership_id: string
   amount_cents: number
   paid_at: string
+  // Text column, CHECK-constrained to the domain's PAYMENT_METHODS; null on older rows.
+  payment_method: string | null
   recorded_by: string
   recorded_at: string
 }
@@ -18,5 +20,6 @@ export interface PaymentInsertRow {
   membership_id: string
   amount_cents: number
   paid_at: string
+  payment_method: string | null
   recorded_by: string
 }

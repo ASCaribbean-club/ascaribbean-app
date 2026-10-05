@@ -1,4 +1,5 @@
 import type { Payment } from '@domain/entities/payment'
+import { formatPaymentMethod } from '@presentation/shared/formatters/payment-method-labels'
 import { formatEuros } from '@presentation/shared/formatters/currency'
 
 interface PaymentHistoryListProps {
@@ -30,7 +31,10 @@ export function PaymentHistoryList({ isLoading, payments }: PaymentHistoryListPr
     <ul className="divide-y divide-border rounded-xl border border-border">
       {payments.map((payment) => (
         <li key={payment.id} className="flex items-center justify-between px-3 py-2 text-sm">
-          <span className="text-muted-foreground">{payment.paidAt}</span>
+          <span className="text-muted-foreground">
+            {payment.paymentMethod ? ` · ${formatPaymentMethod(payment.paymentMethod)}` : ''}
+            {payment.paidAt}
+          </span>
           <span className="font-medium">{formatEuros(payment.amountCents)}</span>
         </li>
       ))}

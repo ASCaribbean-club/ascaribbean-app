@@ -6,14 +6,20 @@ import { Input } from "@presentation/shared/components/ui/input";
 import { Skeleton } from "@presentation/shared/components/ui/skeleton";
 import { BackHeader } from "@presentation/shared/layout/BackHeader";
 import { TreasurerStateMessage } from "../components/TreasurerStateMessage";
+import { ReminderConfirmDialog } from "../components/ReminderConfirmDialog";
+import { ReminderFeedback } from "../components/ReminderFeedback";
 import { DueCard } from "./components/DueCard";
+import { OutstandingBanner } from "./components/OutstandingBanner";
+import { SelectableDueCard } from "./components/SelectableDueCard";
+import { SelectionBar } from "./components/SelectionBar";
 import { RecordDuePaymentDialog } from "./components/RecordDuePaymentDialog";
 import { DuesFilters } from "./components/DuesFilters";
 import { useDuesListViewModel } from "./useDuesListViewModel";
 
 // No logic here: only branches on booleans the ViewModel already computed.
-// Only "+ Ajouter un paiement" (in an expanded card, behind canRecordPayment)
-// writes (PO-TR-01(a)): no "Sélection", "Relancer", floating "+" button.
+// "+ Ajouter un paiement" (expanded card, canRecordPayment) and the reminder
+// controls "Relancer", "Tout relancer", "Sélection" (canRemind, amendement
+// (4)) are the only write controls: no floating "+" button.
 export function DuesListPage() {
   const vm = useDuesListViewModel();
 
@@ -31,7 +37,24 @@ export function DuesListPage() {
 
   return (
     <div className="flex min-h-full flex-col text-white">
-      <BackHeader title={vm.title} subtitle={vm.subtitle} onBack={vm.goBack} />
+      <BackHeader
+        title={vm.title}
+        subtitle={vm.subtitle}
+        onBack={vm.goBack}
+        action={
+          vm.canEnterSelection && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={vm.toggleSelectionMode}
+              disabled={vm.isReminderBusy}
+              className="h-11 rounded-full border-white/20 bg-transparent px-4 font-bold text-white"
+            >
+              {vm.isSelectionMode ? "Annuler" : "Sélection"}
+            </Button>
+          )
+        }
+      />
 
       <div className="flex flex-col gap-4 px-5.5 pt-4 pb-28">
         {vm.successMessage && (
@@ -41,6 +64,11 @@ export function DuesListPage() {
             </AlertDescription>
           </Alert>
         )}
+
+        <ReminderFeedback
+          feedback={vm.reminderFeedback}
+          errorMessage={vm.reminderErrorMessage}
+        />
 
         {vm.isLoading && (
           <div className="flex flex-col gap-3" aria-hidden>
@@ -100,10 +128,17 @@ export function DuesListPage() {
                 onReset={vm.reset}
               />
 
-              {vm.hasOutstanding && (
-                <p className="rounded-xl border border-amber-300/20 bg-amber-500/10 px-3.5 py-2.5 text-[13px] font-semibold text-amber-200">
-                  {vm.outstandingLabel}
-                </p>
+              {vm.isSelectionMode ? (
+                <p className="text-[13px] text-white/70">{vm.selectionHint}</p>
+              ) : (
+                vm.hasOutstanding && (
+                  <OutstandingBanner
+                    label={vm.outstandingLabel}
+                    canRemindAll={vm.canRemindAll}
+                    isBusy={vm.isReminderBusy}
+                    onRemindAll={vm.onRemindAll}
+                  />
+                )
               )}
 
               {vm.hasNoResult ? (
@@ -122,21 +157,53 @@ export function DuesListPage() {
                 </div>
               ) : (
                 <ul className="flex flex-col gap-2.5">
-                  {vm.dues.map((due) => (
-                    <DueCard
-                      key={due.id}
-                      due={due}
-                      isExpanded={vm.expandedIds.has(due.id)}
-                      onToggle={() => vm.toggleExpanded(due.id)}
-                      canRecordPayment={vm.canRecordPayment}
-                      onAddPayment={() => vm.openPayment(due.id)}
-                    />
-                  ))}
+                  {vm.dues.map((due) =>
+                    vm.isSelectionMode ? (
+                      <SelectableDueCard
+                        key={due.id}
+                        due={due}
+                        isSelectable={due.isReminderEligible}
+                        isSelected={vm.isSelected(due.id)}
+                        onToggle={() => vm.toggleSelected(due.id)}
+                      />
+                    ) : (
+                      <DueCard
+                        key={due.id}
+                        due={due}
+                        isExpanded={vm.expandedIds.has(due.id)}
+                        onToggle={() => vm.toggleExpanded(due.id)}
+                        canRecordPayment={vm.canRecordPayment}
+                        onAddPayment={() => vm.openPayment(due.id)}
+                        canRemind={vm.canRemind}
+                        isReminderBusy={vm.isReminderBusy}
+                        onRemind={() => vm.onRemindOne(due.id, due.name)}
+                      />
+                    ),
+                  )}
                 </ul>
               )}
             </>
           )}
       </div>
+
+      {vm.isSelectionMode && (
+        <SelectionBar
+          countLabel={vm.selectedCountLabel}
+          areAllSelected={vm.areAllSelected}
+          canSend={vm.canSendSelection}
+          isBusy={vm.isReminderBusy}
+          onToggleAll={vm.toggleAllSelected}
+          onSend={vm.onSendSelection}
+        />
+      )}
+
+      <ReminderConfirmDialog
+        title={vm.confirmTitle}
+        isOpen={vm.isConfirmOpen}
+        isSending={vm.isReminderBusy}
+        onConfirm={vm.onConfirmReminder}
+        onCancel={vm.onCancelReminder}
+      />
 
       <RecordDuePaymentDialog
         due={vm.paymentTarget}

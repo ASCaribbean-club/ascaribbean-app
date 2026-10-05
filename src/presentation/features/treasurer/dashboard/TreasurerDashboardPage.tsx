@@ -1,5 +1,8 @@
 import { SectionFilterChips } from "@presentation/shared/components/SectionFilterChips";
+import { DuesReminderBanner } from "@presentation/shared/components/DuesReminderBanner";
 import { Skeleton } from "@presentation/shared/components/ui/skeleton";
+import { ReminderConfirmDialog } from "../components/ReminderConfirmDialog";
+import { ReminderFeedback } from "../components/ReminderFeedback";
 import { TreasurerStateMessage } from "../components/TreasurerStateMessage";
 import { CollectionCard } from "./components/CollectionCard";
 import { OutstandingList } from "./components/OutstandingList";
@@ -9,7 +12,9 @@ import { TreasurerHeader } from "./components/TreasurerHeader";
 import { useTreasurerDashboardViewModel } from "./useTreasurerDashboardViewModel";
 
 // No logic here: only branches on booleans the ViewModel already computed.
-// Read-only pass (PO-TR-01): no floating "+", no payment or reminder control.
+// Only control: "Relancer" on the "À relancer" rows (canRemind, amendement
+// (4)). No floating "+", no payment control. The member banner of the
+// Treasurer's OWN dues reminder sits under the header (UI-TR-13).
 export function TreasurerDashboardPage() {
   const vm = useTreasurerDashboardViewModel();
 
@@ -23,6 +28,12 @@ export function TreasurerDashboardPage() {
       />
 
       <div className="flex flex-col gap-4 px-5.5 pb-28">
+        <DuesReminderBanner />
+        <ReminderFeedback
+          feedback={vm.reminderFeedback}
+          errorMessage={vm.reminderErrorMessage}
+        />
+
         {vm.isLoading && (
           <div className="flex flex-col gap-3" aria-hidden>
             <Skeleton className="h-36 w-full rounded-2xl bg-white/10" />
@@ -72,10 +83,21 @@ export function TreasurerDashboardPage() {
               <OutstandingList
                 items={vm.outstanding}
                 onManage={vm.goToDuesList}
+                canRemind={vm.canRemind}
+                isReminderBusy={vm.isReminderBusy}
+                onRemind={vm.onRemindOne}
               />
             </>
           )}
       </div>
+
+      <ReminderConfirmDialog
+        title={vm.confirmTitle}
+        isOpen={vm.isConfirmOpen}
+        isSending={vm.isReminderBusy}
+        onConfirm={vm.onConfirmReminder}
+        onCancel={vm.onCancelReminder}
+      />
     </div>
   );
 }

@@ -416,6 +416,13 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // SQL mirror: future migration, not built in the domain-only pass.
   'availability:declare': ['coach'],
 
+  // Suspension only (kind = 'suspension'): coach (own teams, same as
+  // 'availability:declare') and authorized-officer (club-wide, developer
+  // decision). Medical stays coach-only. Mirrors unavailabilities_*_officer_suspension
+  // (supabase/migrations/20261005120000_availability_write_officer.sql) and the
+  // coach policies unavailabilities_insert_coach / unavailabilities_update_coach.
+  'availability:declare-suspension': ['coach', 'authorized-officer'],
+
   // specs/player-unavailability.md §2 — player (own team) and coach (own
   // teams). Players see the teammate projection only. SQL mirror:
   // get_team_availability. Widened to 'authorized-officer' (developer

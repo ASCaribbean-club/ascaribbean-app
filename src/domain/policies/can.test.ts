@@ -570,6 +570,21 @@ describe('can — match_lineup:write', () => {
       expect(can(officer, 'availability:declare', { teamId: 'team-9' })).toBe(false)
     })
 
+    // Developer decision: the officer may declare/lift a SUSPENSION club-wide;
+    // medical stays coach-only.
+    it('allows an authorized-officer availability:declare-suspension for any team', () => {
+      const officer = userWith([{ role: 'authorized-officer' }])
+      expect(can(officer, 'availability:declare-suspension', { teamId: 'team-9' })).toBe(true)
+      expect(can(officer, 'availability:declare-suspension')).toBe(true)
+    })
+
+    it('scopes availability:declare-suspension to the coach\'s own teams and denies a player', () => {
+      expect(can(coach, 'availability:declare-suspension', { teamId: 'team-1' })).toBe(true)
+      expect(can(coach, 'availability:declare-suspension', { teamId: 'team-2' })).toBe(false)
+      expect(can(coach, 'availability:declare-suspension')).toBe(false)
+      expect(can(player, 'availability:declare-suspension', { teamId: 'team-1' })).toBe(false)
+    })
+
     it('grants a player-coach multi-role account declare via the coach assignment only', () => {
       const both = userWith([
         { role: 'player', teamId: 'team-2' },

@@ -10,6 +10,7 @@ function fakeConvocationResponseRepository(response: ConvocationResponse | null)
     upsert: async (r) => ({ id: 'r1', ...r }),
     findByConvocationAndUser: async () => response,
     findByConvocation: async () => (response ? [response] : []),
+    findByConvocations: async () => (response ? [response] : []),
     getOwnResponseSummary: async () => ({ convocatedCount: 0, respondedCount: 0 }),
   }
 }

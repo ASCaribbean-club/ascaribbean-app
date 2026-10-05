@@ -8,6 +8,7 @@ function fakeConvocationResponseRepository(overrides: Partial<ConvocationRespons
     upsert: async (response) => ({ id: 'response-1', ...response }),
     findByConvocationAndUser: async () => null,
     findByConvocation: async () => [],
+    findByConvocations: async () => [],
     getOwnResponseSummary: async () => ({ convocatedCount: 0, respondedCount: 0 }),
     ...overrides,
   }

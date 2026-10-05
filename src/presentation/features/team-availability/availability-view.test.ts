@@ -5,6 +5,7 @@ import {
   countAvailability,
   filterAvailabilityRows,
   formatAvailabilitySubtitle,
+  isRowEditable,
   outCategoryLabels,
 } from './availability-view'
 
@@ -35,7 +36,7 @@ describe('availability view', () => {
 
   it('coach rows keep medical wording data and dates', () => {
     const rows = buildAvailabilityRows(coach)
-    expect(rows[0].subtitle).toBe('Aucune indisponibilité')
+    expect(rows[0].subtitle).toBeNull()
     expect(rows[1]).toMatchObject({ status: 'medical' })
     expect(rows[1].subtitle).toMatch(/^Depuis le 24 sept/)
     expect(rows[2].subtitle).toMatch(/retour le 6 oct/)
@@ -64,5 +65,26 @@ describe('availability view', () => {
   it('labels the middle category per view, never "Malades" for a player', () => {
     expect(outCategoryLabels('coach')).toEqual({ tile: 'Malades', chip: 'Malades' })
     expect(outCategoryLabels('teammate')).toEqual({ tile: 'Indisponibles', chip: 'Indisponibles' })
+  })
+})
+
+describe('isRowEditable', () => {
+  const row = (status: 'available' | 'medical' | 'unavailable' | 'suspended') => ({ userId: '1', displayName: 'A', status, subtitle: null })
+  const coachPerms = { canDeclareMedical: true, canDeclareSuspension: true }
+  const officerPerms = { canDeclareMedical: false, canDeclareSuspension: true }
+  const readOnlyPerms = { canDeclareMedical: false, canDeclareSuspension: false }
+
+  it('lets a coach open every row', () => {
+    for (const status of ['available', 'medical', 'suspended'] as const) expect(isRowEditable(row(status), coachPerms)).toBe(true)
+  })
+
+  it('lets an officer open available and suspended rows, not a medical-projected one', () => {
+    expect(isRowEditable(row('available'), officerPerms)).toBe(true)
+    expect(isRowEditable(row('suspended'), officerPerms)).toBe(true)
+    expect(isRowEditable(row('unavailable'), officerPerms)).toBe(false)
+  })
+
+  it('keeps every row inert for a read-only viewer', () => {
+    expect(isRowEditable(row('available'), readOnlyPerms)).toBe(false)
   })
 })

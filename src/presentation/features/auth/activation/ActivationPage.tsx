@@ -34,8 +34,19 @@ export function ActivationPage() {
         </span>
         <CardTitle className="text-center text-[19px] font-extrabold text-auth-text">Lien invalide ou expiré</CardTitle>
         <CardDescription className="text-center text-[12.5px] leading-relaxed text-auth-text-muted">
-          Ce lien n'est plus valide. Contactez un administrateur du club pour en obtenir un nouveau.
+          {vm.canContinueWithSession
+            ? 'Ce lien a déjà été utilisé : vous êtes toujours connecté(e) sur cet appareil.'
+            : 'Ce lien a déjà été utilisé ou a expiré. Si vous avez déjà activé votre compte, connectez-vous. Sinon, contactez un administrateur du club pour en obtenir un nouveau.'}
         </CardDescription>
+        {vm.canContinueWithSession ? (
+          <Button type="button" onClick={vm.continueWithSession} className={submitButtonClass}>
+            Continuer
+          </Button>
+        ) : (
+          <Button type="button" onClick={vm.goToLogin} className={submitButtonClass}>
+            Se connecter
+          </Button>
+        )}
       </AuthCard>
     )
   }

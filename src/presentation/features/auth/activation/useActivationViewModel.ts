@@ -81,6 +81,16 @@ export function useActivationViewModel() {
 
   return {
     status,
+    // A rejected verifyOtp() on a browser that already holds a session is
+    // most often the SAME member re-opening a link whose first tap already
+    // succeeded (token is single-use; Supabase reports a consumed token as
+    // otp_expired). Offered as an explicit button, never an automatic
+    // redirect: `user` may be a stale, unrelated session (see the status
+    // comment above). RequireSession/RequireCharterAccepted route '/' on
+    // to the charter if it's still pending.
+    canContinueWithSession: verify.isError && !!user,
+    continueWithSession: () => navigate('/', { replace: true }),
+    goToLogin: () => navigate('/login', { replace: true }),
     invitedName,
     fullName: user?.fullName ?? '',
     roles: user?.roles ?? [],

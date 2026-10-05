@@ -2,7 +2,7 @@ import { IconChevronDown, IconPlus } from "@tabler/icons-react";
 import { Button } from "@presentation/shared/components/ui/button";
 import { cn } from "@presentation/shared/lib/utils";
 import { CollectionProgressBar } from "../../components/CollectionProgressBar";
-import { PaymentStatusBadge } from "../../components/PaymentStatusBadge";
+import { PaymentStatusBadge } from "@presentation/shared/components/PaymentStatusBadge";
 import type { DueView } from "../../due-view";
 import { ReminderRow } from "../../components/ReminderRow";
 

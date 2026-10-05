@@ -163,6 +163,31 @@ function SeasonFormDialogContent({ dialog, onClose }: SeasonFormDialogProps & { 
             <p className="text-xs text-muted-foreground">Montant de référence appliqué aux adhésions de cette saison.</p>
           </div>
 
+          {/* specs/profile-membership-dues.md §6/AC-PMD-18 — optional payment
+              link, last field. type="url" without `required`; the product's
+              own validation (https only) comes from the use case and shows in
+              the Alert above, saisies kept. min-w-0 so a long URL can't widen
+              the dialog. */}
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <Label htmlFor="season-payment-url" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              Lien de paiement (facultatif)
+            </Label>
+            <Input
+              id="season-payment-url"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              placeholder="https://…"
+              disabled={vm.isSubmitting}
+              value={vm.values.paymentUrl}
+              onChange={(event) => vm.setPaymentUrl(event.target.value)}
+              className="h-11 min-w-0 rounded-xl"
+            />
+            <p className="text-xs text-muted-foreground">
+              Page de paiement de la cotisation, ouverte depuis le profil des membres. Laisser vide pour ne pas afficher de lien. Adresse en https uniquement.
+            </p>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"

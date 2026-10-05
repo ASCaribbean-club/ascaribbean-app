@@ -10,7 +10,7 @@ import { ConvocationCreationWindowClosedError } from "@domain/errors/convocation
 import { InvalidScheduleError } from "@domain/errors/invalid-schedule-error";
 import { InvalidMissionTemplateError } from "@domain/errors/invalid-mission-template-error";
 import { InvalidTrainingLocationInputError } from "@domain/errors/invalid-training-location-input-error";
-import { InvalidSeasonInputError } from "@domain/errors/invalid-season-input-error";
+import { InvalidPaymentUrlError, InvalidSeasonInputError, PaymentUrlTooLongError } from "@domain/errors/invalid-season-input-error";
 import { MatchArrangementsWindowClosedError } from "@domain/errors/match-arrangements-window-closed-error";
 import { MatchNotStartedError } from "@domain/errors/match-not-started-error";
 import { MatchScoreMissingError } from "@domain/errors/match-score-missing-error";
@@ -169,6 +169,22 @@ describe("mapDomainErrorToUiError", () => {
     expect(result).toEqual({
       message:
         "Le libellé et les deux dates sont obligatoires, la date de début doit précéder ou être égale à la date de fin, et la cotisation, si renseignée, doit être un montant positif.",
+      variant: "inline",
+      retryable: true,
+    });
+  });
+
+  it("maps InvalidPaymentUrlError to the payment-link copy", () => {
+    expect(mapDomainErrorToUiError(new InvalidPaymentUrlError("x"))).toEqual({
+      message: "Le lien de paiement doit être une adresse valide commençant par https://",
+      variant: "inline",
+      retryable: true,
+    });
+  });
+
+  it("maps PaymentUrlTooLongError to the too-long copy", () => {
+    expect(mapDomainErrorToUiError(new PaymentUrlTooLongError("x"))).toEqual({
+      message: "Le lien de paiement est trop long (2 048 caractères maximum).",
       variant: "inline",
       retryable: true,
     });

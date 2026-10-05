@@ -1,9 +1,15 @@
 import type { Membership } from '@domain/entities/membership'
+import type { ProfileDuesView } from '../profile-dues-view'
+import { DuesPaymentLink } from './DuesPaymentLink'
+import { DuesRow } from './DuesRow'
 import { MembershipStatusBadge } from './MembershipStatusBadge'
 
 interface MembershipSectionProps {
   membership: Membership | null
   seasonLabel: string | null
+  // specs/profile-membership-dues.md — the member's own cotisation, already
+  // formatted by the ViewModel; null whenever there is no membership.
+  dues: ProfileDuesView | null
   loading: boolean
   // Distinguishes a real fetch failure from the legitimate "no season" /
   // "not registered" empty states below — those also leave membership/
@@ -32,7 +38,7 @@ function formatValidUntil(iso: string): string {
   return new Date(year, month - 1, day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export function MembershipSection({ membership, seasonLabel, loading, error }: MembershipSectionProps) {
+export function MembershipSection({ membership, seasonLabel, dues, loading, error }: MembershipSectionProps) {
   return (
     <section className="flex flex-col gap-2.5 px-5.5">
       <h2 className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Adhésion</h2>
@@ -56,6 +62,7 @@ export function MembershipSection({ membership, seasonLabel, loading, error }: M
         // missing section (same AC-PR-14 reasoning as the empty-documents case).
         <p className="text-[13px] text-white/50">Non inscrit·e pour la saison {seasonLabel}</p>
       ) : (
+        <>
         <ul className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5">
           <li className="flex items-center justify-between px-4 py-3.5">
             <span className="text-[13.5px] text-white/50">Saison</span>
@@ -78,7 +85,10 @@ export function MembershipSection({ membership, seasonLabel, loading, error }: M
             <span className="text-[13.5px] text-white/50">Valide jusqu'au</span>
             <span className="text-[14px] font-bold text-white">{formatValidUntil(membership.validUntil)}</span>
           </li>
+          {dues && <DuesRow dues={dues} />}
         </ul>
+        {dues?.showPaymentLink && dues.paymentUrl && <DuesPaymentLink paymentUrl={dues.paymentUrl} />}
+        </>
       )}
     </section>
   )

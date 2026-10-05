@@ -40,7 +40,9 @@ export class PaymentRepositoryImpl implements PaymentRepository {
     return (data ?? []).map(toPayment)
   }
 
-  // membership_payments_insert_admin (RLS) — mirrors 'payment:record'.
+  // membership_payments_insert_admin / membership_payments_insert_treasurer
+  // (RLS) — mirrors 'payment:record'. The RETURNING of the insert below also
+  // needs a SELECT policy for a treasurer: membership_payments_select_treasurer.
   // Always a plain INSERT — never `.upsert()`, never `on conflict` (§2.2,
   // CLAUDE.md §6 exception: a payment is an append-only journal entry, not
   // a current-state row).

@@ -22,6 +22,7 @@ import { createSeasonsContainer, type SeasonsContainer } from './containers/seas
 import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from './containers/section-and-teams-container'
 import { createTrainingLocationsContainer, type TrainingLocationsContainer } from './containers/training-locations-container'
 import { createTeamAvailabilityContainer, type TeamAvailabilityContainer } from './containers/team-availability-container'
+import { createTreasurerContainer, type TreasurerContainer } from './containers/treasurer-container'
 import { createUsersContainer, type UsersContainer } from './containers/users-container'
 
 export interface Container {
@@ -45,6 +46,7 @@ export interface Container {
   sectionAndTeams: SectionAndTeamsContainer
   teamAvailability: TeamAvailabilityContainer
   trainingLocations: TrainingLocationsContainer
+  treasurer: TreasurerContainer
   users: UsersContainer
 }
 
@@ -70,6 +72,7 @@ export function createContainer(): Container {
     sectionAndTeams: createSectionAndTeamsContainer(supabaseClient),
     teamAvailability: createTeamAvailabilityContainer(supabaseClient),
     trainingLocations: createTrainingLocationsContainer(supabaseClient),
+    treasurer: createTreasurerContainer(supabaseClient),
     users: createUsersContainer(supabaseClient),
   }
 }

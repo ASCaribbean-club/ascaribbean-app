@@ -350,4 +350,10 @@ export const queryKeys = {
   // The mobile console list (drafts + published, never archived) — distinct
   // from newsAdminList (everything) and newsFeed (visible only).
   newsManageList: () => ['news', 'manage', 'list'] as const,
+
+  // specs/mobile-treasurer.md §2 — club-wide cotisation read model of the
+  // Cotisations screens (Treasurer dashboard + list, Menu card). Deliberately
+  // distinct from the admin keys (`membershipsAdminList`, ...) and from
+  // `profileMembership`: different projection and different RPC.
+  treasurerDues: () => ['treasurer', 'dues'] as const,
 }

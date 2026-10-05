@@ -60,7 +60,7 @@ function renderViewModel(upcoming: ConvocationForPlayer[]) {
   })
   mockedUseActiveRole.mockReturnValue({ activeRole: 'player', dashboardRoles: [],
     setActiveRole: vi.fn(),
-    toggleActiveRole: vi.fn(), isOfficerView: false, hasMultipleDashboardRoles: false })
+    toggleActiveRole: vi.fn(), isOfficerView: false, isTreasurerView: false, hasMultipleDashboardRoles: false })
   const respondToConvocationUseCase = { execute: vi.fn().mockResolvedValue(undefined) }
   mockedUsePlayerDashboardDependencies.mockReturnValue({
     getPlayerTeamUseCase: { execute: vi.fn().mockResolvedValue({ id: TEAM_ID, name: 'Équipe 1' }) },

@@ -357,6 +357,15 @@ export const queryKeys = {
   // `profileMembership`: different projection and different RPC.
   treasurerDues: () => ['treasurer', 'dues'] as const,
 
+  // specs/mobile-treasurer.md amendement (4), §H — the member's own dues
+  // reminder banner. One key per account (a session never mixes accounts, but
+  // the discriminant keeps a sign-out/sign-in from serving a stale banner).
+  // DISTINCT from treasurerDues: different projection, own-row RLS reads.
+  // `notificationsRoot` is the prefix invalidated after a reminder is sent
+  // (a Treasurer who reminds themselves sees their own banner appear).
+  notificationsRoot: () => ['notifications'] as const,
+  duesReminder: (userId: string) => ['notifications', 'dues-reminder', userId] as const,
+
   // specs/mobile-treasurer.md AC-TR-18 — PREFIX of every `profileMembership(userId)`
   // entry, used only to invalidate them after a treasurer records a payment
   // (the due list does not carry the member's user id).

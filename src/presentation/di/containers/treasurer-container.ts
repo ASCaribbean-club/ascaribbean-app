@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { DuesReminderRepositoryImpl } from '@data/repositories/DuesReminderRepositoryImpl'
 import { AuditLogRepositoryImpl } from '@data/repositories/AuditLogRepositoryImpl'
 import { PaymentRepositoryImpl } from '@data/repositories/PaymentRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { TreasurerDueRepositoryImpl } from '@data/repositories/TreasurerDueRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
 import { RecordPaymentUseCase } from '@domain/usecases/memberships/RecordPaymentUseCase'
+import { SendDuesRemindersUseCase } from '@domain/usecases/treasurer-dues/SendDuesRemindersUseCase'
 import { GetTreasurerDuesUseCase } from '@domain/usecases/treasurer-dues/GetTreasurerDuesUseCase'
 
 // specs/mobile-treasurer.md — Cotisations screens: the read use case, plus
@@ -14,6 +16,8 @@ import { GetTreasurerDuesUseCase } from '@domain/usecases/treasurer-dues/GetTrea
 export interface TreasurerContainer {
   getTreasurerDuesUseCase: GetTreasurerDuesUseCase
   recordPaymentUseCase: RecordPaymentUseCase
+  // Amendement (4), PO-TR-01(c): payment reminders.
+  sendDuesRemindersUseCase: SendDuesRemindersUseCase
 }
 
 export function createTreasurerContainer(supabaseClient: SupabaseClient): TreasurerContainer {
@@ -25,6 +29,11 @@ export function createTreasurerContainer(supabaseClient: SupabaseClient): Treasu
     recordPaymentUseCase: new RecordPaymentUseCase(
       new UserRepositoryImpl(supabaseClient),
       new PaymentRepositoryImpl(supabaseClient),
+      new AuditLogRepositoryImpl(supabaseClient),
+    ),
+    sendDuesRemindersUseCase: new SendDuesRemindersUseCase(
+      new UserRepositoryImpl(supabaseClient),
+      new DuesReminderRepositoryImpl(supabaseClient),
       new AuditLogRepositoryImpl(supabaseClient),
     ),
   }

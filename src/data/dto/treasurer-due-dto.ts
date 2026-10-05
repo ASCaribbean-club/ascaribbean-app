@@ -22,4 +22,9 @@ export interface TreasurerDueDto {
   // jsonb arrays — never null in the SQL (coalesced), tolerated here.
   sections: TreasurerDueSectionDto[] | null
   payments: TreasurerDuePaymentDto[] | null
+  // specs/mobile-treasurer.md amendement (4) — from
+  // supabase/migrations/20261005170200_send_dues_reminders.sql. count(*) is
+  // never null in SQL; tolerated here.
+  reminder_count: number | null
+  last_reminded_at: string | null
 }

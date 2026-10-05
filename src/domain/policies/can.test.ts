@@ -687,3 +687,27 @@ describe('can — mission actions', () => {
     expect(can(user, 'convocation:create_retroactive', { teamId: 'team-1' })).toBe(false)
   })
 })
+
+// specs/mobile-treasurer.md §3 — read-only Cotisations access, club-wide.
+describe('can — dues:read', () => {
+  it.each([{ role: 'treasurer' }, { role: 'authorized-officer' }, { role: 'admin' }] as User['roles'])(
+    'allows %j with no context',
+    (role) => {
+      expect(can(userWith([role]), 'dues:read')).toBe(true)
+    },
+  )
+
+  it.each([
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'dues:read', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows a multi-role account as soon as one role grants it', () => {
+    expect(can(userWith([{ role: 'player', teamId: 'team-1' }, { role: 'treasurer' }]), 'dues:read')).toBe(true)
+  })
+})

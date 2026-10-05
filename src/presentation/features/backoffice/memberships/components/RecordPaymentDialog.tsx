@@ -9,6 +9,7 @@ import {
 } from '@presentation/shared/components/ui/dialog'
 import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import { toDateInputValue } from '@presentation/shared/formatters/date-input'
 import type { MembershipAdminRow } from '../useBackofficeMembershipsViewModel'
 import { useRecordPaymentDialogViewModel } from '../useRecordPaymentDialogViewModel'
@@ -120,6 +121,31 @@ function RecordPaymentDialogContent({ target, onClose }: { target: MembershipAdm
                   onChange={(event) => vm.setPaidAt(event.target.value)}
                   className="h-11 rounded-xl"
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                {/* Optional payment method (constant referential, domain/entities/payment-method.ts).
+                    'none' is a UI-only sentinel: Radix Select forbids an empty item value. */}
+                <Label htmlFor="payment-method" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  Moyen de paiement
+                </Label>
+                <Select
+                  value={vm.paymentMethod === '' ? 'none' : vm.paymentMethod}
+                  onValueChange={(value) => vm.setPaymentMethod(value === 'none' ? '' : (value as typeof vm.paymentMethod))}
+                  disabled={vm.isSubmitting}
+                >
+                  <SelectTrigger id="payment-method" className="h-11 w-full rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Non précisé</SelectItem>
+                    {vm.paymentMethodOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* §1 — the export `payment`'s own italic copy (amendement du

@@ -20,7 +20,7 @@ import { InvalidRoleAssignmentInputError } from '@domain/errors/invalid-role-ass
 import { InvalidRoleScopeError } from '@domain/errors/invalid-role-scope-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { MatchArrangementsWindowClosedError } from '@domain/errors/match-arrangements-window-closed-error'
-import { InvalidSeasonInputError } from '@domain/errors/invalid-season-input-error'
+import { InvalidPaymentUrlError, InvalidSeasonInputError, PaymentUrlTooLongError } from '@domain/errors/invalid-season-input-error'
 import { InvalidSectionInputError } from '@domain/errors/invalid-section-input-error'
 import { InvalidTeamInputError } from '@domain/errors/invalid-team-input-error'
 import { InvalidUserProfileInputError } from '@domain/errors/invalid-user-profile-input-error'
@@ -150,6 +150,25 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // fires on the rarer race the use case is the real authority for.
     return {
       message: 'Le titre, le contenu et la date sont obligatoires.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof PaymentUrlTooLongError) {
+    // specs/profile-membership-dues.md §6/AC-PMD-18 — kept above the generic
+    // InvalidSeasonInputError branch (it is a subclass), same for the
+    // InvalidPaymentUrlError branch below.
+    return {
+      message: 'Le lien de paiement est trop long (2 048 caractères maximum).',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof InvalidPaymentUrlError) {
+    return {
+      message: 'Le lien de paiement doit être une adresse valide commençant par https://',
       variant: 'inline',
       retryable: true,
     }

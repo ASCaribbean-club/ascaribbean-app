@@ -310,3 +310,9 @@ export type Action =
   // (supabase/migrations/20261005130000_get_treasurer_dues_rpc.sql). Reading
   // only: no write or reminder action exists for this screen.
   | 'dues:read'
+  // specs/mobile-treasurer.md amendement (4), §D — PO-TR-01(c) accepted: the
+  // Treasurer sends payment reminders. Earns an entry because presentation/
+  // must show or hide "Relancer", "Tout relancer" and "Sélection" BEFORE any
+  // request. Club-wide (no scope check in can.ts). Mirrors the role check of
+  // send_dues_reminders() (supabase/migrations/20261005170200_send_dues_reminders.sql).
+  | 'dues:remind'

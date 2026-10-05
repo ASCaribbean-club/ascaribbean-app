@@ -55,6 +55,12 @@ export const AUDIT_ACTIONS = [
   // `audit_log_action_check`. convocation.created/updated are NOT added
   // (PO-WC-07, still open).
   'attendance.updated', // wired: RecordAttendanceByAdminUseCase
+  // specs/mobile-treasurer.md amendement (4), §E — one entry per reminder
+  // EFFECTIVELY sent (outcome 'sent'), emitted by SendDuesRemindersUseCase
+  // (business action, never the SQL function). Mirrors
+  // supabase/migrations/20261005170100_dues_reminders_audit.sql's widened
+  // `audit_log_action_check`.
+  'dues.reminder_sent', // wired: SendDuesRemindersUseCase
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

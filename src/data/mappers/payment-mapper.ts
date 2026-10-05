@@ -1,3 +1,4 @@
+import { isPaymentMethod } from '@domain/entities/payment-method'
 import type { Payment } from '@domain/entities/payment'
 import type { CreatePaymentInput } from '@domain/repositories/payment-repository'
 import type { PaymentInsertRow, PaymentRow } from '@data/dto/payment-dto'
@@ -8,6 +9,8 @@ export function toPayment(row: PaymentRow): Payment {
     membershipId: row.membership_id,
     amountCents: row.amount_cents,
     paidAt: row.paid_at,
+    // An unknown stored value (should be impossible under the CHECK) reads as none.
+    paymentMethod: isPaymentMethod(row.payment_method) ? row.payment_method : null,
     recordedBy: row.recorded_by,
     recordedAt: row.recorded_at,
   }
@@ -22,6 +25,7 @@ export function toPaymentInsertRow(input: CreatePaymentInput): PaymentInsertRow 
     membership_id: input.membershipId,
     amount_cents: input.amountCents,
     paid_at: input.paidAt,
+    payment_method: input.paymentMethod,
     recorded_by: input.recordedBy,
   }
 }

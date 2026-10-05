@@ -101,8 +101,26 @@ describe('RecordPaymentUseCase', () => {
       membershipId: 'membership-1',
       amountCents: 15000,
       paidAt: '2026-09-17',
+      paymentMethod: null,
       recordedBy: 'admin-1',
     })
+  })
+
+  it('persists the payment method when one is given', async () => {
+    const create = vi.fn(async (input: CreatePaymentInput) => ({ id: 'payment-1', recordedAt: '2026-09-17T10:00:00.000Z', ...input }) satisfies Payment)
+    const useCase = new RecordPaymentUseCase(fakeUserRepository(adminUser()), fakePaymentRepository({ create }), fakeAuditLogRepository())
+
+    await useCase.execute(validInput({ paymentMethod: 'transfer' }))
+
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ paymentMethod: 'transfer' }))
+  })
+
+  it('throws InvalidPaymentInputError for an unknown payment method, before any write', async () => {
+    const create = vi.fn()
+    const useCase = new RecordPaymentUseCase(fakeUserRepository(adminUser()), fakePaymentRepository({ create }), fakeAuditLogRepository())
+
+    await expect(useCase.execute(validInput({ paymentMethod: 'cheque' as never }))).rejects.toThrow(InvalidPaymentInputError)
+    expect(create).not.toHaveBeenCalled()
   })
 
   // Follow-up pass to specs/web-audit-logs.md (2026-09-30 fourth addendum) —

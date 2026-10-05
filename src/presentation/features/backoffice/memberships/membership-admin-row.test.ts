@@ -39,6 +39,7 @@ function buildPayment(overrides: Partial<Payment> = {}): Payment {
     membershipId: 'membership-1',
     amountCents: 5000,
     paidAt: '2026-01-01',
+    paymentMethod: null,
     recordedBy: 'admin-1',
     recordedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

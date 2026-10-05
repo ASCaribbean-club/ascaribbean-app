@@ -4,6 +4,8 @@
 // see the migration's own comment for the explicit exception). One
 // Membership has MANY Payment rows over time (0€ → 150€ → 300€), never one
 // overwritten "amount paid" field.
+import type { PaymentMethod } from './payment-method'
+
 export interface Payment {
   id: string
   membershipId: string
@@ -12,6 +14,8 @@ export interface Payment {
   // presentation/shared/formatters/ concern, never a domain concern.
   amountCents: number
   paidAt: string // ISO date (yyyy-mm-dd) — date the payment was RECEIVED, not a due date (§1, no échéancier here).
+  // How the payment was received; null for rows recorded before the column existed.
+  paymentMethod: PaymentMethod | null
   recordedBy: string // the account that recorded this payment (§4 — attribution, not the audit log itself).
   recordedAt: string // ISO timestamp — when the entry was made, may differ from paidAt (a cheque received yesterday, entered today).
 }

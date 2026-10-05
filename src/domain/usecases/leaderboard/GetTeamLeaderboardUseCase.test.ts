@@ -10,7 +10,7 @@ const players: LeaderboardPlayerCounts[] = [
 ]
 
 describe('GetTeamLeaderboardUseCase', () => {
-  it('reads the repository once for the given team and ranks the three metrics', async () => {
+  it('reads the repository once for the given team and ranks goals and total cards', async () => {
     const listTeamPlayerCounts = vi.fn(async () => players)
     const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts, listTeamPresenceCounts: async () => [] } satisfies LeaderboardRepository)
 
@@ -18,13 +18,12 @@ describe('GetTeamLeaderboardUseCase', () => {
 
     expect(listTeamPlayerCounts).toHaveBeenCalledExactlyOnceWith('team-1')
     expect(result.goals.map((e) => [e.userId, e.rank])).toEqual([['a', 1], ['b', 1], ['c', 3]])
-    expect(result.yellow.map((e) => [e.userId, e.rank])).toEqual([['b', 1], ['c', 2], ['a', 3]])
-    expect(result.red.map((e) => [e.userId, e.rank, e.isMuted])).toEqual([['c', 1, false], ['a', 2, true], ['b', 2, true]])
+    expect(result.cards.map((e) => [e.userId, e.rank, e.value, e.isMuted])).toEqual([['b', 1, 2, false], ['c', 1, 2, false], ['a', 3, 0, true]])
   })
 
-  it('returns three empty lists for an empty roster', async () => {
+  it('returns empty lists for an empty roster', async () => {
     const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts: async () => [], listTeamPresenceCounts: async () => [] })
 
-    await expect(useCase.execute({ teamId: 't' })).resolves.toEqual({ goals: [], yellow: [], red: [] })
+    await expect(useCase.execute({ teamId: 't' })).resolves.toEqual({ goals: [], cards: [] })
   })
 })

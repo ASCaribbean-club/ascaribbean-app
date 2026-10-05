@@ -7,11 +7,10 @@ function player(userId: string, displayName: string, goalsCount = 0, yellowCount
 }
 
 describe('metricValue', () => {
-  it('reads the counter matching the metric', () => {
+  it('reads the counter matching the metric, cards being yellow + red', () => {
     const p = player('a', 'A', 1, 2, 3)
     expect(metricValue(p, 'goals')).toBe(1)
-    expect(metricValue(p, 'yellow')).toBe(2)
-    expect(metricValue(p, 'red')).toBe(3)
+    expect(metricValue(p, 'cards')).toBe(5)
   })
 })
 
@@ -38,7 +37,7 @@ describe('rankLeaderboard', () => {
   })
 
   it('ranks everyone 1 when nobody has a value', () => {
-    const entries = rankLeaderboard([player('a', 'A'), player('b', 'B')], 'red')
+    const entries = rankLeaderboard([player('a', 'A'), player('b', 'B')], 'cards')
 
     expect(entries.map((e) => e.rank)).toEqual([1, 1])
     expect(entries.every((e) => e.isMuted && e.value === 0)).toBe(true)
@@ -60,12 +59,12 @@ describe('rankLeaderboard', () => {
   })
 
   it('ranks each metric independently and keeps all counters on each entry', () => {
-    const players = [player('a', 'A', 5, 0, 1), player('b', 'B', 1, 4, 0)]
+    const players = [player('a', 'A', 5, 0, 1), player('b', 'B', 1, 3, 1)]
 
-    const yellow = rankLeaderboard(players, 'yellow')
+    const cards = rankLeaderboard(players, 'cards')
 
-    expect(yellow[0]).toMatchObject({ userId: 'b', rank: 1, value: 4, goalsCount: 1 })
-    expect(yellow[1]).toMatchObject({ userId: 'a', rank: 2, isMuted: true })
+    expect(cards[0]).toMatchObject({ userId: 'b', rank: 1, value: 4, goalsCount: 1 })
+    expect(cards[1]).toMatchObject({ userId: 'a', rank: 2, value: 1, isMuted: false })
   })
 
   it('returns an empty list for an empty roster and does not mutate its input', () => {

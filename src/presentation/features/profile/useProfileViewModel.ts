@@ -6,6 +6,7 @@ import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencie
 import { useProfileDependencies } from '@presentation/di/hooks/use-profile-dependencies'
 import { getInitials } from '@presentation/shared/formatters/greeting'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
+import { toProfileDuesView } from './profile-dues-view'
 import { queryKeys } from '@presentation/shared/query-keys'
 
 // Developer feedback 2026-09-04: the actual profile-page mockups (both
@@ -122,6 +123,10 @@ export function useProfileViewModel() {
     // own comment) — membershipLoading is how the Page tells them apart.
     membership: (membershipQuery.data?.membership ?? null) as Membership | null,
     membershipSeasonLabel: membershipQuery.data?.seasonLabel ?? null,
+    // specs/profile-membership-dues.md — own cotisation (amounts, status,
+    // showPaymentLink all computed by the use case; this only formats).
+    // Same query, so loading/error above cover it (UI design §4).
+    membershipDues: membershipQuery.data?.dues ? toProfileDuesView(membershipQuery.data.dues) : null,
     membershipLoading: membershipQuery.isLoading,
     // A real fetch failure (network, RLS) must render as an error, not as
     // the legitimate "no season/no row" empty state — both otherwise leave

@@ -89,6 +89,7 @@ export function ProfilePage() {
         <MembershipSection
           membership={vm.membership}
           seasonLabel={vm.membershipSeasonLabel}
+          dues={vm.membershipDues}
           loading={vm.membershipLoading}
           error={vm.membershipError}
         />

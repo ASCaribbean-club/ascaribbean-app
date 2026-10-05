@@ -17,9 +17,12 @@ export interface SeasonFormValues {
   // — parsed to a number only at submit time, below. Empty string means
   // "tarif non fixé" (null), never pre-filled to "0" (AC-WS-35).
   cotisationAmountEuros: string
+  // specs/profile-membership-dues.md §6 — optional payment link, kept as typed;
+  // blank means "no link", validated and normalized by the use case only.
+  paymentUrl: string
 }
 
-const EMPTY_VALUES: SeasonFormValues = { label: '', startDate: '', endDate: '', cotisationAmountEuros: '' }
+const EMPTY_VALUES: SeasonFormValues = { label: '', startDate: '', endDate: '', cotisationAmountEuros: '', paymentUrl: '' }
 
 // AC-WS-24 — pre-filled from the edited row. season.startDate/endDate are
 // used AS-IS, deliberately without routing them through
@@ -42,6 +45,7 @@ function toFormValues(season: Season | null): SeasonFormValues {
     // AC-WS-35 — left empty when null ("tarif non fixé"), never pre-filled
     // to "0" (0 means "gratuit", a distinct, real value).
     cotisationAmountEuros: season.cotisationAmount === null ? '' : String(season.cotisationAmount),
+    paymentUrl: season.paymentUrl ?? '',
   }
 }
 
@@ -92,6 +96,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
           startDate: values.startDate,
           endDate: values.endDate,
           cotisationAmount,
+          paymentUrl: values.paymentUrl,
         })
       }
 
@@ -104,6 +109,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
         startDate: values.startDate,
         endDate: values.endDate,
         cotisationAmount,
+        paymentUrl: values.paymentUrl,
       })
     },
     onSuccess: () => {
@@ -149,6 +155,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
     setStartDate: (value: string) => setField('startDate', value),
     setEndDate: (value: string) => setField('endDate', value),
     setCotisationAmountEuros: (value: string) => setField('cotisationAmountEuros', value),
+    setPaymentUrl: (value: string) => setField('paymentUrl', value),
 
     canSubmit,
     isSubmitting: mutation.isPending,

@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
-import { CompetitionFilterPlaceholder } from './components/CompetitionFilterPlaceholder'
 import { CurrentSeasonSelect } from './components/CurrentSeasonSelect'
 import { TeamAttendanceSummaryCard } from './components/TeamAttendanceSummaryCard'
 import { TeamIdentityRow } from './components/TeamIdentityRow'
@@ -39,8 +38,7 @@ export function TeamStatsPage() {
         ) : (
           <>
             <CurrentSeasonSelect seasonLabel={vm.seasonLabel} />
-            <CompetitionFilterPlaceholder />
-            <TeamAttendanceSummaryCard summary={vm.teamAttendance} />
+            <TeamAttendanceSummaryCard summary={vm.teamAttendance} responses={vm.teamResponses} />
             <TeamStatsSummaryRow goals={vm.teamGoals} cards={vm.teamCards} />
             <TeamRosterSection roster={vm.roster} filter={vm.filter} onFilterChange={vm.onFilterChange} />
           </>

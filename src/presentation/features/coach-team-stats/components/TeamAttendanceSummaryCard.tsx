@@ -1,9 +1,12 @@
-import type { TeamAttendanceSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
+import type { TeamAttendanceSummary, TeamResponseSummary } from '@domain/usecases/coach-team-stats/GetTeamStatsUseCase'
 import { Card } from '@presentation/shared/components/ui/card'
 import { VoteResultBar } from '@presentation/shared/components/VoteResultBar'
 
 interface TeamAttendanceSummaryCardProps {
   summary: TeamAttendanceSummary | undefined
+  // Declared intent (ConvocationResponse) — a separate indicator from the
+  // coach-confirmed attendance above, never merged into it.
+  responses: TeamResponseSummary | undefined
 }
 
 // UI design §3/§4.3/§5 — "TeamAttendanceSummaryCard". Full-width card: big
@@ -29,7 +32,7 @@ interface TeamAttendanceSummaryCardProps {
 // single accent color (`coach-green`) at any rate, exactly the same
 // two-state model VoteResultBar already uses — the percentage and fraction
 // text next to it are what actually carry the value (AC-CTS-13).
-export function TeamAttendanceSummaryCard({ summary }: TeamAttendanceSummaryCardProps) {
+export function TeamAttendanceSummaryCard({ summary, responses }: TeamAttendanceSummaryCardProps) {
   return (
     <Card className="gap-2.5 rounded-[18px] border-white/10 bg-white/6 p-4.5">
       <p className="text-[11px] font-extrabold tracking-wider text-white/55 uppercase">Présence de l'équipe</p>
@@ -50,10 +53,16 @@ export function TeamAttendanceSummaryCard({ summary }: TeamAttendanceSummaryCard
           {/* AC-CTS-13 — the bar is always doubled by the exact fraction it
               represents, never color/percentage alone. */}
           <p className="text-[12px] font-bold text-white/50">
-            {summary.tally.presentCount} présence{summary.tally.presentCount > 1 ? 's' : ''} sur {summary.tally.totalCount} séance
-            {summary.tally.totalCount > 1 ? 's' : ''} constatée{summary.tally.totalCount > 1 ? 's' : ''}
+            {summary.tally.presentCount} présence{summary.tally.presentCount > 1 ? 's' : ''} sur {summary.tally.totalCount} pointage
+            {summary.tally.totalCount > 1 ? 's' : ''}
           </p>
         </>
+      )}
+
+      {responses !== undefined && responses.rate !== null && (
+        <p className="border-t border-white/10 pt-2.5 text-[12px] font-bold text-white/60">
+          Taux de réponse : {responses.rate}% ({responses.tally.respondedCount}/{responses.tally.expectedCount})
+        </p>
       )}
     </Card>
   )

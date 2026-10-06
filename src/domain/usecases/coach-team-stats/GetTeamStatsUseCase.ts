@@ -111,12 +111,12 @@ export class GetTeamStatsUseCase {
     // listForTeam(input.teamId) is already scoped to the current season by
     // construction: no separate season filter is applied here.
     //
-    // PO-CTS-04(d) partiellement tranché (développeuse, 2026-09-29): a
-    // cancelled convocation never took place, so its attendance rows (if any
-    // exist) never count — only `status === 'open'` convocations feed the
-    // attendance read below. See team-stats-rules.ts's tallyAttendance for
-    // why this is also what `totalCount` now counts.
-    const openConvocations = convocations.filter((convocation) => convocation.status === 'open')
+    // PO-CTS-04(d): a cancelled convocation never took place, so its rows
+    // never count. Open AND closed both count — a convocation closes once its
+    // attendance is fully recorded (or 6h after its start), so filtering on
+    // 'open' alone would drop exactly the sessions whose attendance was
+    // confirmed.
+    const openConvocations = convocations.filter((convocation) => convocation.status !== 'cancelled')
     const convocationIds = openConvocations.map((convocation) => convocation.id)
     // match_events.convocation_id references match_details(convocation_id),
     // which is itself convocations.id (1:1) — restricting to 'match'

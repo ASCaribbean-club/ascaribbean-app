@@ -174,6 +174,33 @@ describe('GetTeamStatsUseCase', () => {
     expect(result.attendance.team).toEqual({ tally: { presentCount: 0, totalCount: 0 }, rate: null })
   })
 
+  // A convocation closes once its attendance is fully recorded, so closed
+  // ones carry exactly the confirmed rows — they must be read, cancelled not.
+  it('reads attendance for open and closed convocations but never cancelled ones', async () => {
+    const requestedIds: string[][] = []
+    const attendanceRepository = fakeAttendanceRecordRepository()
+    attendanceRepository.findByConvocations = async (ids) => {
+      requestedIds.push(ids)
+      return []
+    }
+    const useCase = new GetTeamStatsUseCase(
+      fakeTeamRosterRepository(),
+      fakeConvocationRepository([
+        convocationWith({ id: 'c1', type: 'training', status: 'open' }),
+        convocationWith({ id: 'c2', type: 'training', status: 'closed' }),
+        convocationWith({ id: 'c3', type: 'training', status: 'cancelled' }),
+      ]),
+      attendanceRepository,
+      fakeMatchEventRepository(),
+      fakeMatchDetailsRepository(),
+      fakeConvocationResponseRepository(),
+    )
+
+    await useCase.execute({ teamId: 'team-1' })
+
+    expect(requestedIds).toEqual([['c1', 'c2']])
+  })
+
   it('aggregates attendance across every player, keeping a player with no record entirely out of byPlayer (AC-CTS-07)', async () => {
     const roster: TeamRosterPlayer[] = [
       { userId: 'player-1', displayName: 'Joueur 1' },

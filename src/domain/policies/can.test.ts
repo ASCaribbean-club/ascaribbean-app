@@ -768,3 +768,50 @@ describe('can — dues:remind', () => {
     expect(can(userWith([{ role: 'authorized-officer' }]), 'dues:read')).toBe(true)
   })
 })
+
+// specs/mob-treasurer-finances.md §3 / AC-FI-04 — ADDITIONS to the matrix.
+describe('can — finances:read', () => {
+  it.each([{ role: 'treasurer' }, { role: 'authorized-officer' }, { role: 'admin' }] as User['roles'])(
+    'allows %j with no context',
+    (role) => {
+      expect(can(userWith([role]), 'finances:read')).toBe(true)
+    },
+  )
+
+  it.each([
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'finances:read', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows a multi-role account as soon as one role grants it', () => {
+    expect(can(userWith([{ role: 'player', teamId: 'team-1' }, { role: 'authorized-officer' }]), 'finances:read')).toBe(true)
+  })
+})
+
+describe.each(['expense:record', 'opening_balance:record', 'treasury_checkpoint:record'] as const)('can — %s', (action) => {
+  it('allows a treasurer with no context', () => {
+    expect(can(userWith([{ role: 'treasurer' }]), action)).toBe(true)
+  })
+
+  // The officer and the admin are READ-ONLY on Finances (AC-FI-03).
+  it.each([
+    { role: 'authorized-officer' },
+    { role: 'admin' },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), action, { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows an officer who also carries the treasurer role (write controls shown)', () => {
+    expect(can(userWith([{ role: 'authorized-officer' }, { role: 'treasurer' }]), action)).toBe(true)
+  })
+})

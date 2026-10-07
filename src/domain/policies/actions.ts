@@ -316,3 +316,22 @@ export type Action =
   // request. Club-wide (no scope check in can.ts). Mirrors the role check of
   // send_dues_reminders() (supabase/migrations/20261005170200_send_dues_reminders.sql).
   | 'dues:remind'
+  // specs/mob-treasurer-finances.md §3 — ADDITION (no CDC matrix row, club
+  // Bureau request, PO-FI-01). Read access to the Finances screen: menu card
+  // and route guard, decided BEFORE any request. Club-wide (no scope check in
+  // can.ts). Mirrors the role check of get_finances_snapshot() and
+  // get_finance_carriers() ('finances:read') — see
+  // supabase/migrations/20261007081032_finances.sql.
+  | 'finances:read'
+  // specs/mob-treasurer-finances.md §3 — ADDITION. Treasurer only: the "+"
+  // button is ABSENT (never greyed) for the officer and the admin. Also covers
+  // creating an expense category (PO-FI-05). Mirrors expenses_insert_treasurer
+  // and create_expense_category() ('expense:record').
+  | 'expense:record'
+  // specs/mob-treasurer-finances.md §3 — ADDITION, distinct from
+  // 'expense:record' on purpose (PO-FI-16). Mirrors
+  // opening_balances_insert_treasurer ('opening_balance:record').
+  | 'opening_balance:record'
+  // specs/mob-treasurer-finances.md §3 — ADDITION. Mirrors the role check of
+  // record_treasury_checkpoint() ('treasury_checkpoint:record').
+  | 'treasury_checkpoint:record'

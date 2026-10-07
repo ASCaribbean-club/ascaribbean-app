@@ -13,6 +13,9 @@ export interface RecordPaymentUseCaseInput {
   amountCents: number
   // Optional (the form's select may stay empty); validated against the constant referential.
   paymentMethod?: PaymentMethod | null
+  // specs/mob-treasurer-finances.md AC-FI-31 — optional "Porteur"; null/absent =
+  // "Non précisé". The reference itself is backed by a foreign key.
+  carrierId?: string | null
   paidAt: string // ISO date (yyyy-mm-dd) — date the payment was RECEIVED, §2.2.
 }
 
@@ -72,11 +75,19 @@ export class RecordPaymentUseCase {
       throw new InvalidPaymentInputError('paymentMethod must be one of the known payment methods')
     }
 
+    // AC-FI-31 — a carrier reference, when given, must be a non-empty id. No
+    // new action: still 'payment:record'.
+    const carrierId = input.carrierId ?? null
+    if (carrierId !== null && carrierId.trim() === '') {
+      throw new InvalidPaymentInputError('carrierId must be a carrier id or absent')
+    }
+
     const payment = await this.paymentRepository.create({
       membershipId: input.membershipId,
       amountCents: input.amountCents,
       paidAt: input.paidAt,
       paymentMethod,
+      carrierId,
       recordedBy: user.id,
     })
 
@@ -89,7 +100,7 @@ export class RecordPaymentUseCase {
         targetType: 'membership',
         // Not sensitive — an amount and a date, needed archival detail per
         // public.audit_log.metadata's own column comment.
-        metadata: { amountCents: input.amountCents, paidAt: input.paidAt },
+        metadata: { amountCents: input.amountCents, paidAt: input.paidAt, ...(carrierId !== null ? { carrierId } : {}) },
       })
     } catch (auditError) {
       console.error('RecordPaymentUseCase: failed to record membership.payment_recorded audit entry', {

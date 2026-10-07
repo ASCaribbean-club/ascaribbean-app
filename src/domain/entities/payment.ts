@@ -16,6 +16,12 @@ export interface Payment {
   paidAt: string // ISO date (yyyy-mm-dd) — date the payment was RECEIVED, not a due date (§1, no échéancier here).
   // How the payment was received; null for rows recorded before the column existed.
   paymentMethod: PaymentMethod | null
+  // specs/mob-treasurer-finances.md §2 (AC-FI-31) — the finance carrier that
+  // received the money; null when unspecified (every payment recorded before
+  // that feature, and "Non précisé"). Counts in the season income either way,
+  // but in a carrier's theoretical balance only when attributed.
+  // Optional on the type so pre-existing fixtures stay valid; the mapper always sets it.
+  carrierId?: string | null
   recordedBy: string // the account that recorded this payment (§4 — attribution, not the audit log itself).
   recordedAt: string // ISO timestamp — when the entry was made, may differ from paidAt (a cheque received yesterday, entered today).
 }

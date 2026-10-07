@@ -5,7 +5,7 @@ import type { PaymentRow } from '@data/dto/payment-dto'
 import { mapSupabaseError } from '@data/errors/map-supabase-error'
 import { toPayment, toPaymentInsertRow } from '@data/mappers/payment-mapper'
 
-const PAYMENT_COLUMNS = 'id, membership_id, amount_cents, paid_at, payment_method, recorded_by, recorded_at'
+const PAYMENT_COLUMNS = 'id, membership_id, amount_cents, paid_at, payment_method, carrier_id, recorded_by, recorded_at'
 
 export class PaymentRepositoryImpl implements PaymentRepository {
   constructor(private readonly client: SupabaseClient) {}

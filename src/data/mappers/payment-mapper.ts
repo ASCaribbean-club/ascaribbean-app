@@ -11,6 +11,7 @@ export function toPayment(row: PaymentRow): Payment {
     paidAt: row.paid_at,
     // An unknown stored value (should be impossible under the CHECK) reads as none.
     paymentMethod: isPaymentMethod(row.payment_method) ? row.payment_method : null,
+    carrierId: row.carrier_id ?? null,
     recordedBy: row.recorded_by,
     recordedAt: row.recorded_at,
   }
@@ -26,6 +27,7 @@ export function toPaymentInsertRow(input: CreatePaymentInput): PaymentInsertRow 
     amount_cents: input.amountCents,
     paid_at: input.paidAt,
     payment_method: input.paymentMethod,
+    carrier_id: input.carrierId ?? null,
     recorded_by: input.recordedBy,
   }
 }

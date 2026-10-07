@@ -83,6 +83,7 @@ export function useCoachDashboardViewModel() {
     initials: user ? getInitials(user.fullName) : '',
     currentTeam,
     activeMemberCount: currentTeamSummary?.activeMemberCount,
+    rosterMemberCount: currentTeamSummary?.rosterMemberCount,
     // It's the number of matchday + 1 but not implemented in P0 because not sure it's useful
     dayMarker: undefined as string | undefined,
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,

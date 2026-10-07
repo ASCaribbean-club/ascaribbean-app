@@ -14,6 +14,7 @@ function fakeTeamRepository(teams: Record<string, { name: string; sectionId?: st
     findByIds: async (ids) => ids.filter((id) => id in teams).map(toTeam),
     findById: async (id) => (id in teams ? toTeam(id) : null),
     countActiveMembers: async () => 0,
+    countRosterMembers: async () => 0,
     findAllForAdmin: async () => Object.keys(teams).map(toTeam),
     create: async () => {
       throw new Error('not implemented')

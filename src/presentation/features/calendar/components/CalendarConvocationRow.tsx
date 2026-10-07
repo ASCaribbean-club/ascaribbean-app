@@ -31,7 +31,7 @@ interface CalendarConvocationRowProps {
   // Dirigeant rows only (specs/mobile-dirigeant-habilite.md §1.2).
   sectionLabel?: SectionLabelView | null
   // Optional: absent => the row is NOT a button (no role, no tabIndex, no
-  // tap target) — AC-DH-16, the officer's detail is deferred (PO-DH-15).
+  // tap target).
   onOpen?: (convocationId: string) => void
 }
 

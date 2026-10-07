@@ -105,6 +105,7 @@ export function useDirigeantDashboardViewModel() {
     upcomingList,
     upcomingTitle: `À venir — ${selectedSection ? selectedSection.name : 'Toutes les sections'}`,
     goToCalendar: () => navigate('/calendar'),
+    openConvocationDetail: (convocationId: string) => navigate(`/convocations/${convocationId}`),
 
     /// --- Floating "+" (creates a convocation, §1.4) ---
     canCreateConvocation,

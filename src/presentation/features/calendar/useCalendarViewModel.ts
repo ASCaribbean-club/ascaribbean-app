@@ -77,8 +77,8 @@ function buildCoachDayItems(items: ConvocationForCoach[], selectedDate: Date, no
 // specs/mobile-dirigeant-habilite.md §1.2 — Dirigeant rows: same row content
 // as the coach (rail, title, ScheduleInfo, opponent/RDV, cancelled badge, past
 // match score) plus the section tag; NO response block, NO attendance alert
-// (AC-DH-16), and NOT openable until the officer's detail variant exists
-// (PO-DH-15). The section filter was already applied upstream.
+// (AC-DH-16). Rows open the convocation detail (officer variant, club-wide).
+// The section filter was already applied upstream.
 function buildOfficerDayItems(items: ClubScheduleItem[], selectedDate: Date, now: Date, sectionsById: Map<string, Section>): CalendarListItem[] {
   return items
     .filter((item) => isSameDay(new Date(item.convocation.date), selectedDate))
@@ -91,7 +91,7 @@ function buildOfficerDayItems(items: ClubScheduleItem[], selectedDate: Date, now
       matchResult: buildMatchResult(item.convocation, item.matchDetails, now),
       attendanceConfirmationMissing: false,
       sectionLabel: toSectionLabelView(item.team, sectionsById),
-      isOpenable: false,
+      isOpenable: true,
     }))
 }
 

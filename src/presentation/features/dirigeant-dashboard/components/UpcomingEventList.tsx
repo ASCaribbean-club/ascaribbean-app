@@ -7,12 +7,12 @@ interface UpcomingEventListProps {
   title: string
   items: DirigeantEventView[]
   onSeeCalendar: () => void
+  onOpen: (convocationId: string) => void
 }
 
-// Rows are NOT tappable (no onClick, no role, no cursor-pointer): the
-// officer's convocation detail is deferred (PO-DH-15, AC-DH-16). No response
-// badge either — replaced by the section label.
-export function UpcomingEventList({ title, items, onSeeCalendar }: UpcomingEventListProps) {
+// Rows open the convocation detail. No response badge — replaced by the
+// section label.
+export function UpcomingEventList({ title, items, onSeeCalendar, onOpen }: UpcomingEventListProps) {
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between">
@@ -33,7 +33,8 @@ export function UpcomingEventList({ title, items, onSeeCalendar }: UpcomingEvent
           {items.map((event) => (
             <li
               key={event.id}
-              className="relative mb-3 flex items-start justify-between gap-3 border-b border-white/8 pb-3 pl-3.5 last:mb-0 last:border-b-0 last:pb-0"
+              onClick={() => onOpen(event.id)}
+              className="relative cursor-pointer mb-3 flex items-start justify-between gap-3 border-b border-white/8 pb-3 pl-3.5 last:mb-0 last:border-b-0 last:pb-0"
             >
               <span aria-hidden className={`absolute top-0.5 bottom-3.5 left-0 w-0.75 rounded-full ${CONVOCATION_TYPE_ACCENT[event.type].rail}`} />
               <div className="min-w-0 flex-1">

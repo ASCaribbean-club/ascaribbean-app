@@ -63,9 +63,9 @@ export function useMenuViewModel() {
     // player-stats destination (/stats). No RBAC check here — same reason
     // MenuNavCard itself has none (AC-PS-15): the destination screen does
     // its own can() gate.
-    // The Dirigeant habilité has neither a player nor a team-stats screen:
-    // the card is absent for that role (never greyed out).
-    canViewStatistics: !isOfficerView,
+    // The Dirigeant habilité and the Trésorier have neither a player nor a
+    // team-stats screen: the card is absent for those roles (never greyed out).
+    canViewStatistics: !isOfficerView && !isTreasurerView,
     statisticsHref: activeRole === 'coach' ? '/team-stats' : '/stats',
 
     // AC-MN-09 — `APP_VERSION` is a Vite `define` (vite.config.ts) fed by

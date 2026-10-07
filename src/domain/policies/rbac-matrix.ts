@@ -56,7 +56,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // Scoped to the voter's own team, same shape as 'convocation:respond'
   // above — enforced by can.ts's 'player' branch (`requiresTeamScope`),
   // extended in the same pass to cover this action too.
-  'vote:cast': ['player'],
+  //
+  // Widened to 'authorized-officer' (developer decision, Dirigeant match
+  // detail screen): club-wide, no team scope in can.ts (the `default` branch;
+  // the 'player' branch's `requiresTeamScope` never applies to an officer's
+  // unscoped assignment). The officer need not be convoked. Mirrors
+  // votes_insert_cast / votes_update_cast
+  // (supabase/migrations/20261007120000_officer_match_participation.sql).
+  'vote:cast': ['player', 'authorized-officer'],
 
   // specs/web-empty-state.md §2 — narrowest position retained for this pass:
   // 'admin' only ("moindre privilège", the matrix itself gives no other role
@@ -445,7 +452,11 @@ export const rbacMatrix: Record<Action, Role[]> = {
   'availability:read-team': ['player', 'coach', 'authorized-officer'],
 
   // specs/match-details-missions.md §3 — the only two entries of that feature.
-  'mission:self-assign': ['player'],
+  // Widened to 'authorized-officer' (developer decision, Dirigeant match
+  // detail screen): club-wide, not convoked, no deadline (the officer also
+  // holds 'mission:manage'). Mirrors the officer branch of claim_mission
+  // (supabase/migrations/20261007120000_officer_match_participation.sql).
+  'mission:self-assign': ['player', 'authorized-officer'],
   'mission:manage': ['coach', 'section-manager', 'authorized-officer', 'admin'],
 
   // specs/mobile-treasurer.md §3 (developer scope update) — read-only view of

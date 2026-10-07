@@ -36,6 +36,10 @@ export function normalizeMissionDescription(description: string | null | undefin
 // the convocation's team) are PASSED IN, same pattern as `requiredUserIds` in
 // convocation-closure.ts. Mirrored by the target check inside the claim_mission
 // RPC (supabase/migrations/*_match_details_missions.sql).
-export function isEligibleMissionAssignee(userId: string, eligibleUserIds: string[]): boolean {
-  return eligibleUserIds.includes(userId)
+//
+// An authorized officer registering THEMSELVES is eligible without being on the
+// roster (`isSelfAssigningOfficer`): they take part in the match day without
+// being convoked. Never true when assigning someone else.
+export function isEligibleMissionAssignee(userId: string, eligibleUserIds: string[], isSelfAssigningOfficer = false): boolean {
+  return isSelfAssigningOfficer || eligibleUserIds.includes(userId)
 }

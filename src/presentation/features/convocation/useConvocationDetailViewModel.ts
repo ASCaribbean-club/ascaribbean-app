@@ -137,7 +137,12 @@ export function useConvocationDetailViewModel() {
     // specs/match-stats.md — same reuse for the player-facing Résultat tab's
     // scorer name lookup (`nameByUserId` below): no second "who's on this
     // team" read exists just to label goal events.
-    enabled: !!convocationId && activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes' || activeTab === 'resultat'),
+    // An authorized officer (not convoked) reads the roster only as the
+    // ballot's candidate list — never the Effectif/Résultat tabs.
+    enabled:
+      !!convocationId &&
+      ((activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes' || activeTab === 'resultat')) ||
+        (activeRole === 'authorized-officer' && activeTab === 'votes')),
   })
 
   const playerResponseQuery = useQuery({
@@ -704,7 +709,7 @@ export function useConvocationDetailViewModel() {
   // see ballot controls just because can() would allow them as a player
   // (specs/player-vote.md §2, "moindre privilège... absence, pas
   // désactivation").
-  const canCastVote = activeRole === 'player' && hasVoteCastPermission
+  const canCastVote = (activeRole === 'player' || activeRole === 'authorized-officer') && hasVoteCastPermission
 
   // specs/player-vote.md PO-PV-06(d), resolved 2026-09-29: no ballot before
   // kickoff. Same predicate/`now` source as matchResult.kickoffPassed below

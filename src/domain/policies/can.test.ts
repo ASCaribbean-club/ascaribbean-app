@@ -66,6 +66,12 @@ describe('can', () => {
     expect(can(user, 'vote:cast', { teamId: 'team-2' })).toBe(false)
   })
 
+  it('allows an authorized officer to vote on any team convocation (club-wide)', () => {
+    const user = userWith([{ role: 'authorized-officer' }])
+    expect(can(user, 'vote:cast', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'vote:cast', { teamId: 'team-2' })).toBe(true)
+  })
+
   // specs/web-actus.md §3 — AC-WA-08: 'news:write' is a brand-new, admin-only
   // action, deliberately distinct from 'backoffice:access' (see the comment
   // on both entries) so this pair proves it's actually checked on its own.
@@ -623,6 +629,12 @@ describe('can — mission actions', () => {
     const user = userWith([{ role: 'player', teamId: 'team-1' }])
     expect(can(user, 'mission:self-assign', { teamId: 'team-1' })).toBe(true)
     expect(can(user, 'mission:self-assign', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('allows an authorized officer to self-assign on any team convocation', () => {
+    const user = userWith([{ role: 'authorized-officer' }])
+    expect(can(user, 'mission:self-assign', { teamId: 'team-1' })).toBe(true)
+    expect(can(user, 'mission:self-assign', { teamId: 'team-2' })).toBe(true)
   })
 
   it('denies self-assign to coach, treasurer and volunteer', () => {

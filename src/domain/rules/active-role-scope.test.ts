@@ -27,6 +27,11 @@ function convocationForTeam(teamId: string): Convocation {
 }
 
 describe('hasActiveRoleForConvocation', () => {
+  it('allows an authorized officer on any convocation, convoked or not', () => {
+    const user = userWith([{ role: 'authorized-officer' }])
+    expect(hasActiveRoleForConvocation(user, 'authorized-officer', convocationForTeam('team-9'))).toBe(true)
+  })
+
   it('allows a player whose team matches the convocation', () => {
     const user = userWith([{ role: 'player', teamId: 'team-1' }])
     expect(hasActiveRoleForConvocation(user, 'player', convocationForTeam('team-1'))).toBe(true)
@@ -52,10 +57,9 @@ describe('hasActiveRoleForConvocation', () => {
     expect(hasActiveRoleForConvocation(user, 'player', convocationForTeam('team-1'))).toBe(false)
   })
 
-  // specs/mobile-dirigeant-habilite.md PO-DH-15 — the officer's detail
-  // variant is deferred: the branch must stay false, not pre-filled.
-  it('denies an authorized-officer active role (detail variant deferred)', () => {
-    const user = userWith([{ role: 'authorized-officer' }])
+  // PO-DH-15 resolved: the officer's detail variant exists (club-wide).
+  it('denies an authorized-officer active role when the user has no such assignment', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
     expect(hasActiveRoleForConvocation(user, 'authorized-officer', convocationForTeam('team-1'))).toBe(false)
   })
 })

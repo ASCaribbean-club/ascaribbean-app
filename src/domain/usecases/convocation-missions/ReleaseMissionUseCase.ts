@@ -44,7 +44,11 @@ export class ReleaseMissionUseCase {
     }
 
     const roster = await this.respondersRepository.listForConvocation(input.convocationId)
-    if (!isEligibleMissionAssignee(input.actorId, roster.map((member) => member.userId))) {
+    if (!isEligibleMissionAssignee(
+        input.actorId,
+        roster.map((member) => member.userId),
+        user.roles.some((assignment) => assignment.role === 'authorized-officer'),
+      )) {
       throw new ForbiddenError(`User ${input.actorId} is not eligible for missions of convocation ${input.convocationId}`)
     }
 

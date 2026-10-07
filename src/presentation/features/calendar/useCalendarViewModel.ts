@@ -171,7 +171,10 @@ export function useCalendarViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { activeRole, isOfficerView } = useActiveRole()
+  const { activeRole, isOfficerView, isTreasurerView } = useActiveRole()
+  // Club-wide roles (Dirigeant, Trésorier) share one calendar variant: every
+  // current-season team, section filter, no response block.
+  const isClubWideView = isOfficerView || isTreasurerView
   const { selectedCoachTeamId } = useActiveTeam()
   const { sectionFilter, selectSection } = useSectionFilter()
   const { sectionRepository, listClubScheduleUseCase } = useClubOverviewDependencies()
@@ -234,12 +237,12 @@ export function useCalendarViewModel() {
   const officerScheduleQuery = useQuery({
     queryKey: queryKeys.clubSchedule(),
     queryFn: () => listClubScheduleUseCase.execute({ includePast: true, now: new Date() }),
-    enabled: isOfficerView,
+    enabled: isClubWideView,
   })
   const officerSectionsQuery = useQuery({
     queryKey: queryKeys.clubSections(),
     queryFn: () => sectionRepository.findAll(),
-    enabled: isOfficerView,
+    enabled: isClubWideView,
   })
   const officerSections = officerSectionsQuery.data ?? []
   const sectionsById = new Map<string, Section>(officerSections.map((section) => [section.id, section]))
@@ -278,7 +281,7 @@ export function useCalendarViewModel() {
   // (coach sees the team's, player sees their own team's), then each date
   // in the skeleton is paired with its distinct types via `dayKey` — the
   // same key both sides agree on.
-  const convocationsInScope: Convocation[] = isOfficerView
+  const convocationsInScope: Convocation[] = isClubWideView
     ? officerItems.map((item) => item.convocation)
     : activeRole === 'coach'
       ? (coachConvocationsQuery.data ?? []).map((item) => item.convocation)
@@ -322,7 +325,7 @@ export function useCalendarViewModel() {
   /// --- Selected day's list, role-branched ---
   // See buildSelectedDayItems above for the per-role derivation itself.
   const selectedDayItems = buildSelectedDayItems(
-    isOfficerView ? 'authorized-officer' : activeRole,
+    isClubWideView ? 'authorized-officer' : activeRole,
     coachConvocationsQuery.data ?? [],
     playerConvocationsQuery.data ?? [],
     officerItems,
@@ -345,8 +348,8 @@ export function useCalendarViewModel() {
   // Dirigeant: the "scope" is the whole club (unfiltered) — an active filter
   // that matches nothing keeps the range nav and shows the filtered-empty
   // state of the list instead of collapsing the screen.
-  const hasResolvedTeam = isOfficerView ? true : activeRole === 'coach' ? !!currentCoachTeam : !!playerTeamId
-  const hasAnyConvocationInScope = isOfficerView
+  const hasResolvedTeam = isClubWideView ? true : activeRole === 'coach' ? !!currentCoachTeam : !!playerTeamId
+  const hasAnyConvocationInScope = isClubWideView
     ? allOfficerItems.length > 0
     : hasResolvedTeam && convocationsInScope.length > 0
 
@@ -430,8 +433,8 @@ export function useCalendarViewModel() {
     onRespond,
     respondError,
 
-    /// --- Dirigeant section filter (null for every other view) ---
-    sectionFilter: isOfficerView
+    /// --- Club-wide section filter (null for coach/player views) ---
+    sectionFilter: isClubWideView
       ? {
           sections: officerSections,
           selectedSectionId: sectionFilter,

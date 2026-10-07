@@ -66,6 +66,12 @@ describe('can', () => {
     expect(can(user, 'vote:cast', { teamId: 'team-2' })).toBe(false)
   })
 
+  it('allows an authorized officer to view match goals of any team', () => {
+    const user = userWith([{ role: 'authorized-officer' }])
+    expect(can(user, 'match_goals:view', { teamId: 'team-2' })).toBe(true)
+    expect(can(user, 'match_staff_events:view', { teamId: 'team-2' })).toBe(false)
+  })
+
   it('allows an authorized officer to vote on any team convocation (club-wide)', () => {
     const user = userWith([{ role: 'authorized-officer' }])
     expect(can(user, 'vote:cast', { teamId: 'team-1' })).toBe(true)

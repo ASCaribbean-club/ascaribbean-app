@@ -5,8 +5,8 @@ import { toVoteTally } from './vote-tally-mapper'
 describe('toVoteTally', () => {
   it('groups per-candidate rows into one VoteTally, using the caller-supplied convocation/category ids', () => {
     const dtos: VoteTallyDto[] = [
-      { candidate_id: 'player-1', candidate_display_name: 'Joueur 1', vote_count: 6, total_eligible_voters: 14 },
-      { candidate_id: 'player-2', candidate_display_name: 'Joueur 2', vote_count: 4, total_eligible_voters: 14 },
+      { candidate_id: 'player-1', candidate_display_name: 'Joueur 1', vote_count: 6, total_eligible_voters: 14, other_voters: 2 },
+      { candidate_id: 'player-2', candidate_display_name: 'Joueur 2', vote_count: 4, total_eligible_voters: 14, other_voters: 2 },
     ]
 
     expect(toVoteTally('convocation-1', 'positive', dtos)).toEqual({
@@ -17,6 +17,7 @@ describe('toVoteTally', () => {
         { candidateId: 'player-2', candidateDisplayName: 'Joueur 2', voteCount: 4 },
       ],
       totalEligibleVoters: 14,
+      otherVoters: 2,
     })
   })
 
@@ -29,6 +30,7 @@ describe('toVoteTally', () => {
       categoryId: 'positive',
       candidates: [],
       totalEligibleVoters: 0,
+      otherVoters: 0,
     })
   })
 })

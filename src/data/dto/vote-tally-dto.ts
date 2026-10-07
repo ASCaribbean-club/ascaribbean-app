@@ -18,4 +18,6 @@ export interface VoteTallyDto {
   candidate_display_name: string
   vote_count: number
   total_eligible_voters: number
+  // Voters who are not players of the convocation's team (e.g. an officer).
+  other_voters: number
 }

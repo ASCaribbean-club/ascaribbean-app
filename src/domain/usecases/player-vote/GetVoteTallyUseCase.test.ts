@@ -16,6 +16,7 @@ describe('GetVoteTallyUseCase', () => {
       categoryId: 'man_of_the_match',
       candidates: [{ candidateId: 'player-2', candidateDisplayName: 'Player 2', voteCount: 6 }],
       totalEligibleVoters: 14,
+      otherVoters: 0,
     }
     const useCase = new GetVoteTallyUseCase(fakeVoteTallyRepository(tally))
 
@@ -28,6 +29,7 @@ describe('GetVoteTallyUseCase', () => {
       categoryId: 'man_of_the_match',
       candidates: [],
       totalEligibleVoters: 14,
+      otherVoters: 0,
     }
     const useCase = new GetVoteTallyUseCase(fakeVoteTallyRepository(tally))
 
@@ -40,6 +42,7 @@ describe('GetVoteTallyUseCase', () => {
       categoryId: 'man_of_the_match',
       candidates: [],
       totalEligibleVoters: 0,
+      otherVoters: 0,
     }))
     const useCase = new GetVoteTallyUseCase({ getTally })
 

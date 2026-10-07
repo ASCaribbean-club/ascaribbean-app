@@ -23,5 +23,6 @@ export function toVoteTally(convocationId: string, categoryId: VoteCategoryId, d
     // never reads this value) — see get_vote_tally()'s own comment for why
     // it's derived from the team roster, not from convocation attendance.
     totalEligibleVoters: dtos[0]?.total_eligible_voters ?? 0,
+    otherVoters: dtos[0]?.other_voters ?? 0,
   }
 }

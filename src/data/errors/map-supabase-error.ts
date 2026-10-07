@@ -1,6 +1,9 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { DomainError } from '@domain/errors/domain-error'
+import { DuplicateExpenseCategoryError } from '@domain/errors/duplicate-expense-category-error'
+import { DuplicateOpeningBalanceError } from '@domain/errors/duplicate-opening-balance-error'
+import { InvalidFinanceInputError } from '@domain/errors/invalid-finance-input-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
@@ -71,6 +74,11 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       }
       // specs/web-mission-templates.md §2.3 — check constraints of
       // public.mission_templates (label, capacity, type): never raw Postgres text.
+      // specs/mob-treasurer-finances.md — check constraints of the finance
+      // tables (amounts, labels, payment method, dates): never raw Postgres text.
+      if (/(expenses|opening_balances|expense_categories|treasury_checkpoint)/.test(error.message)) {
+        return new InvalidFinanceInputError(error.message)
+      }
       if (error.message.includes('mission_templates')) {
         return new InvalidMissionTemplateError(error.message)
       }
@@ -95,6 +103,14 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // AC-WM-07.
       if (error.message.includes('memberships_user_season_active_idx')) {
         return new DuplicateMembershipError(error.message)
+      }
+      // specs/mob-treasurer-finances.md AC-FI-13/AC-FI-28 — backstops of the
+      // use cases' own checks (supabase/migrations/20261007081032_finances.sql).
+      if (error.message.includes('expense_categories_label_key_unique')) {
+        return new DuplicateExpenseCategoryError(error.message)
+      }
+      if (error.message.includes('opening_balances_carrier_season_unique')) {
+        return new DuplicateOpeningBalanceError(error.message)
       }
       // specs/web-users-role-edit-remove.md §2.2 rule 4/AC-WU-51 — a scope
       // edit landing on a team/section the same account already holds the

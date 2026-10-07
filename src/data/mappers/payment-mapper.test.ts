@@ -11,6 +11,7 @@ describe('toPayment', () => {
       amount_cents: 15000,
       paid_at: '2026-09-17',
       payment_method: 'card',
+      carrier_id: 'carrier-1',
       recorded_by: 'admin-1',
       recorded_at: '2026-09-17T10:00:00.000Z',
     }
@@ -21,6 +22,7 @@ describe('toPayment', () => {
       amountCents: 15000,
       paidAt: '2026-09-17',
       paymentMethod: 'card',
+      carrierId: 'carrier-1',
       recordedBy: 'admin-1',
       recordedAt: '2026-09-17T10:00:00.000Z',
     })
@@ -37,6 +39,7 @@ describe('toPaymentInsertRow', () => {
       amountCents: 15000,
       paidAt: '2026-09-17',
       paymentMethod: 'transfer',
+      carrierId: 'carrier-1',
       recordedBy: 'admin-1',
     }
 
@@ -47,6 +50,7 @@ describe('toPaymentInsertRow', () => {
       amount_cents: 15000,
       paid_at: '2026-09-17',
       payment_method: 'transfer',
+      carrier_id: 'carrier-1',
       recorded_by: 'admin-1',
     })
     expect(row).not.toHaveProperty('recorded_at')
@@ -61,6 +65,7 @@ describe('payment method mapping', () => {
     amount_cents: 100,
     paid_at: '2026-09-17',
     payment_method: null,
+    carrier_id: null,
     recorded_by: 'a',
     recorded_at: '2026-09-17T10:00:00.000Z',
   }
@@ -71,6 +76,13 @@ describe('payment method mapping', () => {
 
   it('maps an unknown stored value to null', () => {
     expect(toPayment({ ...base, payment_method: 'cheque' }).paymentMethod).toBeNull()
+  })
+
+  // specs/mob-treasurer-finances.md AC-FI-31 — payments recorded before the
+  // feature, or "Non précisé", have no carrier.
+  it('maps a null carrier to null and writes an absent carrier as null', () => {
+    expect(toPayment(base).carrierId).toBeNull()
+    expect(toPaymentInsertRow({ membershipId: 'm', amountCents: 100, paidAt: '2026-09-17', paymentMethod: null, recordedBy: 'a' }).carrier_id).toBeNull()
   })
 
   it('writes a null method as null', () => {

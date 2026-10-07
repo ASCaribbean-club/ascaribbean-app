@@ -10,6 +10,8 @@ export interface PaymentRow {
   paid_at: string
   // Text column, CHECK-constrained to the domain's PAYMENT_METHODS; null on older rows.
   payment_method: string | null
+  // specs/mob-treasurer-finances.md — nullable FK to finance_carriers.
+  carrier_id: string | null
   recorded_by: string
   recorded_at: string
 }
@@ -21,5 +23,6 @@ export interface PaymentInsertRow {
   amount_cents: number
   paid_at: string
   payment_method: string | null
+  carrier_id: string | null
   recorded_by: string
 }

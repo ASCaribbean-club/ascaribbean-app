@@ -8,6 +8,7 @@ import { NewsPage } from '../features/news/NewsPage'
 import { NewsEditorPage } from '../features/news-editor/NewsEditorPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { DuesListPage } from '../features/treasurer/dues-list/DuesListPage'
+import { FinancesPage } from '../features/finances/FinancesPage'
 import { MenuPage } from '../features/menu/MenuPage'
 import { CreateConvocationForm } from '../features/convocation/CreateConvocationForm'
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
@@ -177,6 +178,10 @@ export const router = createBrowserRouter([
                   // from "Gérer les cotisations" and from the Menu card, both
                   // gated by 'dues:read'); the screen refuses a role without it.
                   { path: 'dues', element: <DuesListPage /> },
+                  // specs/mob-treasurer-finances.md — Finances (expenses and
+                  // treasury), a sub-screen of Dashboard like /dues; the screen
+                  // refuses a role without 'finances:read'.
+                  { path: 'finances', element: <FinancesPage /> },
                 ],
               },
               // specs/profile-page.md — pushed OVER a tab, same

@@ -180,6 +180,42 @@ function RecordDuePaymentDialogContent({
               </Select>
             </div>
 
+            {/* AC-FI-31 — optional "Porteur", same Select as the payment
+                method, right after it; not rendered without any carrier. */}
+            {vm.carrierOptions.length > 0 && (
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <Label htmlFor="due-payment-carrier" className={LABEL_CLASS}>
+                  Porteur
+                </Label>
+                <Select
+                  value={vm.carrierValue}
+                  onValueChange={vm.setCarrierValue}
+                  disabled={vm.isSubmitting}
+                >
+                  <SelectTrigger
+                    id="due-payment-carrier"
+                    className="h-11 w-full min-w-0 rounded-xl"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="min-h-11">
+                      Non précisé
+                    </SelectItem>
+                    {vm.carrierOptions.map((option) => (
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className="min-h-11"
+                      >
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground italic">
               La cotisation peut être versée en plusieurs fois : ce montant
               s'ajoute aux versements déjà enregistrés.

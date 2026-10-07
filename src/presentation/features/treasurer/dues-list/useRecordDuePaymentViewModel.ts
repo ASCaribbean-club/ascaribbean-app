@@ -13,6 +13,7 @@ import { eurosToCents } from "@presentation/shared/formatters/currency";
 import { toDateInputValue } from "@presentation/shared/formatters/date-input";
 import { formatPaymentMethod } from "@presentation/shared/formatters/payment-method-labels";
 import { useAuth } from "@presentation/shared/hooks/use-auth";
+import { useFinanceCarrierOptions } from "@presentation/shared/hooks/use-finance-carriers";
 import { queryKeys } from "@presentation/shared/query-keys";
 
 const AMOUNT_MESSAGES: Record<PaymentAmountError, string> = {
@@ -47,6 +48,9 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
   const [paidAt, setPaidAt] = useState(today);
   // '' = "Non précisé" (optional field).
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
+  // specs/mob-treasurer-finances.md AC-FI-31 — optional "Porteur", '' = "Non précisé".
+  const carrierOptions = useFinanceCarrierOptions();
+  const [carrierId, setCarrierId] = useState("");
   const [amountTouched, setAmountTouched] = useState(false);
   const [dateTouched, setDateTouched] = useState(false);
 
@@ -60,6 +64,7 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
         amountCents: eurosToCents(Number(amountEuros)),
         paidAt,
         paymentMethod: paymentMethod === "" ? null : paymentMethod,
+        carrierId: carrierId === "" ? null : carrierId,
       });
     },
     onSuccess: (payment) => {
@@ -72,6 +77,8 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipPayments(membershipId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.profileAll() });
+      // AC-FI-33 — "Entrées saison" and the carrier balance move.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.financesRoot() });
       onRecorded(payment.amountCents);
     },
   });
@@ -89,6 +96,10 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
     paymentMethodValue: paymentMethod === "" ? "none" : paymentMethod,
     setPaymentMethodValue: (value: string) =>
       setPaymentMethod(value === "none" ? "" : (value as PaymentMethod)),
+    // No carrier configured or readable: the field is not rendered.
+    carrierOptions,
+    carrierValue: carrierId === "" ? "none" : carrierId,
+    setCarrierValue: (value: string) => setCarrierId(value === "none" ? "" : value),
     paymentMethodOptions: PAYMENT_METHODS.map((method) => ({
       value: method,
       label: formatPaymentMethod(method),

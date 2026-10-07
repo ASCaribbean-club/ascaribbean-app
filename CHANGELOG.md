@@ -24,6 +24,7 @@ Nouveautés et corrections visibles par les utilisateurs, version par version.
 
 **Coach**
 - Statistiques d'équipe : les convocations clôturées sont prises en compte dans les taux de présence et de réponse.
+- Tableau de bord : l'en-tête affiche le nombre de membres de l'équipe, et le nombre de licenciés lorsqu'il est différent.
 
 ## [0.9.0] — 2026-10-05
 

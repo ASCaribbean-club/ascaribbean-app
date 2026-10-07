@@ -118,6 +118,7 @@ describe('RecordPaymentUseCase', () => {
       amountCents: 15000,
       paidAt: '2026-09-17',
       paymentMethod: null,
+      carrierId: null,
       recordedBy: 'admin-1',
     })
   })
@@ -171,5 +172,35 @@ describe('RecordPaymentUseCase', () => {
     expect(consoleErrorSpy).toHaveBeenCalled()
 
     consoleErrorSpy.mockRestore()
+  })
+  // specs/mob-treasurer-finances.md AC-FI-31 — optional "Porteur", still 'payment:record'.
+  describe('carrier', () => {
+    it('persists the carrier and mentions it in the audit metadata', async () => {
+      const create = vi.fn(async (input: CreatePaymentInput) => ({ id: 'payment-1', recordedAt: '2026-09-17T10:00:00.000Z', ...input }) satisfies Payment)
+      const record = vi.fn(async (_entry: RecordAuditLogEntryInput) => {})
+      const useCase = new RecordPaymentUseCase(fakeUserRepository(treasurerUser()), fakePaymentRepository({ create }), fakeAuditLogRepository({ record }))
+
+      await useCase.execute(validInput({ actorId: 'treasurer-1', carrierId: 'carrier-1' }))
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ carrierId: 'carrier-1' }))
+      expect(record).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ carrierId: 'carrier-1' }) }))
+    })
+
+    it('stores "Non précisé" (absent) as a null carrier', async () => {
+      const create = vi.fn(async (input: CreatePaymentInput) => ({ id: 'payment-1', recordedAt: '2026-09-17T10:00:00.000Z', ...input }) satisfies Payment)
+      const useCase = new RecordPaymentUseCase(fakeUserRepository(adminUser()), fakePaymentRepository({ create }), fakeAuditLogRepository())
+
+      await useCase.execute(validInput())
+
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ carrierId: null }))
+    })
+
+    it('rejects a blank carrier id before any write', async () => {
+      const create = vi.fn()
+      const useCase = new RecordPaymentUseCase(fakeUserRepository(adminUser()), fakePaymentRepository({ create }), fakeAuditLogRepository())
+
+      await expect(useCase.execute(validInput({ carrierId: '  ' }))).rejects.toBeInstanceOf(InvalidPaymentInputError)
+      expect(create).not.toHaveBeenCalled()
+    })
   })
 })

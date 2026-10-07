@@ -467,4 +467,27 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // 'dues:remind'). The member-side alert needs no entry: RLS-only
   // (notifications_select_own / notifications_update_own_read).
   'dues:remind': ['treasurer'],
+
+  // specs/mob-treasurer-finances.md §3 — ADDITIONS (no CDC matrix row: the
+  // Finances module is a Bureau request, PO-FI-01). Criterion of this file's
+  // header: presentation/ must show or hide the Menu card / the write controls
+  // BEFORE any request. All club-wide, read from the CARRIED roles (no scope
+  // branch in can.ts).
+  //
+  // 'finances:read' mirrors the role check of get_finances_snapshot() and
+  // get_finance_carriers() (`private.has_role('treasurer') or
+  // private.has_role('authorized-officer') or private.is_admin()`), plus the
+  // select policies of the finance tables, each commented 'finances:read' —
+  // see supabase/migrations/20261007081032_finances.sql. Admin read: PO-FI-08.
+  'finances:read': ['treasurer', 'authorized-officer', 'admin'],
+  // Treasurer only (officer and admin are read-only). Mirrors
+  // expenses_insert_treasurer and create_expense_category(), commented
+  // 'expense:record'. No update/delete policy exists (PO-FI-06).
+  'expense:record': ['treasurer'],
+  // Distinct from 'expense:record' (PO-FI-16): different resource, rights that
+  // may diverge. Mirrors opening_balances_insert_treasurer, 'opening_balance:record'.
+  'opening_balance:record': ['treasurer'],
+  // Mirrors the role check of record_treasury_checkpoint(),
+  // 'treasury_checkpoint:record'.
+  'treasury_checkpoint:record': ['treasurer'],
 }

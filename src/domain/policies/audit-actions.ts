@@ -61,6 +61,14 @@ export const AUDIT_ACTIONS = [
   // supabase/migrations/20261005170100_dues_reminders_audit.sql's widened
   // `audit_log_action_check`.
   'dues.reminder_sent', // wired: SendDuesRemindersUseCase
+  // specs/mob-treasurer-finances.md §4/AC-FI-21 (PO-FI-07) — emitted by the
+  // use cases (business actions), targeting the created row, metadata never
+  // carries a free-text label or debrief. Mirrors
+  // supabase/migrations/20261007081032_finances.sql's widened
+  // `audit_log_action_check`.
+  'expense.recorded', // wired: RecordExpenseUseCase
+  'opening_balance.recorded', // wired: RecordOpeningBalanceUseCase
+  'treasury_checkpoint.recorded', // wired: RecordTreasuryCheckpointUseCase
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

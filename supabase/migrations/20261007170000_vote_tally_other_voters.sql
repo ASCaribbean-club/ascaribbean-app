@@ -1,6 +1,6 @@
 -- Vote tally: also expose how many voters are NOT players of the convocation's
--- team (authorized officers voting without being convoked), so the UI can show
--- "11 votes sur 14 joueurs +2 autres". A voter who is a player of the team
+-- team (authorized officers voting without being convoked), so the UI can add them to the denominator
+-- ("11 votes sur 16 membres" = 14 players + 2 others). A voter who is a player of the team
 -- counts as a player, even if they also hold another role. Aggregate only, no
 -- voter identity (AC-PV-10).
 drop function public.get_vote_tally(uuid, text);

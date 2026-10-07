@@ -111,10 +111,10 @@ function buildVoteCategories(
   const tallyCandidates = votes.tally?.candidates ?? []
   const totalVotes = tallyCandidates.reduce((sum, c) => sum + c.voteCount, 0)
   const totalEligible = votes.tally?.totalEligibleVoters ?? 0
-  // Voters outside the team's players (e.g. an officer) are shown apart as
-  // "+x autres"; a voter who is also a player counts as a player.
-  const otherVoters = votes.tally?.otherVoters ?? 0
-  const playerVotes = totalVotes - otherVoters
+  // Voters outside the team's players (e.g. an officer) join the denominator,
+  // so "votes sur membres" can never exceed 100%; a voter who is also a
+  // player counts once, as a player.
+  const totalMembers = totalEligible + (votes.tally?.otherVoters ?? 0)
   return [
     {
       id: votes.categoryId,
@@ -139,9 +139,7 @@ function buildVoteCategories(
           value: totalVotes > 0 ? Math.round((c.voteCount / totalVotes) * 100) : 0,
         })),
         myCandidateId: votes.myVote?.candidateId ?? null,
-        voteCountLabel:
-          `${playerVotes} vote${playerVotes > 1 ? 's' : ''} sur ${totalEligible} joueur${totalEligible > 1 ? 's' : ''}` +
-          (otherVoters > 0 ? ` +${otherVoters} autre${otherVoters > 1 ? 's' : ''}` : ''),
+        voteCountLabel: `${totalVotes} vote${totalVotes > 1 ? 's' : ''} sur ${totalMembers} membre${totalMembers > 1 ? 's' : ''}`,
         onChangeVote: votes.onChangeVote,
       },
     },

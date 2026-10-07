@@ -137,12 +137,12 @@ export function useConvocationDetailViewModel() {
     // specs/match-stats.md — same reuse for the player-facing Résultat tab's
     // scorer name lookup (`nameByUserId` below): no second "who's on this
     // team" read exists just to label goal events.
-    // An authorized officer (not convoked) reads the roster only as the
-    // ballot's candidate list — never the Effectif/Résultat tabs.
+    // An authorized officer (not convoked) reads the roster only for the
+    // ballot's candidates and the scorers' names — never the Effectif tab.
     enabled:
       !!convocationId &&
       ((activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes' || activeTab === 'resultat')) ||
-        (activeRole === 'authorized-officer' && activeTab === 'votes')),
+        (activeRole === 'authorized-officer' && (activeTab === 'votes' || activeTab === 'resultat'))),
   })
 
   const playerResponseQuery = useQuery({

@@ -487,7 +487,7 @@ export function ConvocationDetailPage() {
             by the ViewModel's `matchResult` section. */}
         {convocation.type === 'match' && vm.matchResult.hasMatchGoalsViewPermission && (
           <TabsContent value="resultat" className="flex flex-col gap-4 px-5.5 pt-4 pb-8">
-            {vm.activeRole === 'player' ? (
+            {vm.activeRole !== 'coach' ? (
               // specs/match-stats.md UI design §4 — État A (score pas encore
               // enregistré) vs État B (issue + buteurs). No CARTONS/penalty
               // manqué anywhere on this branch — AC-MS-09, absence

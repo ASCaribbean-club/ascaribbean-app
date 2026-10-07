@@ -272,7 +272,12 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // same "fix the gap now, not after the fact" reasoning already applied
   // to 'convocation:create'/'attendance:validate'/'vote:cast'.
   'match_result:record': ['coach'],
-  'match_goals:view': ['player', 'coach'],
+  // Widened to 'authorized-officer' (developer decision, Dirigeant match
+  // detail screen): club-wide, goals only like a player, no team scope in
+  // can.ts (the `default` branch). Mirrors the officer branch of
+  // match_events_select_scoped
+  // (supabase/migrations/20261007173000_officer_match_goals_read.sql).
+  'match_goals:view': ['player', 'coach', 'authorized-officer'],
   'match_staff_events:view': ['coach'],
 
   // specs/edit-match-details.md §2 — "Décision de cadrage — ['coach'], et

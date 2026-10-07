@@ -276,7 +276,7 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // detail screen): club-wide, goals only like a player, no team scope in
   // can.ts (the `default` branch). Mirrors the officer branch of
   // match_events_select_scoped
-  // (supabase/migrations/20261007173000_officer_match_goals_read.sql).
+  // (supabase/migrations/20261007172242_officer_match_goals_read.sql).
   'match_goals:view': ['player', 'coach', 'authorized-officer'],
   'match_staff_events:view': ['coach'],
 

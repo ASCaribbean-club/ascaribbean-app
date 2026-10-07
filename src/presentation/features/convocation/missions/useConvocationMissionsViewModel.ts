@@ -123,7 +123,11 @@ export function useConvocationMissionsViewModel(params: MissionsViewModelParams)
   const hasManageRight = !!user && !!convocation && can(user, 'mission:manage', scope)
   const isManagerVariant = roleMatchesConvocationTeam && activeRole === 'coach' && hasManageRight
   const isPlayerVariant =
-    roleMatchesConvocationTeam && activeRole === 'player' && !!user && !!convocation && can(user, 'mission:self-assign', scope)
+    roleMatchesConvocationTeam &&
+    (activeRole === 'player' || activeRole === 'authorized-officer') &&
+    !!user &&
+    !!convocation &&
+    can(user, 'mission:self-assign', scope)
   // R3/R4 — the deadline concerns players who do not hold 'mission:manage'.
   const isClosed = isPlayerVariant && !hasManageRight && !!convocation && !isMissionSelfServiceOpen(convocation, now)
 

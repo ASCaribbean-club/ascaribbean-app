@@ -65,6 +65,10 @@ describe('normalizeMissionDescription', () => {
 
 // specs/match-details-missions.md AC-MM-12
 describe('isEligibleMissionAssignee', () => {
+  it('accepts a self-assigning officer who is not on the roster', () => {
+    expect(isEligibleMissionAssignee('u3', ['u1', 'u2'], true)).toBe(true)
+  })
+
   it('is true for an id present in the passed list', () => {
     expect(isEligibleMissionAssignee('u2', ['u1', 'u2'])).toBe(true)
   })

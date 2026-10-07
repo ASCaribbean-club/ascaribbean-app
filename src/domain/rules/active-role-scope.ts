@@ -22,11 +22,10 @@ export type ActiveDashboardRole = 'coach' | 'player' | 'authorized-officer' | 't
  * active role relevant to this specific convocation's team, so the
  * corresponding variant should render instead of an empty state?"
  *
- * Only 'player' and 'coach' are handled today ('authorized-officer' is a
- * dashboard role since specs/mobile-dirigeant-habilite.md but its convocation
- * detail variant is deferred — PO-DH-15 — so it deliberately falls through
- * to `default: false`; do not pre-fill that branch; 'treasurer' is a dashboard role since specs/mobile-treasurer.md, same fall-through) — this screen has no
- * player/coach dashboard tabs that need something else. Add a branch only
+ * 'player', 'coach' and 'authorized-officer' are handled ('authorized-officer'
+ * is club-wide, so it always applies; 'treasurer' is a dashboard role since
+ * specs/mobile-treasurer.md and still falls through to `default: false`) —
+ * this screen has no treasurer variant. Add a branch only
  * when a concrete screen need appears for another role; don't pre-fill the
  * switch.
  */
@@ -39,6 +38,9 @@ export function hasActiveRoleForConvocation(user: User, activeRole: ActiveDashbo
       return assignment.teamId === convocation.teamId
     case 'coach':
       return assignment.teamIds.includes(convocation.teamId)
+    // Club-wide role: applies to every convocation, convoked or not.
+    case 'authorized-officer':
+      return true
     default:
       return false
   }

@@ -4,6 +4,11 @@ import { ConvocationNotEditableError } from '@domain/errors/convocation-not-edit
 import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
 import { DomainError } from '@domain/errors/domain-error'
+import { ExpenseCategoryInUseError } from '@domain/errors/expense-category-in-use-error'
+import { ExpenseNotReimbursableError } from '@domain/errors/expense-not-reimbursable-error'
+import { FinanceCarrierArchiveRefusedError } from '@domain/errors/finance-carrier-archive-refused-error'
+import { DuplicateFinanceCarrierError } from '@domain/errors/duplicate-finance-carrier-error'
+import { InvalidFinanceCarrierInputError } from '@domain/errors/invalid-finance-carrier-input-error'
 import { DuplicateExpenseCategoryError } from '@domain/errors/duplicate-expense-category-error'
 import { DuplicateOpeningBalanceError } from '@domain/errors/duplicate-opening-balance-error'
 import { InvalidFinanceInputError } from '@domain/errors/invalid-finance-input-error'
@@ -62,6 +67,19 @@ export const MATCH_ARRANGEMENTS_WINDOW_CLOSED_MESSAGE = 'Le coup d’envoi est p
 // for the banner (MissionsClosedBanner) AND for MissionDeadlinePassedError's
 // toast, word for word (same reasoning as the constant above).
 export const MISSIONS_CLOSED_MESSAGE = 'Les missions sont fermées. En cas d’empêchement, contactez directement un référent de l’équipe.'
+
+// specs/finances-member-advances.md UI design B3 — never raw Postgres text.
+export const FINANCE_CARRIER_ARCHIVE_MESSAGES: Record<FinanceCarrierArchiveRefusedError['reason'], string> = {
+  'no-season': "Aucune saison n'est en cours : un porteur ne peut pas être archivé tant qu'une saison n'est pas ouverte.",
+  'opening-missing':
+    "Ce porteur ne peut pas être archivé : son solde d'ouverture de la saison en cours n'est pas saisi. Demandez au Trésorier de le saisir (même à 0 €), puis réessayez.",
+  'non-zero-balance':
+    "Ce porteur ne peut pas être archivé : son solde de la saison en cours n'est pas nul. Ramenez-le à zéro (dépense, versement ou correction du solde d'ouverture, visibles dans l'écran Finances), puis réessayez.",
+  'already-archived': "Ce porteur n'existe plus ou est déjà archivé.",
+  'not-archived': "Ce porteur n'existe plus ou n'est pas archivé.",
+}
+
+export const EXPENSE_NOT_REIMBURSABLE_MESSAGE = "Cette dépense n'existe plus ou n'est plus une avance à rembourser."
 
 // Next hop after data/errors/map-supabase-error.ts: that file stops at
 // DomainError, this one goes from DomainError to what a screen shows.
@@ -277,6 +295,36 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   // open sheet, whose values are kept.
   if (error instanceof DuplicateExpenseCategoryError) {
     return { message: 'Une catégorie portant ce nom existe déjà.', variant: 'inline', retryable: true }
+  }
+  // specs/mob-treasurer-finances-edit.md AC-FIE-09.
+  if (error instanceof ExpenseCategoryInUseError) {
+    return {
+      message: 'Cette catégorie est utilisée par des dépenses et ne peut pas être supprimée.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+  // specs/web-finance-carriers.md UI design "Message d'erreur de doublon" —
+  // shown in the Alert of the open dialog, whose values are kept.
+  if (error instanceof DuplicateFinanceCarrierError) {
+    return { message: 'Un porteur portant ce nom existe déjà. Choisissez un autre libellé.', variant: 'inline', retryable: true }
+  }
+  if (error instanceof InvalidFinanceCarrierInputError) {
+    return {
+      message: 'Le libellé est obligatoire (60 caractères maximum) et le détail ne doit pas dépasser 120 caractères.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+  // specs/finances-member-advances.md UI design B3 — one cause, one message,
+  // shown in the Alert of the open archive dialog.
+  if (error instanceof FinanceCarrierArchiveRefusedError) {
+    return { message: FINANCE_CARRIER_ARCHIVE_MESSAGES[error.reason], variant: 'inline', retryable: error.reason === 'non-zero-balance' }
+  }
+  // specs/finances-member-advances.md UI design A6 — "Marquer remboursée" on an
+  // expense that is gone or no longer an advance.
+  if (error instanceof ExpenseNotReimbursableError) {
+    return { message: EXPENSE_NOT_REIMBURSABLE_MESSAGE, variant: 'inline', retryable: false }
   }
   if (error instanceof DuplicateOpeningBalanceError) {
     return { message: "Le solde d'ouverture de ce porteur est déjà saisi pour cette saison.", variant: 'inline', retryable: false }

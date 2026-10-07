@@ -29,3 +29,10 @@ export function formatFullDate(isoDate: string): string {
   if (!year || !month || !day) return isoDate
   return new Date(year, month - 1, day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
+
+// "mardi 6 octobre" — the long date of the expense recap (no year).
+export function formatWeekdayDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  if (!year || !month || !day) return isoDate
+  return new Date(year, month - 1, day).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+}

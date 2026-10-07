@@ -8,6 +8,9 @@ interface ExpensesTabProps {
   categoryFilterId: string | null;
   // Rendered only when the ViewModel says the treasurer can record (AC-FI-03).
   canRecordExpense: boolean;
+  // Rendered interactive only when the ViewModel says so (canUpdateExpense).
+  canUpdateExpense: boolean;
+  onEditExpense: (expenseId: string) => void;
   onSelectCategory: (id: string | null) => void;
   onShowMore: () => void;
   onAdd: () => void;
@@ -20,6 +23,8 @@ export function ExpensesTab({
   view,
   categoryFilterId,
   canRecordExpense,
+  canUpdateExpense,
+  onEditExpense,
   onSelectCategory,
   onShowMore,
   onAdd,
@@ -68,7 +73,8 @@ export function ExpensesTab({
 
           <ul className="flex flex-col">
             {view.lines.map((line) => (
-              <ExpenseLine key={line.id} line={line} />
+              // An expense of an archived carrier is locked (PO-FA-13): static line.
+              <ExpenseLine key={line.id} line={line} onEdit={canUpdateExpense && !line.isLocked ? onEditExpense : undefined} />
             ))}
           </ul>
 

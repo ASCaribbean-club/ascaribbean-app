@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Button } from "@presentation/shared/components/ui/button";
 
 export interface ChoiceChipOption {
@@ -6,6 +6,9 @@ export interface ChoiceChipOption {
   label: string;
   // Optional leading decoration (a category colour dot).
   leading?: ReactNode;
+  // Optional control rendered right AFTER the chip (the category pencil, only
+  // on the selected chip — specs/mob-treasurer-finances-edit.md §4).
+  after?: ReactNode;
 }
 
 interface ChoiceChipsProps {
@@ -38,8 +41,8 @@ export function ChoiceChips({
         {options.map((option) => {
           const isSelected = option.id === selectedId;
           return (
+            <Fragment key={option.id}>
             <Button
-              key={option.id}
               type="button"
               variant="outline"
               aria-pressed={isSelected}
@@ -53,6 +56,8 @@ export function ChoiceChips({
               {option.leading}
               <span className="truncate">{option.label}</span>
             </Button>
+            {option.after}
+            </Fragment>
           );
         })}
         {trailing}

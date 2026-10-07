@@ -1,5 +1,4 @@
-import type { Expense } from '../../entities/finance'
-import type { ExpensePaymentMethod } from '../../entities/expense-payment-method'
+import type { Expense, ExpensePayer } from '../../entities/finance'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidFinanceInputError } from '../../errors/invalid-finance-input-error'
 import { can } from '../../policies/can'
@@ -8,10 +7,12 @@ import type { FinanceRepository } from '../../repositories/finance-repository'
 import type { UserRepository } from '../../repositories/user-repository'
 import {
   isValidExpenseAmountCents,
-  isValidExpensePaymentMethod,
   validateExpenseDate,
   validateExpenseLabel,
+  validateExpensePayer,
+  type ExpensePayerChoices,
 } from '../../rules/finance-form-rules'
+import { expenseAuditFields } from './expense-audit-fields'
 
 export interface RecordExpenseUseCaseInput {
   actorId: string
@@ -23,8 +24,11 @@ export interface RecordExpenseUseCaseInput {
   label: string
   spentOn: string
   categoryId: string
-  carrierId: string
-  paymentMethod: ExpensePaymentMethod
+  // specs/finances-member-advances.md D-A1: exactly one payer, a carrier OR a
+  // member (with an optional reimbursement state).
+  payer: ExpensePayer
+  // The active carriers and the accounts the payer must be chosen from.
+  payerChoices: ExpensePayerChoices
 }
 
 // specs/mob-treasurer-finances.md AC-FI-10/AC-FI-21 — 'expense:record'
@@ -36,8 +40,9 @@ export interface RecordExpenseUseCaseInput {
 // Audit: emitted HERE (business action, CLAUDE.md §6), after the expense is
 // committed. A failure of the audit write is caught and logged only — same
 // tradeoff as RecordPaymentUseCase (no shared transaction between the INSERT
-// and the SECURITY DEFINER audit RPC). metadata: amount and category, NEVER the
-// free-text label.
+// and the SECURITY DEFINER audit RPC). metadata: amount, category, payer
+// (carrier id or member account id), reimbursement date and method — NEVER the
+// free-text label nor a member's name (D-A5, AC-FA-11).
 export class RecordExpenseUseCase {
   constructor(
     private readonly userRepository: UserRepository,
@@ -62,10 +67,8 @@ export class RecordExpenseUseCase {
       throw new InvalidFinanceInputError('spentOn must be a date within the current season and not in the future')
     }
     if (!input.categoryId) throw new InvalidFinanceInputError('categoryId is required')
-    if (!input.carrierId) throw new InvalidFinanceInputError('carrierId is required')
-    if (!isValidExpensePaymentMethod(input.paymentMethod)) {
-      throw new InvalidFinanceInputError('paymentMethod must be one of the expense payment methods')
-    }
+    const payerError = validateExpensePayer(input.payer, input.spentOn, input.today, input.payerChoices)
+    if (payerError) throw new InvalidFinanceInputError(`Invalid expense payer: ${payerError}`)
 
     const expense = await this.financeRepository.createExpense({
       seasonId: input.seasonId,
@@ -73,17 +76,25 @@ export class RecordExpenseUseCase {
       label: input.label.trim(),
       spentOn: input.spentOn,
       categoryId: input.categoryId,
-      carrierId: input.carrierId,
-      paymentMethod: input.paymentMethod,
+      payer: input.payer,
       recordedBy: user.id,
     })
 
+    const audited = expenseAuditFields(expense)
     try {
       await this.auditLogRepository.record({
         action: 'expense.recorded',
         targetId: expense.id,
         targetType: 'expense',
-        metadata: { amountCents: expense.amountCents, categoryId: expense.categoryId },
+        // Structured fields only: the member by account id (never a name), no label.
+        metadata: {
+          amountCents: expense.amountCents,
+          categoryId: expense.categoryId,
+          carrierId: audited.carrierId,
+          advancedByUserId: audited.advancedByUserId,
+          reimbursedOn: audited.reimbursedOn,
+          paymentMethod: audited.paymentMethod,
+        },
       })
     } catch (auditError) {
       console.error('RecordExpenseUseCase: failed to record expense.recorded audit entry', {

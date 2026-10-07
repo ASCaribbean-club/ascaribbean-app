@@ -1,4 +1,5 @@
 import {
+  IconBuildingBank,
   IconCalendarEvent,
   IconCalendarStats,
   IconChecklist,
@@ -13,7 +14,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'news' | 'convocations' | 'mission-templates' | 'locations' | 'audit'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'finance-carriers' | 'news' | 'convocations' | 'mission-templates' | 'locations' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -71,6 +72,17 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/memberships',
     icon: IconCreditCard,
     emptyStateTitle: 'Aucune adhésion à afficher pour l’instant',
+  },
+  {
+    // specs/web-finance-carriers.md UI design "Où ça vit" (PO-FC-07/UI-FC-01
+    // defaults) — "Porteurs", right after 'memberships', no other entry
+    // reordered, same guards, no numeric badge (AC-FC-08). `IconBuildingBank`
+    // is a replaceable proposal.
+    id: 'finance-carriers',
+    label: 'Porteurs',
+    path: '/admin/finance-carriers',
+    icon: IconBuildingBank,
+    emptyStateTitle: 'Aucun porteur à afficher pour l’instant',
   },
   {
     id: 'teams',

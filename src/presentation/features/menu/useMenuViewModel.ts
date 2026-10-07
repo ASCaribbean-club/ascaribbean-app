@@ -13,13 +13,24 @@ const DOUBLE_TAP_WINDOW_MS = 400
 
 export function useMenuViewModel() {
   const { signOutUseCase } = useAuthDependencies()
-  const { activeRole, isOfficerView } = useActiveRole()
+  const { activeRole, isOfficerView, isTreasurerView, dashboardRoles } = useActiveRole()
   const availabilityTeamId = useAvailabilityTeamId()
   const canReadTeamAvailability = usePermission('availability:read-team', { teamId: availabilityTeamId })
 
+  // can() checks every role the account holds, so a multi-role account whose
+  // active dashboard role is 'player' would still pass 'dues:read' through its
+  // dormant treasurer role. These two cards follow the ACTIVE role instead;
+  // an account with no dashboard role at all (admin-only) keeps the plain
+  // can() result since there is no active role to follow.
+  const followsActiveRole = dashboardRoles.length > 0
+  const isFinanceView = isTreasurerView || isOfficerView
+
   // specs/mobile-treasurer.md §3 — 'dues:read' (treasurer, authorized-officer,
   // admin): the Cotisations card is absent, never greyed out, without it.
-  const canViewDues = usePermission('dues:read')
+  const canViewDues = usePermission('dues:read') && (!followsActiveRole || isFinanceView)
+  // specs/mob-treasurer-finances.md AC-FI-01 — 'finances:read' (treasurer,
+  // authorized-officer, admin): the Finances card is absent, never greyed out.
+  const canViewFinances = usePermission('finances:read') && (!followsActiveRole || isFinanceView)
 
   const [isChangelogOpen, setIsChangelogOpen] = useState(false)
   const lastVersionTapAt = useRef(0)
@@ -44,6 +55,7 @@ export function useMenuViewModel() {
     // real boundary.
     canReadTeamAvailability,
     canViewDues,
+    canViewFinances,
 
     // specs/coach-team-stats.md PO-CTS-06 — the "Statistiques" card now
     // branches on the dashboard's active role: a coach reaches their own

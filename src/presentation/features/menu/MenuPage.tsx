@@ -1,4 +1,4 @@
-import { IconCoins, IconChartBar, IconFileText, IconTrophy, IconUsers } from '@tabler/icons-react'
+import { IconCoins, IconChartBar, IconFileText, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
 import { ChangelogDialog } from './components/ChangelogDialog'
 import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
@@ -55,6 +55,9 @@ export function MenuPage() {
           {/* specs/mobile-treasurer.md — read-only Cotisations, only with
               can('dues:read') (treasurer / authorized-officer). */}
           {vm.canViewDues && <MenuNavCard icon={IconCoins} title="Cotisations" subtitle="Suivi des paiements" to="/dues" />}
+          {/* specs/mob-treasurer-finances.md AC-FI-01 — only with
+              can('finances:read'); neutral subtitle, never an amount (AC-MN-04). */}
+          {vm.canViewFinances && <MenuNavCard icon={IconWallet} title="Finances" subtitle="Dépenses et trésorerie" to="/finances" />}
         </div>
       </section>
 

@@ -47,6 +47,7 @@ function fakeTeamRepository(overrides: Partial<TeamRepository> = {}): TeamReposi
     findByIds: async () => [],
     findById: async () => null,
     countActiveMembers: async () => 0,
+    countRosterMembers: async () => 0,
     findAllForAdmin: async () => [],
     create: vi.fn(async (input: CreateTeamInput) => ({ id: 'team-1', ...input }) satisfies Team),
     update: async () => {

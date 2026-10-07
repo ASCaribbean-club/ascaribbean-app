@@ -9,6 +9,8 @@ import type { Team } from '../entities/team'
 export interface TeamRepository {
   findByIds(ids: string[]): Promise<Team[]>
   countActiveMembers(teamId: string): Promise<number>
+  // Players rostered on the team, any membership status (team_roster_headcount).
+  countRosterMembers(teamId: string): Promise<number>
   findById(id: string): Promise<Team | null>
 
   // specs/section-and-teams.md §2.7/AC-ST-13 — the /admin/teams and

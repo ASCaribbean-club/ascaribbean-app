@@ -11,6 +11,7 @@ export interface GetCoachTeamsInput {
 export interface CoachTeamSummary {
   team: Team
   activeMemberCount: number
+  rosterMemberCount: number
 }
 
 // Get coach {team, activeMembers} list
@@ -26,8 +27,11 @@ export class GetCoachTeamsUseCase {
 
     const summaries = await Promise.all(
       teams.map(async (team) => {
-        const activeMemberCount = await this.teamRepository.countActiveMembers(team.id)
-        return { team, activeMemberCount }
+        const [activeMemberCount, rosterMemberCount] = await Promise.all([
+          this.teamRepository.countActiveMembers(team.id),
+          this.teamRepository.countRosterMembers(team.id),
+        ])
+        return { team, activeMemberCount, rosterMemberCount }
       })
     )
 

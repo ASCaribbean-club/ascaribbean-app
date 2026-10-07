@@ -69,6 +69,19 @@ export class TeamRepositoryImpl implements TeamRepository {
     return data?.headcount ?? 0
   }
 
+  // team_roster_headcount, like team_active_headcount, has no zero-fill: a team
+  // without any player role has no row, hence maybeSingle() and the 0 default.
+  async countRosterMembers(teamId: string): Promise<number> {
+    const { data, error } = await this.client
+      .from('team_roster_headcount')
+      .select('headcount')
+      .eq('team_id', teamId)
+      .maybeSingle()
+
+    if (error) throw mapSupabaseError(error)
+    return data?.headcount ?? 0
+  }
+
   // specs/section-and-teams.md §2.7/AC-ST-13 — the /admin/teams and
   // /admin/sections admin lists. Deliberately NO season filter and NO call
   // to seasonRepository.findCurrent() (unlike findById/findByIds above):

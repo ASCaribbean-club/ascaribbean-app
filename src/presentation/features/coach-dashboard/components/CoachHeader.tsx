@@ -20,6 +20,7 @@ interface CoachHeaderProps {
   initials: string
   teamName?: string
   activeMemberCount?: number
+  rosterMemberCount?: number
   dayMarker?: string
   hasMultipleTeams: boolean
   // PO-6/AC-CD-14 resolved: real selection, not a click-through. `teams` is
@@ -53,6 +54,7 @@ export function CoachHeader({
   initials,
   teamName,
   activeMemberCount,
+  rosterMemberCount,
   dayMarker,
   hasMultipleTeams,
   teams,
@@ -167,7 +169,13 @@ export function CoachHeader({
       <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-white/75">
         <Dot className="bg-coach-green" />
         <span>
-          {teamName} · {activeMemberCount !== undefined ? `${activeMemberCount} licenciés` : null}
+          {teamName}
+          {rosterMemberCount !== undefined ? ` · ${rosterMemberCount} membres` : null}
+          {/* Licenciés (active memberships) only adds information when it differs
+              from the roster count. */}
+          {activeMemberCount !== undefined && activeMemberCount !== rosterMemberCount
+            ? ` · ${activeMemberCount} licenciés`
+            : null}
           {dayMarker ? ` · J${dayMarker}` : null}
         </span>
       </p>

@@ -3,6 +3,28 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [0.10.0] — 2026-10-07
+
+### Web
+**Administrateur**
+- Cotisations : les montants ne sont plus arrondis à l'euro (150,50 € reste 150,50 €).
+- Cotisations : l'historique des versements d'une adhésion sépare le mode de paiement et la date par un point.
+- Tableau des utilisateurs : l'icône d'élément manquant passe avant le nom.
+
+### Mobile
+**Trésorier**
+- Nouvel écran Finances (carte du Menu) : dépenses de la saison par catégorie, soldes et points de trésorerie.
+- Chaque versement de cotisation est rattaché à un porteur.
+- Les montants de cotisation ne sont plus arrondis à l'euro.
+- Menu : les cartes Cotisations et Finances n'apparaissent que lorsque le rôle actif est Trésorier (ou Dirigeant habilité) ; un compte multi-rôles qui navigue avec un autre rôle ne les voit plus.
+- Menu : la carte Statistiques est masquée pour le rôle Trésorier, qui n'a pas d'écran de statistiques.
+
+**Dirigeant habilité**
+- Consultation en lecture seule de l'écran Finances.
+
+**Coach**
+- Statistiques d'équipe : les convocations clôturées sont prises en compte dans les taux de présence et de réponse.
+
 ## [0.9.0] — 2026-10-05
 
 ### Web

@@ -4,15 +4,11 @@
 // to "X€" is exactly the kind of formatting concern CLAUDE.md §5 assigns to
 // presentation/shared/formatters/, never to domain/ or data/.
 //
-// Deliberately whole-euro only (no cents shown, e.g. "150€", not "150,00€"):
-// every amount in this feature's mockup and dialogs is entered/displayed in
-// whole euros (RecordPaymentDialog's `step="0.01"` input still allows a
-// centime-precise entry, but nothing in the mockup ever shows one) — this
-// formatter rounds to the nearest euro for DISPLAY only, it never touches
-// the underlying integer-cents value it's given.
+// Cents are shown when present ("150.50€") and dropped when the amount is
+// whole ("150€") — never rounded to the nearest euro, so a 150.50€ payment
+// doesn't read as 151€. DISPLAY only; the integer-cents value is untouched.
 export function formatEuros(amountCents: number): string {
-  const euros = amountCents / 100
-  return `${Math.round(euros)}€`
+  return `${Number((amountCents / 100).toFixed(2))}€`
 }
 
 // specs/web-memberships.md §2.2 — the reverse direction, for

@@ -32,7 +32,7 @@ export function PaymentHistoryList({ isLoading, payments }: PaymentHistoryListPr
       {payments.map((payment) => (
         <li key={payment.id} className="flex items-center justify-between px-3 py-2 text-sm">
           <span className="text-muted-foreground">
-            {payment.paymentMethod ? ` · ${formatPaymentMethod(payment.paymentMethod)}` : ''}
+            {payment.paymentMethod ? `${formatPaymentMethod(payment.paymentMethod)} · ` : ''}
             {payment.paidAt}
           </span>
           <span className="font-medium">{formatEuros(payment.amountCents)}</span>

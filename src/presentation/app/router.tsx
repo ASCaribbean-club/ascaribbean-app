@@ -27,6 +27,7 @@ import { BackofficeTeamsPage } from '../features/backoffice/teams/BackofficeTeam
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
 import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
 import { BackofficeMissionTemplatesPage } from '../features/backoffice/mission-templates/BackofficeMissionTemplatesPage'
+import { BackofficeFinanceCarriersPage } from '../features/backoffice/finance-carriers/BackofficeFinanceCarriersPage'
 import { BackofficeLocalizationsPage } from '../features/backoffice/localizations/BackofficeLocalizationsPage'
 import { BackofficeNewsPage } from '../features/backoffice/news/BackofficeNewsPage'
 import { BackofficeAuditPage } from '../features/backoffice/audit/BackofficeAuditPage'
@@ -94,6 +95,8 @@ export const router = createBrowserRouter([
                   { path: 'overview', element: <BackofficeOverviewPage /> },
                   { path: 'users', element: <BackofficeUsersPage /> },
                   { path: 'memberships', element: <BackofficeMembershipsPage /> },
+                  // specs/web-finance-carriers.md — same guards, no delete route.
+                  { path: 'finance-carriers', element: <BackofficeFinanceCarriersPage /> },
                   { path: 'teams', element: <BackofficeTeamsPage /> },
                   { path: 'sections', element: <BackofficeSectionsPage /> },
                   { path: 'seasons', element: <BackofficeSeasonsPage /> },

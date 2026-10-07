@@ -815,3 +815,96 @@ describe.each(['expense:record', 'opening_balance:record', 'treasury_checkpoint:
     expect(can(userWith([{ role: 'authorized-officer' }, { role: 'treasurer' }]), action)).toBe(true)
   })
 })
+
+// specs/web-finance-carriers.md AC-FC-01 — admin only, club-wide.
+describe.each(['finance_carrier:create', 'finance_carrier:update'] as const)('can — %s', (action) => {
+  it('allows an admin with no context', () => {
+    expect(can(userWith([{ role: 'admin' }]), action)).toBe(true)
+  })
+
+  it.each([
+    { role: 'treasurer' },
+    { role: 'authorized-officer' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), action, { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows a treasurer who also carries the admin role', () => {
+    expect(can(userWith([{ role: 'treasurer' }, { role: 'admin' }]), action)).toBe(true)
+  })
+})
+
+// specs/mob-treasurer-finances-edit.md AC-FIE-01/15 — the seven correction
+// actions are treasurer-only; officer and admin stay read-only.
+describe.each([
+  'expense:update',
+  'expense:delete',
+  'expense_category:update',
+  'expense_category:delete',
+  'opening_balance:update',
+  'treasury_checkpoint:update',
+  'treasury_checkpoint:delete',
+] as const)('can — %s', (action) => {
+  it('allows a treasurer with no context', () => {
+    expect(can(userWith([{ role: 'treasurer' }]), action)).toBe(true)
+  })
+
+  it.each([
+    { role: 'authorized-officer' },
+    { role: 'admin' },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), action, { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+  })
+
+  it('allows an officer who also carries the treasurer role', () => {
+    expect(can(userWith([{ role: 'authorized-officer' }, { role: 'treasurer' }]), action)).toBe(true)
+  })
+})
+
+// specs/finances-member-advances.md AC-FA-32 — treasurer only.
+describe('can — expense_reimbursement:update', () => {
+  it('allows a treasurer', () => {
+    expect(can(userWith([{ role: 'treasurer' }]), 'expense_reimbursement:update')).toBe(true)
+  })
+
+  it.each([
+    { role: 'authorized-officer' },
+    { role: 'admin' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'expense_reimbursement:update')).toBe(false)
+  })
+})
+
+// specs/finances-member-advances.md AC-FA-13 — admin only.
+describe('can — finance_carrier:archive', () => {
+  it('allows an admin', () => {
+    expect(can(userWith([{ role: 'admin' }]), 'finance_carrier:archive')).toBe(true)
+  })
+
+  it.each([
+    { role: 'treasurer' },
+    { role: 'authorized-officer' },
+    { role: 'coach', teamIds: ['team-1'] },
+    { role: 'player', teamId: 'team-1' },
+    { role: 'section-manager', sectionId: 'section-a' },
+    { role: 'medical-referent' },
+    { role: 'volunteer' },
+  ] as User['roles'])('denies %j', (role) => {
+    expect(can(userWith([role]), 'finance_carrier:archive')).toBe(false)
+  })
+})

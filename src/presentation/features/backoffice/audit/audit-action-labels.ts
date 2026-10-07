@@ -47,6 +47,20 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'expense.recorded': "Enregistrement d'une dépense",
   'opening_balance.recorded': "Enregistrement d'un solde d'ouverture",
   'treasury_checkpoint.recorded': "Enregistrement d'un point de trésorerie",
+  'expense.updated': "Modification d'une dépense",
+  'expense.deleted': "Suppression d'une dépense",
+  'expense_category.updated': "Renommage d'une catégorie de dépense",
+  'expense_category.deleted': "Suppression d'une catégorie de dépense",
+  'opening_balance.updated': "Correction d'un solde d'ouverture",
+  'treasury_checkpoint.updated': "Correction d'un point de trésorerie",
+  'treasury_checkpoint.deleted': "Suppression d'un point de trésorerie",
+  // specs/web-finance-carriers.md AC-FC-17.
+  'finance_carrier.created': "Ajout d'un porteur de fonds",
+  'finance_carrier.updated': "Modification d'un porteur de fonds",
+  // specs/finances-member-advances.md §4.
+  'expense.reimbursement_updated': "Modification du remboursement d'une avance",
+  'finance_carrier.archived': "Archivage d'un porteur de fonds",
+  'finance_carrier.restored': "Restauration d'un porteur de fonds",
 }
 
 // AC-AU-08/AC-AU-11 — never throws: a code absent from AUDIT_ACTIONS

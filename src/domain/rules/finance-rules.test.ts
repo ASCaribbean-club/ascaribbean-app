@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { CarrierFigures, Expense, ExpenseCategory, FinancesSnapshot, TreasuryCheckpoint } from '../entities/finance'
+import type { CarrierFigures, Expense, ExpenseCategory, FinancesSnapshot, OutstandingAdvance, TreasuryCheckpoint } from '../entities/finance'
 import {
+  activeCarriers,
+  amountsOwedToMembers,
+  isCarrierArchived,
+  isCarrierListedInTreasury,
   categoriesWithExpenses,
   checkpointTotalVarianceCents,
   expenseTotalsByCategory,
@@ -17,18 +21,18 @@ import {
 } from './finance-rules'
 
 function carrier(overrides: Partial<CarrierFigures> = {}): CarrierFigures {
-  return { id: 'bank-1', label: 'Compte', kind: 'bank', detail: null, managerName: null, openingBalanceCents: 100000, incomeCents: 0, ...overrides }
+  return { id: 'bank-1', label: 'Compte', kind: 'bank', detail: null, managerName: null, openingBalanceCents: 100000, incomeCents: 0, archivedAt: null, ...overrides }
 }
 
 function expense(overrides: Partial<Expense> = {}): Expense {
   return {
     id: 'e-1',
+    seasonId: 's-1',
     categoryId: 'cat-1',
-    carrierId: 'bank-1',
     amountCents: 1000,
     label: 'Dépense',
     spentOn: '2026-10-01',
-    paymentMethod: 'card',
+    payer: { kind: 'carrier', carrierId: 'bank-1', paymentMethod: 'card' },
     recordedAt: '2026-10-01T10:00:00.000Z',
     ...overrides,
   }
@@ -46,8 +50,12 @@ function snapshot(overrides: Partial<FinancesSnapshot> = {}): FinancesSnapshot {
     carriers: [],
     unattributedIncomeCents: 0,
     categories,
+    usedCategoryIds: [],
     expenses: [],
     checkpoints: [],
+    outstandingAdvances: [],
+    advanceMembers: [],
+    advanceCandidates: [],
     ...overrides,
   }
 }
@@ -66,7 +74,18 @@ describe('theoreticalBalanceCents', () => {
   })
 
   it("ignores another carrier's expenses", () => {
-    expect(theoreticalBalanceCents(carrier(), [expense({ carrierId: 'cash-1', amountCents: 9999 })])).toBe(100000)
+    expect(theoreticalBalanceCents(carrier(), [expense({ payer: { kind: 'carrier', carrierId: 'cash-1', paymentMethod: 'card' }, amountCents: 9999 })])).toBe(100000)
+  })
+
+  // specs/finances-member-advances.md PO-FA-18/AC-FA-08.
+  it('ignores an advance by a member, reimbursed or not', () => {
+    const toReimburse = expense({ id: 'a-1', amountCents: 5800, payer: { kind: 'member', userId: 'member-1', reimbursement: null } })
+    const reimbursed = expense({
+      id: 'a-2',
+      amountCents: 4200,
+      payer: { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn: '2026-10-03', paymentMethod: 'cash' } },
+    })
+    expect(theoreticalBalanceCents(carrier(), [toReimburse, reimbursed])).toBe(100000)
   })
 
   it('can be negative', () => {
@@ -235,5 +254,107 @@ describe('sortExpenses / filter / chips', () => {
 
   it('offers chips only for categories with at least one expense', () => {
     expect(categoriesWithExpenses([a, b], categories).map((cat) => cat.id)).toEqual(['cat-1', 'cat-2'])
+  })
+})
+
+// specs/finances-member-advances.md AC-FA-07/AC-FA-08/AC-FA-10.
+describe('advances in the totals', () => {
+  const advance = expense({ id: 'a-1', categoryId: 'cat-2', amountCents: 5800, spentOn: '2026-10-05', payer: { kind: 'member', userId: 'member-1', reimbursement: null } })
+  const paid = expense({ id: 'e-1', categoryId: 'cat-1', amountCents: 3800, spentOn: '2026-10-04' })
+
+  it('counts an advance in the season total, the month, the breakdown and the filter', () => {
+    expect(sumExpensesCents([advance, paid])).toBe(9600)
+    expect(monthExpensesCents([advance, paid], '2026-10-06')).toBe(9600)
+    expect(expenseTotalsByCategory([advance, paid], categories).map((t) => [t.category.id, t.totalCents])).toEqual([
+      ['cat-2', 5800],
+      ['cat-1', 3800],
+    ])
+    expect(filterExpensesByCategory([advance, paid], 'cat-2').map((e) => e.id)).toEqual(['a-1'])
+  })
+
+  it('leaves the available balance and the carrier balances untouched', () => {
+    const summary = summarizeTreasury(snapshot({ carriers: [carrier({ openingBalanceCents: 100000 })], expenses: [advance, paid] }))
+    expect(summary.carriers[0].theoreticalCents).toBe(100000 - 3800)
+    expect(summary.availableCents).toBe(100000 - 3800)
+    expect(summary.expensesCents).toBe(9600)
+  })
+})
+
+describe('amountsOwedToMembers', () => {
+  const advance = (overrides: Partial<OutstandingAdvance>): OutstandingAdvance => ({
+    id: 'a-1',
+    advancedByUserId: 'member-1',
+    amountCents: 1000,
+    label: 'Achat',
+    spentOn: '2026-10-01',
+    seasonLabel: '2026-2027',
+    ...overrides,
+  })
+  const members = [
+    { userId: 'member-1', displayName: 'Compte B' },
+    { userId: 'member-2', displayName: 'Compte A' },
+    { userId: 'member-3', displayName: 'Compte C' },
+  ]
+
+  it('is empty, total 0, when nothing is owed', () => {
+    expect(amountsOwedToMembers([], members)).toEqual({ members: [], totalCents: 0 })
+  })
+
+  it('sums per member across seasons, biggest first, then by name, with the grand total', () => {
+    const result = amountsOwedToMembers(
+      [
+        advance({ id: 'a-1', advancedByUserId: 'member-1', amountCents: 5800, seasonLabel: '2025-2026' }),
+        advance({ id: 'a-2', advancedByUserId: 'member-1', amountCents: 4200, spentOn: '2026-10-04' }),
+        advance({ id: 'a-3', advancedByUserId: 'member-2', amountCents: 10000 }),
+        advance({ id: 'a-4', advancedByUserId: 'member-3', amountCents: 2000 }),
+      ],
+      members,
+    )
+    expect(result.members.map((m) => [m.displayName, m.owedCents])).toEqual([
+      ['Compte A', 10000],
+      ['Compte B', 10000],
+      ['Compte C', 2000],
+    ])
+    expect(result.totalCents).toBe(22000)
+  })
+
+  it('lists the advances of a member newest first', () => {
+    const result = amountsOwedToMembers(
+      [advance({ id: 'old', spentOn: '2026-09-02' }), advance({ id: 'new', spentOn: '2026-10-04' })],
+      members,
+    )
+    expect(result.members[0].advances.map((a) => a.id)).toEqual(['new', 'old'])
+  })
+
+  it('does not mutate its inputs', () => {
+    const outstanding = [advance({ id: 'old', spentOn: '2026-09-02' }), advance({ id: 'new', spentOn: '2026-10-04' })]
+    amountsOwedToMembers(outstanding, members)
+    expect(outstanding.map((a) => a.id)).toEqual(['old', 'new'])
+  })
+})
+
+// specs/finances-member-advances.md §2.6/PO-FA-14.
+describe('archived carriers', () => {
+  const archived = carrier({ id: 'old-1', archivedAt: '2026-09-30T10:00:00.000Z', openingBalanceCents: 0 })
+
+  it('tells archived from active, and filters the active ones', () => {
+    expect(isCarrierArchived(archived)).toBe(true)
+    expect(isCarrierArchived(carrier())).toBe(false)
+    expect(activeCarriers([carrier(), archived]).map((c) => c.id)).toEqual(['bank-1'])
+  })
+
+  it('lists an archived carrier in the treasury only with activity in the season', () => {
+    expect(isCarrierListedInTreasury(archived, [])).toBe(false)
+    expect(isCarrierListedInTreasury({ ...archived, incomeCents: 2000 }, [])).toBe(true)
+    expect(isCarrierListedInTreasury(archived, [expense({ payer: { kind: 'carrier', carrierId: 'old-1', paymentMethod: 'cash' } })])).toBe(true)
+    // An advance by a member is NOT carrier activity.
+    expect(isCarrierListedInTreasury(archived, [expense({ payer: { kind: 'member', userId: 'member-1', reimbursement: null } })])).toBe(false)
+    expect(isCarrierListedInTreasury(carrier(), [])).toBe(true)
+  })
+
+  it('contributes 0 to the available balance and is omitted from "Par porteur" without activity', () => {
+    const summary = summarizeTreasury(snapshot({ carriers: [carrier({ openingBalanceCents: 1000 }), archived] }))
+    expect(summary.carriers.map((entry) => entry.carrier.id)).toEqual(['bank-1'])
+    expect(summary.availableCents).toBe(1000)
   })
 })

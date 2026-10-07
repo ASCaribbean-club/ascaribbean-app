@@ -1,6 +1,11 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { DomainError } from '@domain/errors/domain-error'
+import { ExpenseCategoryInUseError } from '@domain/errors/expense-category-in-use-error'
+import { ExpenseNotReimbursableError } from '@domain/errors/expense-not-reimbursable-error'
+import { FinanceCarrierArchiveRefusedError } from '@domain/errors/finance-carrier-archive-refused-error'
+import { DuplicateFinanceCarrierError } from '@domain/errors/duplicate-finance-carrier-error'
+import { InvalidFinanceCarrierInputError } from '@domain/errors/invalid-finance-carrier-input-error'
 import { DuplicateExpenseCategoryError } from '@domain/errors/duplicate-expense-category-error'
 import { DuplicateOpeningBalanceError } from '@domain/errors/duplicate-opening-balance-error'
 import { InvalidFinanceInputError } from '@domain/errors/invalid-finance-input-error'
@@ -22,6 +27,13 @@ import { OverlappingSeasonError } from '@domain/errors/overlapping-season-error'
 export function mapSupabaseError(error: PostgrestError): DomainError {
   switch (error.code) {
     case 'PGRST116':
+      return new NotFoundError(error.message)
+    case 'P0002':
+      // specs/finances-member-advances.md §2.7 — set_expense_reimbursement():
+      // the expense is gone, or is not an advance by a member.
+      if (error.message.includes('expense_not_found') || error.message.includes('expense_not_an_advance')) {
+        return new ExpenseNotReimbursableError(error.message)
+      }
       return new NotFoundError(error.message)
     case '42501':
       // specs/web-create-convocation.md AC-WC-23 — the update_*_convocation
@@ -72,10 +84,38 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       if (error.message.includes('training_location_archived')) {
         return new TrainingLocationArchivedError(error.message)
       }
+      // specs/finances-member-advances.md AC-FA-16/AC-FA-20 — the dedicated
+      // causes of archive_finance_carrier() / restore_finance_carrier(),
+      // checked BEFORE the generic finance checks below (message tokens).
+      if (error.message.includes('finance_carrier_no_season')) {
+        return new FinanceCarrierArchiveRefusedError('no-season', error.message)
+      }
+      if (error.message.includes('finance_carrier_opening_missing')) {
+        return new FinanceCarrierArchiveRefusedError('opening-missing', error.message)
+      }
+      if (error.message.includes('finance_carrier_non_zero_balance')) {
+        return new FinanceCarrierArchiveRefusedError('non-zero-balance', error.message)
+      }
+      if (error.message.includes('finance_carrier_already_archived')) {
+        return new FinanceCarrierArchiveRefusedError('already-archived', error.message)
+      }
+      if (error.message.includes('finance_carrier_not_archived')) {
+        return new FinanceCarrierArchiveRefusedError('not-archived', error.message)
+      }
+      // set_expense_reimbursement() — invalid date or method (backstop of the
+      // use case's own validation).
+      if (error.message.includes('expense_reimbursement_')) {
+        return new InvalidFinanceInputError(error.message)
+      }
       // specs/web-mission-templates.md §2.3 — check constraints of
       // public.mission_templates (label, capacity, type): never raw Postgres text.
       // specs/mob-treasurer-finances.md — check constraints of the finance
       // tables (amounts, labels, payment method, dates): never raw Postgres text.
+      // specs/web-finance-carriers.md AC-FC-05/AC-FC-07 — label / detail
+      // length and emptiness checks of public.finance_carriers.
+      if (error.message.includes('finance_carriers_')) {
+        return new InvalidFinanceCarrierInputError(error.message)
+      }
       if (/(expenses|opening_balances|expense_categories|treasury_checkpoint)/.test(error.message)) {
         return new InvalidFinanceInputError(error.message)
       }
@@ -87,6 +127,13 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // SaveMatchLineupUseCase rejects the same case before any network call.
       if (error.message.includes('match_lineup_player_not_convoked')) {
         return new InvalidMatchLineupInputError(error.message)
+      }
+      return new NotFoundError(error.message)
+    case '23503':
+      // specs/mob-treasurer-finances-edit.md AC-FIE-09 — expenses.category_id
+      // is `on delete restrict`: the category is still used by an expense.
+      if (error.message.includes('expenses_category_id_fkey')) {
+        return new ExpenseCategoryInUseError(error.message)
       }
       return new NotFoundError(error.message)
     case '23P01':
@@ -108,6 +155,10 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       // use cases' own checks (supabase/migrations/20261007081032_finances.sql).
       if (error.message.includes('expense_categories_label_key_unique')) {
         return new DuplicateExpenseCategoryError(error.message)
+      }
+      // specs/web-finance-carriers.md AC-FC-05 — unique key on label_key.
+      if (error.message.includes('finance_carriers_label_key_unique')) {
+        return new DuplicateFinanceCarrierError(error.message)
       }
       if (error.message.includes('opening_balances_carrier_season_unique')) {
         return new DuplicateOpeningBalanceError(error.message)

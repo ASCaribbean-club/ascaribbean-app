@@ -8,6 +8,8 @@ import { CheckpointSheet } from "./components/CheckpointSheet";
 import { ExpenseSheet } from "./components/ExpenseSheet";
 import { ExpensesTab } from "./components/ExpensesTab";
 import { OpeningBalanceSheet } from "./components/OpeningBalanceSheet";
+import { OwedBlock } from "./components/OwedBlock";
+import { ReimbursementSheet } from "./components/ReimbursementSheet";
 import { TreasuryTab } from "./components/TreasuryTab";
 import { useFinancesViewModel } from "./useFinancesViewModel";
 
@@ -38,7 +40,17 @@ export function FinancesPage() {
         {vm.subtitle && <p className="text-[14px] text-white/60">{vm.subtitle}</p>}
 
         {vm.hasNoSeason ? (
-          <TreasurerStateMessage message="Aucune saison en cours. Les finances s'affichent dès qu'une saison est ouverte." />
+          <>
+            <TreasurerStateMessage message="Aucune saison en cours. Les finances s'affichent dès qu'une saison est ouverte." />
+            {/* UI-FA-06 — the debt towards members does not depend on a season. */}
+            {vm.owedView && (
+              <OwedBlock
+                view={vm.owedView}
+                canUpdateReimbursement={vm.canUpdateReimbursement}
+                onMarkReimbursed={vm.openReimbursementSheet}
+              />
+            )}
+          </>
         ) : (
           <>
             <Tabs value={vm.tab} onValueChange={vm.selectTab}>
@@ -73,6 +85,8 @@ export function FinancesPage() {
                 view={vm.expensesView}
                 categoryFilterId={vm.categoryFilterId}
                 canRecordExpense={vm.canRecordExpense}
+                canUpdateExpense={vm.canUpdateExpense}
+                onEditExpense={vm.openExpenseEditSheet}
                 onSelectCategory={vm.selectCategoryFilter}
                 onShowMore={vm.showMore}
                 onAdd={vm.openExpenseSheet}
@@ -86,6 +100,13 @@ export function FinancesPage() {
                 canRecordCheckpoint={vm.canRecordCheckpoint}
                 onEnterOpeningBalance={vm.openOpeningBalanceSheet}
                 onStartCheckpoint={vm.openCheckpointSheet}
+                canUpdateOpeningBalance={vm.canUpdateOpeningBalance}
+                onEditOpeningBalance={vm.openOpeningBalanceSheet}
+                canUpdateCheckpoint={vm.canUpdateCheckpoint}
+                onEditCheckpoint={vm.openCheckpointEditSheet}
+                owed={vm.owedView}
+                canUpdateReimbursement={vm.canUpdateReimbursement}
+                onMarkReimbursed={vm.openReimbursementSheet}
               />
             )}
           </>
@@ -93,18 +114,62 @@ export function FinancesPage() {
       </div>
 
       {vm.snapshot && vm.isExpenseSheetOpen && (
-        <ExpenseSheet snapshot={vm.snapshot} today={vm.today} onClose={vm.closeExpenseSheet} />
+        <ExpenseSheet
+          snapshot={vm.snapshot}
+          today={vm.today}
+          canDeleteExpense={vm.canDeleteExpense}
+          canRenameCategory={vm.canRenameCategory}
+          canDeleteCategory={vm.canDeleteCategory}
+          onClose={vm.closeExpenseSheet}
+        />
+      )}
+      {vm.snapshot && vm.editingExpense && (
+        <ExpenseSheet
+          key={vm.editingExpense.id}
+          snapshot={vm.snapshot}
+          today={vm.today}
+          expense={vm.editingExpense}
+          canDeleteExpense={vm.canDeleteExpense}
+          canRenameCategory={vm.canRenameCategory}
+          canDeleteCategory={vm.canDeleteCategory}
+          onClose={vm.closeExpenseEditSheet}
+        />
+      )}
+      {vm.reimbursingAdvance && (
+        <ReimbursementSheet
+          key={vm.reimbursingAdvance.id}
+          advance={vm.reimbursingAdvance}
+          memberName={vm.reimbursingMemberName}
+          today={vm.today}
+          onClose={vm.closeReimbursementSheet}
+        />
       )}
       {vm.snapshot && vm.openingBalanceCarrier && (
         <OpeningBalanceSheet
           snapshot={vm.snapshot}
           carrierId={vm.openingBalanceCarrier.id}
           carrierName={vm.openingBalanceCarrier.label}
+          existingCents={vm.openingBalanceExistingCents ?? undefined}
           onClose={vm.closeOpeningBalanceSheet}
         />
       )}
       {vm.snapshot && vm.isCheckpointSheetOpen && (
-        <CheckpointSheet snapshot={vm.snapshot} today={vm.today} onClose={vm.closeCheckpointSheet} />
+        <CheckpointSheet
+          snapshot={vm.snapshot}
+          today={vm.today}
+          canDeleteCheckpoint={vm.canDeleteCheckpoint}
+          onClose={vm.closeCheckpointSheet}
+        />
+      )}
+      {vm.snapshot && vm.editingCheckpoint && (
+        <CheckpointSheet
+          key={vm.editingCheckpoint.id}
+          snapshot={vm.snapshot}
+          today={vm.today}
+          checkpoint={vm.editingCheckpoint}
+          canDeleteCheckpoint={vm.canDeleteCheckpoint}
+          onClose={vm.closeCheckpointEditSheet}
+        />
       )}
     </div>
   );

@@ -335,3 +335,40 @@ export type Action =
   // specs/mob-treasurer-finances.md §3 — ADDITION. Mirrors the role check of
   // record_treasury_checkpoint() ('treasury_checkpoint:record').
   | 'treasury_checkpoint:record'
+  // specs/mob-treasurer-finances-edit.md §3 — SEVEN ADDITIONS, all treasurer
+  // only (PO-FIE-01: one action per SQL policy/function). Each decides whether
+  // a correction/deletion control is RENDERED (absent, never greyed). Mirrors,
+  // by hand, in supabase/migrations/20261007132824_finances_edit.sql:
+  // expenses_update_treasurer ('expense:update'), expenses_delete_treasurer
+  // ('expense:delete'), rename_expense_category() ('expense_category:update'),
+  // expense_categories_delete_treasurer ('expense_category:delete'),
+  // opening_balances_update_treasurer ('opening_balance:update'),
+  // update_treasury_checkpoint() ('treasury_checkpoint:update'),
+  // delete_treasury_checkpoint() ('treasury_checkpoint:delete').
+  | 'expense:update'
+  | 'expense:delete'
+  | 'expense_category:update'
+  | 'expense_category:delete'
+  | 'opening_balance:update'
+  | 'treasury_checkpoint:update'
+  | 'treasury_checkpoint:delete'
+  // specs/web-finance-carriers.md §3 (PO-FC-08 default: two actions, not one
+  // 'finance_carrier:write') — admin only, club-wide. presentation/ decides
+  // whether "Nouveau porteur" / the edit pencil are RENDERED (absent, never
+  // greyed), independently of 'backoffice:access'. NO ':delete' action exists.
+  // Mirrors, by hand, in supabase/migrations/20261007142228_finance_carriers_admin.sql:
+  // finance_carriers_insert_admin ('finance_carrier:create'),
+  // finance_carriers_update_admin ('finance_carrier:update').
+  | 'finance_carrier:create'
+  | 'finance_carrier:update'
+  // specs/finances-member-advances.md §3 (PO-FA-21 default) — treasurer only.
+  // presentation/ decides whether the "Marquer remboursée" action of the
+  // "À rembourser" block is RENDERED (absent, never greyed). Mirrors, by hand,
+  // in supabase/migrations/20261007151442_finances_member_advances.sql: the
+  // role guard of set_expense_reimbursement() ('expense_reimbursement:update').
+  | 'expense_reimbursement:update'
+  // specs/finances-member-advances.md §3 (PO-FA-06 default: ONE action for both
+  // archive and restore) — admin only. Mirrors, by hand, in the same migration:
+  // the private.is_admin() guard of archive_finance_carrier() AND
+  // restore_finance_carrier() ('finance_carrier:archive').
+  | 'finance_carrier:archive'

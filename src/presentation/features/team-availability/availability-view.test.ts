@@ -31,7 +31,7 @@ describe('availability view', () => {
   it('formats subtitles with an exclusive end worded as a return date', () => {
     expect(formatAvailabilitySubtitle(null, null)).toBeNull()
     expect(formatAvailabilitySubtitle('2026-09-24', null)).toMatch(/^Depuis le 24 sept/)
-    expect(formatAvailabilitySubtitle('2026-09-15', '2026-10-06')).toMatch(/retour le 6 oct/)
+    expect(formatAvailabilitySubtitle('2026-09-15', '2026-10-06')).toMatch(/Retour le 6 oct/)
   })
 
   it('coach rows keep medical wording data and dates', () => {
@@ -39,7 +39,7 @@ describe('availability view', () => {
     expect(rows[0].subtitle).toBeNull()
     expect(rows[1]).toMatchObject({ status: 'medical' })
     expect(rows[1].subtitle).toMatch(/^Depuis le 24 sept/)
-    expect(rows[2].subtitle).toMatch(/retour le 6 oct/)
+    expect(rows[2].subtitle).toMatch(/Retour le 6 oct/)
   })
 
   it('teammate rows never carry medical status nor a subtitle for unavailable', () => {

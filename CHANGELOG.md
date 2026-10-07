@@ -3,6 +3,23 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [0.11.0] — 2026-10-07
+
+### Mobile
+**Trésorier**
+- Finances : possibilité de corriger une dépense, une catégorie, le solde d'ouverture ou un point de trésorerie.
+- Finances : nouvelles avances des membres, avec assistant de saisie et suivi du remboursement.
+- Finances : gestion des porteurs (création, modification, archivage).
+- Calendrier : affichage du calendrier de tout le club, avec filtre par section.
+
+**Dirigeant habilité**
+- Détail d'une convocation : possibilité de s'attribuer une mission et de voter, comme un joueur.
+- Détail d'une convocation : l'onglet résultat du match est visible.
+- Le détail d'une convocation s'ouvre depuis le prochain événement, la liste des événements à venir et le calendrier.
+
+**Tous**
+- Votes : le décompte compte les joueurs et les autres votants comme des membres, avec « +x autres » pour les non-joueurs.
+
 ## [0.10.0] — 2026-10-07
 
 ### Web

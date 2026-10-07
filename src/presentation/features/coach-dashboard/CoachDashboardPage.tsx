@@ -21,6 +21,7 @@ export function CoachDashboardPage() {
         initials={vm.initials}
         teamName={vm.currentTeam?.name}
         activeMemberCount={vm.activeMemberCount}
+        rosterMemberCount={vm.rosterMemberCount}
         dayMarker={vm.dayMarker}
         hasMultipleTeams={vm.hasMultipleTeams}
         teams={vm.teams}

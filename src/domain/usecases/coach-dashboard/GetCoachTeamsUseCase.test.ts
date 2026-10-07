@@ -4,14 +4,17 @@ import type { TeamRepository } from '../../repositories/team-repository'
 import { GetCoachTeamsUseCase } from './GetCoachTeamsUseCase'
 
 describe('GetCoachTeamsUseCase', () => {
-  it('pairs each of the coach teams with its active member count', async () => {
+  it('pairs each of the coach teams with its active and roster member counts', async () => {
     const teamA: Team = { id: 'team-a', name: 'Seniors A', sectionId: 'section-1', seasonId: 'season-1' }
     const teamB: Team = { id: 'team-b', name: 'Seniors B', sectionId: 'section-1', seasonId: 'season-1' }
     const findByIds = vi.fn().mockResolvedValue([teamA, teamB])
     const countActiveMembers = vi.fn().mockImplementation((teamId: string) =>
       Promise.resolve(teamId === 'team-a' ? 18 : 12),
     )
-    const teamRepository = { findByIds, countActiveMembers } as unknown as TeamRepository
+    const countRosterMembers = vi.fn().mockImplementation((teamId: string) =>
+      Promise.resolve(teamId === 'team-a' ? 20 : 14),
+    )
+    const teamRepository = { findByIds, countActiveMembers, countRosterMembers } as unknown as TeamRepository
 
     const result = await new GetCoachTeamsUseCase(teamRepository).execute({
       coachTeamIds: ['team-a', 'team-b'],
@@ -19,8 +22,8 @@ describe('GetCoachTeamsUseCase', () => {
 
     expect(findByIds).toHaveBeenCalledWith(['team-a', 'team-b'])
     expect(result).toEqual([
-      { team: teamA, activeMemberCount: 18 },
-      { team: teamB, activeMemberCount: 12 },
+      { team: teamA, activeMemberCount: 18, rosterMemberCount: 20 },
+      { team: teamB, activeMemberCount: 12, rosterMemberCount: 14 },
     ])
   })
 

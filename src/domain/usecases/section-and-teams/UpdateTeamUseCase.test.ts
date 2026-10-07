@@ -47,6 +47,7 @@ function fakeTeamRepository(overrides: Partial<TeamRepository> = {}): TeamReposi
     findByIds: async () => [],
     findById: async () => null,
     countActiveMembers: async () => 0,
+    countRosterMembers: async () => 0,
     findAllForAdmin: async () => [],
     create: async () => {
       throw new Error('not implemented')

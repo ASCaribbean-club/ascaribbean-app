@@ -93,6 +93,7 @@ function fakeTeamRepository(teams: Team[]): TeamRepository {
   return {
     findByIds: async () => teams,
     countActiveMembers: async () => 0,
+    countRosterMembers: async () => 0,
     findById: async () => teams[0] ?? null,
     findAllForAdmin: async () => teams,
     create: async () => {

@@ -8,6 +8,7 @@ import { formatPaymentMethod } from '@presentation/shared/formatters/payment-met
 import { toDateInputValue } from '@presentation/shared/formatters/date-input'
 import { eurosToCents } from '@presentation/shared/formatters/currency'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
+import { useFinanceCarrierOptions } from '@presentation/shared/hooks/use-finance-carriers'
 import { queryKeys } from '@presentation/shared/query-keys'
 import type { MembershipAdminRow } from './useBackofficeMembershipsViewModel'
 
@@ -50,6 +51,9 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
   // '' = no method chosen (optional field).
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('')
   const [paidAt, setPaidAt] = useState(() => toDateInputValue(new Date()))
+  // specs/mob-treasurer-finances.md AC-FI-31 — optional "Porteur"; '' = "Non précisé".
+  const carrierOptions = useFinanceCarrierOptions()
+  const [carrierId, setCarrierId] = useState('')
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -68,6 +72,7 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
         amountCents: eurosToCents(Number(amountEuros)),
         paidAt,
         paymentMethod: paymentMethod === '' ? null : paymentMethod,
+        carrierId: carrierId === '' ? null : carrierId,
       })
     },
     onSuccess: () => {
@@ -78,7 +83,10 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipPayments(target.membership.id) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipPaymentsAdminList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.membershipsBadgeCount() })
+      // AC-FI-33 — the finance read models move with a payment.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.financesRoot() })
       setAmountEuros('')
+      setCarrierId('')
       setPaymentMethod('')
       setPaidAt(toDateInputValue(new Date()))
     },
@@ -108,6 +116,9 @@ export function useRecordPaymentDialogViewModel({ target }: UseRecordPaymentDial
     setPaidAt,
     paymentMethod,
     setPaymentMethod,
+    carrierOptions,
+    carrierId,
+    setCarrierId,
     paymentMethodOptions: PAYMENT_METHODS.map((method) => ({ value: method, label: formatPaymentMethod(method) })),
 
     canSubmit,

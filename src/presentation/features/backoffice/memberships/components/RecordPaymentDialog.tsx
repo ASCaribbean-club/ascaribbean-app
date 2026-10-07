@@ -148,6 +148,34 @@ function RecordPaymentDialogContent({ target, onClose }: { target: MembershipAdm
                 </Select>
               </div>
 
+              {/* specs/mob-treasurer-finances.md AC-FI-31 — optional "Porteur",
+                  same Select as the payment method, right after it; not
+                  rendered without any carrier. Desktop: default heights. */}
+              {vm.carrierOptions.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="payment-carrier" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    Porteur
+                  </Label>
+                  <Select
+                    value={vm.carrierId === '' ? 'none' : vm.carrierId}
+                    onValueChange={(value) => vm.setCarrierId(value === 'none' ? '' : value)}
+                    disabled={vm.isSubmitting}
+                  >
+                    <SelectTrigger id="payment-carrier" className="h-11 w-full rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Non précisé</SelectItem>
+                      {vm.carrierOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {/* §1 — the export `payment`'s own italic copy (amendement du
                   2026-09-17), confirming mot pour mot the cumulative,
                   never-overwriting nature of a payment (§2.2) — never

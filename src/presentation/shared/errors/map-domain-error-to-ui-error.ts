@@ -4,6 +4,9 @@ import { ConvocationNotEditableError } from '@domain/errors/convocation-not-edit
 import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
 import { DomainError } from '@domain/errors/domain-error'
+import { DuplicateExpenseCategoryError } from '@domain/errors/duplicate-expense-category-error'
+import { DuplicateOpeningBalanceError } from '@domain/errors/duplicate-opening-balance-error'
+import { InvalidFinanceInputError } from '@domain/errors/invalid-finance-input-error'
 import { DuplicateMembershipError } from '@domain/errors/duplicate-membership-error'
 import { DuplicateRoleAssignmentError } from '@domain/errors/duplicate-role-assignment-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
@@ -265,6 +268,22 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
     // RecordPaymentDialog.
     return {
       message: 'Le montant doit être strictement positif et la date de paiement est obligatoire.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  // specs/mob-treasurer-finances.md AC-FI-12/AC-FI-13/AC-FI-28 — shown in the
+  // open sheet, whose values are kept.
+  if (error instanceof DuplicateExpenseCategoryError) {
+    return { message: 'Une catégorie portant ce nom existe déjà.', variant: 'inline', retryable: true }
+  }
+  if (error instanceof DuplicateOpeningBalanceError) {
+    return { message: "Le solde d'ouverture de ce porteur est déjà saisi pour cette saison.", variant: 'inline', retryable: false }
+  }
+  if (error instanceof InvalidFinanceInputError) {
+    return {
+      message: 'Les informations saisies sont invalides. Vérifiez le montant, le libellé et la date.',
       variant: 'inline',
       retryable: true,
     }

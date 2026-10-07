@@ -370,4 +370,13 @@ export const queryKeys = {
   // entry, used only to invalidate them after a treasurer records a payment
   // (the due list does not carry the member's user id).
   profileAll: () => ['profile'] as const,
+
+  // specs/mob-treasurer-finances.md §2 — Finances read models, DISTINCT from
+  // the `treasurerDues` keys. `financesRoot` is the PREFIX invalidated by every
+  // finance write AND by recording a cotisation payment (AC-FI-33: it moves
+  // "Entrées saison" and the carriers' theoretical balances).
+  financesRoot: () => ['finances'] as const,
+  financesSnapshot: () => ['finances', 'snapshot'] as const,
+  // Carriers of the optional "Porteur" field of the payment forms.
+  financeCarriers: () => ['finances', 'carriers'] as const,
 }

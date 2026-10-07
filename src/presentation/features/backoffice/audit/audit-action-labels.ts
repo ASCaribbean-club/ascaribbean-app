@@ -43,6 +43,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'attendance.updated': "Modification d'une présence",
   // specs/mobile-treasurer.md amendement (4), §E.
   'dues.reminder_sent': 'Relance de cotisation envoyée',
+  // specs/mob-treasurer-finances.md AC-FI-21.
+  'expense.recorded': "Enregistrement d'une dépense",
+  'opening_balance.recorded': "Enregistrement d'un solde d'ouverture",
+  'treasury_checkpoint.recorded': "Enregistrement d'un point de trésorerie",
 }
 
 // AC-AU-08/AC-AU-11 — never throws: a code absent from AUDIT_ACTIONS

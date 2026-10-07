@@ -42,7 +42,6 @@ export interface CalendarListItem {
   // specs/mobile-dirigeant-habilite.md §1.2 — Dirigeant rows only (null for
   // coach/player): the section tag, text always (AC-DH-11).
   sectionLabel: SectionLabelView | null
-  // false for the Dirigeant rows until the detail variant exists (PO-DH-15):
-  // a non-openable row is not a button, has no tabIndex and no tap target.
+  // A non-openable row is not a button, has no tabIndex and no tap target.
   isOpenable: boolean
 }

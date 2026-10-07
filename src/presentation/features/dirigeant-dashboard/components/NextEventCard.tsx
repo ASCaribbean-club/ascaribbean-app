@@ -4,15 +4,23 @@ import type { DirigeantEventView } from '../dirigeant-event-view'
 
 interface NextEventCardProps {
   event: DirigeantEventView
+  onOpen: (convocationId: string) => void
 }
 
 // "Prochain événement" — same card gabarit as the coach one but without a
-// response bar and NOT tappable (no role="button", no chevron: the detail
-// variant for the officer is deferred, PO-DH-15 / AC-DH-16).
+// response bar; tapping it opens the convocation detail.
 // The page renders it only when there is a next event: no empty card.
-export function NextEventCard({ event }: NextEventCardProps) {
+export function NextEventCard({ event, onOpen }: NextEventCardProps) {
   return (
-    <div className="flex flex-col gap-3.5 rounded-2xl border border-white/10 bg-white/5 p-5">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(event.id)}
+      onKeyDown={(keyEvent) => {
+        if (keyEvent.key === 'Enter' || keyEvent.key === ' ') onOpen(event.id)
+      }}
+      className="flex cursor-pointer flex-col gap-3.5 rounded-2xl border border-white/10 bg-white/5 p-5"
+    >
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11.5px] font-extrabold tracking-wider text-coach-green-label uppercase">Prochain événement</span>
         <SectionLabel name={event.section.name} type={event.section.type} />

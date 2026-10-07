@@ -59,8 +59,8 @@ export function DirigeantDashboardPage() {
 
         {!vm.isScheduleLoading && !vm.hasScheduleError && (
           <>
-            {vm.nextEvent && <NextEventCard event={vm.nextEvent} />}
-            <UpcomingEventList title={vm.upcomingTitle} items={vm.upcomingList} onSeeCalendar={vm.goToCalendar} />
+            {vm.nextEvent && <NextEventCard event={vm.nextEvent} onOpen={vm.openConvocationDetail} />}
+            <UpcomingEventList title={vm.upcomingTitle} items={vm.upcomingList} onSeeCalendar={vm.goToCalendar} onOpen={vm.openConvocationDetail} />
           </>
         )}
       </div>

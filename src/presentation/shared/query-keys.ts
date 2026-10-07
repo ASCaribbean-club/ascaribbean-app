@@ -379,4 +379,14 @@ export const queryKeys = {
   financesSnapshot: () => ['finances', 'snapshot'] as const,
   // Carriers of the optional "Porteur" field of the payment forms.
   financeCarriers: () => ['finances', 'carriers'] as const,
+  // specs/mob-treasurer-finances-edit.md PO-FIE-04 — dedicated read of one point
+  // (debrief included) for the correction sheet. Under `financesRoot`, so every
+  // finance write invalidates it.
+  // specs/web-finance-carriers.md AC-FC-12 — the backoffice admin list of
+  // carriers (manager id + displayable name), DISTINCT from `financeCarriers`
+  // (id/label/kind only, treasurer-side). Its own root, invalidated together
+  // with `financesRoot` after every carrier write.
+  financeCarriersAdminRoot: () => ['finance-carriers'] as const,
+  financeCarriersAdminList: () => ['finance-carriers', 'admin', 'list'] as const,
+  financeCheckpointDetail: (checkpointId: string) => ['finances', 'checkpoint', checkpointId] as const,
 }

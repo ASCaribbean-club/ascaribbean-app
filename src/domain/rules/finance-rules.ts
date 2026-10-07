@@ -1,9 +1,12 @@
 import type {
+  AccountOption,
   CarrierFigures,
   CarrierKind,
   Expense,
   ExpenseCategory,
+  FinanceCarrier,
   FinancesSnapshot,
+  OutstandingAdvance,
   TreasuryCheckpoint,
 } from '../entities/finance'
 
@@ -16,11 +19,38 @@ export function sumExpensesCents(expenses: Expense[]): number {
   return expenses.reduce((total, expense) => total + expense.amountCents, 0)
 }
 
+// The carrier an expense was paid from; null for an advance by a member.
+export function expenseCarrierId(expense: Expense): string | null {
+  return expense.payer.kind === 'carrier' ? expense.payer.carrierId : null
+}
+
 // theoreticalBalance(carrier) = opening balance (0 when absent) + season
 // cotisation payments attributed to it - season expenses paid from it.
+// specs/finances-member-advances.md PO-FA-18/AC-FA-08: an advance by a member,
+// reimbursed or not, enters NO carrier balance. Mirrored by
+// private.carrier_theoretical_balance_cents() (SQL), shared by
+// record_treasury_checkpoint() and archive_finance_carrier().
 export function theoreticalBalanceCents(carrier: CarrierFigures, expenses: Expense[]): number {
-  const spent = sumExpensesCents(expenses.filter((expense) => expense.carrierId === carrier.id))
+  const spent = sumExpensesCents(expenses.filter((expense) => expenseCarrierId(expense) === carrier.id))
   return (carrier.openingBalanceCents ?? 0) + carrier.incomeCents - spent
+}
+
+// "Archivé" (null = active), specs/finances-member-advances.md §2.6.
+export function isCarrierArchived(carrier: Pick<FinanceCarrier, 'archivedAt'>): boolean {
+  return carrier.archivedAt !== null
+}
+
+// Carriers offered as a payer / in a new checkpoint / for an opening balance.
+export function activeCarriers<T extends Pick<FinanceCarrier, 'archivedAt'>>(carriers: T[]): T[] {
+  return carriers.filter((carrier) => !isCarrierArchived(carrier))
+}
+
+// PO-FA-14 — an archived carrier shows in "Par porteur" only if it had
+// activity in the current season (a cotisation payment or an expense paid from
+// it); an active carrier always shows.
+export function isCarrierListedInTreasury(carrier: CarrierFigures, expenses: Expense[]): boolean {
+  if (!isCarrierArchived(carrier)) return true
+  return carrier.incomeCents !== 0 || expenses.some((expense) => expenseCarrierId(expense) === carrier.id)
 }
 
 // variance = counted - theoretical. Zero means "Juste".
@@ -76,12 +106,14 @@ export interface TreasurySummary {
 }
 
 export function summarizeTreasury(snapshot: FinancesSnapshot): TreasurySummary {
-  const carriers: CarrierBalance[] = snapshot.carriers.map((carrier) => ({
-    carrier,
-    theoreticalCents: theoreticalBalanceCents(carrier, snapshot.expenses),
-    openingMissing: carrier.openingBalanceCents === null,
-    lastCount: lastCountForCarrier(snapshot.checkpoints, carrier.id),
-  }))
+  const carriers: CarrierBalance[] = snapshot.carriers
+    .filter((carrier) => isCarrierListedInTreasury(carrier, snapshot.expenses))
+    .map((carrier) => ({
+      carrier,
+      theoreticalCents: theoreticalBalanceCents(carrier, snapshot.expenses),
+      openingMissing: carrier.openingBalanceCents === null,
+      lastCount: lastCountForCarrier(snapshot.checkpoints, carrier.id),
+    }))
   const availableByKind: Record<CarrierKind, number> = { bank: 0, cash: 0 }
   for (const balance of carriers) availableByKind[balance.carrier.kind] += balance.theoreticalCents
 
@@ -134,4 +166,47 @@ export function filterExpensesByCategory(expenses: Expense[], categoryId: string
 export function categoriesWithExpenses(expenses: Expense[], categories: ExpenseCategory[]): ExpenseCategory[] {
   const used = new Set(expenses.map((expense) => expense.categoryId))
   return categories.filter((category) => used.has(category.id))
+}
+
+export interface MemberOwed {
+  userId: string
+  displayName: string
+  owedCents: number
+  // Newest first (the treasurer's action picks one of them).
+  advances: OutstandingAdvance[]
+}
+
+export interface AmountsOwedToMembers {
+  members: MemberOwed[]
+  totalCents: number
+}
+
+// specs/finances-member-advances.md §2.3/AC-FA-09 — the ONE place "à
+// rembourser" is computed: unreimbursed advances (all seasons) summed per
+// member. Only members with an amount owed > 0, biggest first then by name,
+// plus the grand total. Nothing is stored (AC-FI-34); a future partial
+// reimbursement can carry a remainder per advance without changing this
+// contract (§2.4).
+export function amountsOwedToMembers(outstanding: OutstandingAdvance[], members: AccountOption[]): AmountsOwedToMembers {
+  const nameById = new Map(members.map((member) => [member.userId, member.displayName]))
+  const byMember = new Map<string, MemberOwed>()
+  for (const advance of outstanding) {
+    const entry = byMember.get(advance.advancedByUserId) ?? {
+      userId: advance.advancedByUserId,
+      displayName: nameById.get(advance.advancedByUserId) ?? '',
+      owedCents: 0,
+      advances: [],
+    }
+    entry.owedCents += advance.amountCents
+    entry.advances.push(advance)
+    byMember.set(advance.advancedByUserId, entry)
+  }
+  const owed = [...byMember.values()]
+    .filter((entry) => entry.owedCents > 0)
+    .map((entry) => ({
+      ...entry,
+      advances: [...entry.advances].sort((a, b) => b.spentOn.localeCompare(a.spentOn)),
+    }))
+    .sort((a, b) => b.owedCents - a.owedCents || a.displayName.localeCompare(b.displayName, 'fr'))
+  return { members: owed, totalCents: owed.reduce((total, entry) => total + entry.owedCents, 0) }
 }

@@ -3,7 +3,7 @@ import type { User } from '../../entities/user'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidFinanceInputError } from '../../errors/invalid-finance-input-error'
 import { RecordExpenseUseCase, type RecordExpenseUseCaseInput } from './RecordExpenseUseCase'
-import { auditRepository, financeRepository, treasurer, userRepository, userWith } from './finance-test-support'
+import { auditRepository, financeRepository, payerChoices, treasurer, userRepository, userWith } from './finance-test-support'
 
 function validInput(overrides: Partial<RecordExpenseUseCaseInput> = {}): RecordExpenseUseCaseInput {
   return {
@@ -15,8 +15,8 @@ function validInput(overrides: Partial<RecordExpenseUseCaseInput> = {}): RecordE
     label: '  Trousse  ',
     spentOn: '2026-10-04',
     categoryId: 'cat-1',
-    carrierId: 'cash-1',
-    paymentMethod: 'cash',
+    payer: { kind: 'carrier', carrierId: 'cash-1', paymentMethod: 'cash' },
+    payerChoices,
     ...overrides,
   }
 }
@@ -34,8 +34,7 @@ describe('RecordExpenseUseCase', () => {
       label: 'Trousse',
       spentOn: '2026-10-04',
       categoryId: 'cat-1',
-      carrierId: 'cash-1',
-      paymentMethod: 'cash',
+      payer: { kind: 'carrier', carrierId: 'cash-1', paymentMethod: 'cash' },
       recordedBy: 'actor-1',
     })
   })
@@ -50,7 +49,14 @@ describe('RecordExpenseUseCase', () => {
       action: 'expense.recorded',
       targetId: 'expense-1',
       targetType: 'expense',
-      metadata: { amountCents: 3800, categoryId: 'cat-1' },
+      metadata: {
+        amountCents: 3800,
+        categoryId: 'cat-1',
+        carrierId: 'cash-1',
+        advancedByUserId: null,
+        reimbursedOn: null,
+        paymentMethod: 'cash',
+      },
     })
     expect(JSON.stringify(vi.mocked(audit.record).mock.calls)).not.toContain('Trousse')
   })
@@ -93,9 +99,14 @@ describe('RecordExpenseUseCase', () => {
     ['future date', { spentOn: '2026-10-07' }],
     ['date before the season', { spentOn: '2026-08-31' }],
     ['missing category', { categoryId: '' }],
-    ['missing carrier', { carrierId: '' }],
-    ['unknown method', { paymentMethod: 'bitcoin' as never }],
-  ])('rejects %s before any write', async (_name, overrides) => {
+    ['missing carrier', { payer: { kind: 'carrier', carrierId: '', paymentMethod: 'cash' } }],
+    ['archived or unknown carrier', { payer: { kind: 'carrier', carrierId: 'old-1', paymentMethod: 'cash' } }],
+    ['unknown method', { payer: { kind: 'carrier', carrierId: 'cash-1', paymentMethod: 'bitcoin' } }],
+    ['unknown member', { payer: { kind: 'member', userId: 'ghost', reimbursement: null } }],
+    ['reimbursement before the expense date', { payer: { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn: '2026-10-03', paymentMethod: 'cash' } } }],
+    ['reimbursement in the future', { payer: { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn: '2026-10-07', paymentMethod: 'cash' } } }],
+    ['reimbursement with an unknown method', { payer: { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn: '2026-10-05', paymentMethod: 'bitcoin' } } }],
+  ] as [string, Partial<RecordExpenseUseCaseInput>][])('rejects %s before any write', async (_name, overrides) => {
     const finance = financeRepository()
     const audit = auditRepository()
     const useCase = new RecordExpenseUseCase(userRepository(treasurer()), finance, audit)
@@ -113,7 +124,60 @@ describe('RecordExpenseUseCase', () => {
 
   it('accepts the cheque and direct debit methods of the expense referential', async () => {
     const useCase = new RecordExpenseUseCase(userRepository(treasurer()), financeRepository(), auditRepository())
-    await expect(useCase.execute(validInput({ paymentMethod: 'cheque' }))).resolves.toBeDefined()
-    await expect(useCase.execute(validInput({ paymentMethod: 'direct_debit' }))).resolves.toBeDefined()
+    const withMethod = (paymentMethod: 'cheque' | 'direct_debit') =>
+      validInput({ payer: { kind: 'carrier', carrierId: 'cash-1', paymentMethod } })
+    await expect(useCase.execute(withMethod('cheque'))).resolves.toBeDefined()
+    await expect(useCase.execute(withMethod('direct_debit'))).resolves.toBeDefined()
+  })
+
+  // specs/finances-member-advances.md AC-FA-05/AC-FA-11.
+  describe('advance by a member', () => {
+    const toReimburse = { kind: 'member', userId: 'member-1', reimbursement: null } as const
+
+    it('records an advance to reimburse and audits the member by id only, no method, no name, no label', async () => {
+      const finance = financeRepository()
+      const audit = auditRepository()
+      const useCase = new RecordExpenseUseCase(userRepository(treasurer()), finance, audit)
+
+      await useCase.execute(validInput({ payer: toReimburse }))
+
+      expect(finance.createExpense).toHaveBeenCalledWith(expect.objectContaining({ payer: toReimburse }))
+      expect(audit.record).toHaveBeenCalledWith({
+        action: 'expense.recorded',
+        targetId: 'expense-1',
+        targetType: 'expense',
+        metadata: {
+          amountCents: 3800,
+          categoryId: 'cat-1',
+          carrierId: null,
+          advancedByUserId: 'member-1',
+          reimbursedOn: null,
+          paymentMethod: null,
+        },
+      })
+      expect(JSON.stringify(vi.mocked(audit.record).mock.calls)).not.toContain('Trousse')
+    })
+
+    it('records an already reimbursed advance with its date and method', async () => {
+      const audit = auditRepository()
+      const useCase = new RecordExpenseUseCase(userRepository(treasurer()), financeRepository(), audit)
+      const payer = { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn: '2026-10-06', paymentMethod: 'transfer' } } as const
+
+      await useCase.execute(validInput({ payer }))
+
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({ advancedByUserId: 'member-1', reimbursedOn: '2026-10-06', paymentMethod: 'transfer' }),
+        }),
+      )
+    })
+
+    it('accepts a reimbursement dated exactly the expense date and exactly today', async () => {
+      const useCase = new RecordExpenseUseCase(userRepository(treasurer()), financeRepository(), auditRepository())
+      const on = (reimbursedOn: string) =>
+        validInput({ payer: { kind: 'member', userId: 'member-1', reimbursement: { reimbursedOn, paymentMethod: 'cash' } } })
+      await expect(useCase.execute(on('2026-10-04'))).resolves.toBeDefined()
+      await expect(useCase.execute(on('2026-10-06'))).resolves.toBeDefined()
+    })
   })
 })

@@ -490,4 +490,32 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // Mirrors the role check of record_treasury_checkpoint(),
   // 'treasury_checkpoint:record'.
   'treasury_checkpoint:record': ['treasurer'],
+
+  // specs/mob-treasurer-finances-edit.md §3 (PO-FI-06 lifted) — SEVEN
+  // ADDITIONS, all treasurer only; officer and admin stay read-only. One per
+  // SQL policy/function, each commented with its action name in
+  // supabase/migrations/20261007132824_finances_edit.sql (PO-FIE-01 default).
+  'expense:update': ['treasurer'], // expenses_update_treasurer
+  'expense:delete': ['treasurer'], // expenses_delete_treasurer
+  'expense_category:update': ['treasurer'], // rename_expense_category()
+  'expense_category:delete': ['treasurer'], // expense_categories_delete_treasurer
+  'opening_balance:update': ['treasurer'], // opening_balances_update_treasurer
+  'treasury_checkpoint:update': ['treasurer'], // update_treasury_checkpoint()
+  'treasury_checkpoint:delete': ['treasurer'], // delete_treasury_checkpoint()
+
+  // specs/web-finance-carriers.md §3 — admin only, club-wide (can.ts is
+  // unchanged). Manual mirror of the RLS policies of
+  // supabase/migrations/20261007142228_finance_carriers_admin.sql, each
+  // commented with its action name. No delete action, ever.
+  'finance_carrier:create': ['admin'], // finance_carriers_insert_admin
+  'finance_carrier:update': ['admin'], // finance_carriers_update_admin (+ column grant)
+
+  // specs/finances-member-advances.md §3 — treasurer only (PO-FA-21 default).
+  // Mirror of the role guard of set_expense_reimbursement() in
+  // supabase/migrations/20261007151442_finances_member_advances.sql.
+  'expense_reimbursement:update': ['treasurer'], // set_expense_reimbursement()
+  // Admin only; ONE action for archive AND restore (PO-FA-06 default). Mirror
+  // of the private.is_admin() guard of archive_finance_carrier() and
+  // restore_finance_carrier() in the same migration.
+  'finance_carrier:archive': ['admin'], // archive_finance_carrier() / restore_finance_carrier()
 }

@@ -69,6 +69,33 @@ export const AUDIT_ACTIONS = [
   'expense.recorded', // wired: RecordExpenseUseCase
   'opening_balance.recorded', // wired: RecordOpeningBalanceUseCase
   'treasury_checkpoint.recorded', // wired: RecordTreasuryCheckpointUseCase
+  // specs/mob-treasurer-finances-edit.md §4/AC-FIE-14 — corrections and
+  // deletions, emitted by the Update*/Delete* use cases. metadata carries
+  // before/after STRUCTURED fields only (PO-FIE-03 default): never an expense
+  // label or a debrief. Mirrors supabase/migrations/20261007132824_finances_edit.sql's
+  // widened `audit_log_action_check`.
+  'expense.updated', // wired: UpdateExpenseUseCase
+  'expense.deleted', // wired: DeleteExpenseUseCase
+  'expense_category.updated', // wired: RenameExpenseCategoryUseCase
+  'expense_category.deleted', // wired: DeleteExpenseCategoryUseCase
+  'opening_balance.updated', // wired: UpdateOpeningBalanceUseCase
+  'treasury_checkpoint.updated', // wired: UpdateTreasuryCheckpointUseCase
+  'treasury_checkpoint.deleted', // wired: DeleteTreasuryCheckpointUseCase
+  // specs/web-finance-carriers.md §4/AC-FC-17 — emitted by the carrier use
+  // cases. metadata: structured fields only (PO-FC-03 default) — never the
+  // detail text, never the manager's name. Mirrors
+  // supabase/migrations/20261007142228_finance_carriers_admin.sql's widened
+  // `audit_log_action_check`.
+  'finance_carrier.created', // wired: CreateFinanceCarrierUseCase
+  'finance_carrier.updated', // wired: UpdateFinanceCarrierUseCase
+  // specs/finances-member-advances.md §4 — metadata: structured fields only,
+  // never a member name or an expense label (D-A5). Mirrors
+  // supabase/migrations/20261007151442_finances_member_advances.sql's widened
+  // `audit_log_action_check` (and record_audit_log_entry for the treasurer on
+  // 'expense.reimbursement_updated', PO-FA-21 default).
+  'expense.reimbursement_updated', // wired: SetExpenseReimbursementUseCase
+  'finance_carrier.archived', // wired: ArchiveFinanceCarrierUseCase
+  'finance_carrier.restored', // wired: RestoreFinanceCarrierUseCase
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

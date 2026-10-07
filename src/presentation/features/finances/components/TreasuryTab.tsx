@@ -1,6 +1,8 @@
+import { IconChevronRight } from "@tabler/icons-react";
 import { Button } from "@presentation/shared/components/ui/button";
-import type { TreasuryTabView } from "../finances-view";
+import type { OwedBlockView, TreasuryTabView } from "../finances-view";
 import { CarrierRow } from "./CarrierRow";
+import { OwedBlock } from "./OwedBlock";
 
 interface TreasuryTabProps {
   view: TreasuryTabView;
@@ -8,6 +10,16 @@ interface TreasuryTabProps {
   canRecordCheckpoint: boolean;
   onEnterOpeningBalance: (carrierId: string) => void;
   onStartCheckpoint: () => void;
+  // specs/mob-treasurer-finances-edit.md — correction entry points, rendered
+  // only when the matching can* boolean is true (absent, never greyed).
+  canUpdateOpeningBalance: boolean;
+  onEditOpeningBalance: (carrierId: string) => void;
+  canUpdateCheckpoint: boolean;
+  onEditCheckpoint: (checkpointId: string) => void;
+  // specs/finances-member-advances.md A6 — null = nothing owed (no block).
+  owed: OwedBlockView | null;
+  canUpdateReimbursement: boolean;
+  onMarkReimbursed: (advanceId: string) => void;
 }
 
 // specs/mob-treasurer-finances.md §5 — available (theoretical), season inflows
@@ -19,6 +31,13 @@ export function TreasuryTab({
   canRecordCheckpoint,
   onEnterOpeningBalance,
   onStartCheckpoint,
+  canUpdateOpeningBalance,
+  onEditOpeningBalance,
+  canUpdateCheckpoint,
+  onEditCheckpoint,
+  owed,
+  canUpdateReimbursement,
+  onMarkReimbursed,
 }: TreasuryTabProps) {
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -57,6 +76,10 @@ export function TreasuryTab({
         <p className="text-[12.5px] text-white/60">{view.unattributedLabel}</p>
       )}
 
+      {owed && (
+        <OwedBlock view={owed} canUpdateReimbursement={canUpdateReimbursement} onMarkReimbursed={onMarkReimbursed} />
+      )}
+
       <section className="flex min-w-0 flex-col gap-1">
         <h2 className="text-lg font-extrabold">Par porteur</h2>
         {view.hasCarriers ? (
@@ -67,6 +90,8 @@ export function TreasuryTab({
                 carrier={carrier}
                 canEnterOpeningBalance={canRecordOpeningBalance}
                 onEnterOpeningBalance={onEnterOpeningBalance}
+                canEditOpeningBalance={canUpdateOpeningBalance}
+                onEditOpeningBalance={onEditOpeningBalance}
               />
             ))}
           </ul>
@@ -95,21 +120,44 @@ export function TreasuryTab({
           </p>
         ) : (
           <ul className="flex flex-col">
-            {view.checkpoints.map((checkpoint) => (
-              <li
-                key={checkpoint.id}
-                className="flex min-w-0 items-center justify-between gap-3 border-b border-white/10 py-3"
-              >
-                <p className="min-w-0 truncate text-[14.5px]">{checkpoint.dateLabel}</p>
-                <p
-                  className={`shrink-0 text-[14px] font-bold whitespace-nowrap ${
-                    checkpoint.isJust ? "text-emerald-400" : "text-amber-300"
-                  }`}
+            {view.checkpoints.map((checkpoint) => {
+              const content = (
+                <>
+                  <p className="min-w-0 truncate text-left text-[14.5px]">{checkpoint.dateLabel}</p>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <p
+                      className={`text-[14px] font-bold whitespace-nowrap ${
+                        checkpoint.isJust ? "text-emerald-400" : "text-amber-300"
+                      }`}
+                    >
+                      {checkpoint.varianceLabel}
+                    </p>
+                    {canUpdateCheckpoint && (
+                      <IconChevronRight aria-hidden className="size-4 shrink-0 text-white/40" />
+                    )}
+                  </div>
+                </>
+              );
+              return canUpdateCheckpoint ? (
+                <li key={checkpoint.id} className="border-b border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => onEditCheckpoint(checkpoint.id)}
+                    aria-label={`Corriger le point du ${checkpoint.dateLabel}`}
+                    className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 py-3 text-white active:bg-white/5"
+                  >
+                    {content}
+                  </button>
+                </li>
+              ) : (
+                <li
+                  key={checkpoint.id}
+                  className="flex min-w-0 items-center justify-between gap-3 border-b border-white/10 py-3"
                 >
-                  {checkpoint.varianceLabel}
-                </p>
-              </li>
-            ))}
+                  {content}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

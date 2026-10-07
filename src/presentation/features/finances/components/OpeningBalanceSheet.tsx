@@ -7,29 +7,35 @@ interface OpeningBalanceSheetProps {
   snapshot: FinancesSnapshot;
   carrierId: string;
   carrierName: string;
+  // Present = correction of the balance already entered (edit spec §5).
+  existingCents?: number;
   onClose: () => void;
 }
 
 // specs/mob-treasurer-finances.md §6 — NOT in the mockups: a single-field
-// sheet composed from the expense sheet's container. Treasurer only.
+// sheet composed from the expense sheet's container. Treasurer only. Also the
+// "Corriger le solde d'ouverture" sheet (edit spec §5): no warning text, no
+// "Supprimer" (PO-FIE-05).
 export function OpeningBalanceSheet({
   snapshot,
   carrierId,
   carrierName,
+  existingCents,
   onClose,
 }: OpeningBalanceSheetProps) {
   const vm = useOpeningBalanceSheetViewModel({
     snapshot,
     carrierId,
     carrierName,
+    existingCents,
     onRecorded: onClose,
   });
 
   return (
     <FinanceSheet
-      title="Solde d'ouverture"
+      title={vm.title}
       description={vm.recapLabel}
-      submitLabel="Enregistrer le solde d'ouverture"
+      submitLabel={vm.submitLabel}
       submittingLabel="Enregistrement…"
       canSubmit={vm.canSubmit}
       isSubmitting={vm.isSubmitting}
@@ -47,9 +53,6 @@ export function OpeningBalanceSheet({
         hint={vm.amountHint}
         disabled={vm.isSubmitting}
       />
-      <p className="text-[13px] font-semibold text-amber-300">
-        Ce montant ne pourra pas être modifié ensuite.
-      </p>
     </FinanceSheet>
   );
 }

@@ -74,6 +74,10 @@ export interface VoteTally {
   // NOT to be answered by creating a `convocation_attendees` table
   // (specs/player-vote.md §5, "Ce qui reste explicitement OPEN").
   totalEligibleVoters: number
+  // Voters who are not players of the convocation's team (e.g. an authorized
+  // officer voting without being convoked). A voter who is a player of the
+  // team is counted as a player, whatever their other roles.
+  otherVoters: number
 }
 
 // TODO: PO-PV-01 is resolved (ASC Legacy attachment, decided 2026-09-16) —

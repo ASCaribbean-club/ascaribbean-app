@@ -49,9 +49,13 @@ description: Use when the user asks to bump the app version, update the changelo
 
 ## 5. Production migrations — always ask
 
-- Before finishing, list the migrations in `supabase/migrations/` that shipped since the last release (same commit range as step 1) and check which ones aren't yet applied on the **production** project (`mcp__supabase__list_migrations`).
-- If any are pending, **always ask** the user whether to apply them to prod — never apply silently, and never skip the question or leave them unapplied without mentioning it. If none are pending, say so in one line.
-- After applying via MCP, rename the local migration file to match the remote-recorded timestamp.
+The Supabase MCP only reaches **dev** (`GOUVERNANCE.md`); prod is reached through the CLI, which may be linked to prod (check `supabase/.temp/linked-project.json`). **Dev timestamps are the source of truth: never rename a local migration file to fit prod — align prod's history to the files instead.**
+
+- Run `supabase migration list --linked` and look for rows missing on the remote side (pending) or present only on one side with a different timestamp for the same migration name.
+- If any are pending, **always ask** the user whether to apply them to prod — never apply silently, and never leave them unapplied without mentioning it. If none are pending, say so in one line.
+- If prod recorded a migration under another timestamp (remote-only row + local-only row, same name), ask, then fix prod's history first: `supabase migration repair --linked --status reverted <prod-ts>` and `--status applied <local-ts>`. This edits the history table only.
+- Dry-run first (`supabase db push --linked --dry-run`) and check the list matches expectations, skim the SQL for destructive statements, then let the user run `! supabase db push --linked --yes` (the permission classifier blocks a blind prod push).
+- Re-run `supabase migration list --linked` afterwards: every row must show the same timestamp on both sides. Switch the link back to dev if it was changed.
 
 ## 6. Verify and commit
 

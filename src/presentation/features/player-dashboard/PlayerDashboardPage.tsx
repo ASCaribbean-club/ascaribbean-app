@@ -23,6 +23,7 @@ export function PlayerDashboardPage() {
       <PlayerHeader
         firstName={vm.firstName}
         initials={vm.initials}
+        isMvp={vm.isMvp}
         teamName={vm.teamName}
         onAvatarClick={vm.goToProfilePage}
       />

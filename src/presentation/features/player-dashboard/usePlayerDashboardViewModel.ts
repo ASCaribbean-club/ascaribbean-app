@@ -47,6 +47,7 @@ export function usePlayerDashboardViewModel() {
     getTeamRecentFormUseCase,
     listConvocationMissionsUseCase,
     getPendingVoteReminderUseCase,
+    getTeamMvpUseCase,
   } = usePlayerDashboardDependencies()
 
   // The 'player' RoleAssignment carries a single teamId (domain/entities/
@@ -100,6 +101,15 @@ export function usePlayerDashboardViewModel() {
     }),
     enabled: !!teamId && !!user,
   })
+
+  // Star next to the first name while the player is the team's current MVP.
+  // Like the reminder, not part of isLoading/error: a failing read hides it.
+  const mvpQuery = useQuery({
+    queryKey: queryKeys.teamMvp(teamId ?? ''),
+    queryFn: () => getTeamMvpUseCase.execute({ teamId: teamId!, categoryId: POSITIVE_VOTE_CATEGORY_ID }),
+    enabled: !!teamId,
+  })
+  const isMvp = !!user && (mvpQuery.data ?? []).includes(user.id)
 
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
   const nextConvocation: ConvocationForPlayer | undefined = upcomingConvocations[0]
@@ -182,6 +192,7 @@ export function usePlayerDashboardViewModel() {
     firstName: user ? getFirstName(user.fullName) : '',
     initials: user ? getInitials(user.fullName) : '',
     teamName: teamQuery.data?.name,
+    isMvp,
 
     /// --- "Document manquant" alert ---
     hasMissingDocument,

@@ -7,7 +7,6 @@ import {
   countEmptySlots,
   getAvailablePlayerIds,
   getLineupOpeningTime,
-  isLineupOpeningFromFallback,
   isLineupSupported,
   isLineupVisibleToPlayer,
   placePlayer,
@@ -45,7 +44,6 @@ interface MatchLineupViewModelParams {
   teamId: string | undefined
   convocationType: ConvocationType | undefined
   kickoff: string | undefined
-  meetingPointTime: string | null
   sectionType: SectionType | undefined
   activeRole: ActiveDashboardRole
   roleMatchesConvocationTeam: boolean
@@ -62,7 +60,7 @@ interface MatchLineupViewModelParams {
 // domain/policies/match-lineup-rules.ts; this hook only holds state around
 // them and wires queries/mutations to the use cases.
 export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
-  const { convocationId, teamId, convocationType, kickoff, meetingPointTime, sectionType, activeRole, roleMatchesConvocationTeam } = params
+  const { convocationId, teamId, convocationType, kickoff, sectionType, activeRole, roleMatchesConvocationTeam } = params
   const { isTabActive, now, onLeave } = params
   const queryClient = useQueryClient()
   const { getMatchLineupUseCase, saveMatchLineupUseCase, listConvocationRespondersUseCase } = useConvocationDependencies()
@@ -79,7 +77,7 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
 
   // The window applies to players only (PO-MC-02); the database enforces it
   // for real, this only chooses between the waiting state and a query.
-  const isWindowOpenForPlayer = !!kickoff && isLineupVisibleToPlayer(meetingPointTime, kickoff, now)
+  const isWindowOpenForPlayer = !!kickoff && isLineupVisibleToPlayer(kickoff, now)
   const isWaiting = isTabAvailable && !isCoach && !isWindowOpenForPlayer
   const canRead = isTabAvailable && !isWaiting
 
@@ -249,14 +247,11 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
       }
     : null
 
-  // Waiting copy (AC-MC-10) — the time is computed, never frozen text, and
-  // the no-RDV fallback never mentions a rendez-vous (PO-MC-12).
+  // Waiting copy (AC-MC-10) — the opening time is computed, never frozen text.
   let waitingMessage: string | null = null
   if (isWaiting && kickoff) {
-    const openingTime = toTimeInputValue(getLineupOpeningTime(meetingPointTime, kickoff))
-    waitingMessage = isLineupOpeningFromFallback(meetingPointTime)
-      ? `La composition sera disponible à ${openingTime}, une heure avant le coup d’envoi.`
-      : `La composition sera disponible à l’heure du rendez-vous, à ${openingTime}.`
+    const opening = getLineupOpeningTime(kickoff)
+    waitingMessage = `La composition sera disponible le ${opening.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${toTimeInputValue(opening)}, 24 h avant le coup d’envoi.`
   }
 
   let status: 'waiting' | 'loading' | 'error' | 'empty' | 'ready'

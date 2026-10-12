@@ -11,7 +11,6 @@ vi.mock('@presentation/shared/hooks/use-permission')
 vi.mock('@presentation/di/hooks/use-convocation-dependencies')
 
 const KICKOFF = '2026-10-10T15:00:00.000Z'
-const RDV = '2026-10-10T13:30:00.000Z'
 
 const savedLineup: MatchLineup = {
   convocationId: 'c1',
@@ -45,7 +44,6 @@ function setup(overrides: Partial<Parameters<typeof useMatchLineupViewModel>[0]>
         teamId: 't1',
         convocationType: 'match',
         kickoff: KICKOFF,
-        meetingPointTime: RDV,
         sectionType: 'football',
         activeRole: 'coach',
         roleMatchesConvocationTeam: true,
@@ -66,21 +64,15 @@ describe('useMatchLineupViewModel', () => {
     expect(setup({ sectionType: 'esport' }).result.current.isTabAvailable).toBe(false)
   })
 
-  it('shows a player the waiting message with the computed RDV time before the window (AC-MC-10)', () => {
-    const { result } = setup({ activeRole: 'player' })
+  it('shows a player the waiting message with the computed opening time before the window (AC-MC-10)', () => {
+    const { result } = setup({ activeRole: 'player', now: new Date('2026-10-09T10:00:00.000Z') })
     expect(result.current.status).toBe('waiting')
-    expect(result.current.waitingMessage).toMatch(/^La composition sera disponible à l’heure du rendez-vous, à \d{2}:\d{2}\.$/)
+    expect(result.current.waitingMessage).toMatch(/^La composition sera disponible le .+ à \d{2}:\d{2}, 24 h avant le coup d’envoi\.$/)
     expect(result.current.canEdit).toBe(false)
   })
 
-  it('uses wording without a rendez-vous in the fallback case (PO-MC-12)', () => {
-    const { result } = setup({ activeRole: 'player', meetingPointTime: null })
-    expect(result.current.waitingMessage).toMatch(/une heure avant le coup d’envoi/)
-    expect(result.current.waitingMessage).not.toMatch(/rendez-vous/)
-  })
-
   it('lets a player read once the window has opened, without edit control (AC-MC-11)', async () => {
-    const { result } = setup({ activeRole: 'player', now: new Date('2026-10-10T14:00:00.000Z') })
+    const { result } = setup({ activeRole: 'player', now: new Date('2026-10-09T16:00:00.000Z') })
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(result.current.canEdit).toBe(false)
     expect(result.current.title).toBe('COMPOSITION — 4-4-2')

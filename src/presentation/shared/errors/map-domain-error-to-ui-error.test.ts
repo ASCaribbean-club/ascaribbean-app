@@ -19,6 +19,7 @@ import { MissionFullError } from "@domain/errors/mission-full-error";
 import { NotFoundError } from "@domain/errors/not-found-error";
 import { OverlappingSeasonError } from "@domain/errors/overlapping-season-error";
 import { TrainingLocationArchivedError } from "@domain/errors/training-location-archived-error";
+import { VotingClosedError } from "@domain/errors/voting-closed-error";
 import { VotingNotOpenError } from "@domain/errors/voting-not-open-error";
 import { describe, expect, it } from "vitest";
 import { mapDomainErrorToUiError } from "./map-domain-error-to-ui-error";
@@ -255,6 +256,14 @@ describe("mapDomainErrorToUiError", () => {
         "Le vote ne peut être enregistré qu’après le coup d’envoi du match.",
       variant: "inline",
       retryable: true,
+    });
+  });
+
+  it("maps VotingClosedError to a non-retryable inline error", () => {
+    expect(mapDomainErrorToUiError(new VotingClosedError("closed"))).toEqual({
+      message: "Les votes sont clos pour ce match.",
+      variant: "inline",
+      retryable: false,
     });
   });
 

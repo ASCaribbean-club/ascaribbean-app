@@ -19,6 +19,7 @@ const membership: Membership = {
   seasonId: 'season-1',
   validUntil: '2027-06-30',
   amountDueCents: 10000,
+  jerseyNumber: null,
 }
 
 const notification: Notification = {

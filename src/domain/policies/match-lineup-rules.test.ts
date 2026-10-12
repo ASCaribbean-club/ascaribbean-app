@@ -5,6 +5,11 @@ import {
   findLineupViolation,
   getAvailablePlayerIds,
   getLineupOpeningTime,
+  getPrefilledJerseyNumber,
+  hasDuplicateJerseyNumber,
+  isValidJerseyNumber,
+  parseJerseyNumberInput,
+  placementsToJerseyNumbers,
   hasAnyPlacedPlayer,
   isFormation,
   isLineupOpeningFromFallback,
@@ -159,8 +164,8 @@ describe('findLineupViolation (AC-MC-07)', () => {
 describe('placementsToSlots', () => {
   it('projects placements onto 11 slots, leaving the others free', () => {
     const slots = placementsToSlots([
-      { slotIndex: 0, userId: 'a', displayName: 'A' },
-      { slotIndex: 10, userId: 'b', displayName: 'B' },
+      { slotIndex: 0, userId: 'a', displayName: 'A', jerseyNumber: null },
+      { slotIndex: 10, userId: 'b', displayName: 'B', jerseyNumber: null },
     ])
     expect(slots).toHaveLength(11)
     expect(slots[0]).toBe('a')
@@ -169,6 +174,94 @@ describe('placementsToSlots', () => {
   })
 
   it('ignores an out-of-range slot index', () => {
-    expect(countEmptySlots(placementsToSlots([{ slotIndex: 11, userId: 'a', displayName: 'A' }]))).toBe(11)
+    expect(countEmptySlots(placementsToSlots([{ slotIndex: 11, userId: 'a', displayName: 'A', jerseyNumber: null }]))).toBe(11)
+  })
+})
+
+describe('isValidJerseyNumber (PO-MC-15, AC-MC-29)', () => {
+  it('accepts null and the 1..99 boundaries', () => {
+    expect(isValidJerseyNumber(null)).toBe(true)
+    expect(isValidJerseyNumber(1)).toBe(true)
+    expect(isValidJerseyNumber(99)).toBe(true)
+  })
+
+  it('rejects 0, 100, negatives and non-integers', () => {
+    for (const value of [0, 100, -3, 7.5, Number.NaN]) expect(isValidJerseyNumber(value)).toBe(false)
+  })
+})
+
+describe('parseJerseyNumberInput', () => {
+  it('treats a blank field as no number', () => {
+    expect(parseJerseyNumberInput('')).toEqual({ ok: true, value: null })
+    expect(parseJerseyNumberInput('   ')).toEqual({ ok: true, value: null })
+  })
+
+  it('parses a whole number in range', () => {
+    expect(parseJerseyNumberInput('10')).toEqual({ ok: true, value: 10 })
+    expect(parseJerseyNumberInput(' 99 ')).toEqual({ ok: true, value: 99 })
+  })
+
+  it('rejects out-of-range and non-numeric text with a readable message', () => {
+    for (const raw of ['0', '100', '-1', '3.5', 'abc', '1e1']) {
+      const result = parseJerseyNumberInput(raw)
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.message).toBe('Entrez un nombre entier entre 1 et 99.')
+    }
+  })
+})
+
+const slotsOf = (ids: (string | null)[]) => [...ids, ...Array(11 - ids.length).fill(null)]
+
+describe('hasDuplicateJerseyNumber (PO-MC-14, soft warning)', () => {
+  const slots = slotsOf(['a', 'b'])
+
+  it('flags another placed player wearing the same number', () => {
+    expect(hasDuplicateJerseyNumber(slots, { a: 9, b: 9 }, 'a', 9)).toBe(true)
+  })
+
+  it('ignores the player themselves, a null value and unplaced players', () => {
+    expect(hasDuplicateJerseyNumber(slots, { a: 9, b: 4 }, 'a', 9)).toBe(false)
+    expect(hasDuplicateJerseyNumber(slots, { a: null, b: null }, 'a', null)).toBe(false)
+    expect(hasDuplicateJerseyNumber(slots, { a: 1, z: 9 }, 'a', 9)).toBe(false)
+  })
+})
+
+describe('getPrefilledJerseyNumber (AC-MC-26, PO-MC-16)', () => {
+  it('returns the membership number of the season', () => {
+    expect(getPrefilledJerseyNumber({ a: 10 }, 'a')).toBe(10)
+  })
+
+  it('returns null with no membership/season/number, or an invalid stored value', () => {
+    expect(getPrefilledJerseyNumber({}, 'a')).toBeNull()
+    expect(getPrefilledJerseyNumber({ a: null }, 'a')).toBeNull()
+    expect(getPrefilledJerseyNumber({ a: 150 }, 'a')).toBeNull()
+  })
+})
+
+describe('jersey numbers through swap and formation change (AC-MC-28)', () => {
+  it('keys numbers by player, so a swap leaves each number with its player', () => {
+    const numbers = placementsToJerseyNumbers([
+      { slotIndex: 0, userId: 'a', displayName: 'A', jerseyNumber: 1 },
+      { slotIndex: 1, userId: 'b', displayName: 'B', jerseyNumber: null },
+    ])
+    const swapped = swapSlots(slotsOf(['a', 'b']), 0, 1)
+    expect(swapped.slice(0, 2)).toEqual(['b', 'a'])
+    expect(numbers).toEqual({ a: 1, b: null })
+  })
+})
+
+describe('findLineupViolation with jersey numbers (AC-MC-29)', () => {
+  const convoked = ['a', 'b']
+
+  it('accepts valid and missing numbers', () => {
+    expect(findLineupViolation('4-3-3', slotsOf(['a', 'b']), convoked, { a: 10, b: null })).toBeNull()
+  })
+
+  it('rejects an out-of-range number on a placed player', () => {
+    expect(findLineupViolation('4-3-3', slotsOf(['a']), convoked, { a: 100 })).not.toBeNull()
+  })
+
+  it('ignores a stale invalid entry for a player who is not placed', () => {
+    expect(findLineupViolation('4-3-3', slotsOf(['a']), convoked, { a: 5, b: 0 })).toBeNull()
   })
 })

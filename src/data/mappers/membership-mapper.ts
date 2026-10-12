@@ -15,6 +15,7 @@ export function toMembership(row: MembershipRow): Membership {
     seasonId: row.season_id,
     validUntil: row.valid_until,
     amountDueCents: row.amount_due_cents,
+    jerseyNumber: row.jersey_number,
   }
 }
 
@@ -29,6 +30,7 @@ export function toMembershipInsertRow(input: CreateMembershipInput): MembershipI
     season_id: input.seasonId,
     valid_until: input.validUntil,
     amount_due_cents: input.amountDueCents,
+    jersey_number: input.jerseyNumber,
   }
 }
 
@@ -41,5 +43,6 @@ export function toMembershipUpdateRow(input: UpdateMembershipInput): MembershipU
     season_id: input.seasonId,
     valid_until: input.validUntil,
     amount_due_cents: input.amountDueCents,
+    jersey_number: input.jerseyNumber,
   }
 }

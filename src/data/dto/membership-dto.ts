@@ -17,6 +17,8 @@ export interface MembershipRow {
   // §2.1/AC-WM-34 — amendement du 2026-09-17, PO-WM-01 resolved. Integer
   // cents, nullable (§2.1).
   amount_due_cents: number | null
+  // AC-MC-24 — smallint nullable, CHECK 1..99 (20261012125515_match_jersey_number.sql).
+  jersey_number: number | null
 }
 
 // specs/web-memberships.md §2.10 — insert payload for
@@ -32,9 +34,10 @@ export interface MembershipInsertRow {
   // carry this field (CreateMembershipUseCase sets it explicitly, never
   // guessed at in this mapper).
   amount_due_cents: number | null
+  jersey_number: number | null
 }
 
-// Update payload for MembershipRepositoryImpl.update() — same 6 columns.
+// Update payload for MembershipRepositoryImpl.update() — same 7 columns.
 export interface MembershipUpdateRow {
   user_id: string
   licence_number: string | null
@@ -42,4 +45,5 @@ export interface MembershipUpdateRow {
   season_id: string
   valid_until: string
   amount_due_cents: number | null
+  jersey_number: number | null
 }

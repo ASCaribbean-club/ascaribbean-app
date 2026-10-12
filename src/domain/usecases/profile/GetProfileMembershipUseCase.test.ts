@@ -85,6 +85,7 @@ describe('GetProfileMembershipUseCase', () => {
       seasonId: 'season-1',
       validUntil: '2027-06-30',
       amountDueCents: null,
+      jerseyNumber: null,
     }
     const useCase = new GetProfileMembershipUseCase(fakeMembershipRepository(membership), fakeSeasonRepository(season), fakePaymentRepository())
 
@@ -155,6 +156,7 @@ describe('GetProfileMembershipUseCase', () => {
       seasonId: 'season-1',
       validUntil: '2027-06-30',
       amountDueCents: 12000,
+      jerseyNumber: null,
     }
     const payUrl = 'https://pay.example.org/cotisation'
 

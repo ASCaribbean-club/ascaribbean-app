@@ -1,7 +1,10 @@
 import {
   FORMATIONS,
   LINEUP_SLOT_COUNT,
+  MAX_JERSEY_NUMBER,
+  MIN_JERSEY_NUMBER,
   type Formation,
+  type LineupJerseyNumbers,
   type LineupPlacement,
   type LineupSlots,
 } from '../entities/match-lineup'
@@ -101,14 +104,84 @@ export function hasAnyPlacedPlayer(slots: LineupSlots): boolean {
  * per player, every placed player is convoked. Returns the first violation
  * message, or null when the draft is valid.
  */
-export function findLineupViolation(formation: string, slots: LineupSlots, convokedPlayerIds: string[]): string | null {
+export function findLineupViolation(
+  formation: string,
+  slots: LineupSlots,
+  convokedPlayerIds: string[],
+  jerseyNumbers: LineupJerseyNumbers = {},
+): string | null {
   if (!isFormation(formation)) return 'Unknown formation.'
   if (slots.length !== LINEUP_SLOT_COUNT) return 'A lineup has exactly 11 slots.'
   const placed = slots.filter((id): id is string => id !== null)
   if (new Set(placed).size !== placed.length) return 'A player cannot occupy two slots.'
   const convoked = new Set(convokedPlayerIds)
   if (placed.some((id) => !convoked.has(id))) return 'A placed player must be convoked.'
+  // AC-MC-29 — a placed player's number is null or an integer 1..99.
+  if (placed.some((id) => !isValidJerseyNumber(jerseyNumbers[id] ?? null))) {
+    return `A jersey number must be an integer between ${MIN_JERSEY_NUMBER} and ${MAX_JERSEY_NUMBER}.`
+  }
   return null
+}
+
+/**
+ * Rule 'jersey-number:range' (PO-MC-15) — null (no number) or an integer in
+ * 1..99. Mirrored MANUALLY by the check constraints on
+ * memberships.jersey_number and match_lineup_slots.jersey_number in
+ * supabase/migrations/20261012125515_match_jersey_number.sql. No unicity
+ * (PO-MC-14).
+ */
+export function isValidJerseyNumber(value: number | null): boolean {
+  if (value === null) return true
+  return Number.isInteger(value) && value >= MIN_JERSEY_NUMBER && value <= MAX_JERSEY_NUMBER
+}
+
+export type JerseyNumberInput = { ok: true; value: number | null } | { ok: false; message: string }
+
+/**
+ * Text field -> number. Blank = no number (valid, AC-MC-29); anything that is
+ * not a whole number in range is rejected with a readable message.
+ */
+export function parseJerseyNumberInput(raw: string): JerseyNumberInput {
+  const trimmed = raw.trim()
+  if (trimmed === '') return { ok: true, value: null }
+  const message = `Entrez un nombre entier entre ${MIN_JERSEY_NUMBER} et ${MAX_JERSEY_NUMBER}.`
+  if (!/^\d+$/.test(trimmed)) return { ok: false, message }
+  const value = Number(trimmed)
+  return isValidJerseyNumber(value) ? { ok: true, value } : { ok: false, message }
+}
+
+/**
+ * Soft warning only (PO-MC-14: no unicity constraint) — whether another PLACED
+ * player already wears this number in the draft.
+ */
+export function hasDuplicateJerseyNumber(
+  slots: LineupSlots,
+  jerseyNumbers: LineupJerseyNumbers,
+  userId: string,
+  value: number | null,
+): boolean {
+  if (value === null) return false
+  return slots.some((id) => id !== null && id !== userId && jerseyNumbers[id] === value)
+}
+
+/**
+ * AC-MC-26 / PO-MC-16 — number prefilled when a player is selected: the
+ * membership number of the convocation's season. `defaults` already holds
+ * only that season's numbers (the repository resolves "season containing the
+ * convocation date"; none -> nothing); a missing or out-of-range entry gives
+ * null so the field is simply empty and editable (AC-MC-29). Mirrored in
+ * get_lineup_default_jersey_numbers (SQL).
+ */
+export function getPrefilledJerseyNumber(defaults: Record<string, number | null>, userId: string): number | null {
+  const value = defaults[userId] ?? null
+  return isValidJerseyNumber(value) ? value : null
+}
+
+// Persisted placements -> the per-player numbers the editing rules work on.
+export function placementsToJerseyNumbers(placements: LineupPlacement[]): LineupJerseyNumbers {
+  const numbers: LineupJerseyNumbers = {}
+  for (const placement of placements) numbers[placement.userId] = placement.jerseyNumber
+  return numbers
 }
 
 function isSlotIndex(index: number): boolean {

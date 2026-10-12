@@ -22,7 +22,7 @@ function build(options: { convocation?: Partial<Convocation> | null; convokedIds
         position: null,
       })),
   }
-  const lineupRepository: MatchLineupRepository = { findByConvocationId: async () => null, save }
+  const lineupRepository: MatchLineupRepository = { findByConvocationId: async () => null, save, listDefaultJerseyNumbers: async () => ({}) }
   return { useCase: new SaveMatchLineupUseCase(convocationRepository, respondersRepository, lineupRepository), save }
 }
 
@@ -33,7 +33,7 @@ describe('SaveMatchLineupUseCase', () => {
     const { useCase, save } = build()
     const result = await useCase.execute({ convocationId: 'c1', formation: '4-3-3', slots: slots(['a', 'b']) })
     expect(result).toBe(true)
-    expect(save).toHaveBeenCalledExactlyOnceWith('c1', '4-3-3', slots(['a', 'b']))
+    expect(save).toHaveBeenCalledExactlyOnceWith('c1', '4-3-3', slots(['a', 'b']), {})
   })
 
   it('does not persist an entirely empty lineup (Q-UI-8)', async () => {
@@ -81,5 +81,26 @@ describe('SaveMatchLineupUseCase', () => {
     const { useCase, save } = build({ convocation: { status: 'closed', date: '2020-01-01T10:00:00.000Z' } })
     await expect(useCase.execute({ convocationId: 'c1', formation: '4-4-2', slots: slots(['a']) })).resolves.toBe(true)
     expect(save).toHaveBeenCalledOnce()
+  })
+
+  it('persists the jersey numbers of the placed players (AC-MC-27)', async () => {
+    const { useCase, save } = build()
+    await useCase.execute({ convocationId: 'c1', formation: '4-3-3', slots: slots(['a', 'b']), jerseyNumbers: { a: 10, b: null } })
+    expect(save).toHaveBeenCalledExactlyOnceWith('c1', '4-3-3', slots(['a', 'b']), { a: 10, b: null })
+  })
+
+  it('rejects an out-of-range jersey number before any write (AC-MC-29)', async () => {
+    const { useCase, save } = build()
+    await expect(
+      useCase.execute({ convocationId: 'c1', formation: '4-3-3', slots: slots(['a']), jerseyNumbers: { a: 100 } }),
+    ).rejects.toBeInstanceOf(InvalidMatchLineupInputError)
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('does not block a player with no number (AC-MC-29)', async () => {
+    const { useCase } = build()
+    await expect(
+      useCase.execute({ convocationId: 'c1', formation: '4-3-3', slots: slots(['a']), jerseyNumbers: { a: null } }),
+    ).resolves.toBe(true)
   })
 })

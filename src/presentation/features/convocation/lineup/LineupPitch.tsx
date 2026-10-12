@@ -10,12 +10,13 @@ interface LineupPitchProps {
   selectedSlotIndex: number | null
   showEmptyHints: boolean
   onSelectSlot: (slotIndex: number) => void
+  onLongPressSlot: (slotIndex: number) => void
 }
 
 // specs/coach-match-composition.md UI design §3 (source: mockups C1..C8) — dark
 // green card, fixed 4/5 ratio so the percentage-positioned tokens hold their
 // place at any phone width. The markings are decorative (aria-hidden).
-export function LineupPitch({ formation, slots, interactive, selectedSlotIndex, showEmptyHints, onSelectSlot }: LineupPitchProps) {
+export function LineupPitch({ formation, slots, interactive, selectedSlotIndex, showEmptyHints, onSelectSlot, onLongPressSlot }: LineupPitchProps) {
   const positions = getSlotPositions(formation)
 
   return (
@@ -38,7 +39,8 @@ export function LineupPitch({ formation, slots, interactive, selectedSlotIndex, 
       {slots.map((slot) => (
         <PlayerToken
           key={slot.slotIndex}
-          number={slot.number}
+          position={slot.position}
+          jerseyNumber={slot.jerseyNumber}
           name={slot.displayName}
           x={positions[slot.slotIndex].x}
           y={positions[slot.slotIndex].y}
@@ -46,6 +48,7 @@ export function LineupPitch({ formation, slots, interactive, selectedSlotIndex, 
           selected={selectedSlotIndex === slot.slotIndex}
           showEmptyHint={showEmptyHints}
           onSelect={() => onSelectSlot(slot.slotIndex)}
+          onLongPress={() => onLongPressSlot(slot.slotIndex)}
         />
       ))}
     </div>

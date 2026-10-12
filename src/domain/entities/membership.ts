@@ -14,4 +14,9 @@ export interface Membership {
   // dialog does not carry this field (§2.1), so a membership can be
   // created with no amount due set yet — only the edit row (§1) writes it.
   amountDueCents: number | null
+  // specs/coach-match-composition.md AC-MC-24 (amendement du 2026-10-12) —
+  // default jersey number for THIS membership's season, integer 1..99
+  // (PO-MC-15), nullable, no unicity (PO-MC-14). Prefills a lineup; a lineup
+  // never writes back here (§1 "Aucune propagation").
+  jerseyNumber: number | null
 }

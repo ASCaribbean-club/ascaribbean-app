@@ -4,6 +4,7 @@ import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidMembershipInputError } from '../../errors/invalid-membership-input-error'
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
 import { can } from '../../policies/can'
+import { isValidJerseyNumber } from '../../policies/match-lineup-rules'
 import { canSetMembershipActive } from '../../rules/membership-payment-rules'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { MembershipRepository } from '../../repositories/membership-repository'
@@ -17,6 +18,8 @@ export interface CreateMembershipUseCaseInput {
   licenceNumber: string | null
   status: MembershipStatus
   validUntil: string // ISO date (yyyy-mm-dd, native <input type="date"> value)
+  // AC-MC-24 — optional default jersey number (1..99), absent = none.
+  jerseyNumber?: number | null
 }
 
 // specs/web-memberships.md §2.4/§3 — same authorization-before-validation
@@ -71,6 +74,10 @@ export class CreateMembershipUseCase {
     if (!input.validUntil) {
       throw new InvalidMembershipInputError('validUntil is required')
     }
+    // AC-MC-24/PO-MC-15 — rule 'jersey-number:range', mirrored by the DB check.
+    if (!isValidJerseyNumber(input.jerseyNumber ?? null)) {
+      throw new InvalidMembershipInputError('jerseyNumber must be an integer between 1 and 99, or null')
+    }
 
     // specs/web-memberships.md §2.4/AC-WM-35 (amendement du 2026-09-17) —
     // rejected from the domain, before any repository call. A membership
@@ -101,6 +108,7 @@ export class CreateMembershipUseCase {
       // dialog does not carry a "Cotisation totale (€)" field. Only
       // UpdateMembershipUseCase (the edit row) ever writes a real value.
       amountDueCents: null,
+      jerseyNumber: input.jerseyNumber ?? null,
     }
 
     // specs/web-memberships.md §2.7/PO-WM-03 — "Recréation (même membre,

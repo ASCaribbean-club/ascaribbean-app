@@ -3,6 +3,7 @@ import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidMembershipInputError } from '../../errors/invalid-membership-input-error'
 import { MembershipActivationRequirementsNotMetError } from '../../errors/membership-activation-requirements-error'
 import { can } from '../../policies/can'
+import { isValidJerseyNumber } from '../../policies/match-lineup-rules'
 import { canSetMembershipActive, sumPaymentsCents } from '../../rules/membership-payment-rules'
 import type { AuditLogRepository } from '../../repositories/audit-log-repository'
 import type { MembershipRepository } from '../../repositories/membership-repository'
@@ -22,6 +23,10 @@ export interface UpdateMembershipUseCaseInput {
   // converted from euros by the ViewModel, never a float reaching here).
   // Nullable: the field can be cleared back to "no amount due configured".
   amountDueCents: number | null
+  // AC-MC-24 (amendement du 2026-10-12) — the edit form's optional "Numéro de
+  // maillot" (1..99, PO-MC-15). Required key (null = none): an edit always
+  // sends the form's full state, never silently keeps or clears it.
+  jerseyNumber: number | null
 }
 
 // specs/web-memberships.md §2.4/AC-WM-26 — same shape as CreateMembershipUseCase,
@@ -78,6 +83,11 @@ export class UpdateMembershipUseCase {
       throw new InvalidMembershipInputError('amountDueCents must be a non-negative integer number of cents, or null')
     }
 
+    // AC-MC-24/PO-MC-15 — rule 'jersey-number:range', mirrored by the DB check.
+    if (!isValidJerseyNumber(input.jerseyNumber)) {
+      throw new InvalidMembershipInputError('jerseyNumber must be an integer between 1 and 99, or null')
+    }
+
     // specs/web-memberships.md §2.4/AC-WM-35 (amendement du 2026-09-17) —
     // rejected from the domain, before the write. Unlike CreateMembershipUseCase,
     // an EXISTING membership can genuinely carry payments already recorded
@@ -100,6 +110,7 @@ export class UpdateMembershipUseCase {
       status: input.status,
       validUntil: input.validUntil,
       amountDueCents: input.amountDueCents,
+      jerseyNumber: input.jerseyNumber,
     })
 
     // See this class's own top comment for why a rejection here does not

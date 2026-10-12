@@ -34,3 +34,15 @@ export function toTimeInputValue(date: Date): string {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
 }
+
+// Suggested RDV for a `type="time"` kickoff value: one hour earlier
+// (`HH:MM`). Empty string when the input is incomplete or the hour would
+// wrap to the previous day (00:30 -> 23:30), since the RDV shares the
+// kickoff's date and a wrapped time would land after kickoff.
+export function toTimeOneHourBefore(time: string): string {
+  const match = /^(\d{2}):(\d{2})$/.exec(time)
+  if (!match) return ''
+  const hours = Number(match[1])
+  if (hours < 1) return ''
+  return `${String(hours - 1).padStart(2, '0')}:${match[2]}`
+}

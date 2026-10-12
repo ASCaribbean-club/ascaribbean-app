@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DeclaredStatus } from '@domain/entities/convocation'
 import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
+import type { PendingVoteReminder } from '@domain/usecases/player-vote/GetPendingVoteReminderUseCase'
 import { canPlayerRespond } from '@domain/policies/response-deadline'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
@@ -12,6 +13,27 @@ import { queryKeys } from '@presentation/shared/query-keys'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
 import { hasMissingOrRejectedDocument } from '@domain/rules/document-rules'
 import { useNavigate } from 'react-router-dom'
+
+// Same fixed category as useConvocationDetailViewModel (PO-PV-03).
+const POSITIVE_VOTE_CATEGORY_ID = 'man_of_the_match'
+
+function formatDaysLeftToVote(daysRemaining: number): string {
+  return `Plus que ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} pour voter`
+}
+
+// Two lines: "vs AS Rivale · Score 2-1" (opponent and score left out when
+// unknown — no details / score not recorded yet), then the date on its own.
+function formatPendingVoteMatchRecap(reminder: PendingVoteReminder): { matchLine: string | null; dateLine: string } {
+  const matchLine = [
+    reminder.opponentName ? `vs ${reminder.opponentName}` : null,
+    reminder.goalsFor !== null && reminder.goalsAgainst !== null ? `Score ${reminder.goalsFor}-${reminder.goalsAgainst}` : null,
+  ].filter((part): part is string => part !== null).join(' · ')
+
+  return {
+    matchLine: matchLine || null,
+    dateLine: new Date(reminder.kickoff).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+  }
+}
 
 export function usePlayerDashboardViewModel() {
   const { user } = useAuth()
@@ -24,6 +46,7 @@ export function usePlayerDashboardViewModel() {
     listUserMissingOrRejectedDocumentsUseCase,
     getTeamRecentFormUseCase,
     listConvocationMissionsUseCase,
+    getPendingVoteReminderUseCase,
   } = usePlayerDashboardDependencies()
 
   // The 'player' RoleAssignment carries a single teamId (domain/entities/
@@ -61,6 +84,21 @@ export function usePlayerDashboardViewModel() {
     queryKey: queryKeys.teamRecentForm(teamId ?? ''),
     queryFn: () => getTeamRecentFormUseCase.execute({ teamId: teamId! }),
     enabled: !!teamId,
+  })
+
+  // Reminder to elect the man of the match until the player votes or the
+  // voting window ends. Like missions below, deliberately NOT part of
+  // isLoading/error: a failing read just hides the banner. `now` ticks every
+  // minute, so the query re-runs when the window crosses a day boundary.
+  const pendingVoteQuery = useQuery({
+    queryKey: queryKeys.playerPendingVoteReminder(teamId ?? '', user?.id ?? ''),
+    queryFn: () => getPendingVoteReminderUseCase.execute({
+      teamId: teamId!,
+      userId: user!.id,
+      categoryId: POSITIVE_VOTE_CATEGORY_ID,
+      now: new Date(),
+    }),
+    enabled: !!teamId && !!user,
   })
 
   const upcomingConvocations = upcomingConvocationsQuery.data ?? []
@@ -152,6 +190,16 @@ export function usePlayerDashboardViewModel() {
       // as goToCalendar below (UI design §2, "cet écran n'existe pas
       // encore dans router.tsx").
     },
+
+    /// --- "Élisez l'homme du match" alert ---
+    pendingVote: pendingVoteQuery.data
+      ? {
+        daysLabel: formatDaysLeftToVote(pendingVoteQuery.data.daysRemaining),
+        convocationId: pendingVoteQuery.data.convocationId,
+        matchRecap: formatPendingVoteMatchRecap(pendingVoteQuery.data),
+      }
+      : null,
+    goToVote: (convocationId: string) => navigate(`/convocations/${convocationId}?tab=votes`),
 
     /// --- "Prochaine convocation" card ---
     nextConvocation,

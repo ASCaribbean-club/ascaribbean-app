@@ -1,6 +1,7 @@
 # Spec — Composition d'équipe d'un match (onglet « Composition » du détail de convocation)
 
 > Statut : **amendée le 2026-10-01 après décisions développeuse.** PO-MC-01, PO-MC-04, PO-MC-05, PO-MC-08 et PO-MC-09 sont **tranchés** (§6). PO-MC-02 n'a pas reçu de réponse : il est consigné comme **hypothèse non bloquante à confirmer**, de même que le repli « aucun RDV renseigné » (PO-MC-12). **Aucun point ouvert n'est bloquant.** Les références sont conservées (non renumérotées).
+> **Amendement du 2026-10-12 (Bureau) : numéros de maillot.** PO-MC-07 est **tranché** : le numéro affiché sur les jetons est un **numéro de maillot**, plus l'indice de poste. Il est porté par l'**adhésion** (une valeur par saison, prérempli dans la composition) et **surchargeable par match** dans la composition. Voir §1 « Numéro de maillot », AC-MC-24 à AC-MC-29, PO-MC-14 à PO-MC-16, et l'amendement UI en fin de fichier. `specs/web-memberships.md` reçoit une note miroir.
 > Demande d'origine (cadrage, reformulée) : un coach doit pouvoir afficher la composition (lineup) du match sur l'écran de détail du match. La composition ne devient visible qu'à partir de l'heure du rendez-vous (RDV). **Tranché le 2026-10-01** : c'est l'heure du RDV qui fait foi (§3).
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P0/P1/P2 + matrice RBAC), `docs/roles-personas-as-caribbean.md` (8 rôles, comptes multi-rôles, moindre privilège), `specs/match_details_page.md` (écran hôte : §2, §3 « recomposition », correction n°2 « onglet Compo supprimé faute de support de domaine », §5 « convoqués requis »), `specs/edit-match-details.md` (patron d'action coach scopée équipe, `'match_details:update'`, PO-EM-02), `specs/match-stats.md` (§1 : rattachement d'une donnée de match sans module CDC dédié), `specs/player-vote.md` (§1 : réouverture d'un onglet supprimé de l'écran hôte), `specs/create-convocation.md` (§2 « Destinataires », PO-6b), `specs/coach-attendance-confirmation.md`, `specs/section-and-teams.md` (PO-ST-02, types de section), `specs/web-audit-logs.md`.
 > Maquettes : `docs/designs/coach-match-details/composition/[v3] [Coach] Mob - Détail Match- composition - {1..8}.png` (**lues directement**) + `docs/designs/player-match-details/[v3] [Joueur] Mob - Détail Match-selection_2.png` (onglet « Compo » côté joueur, déjà versionné ; son texte d'attente est **remplacé** par décision, §3). Voir §0.
@@ -48,7 +49,7 @@ Ce n'est **pas un nouvel écran** : c'est un onglet supplémentaire de `Convocat
    - la section de l'équipe de la convocation est de type `football` (PO-MC-09).
 
    Dans tous les autres cas, il est absent, pas désactivé.
-2. **Lecture** (export 2) : en-tête avec la formation retenue, terrain avec les joueurs placés sur les postes de la formation. Chaque jeton porte un numéro et un nom (sens du numéro : PO-MC-07).
+2. **Lecture** (export 2) : en-tête avec la formation retenue, terrain avec les joueurs placés sur les postes de la formation. Chaque jeton porte le **numéro de maillot** du joueur pour ce match et son nom (PO-MC-07 tranché, voir « Numéro de maillot »).
 3. **Entrée en édition** : bouton « Modifier la compo », coach autorisé uniquement, **sans limite de temps** (§2, PO-MC-05).
 4. **Mode édition** (exports 1, 3 à 8) :
    - choix de la formation parmi **quatre préréglages** : 4-3-3, 4-4-2, 3-5-2, 4-2-3-1 ;
@@ -74,12 +75,30 @@ Rien n'existe aujourd'hui. Il faudra au minimum persister, pour une convocation 
 - la formation retenue ;
 - pour chaque poste occupé, le joueur qui l'occupe.
 
+- pour chaque poste occupé, le **numéro de maillot effectif** du joueur pour ce match (voir « Numéro de maillot »).
+
 Trois invariants sont **tenus par la base**, pas seulement par l'interface :
 - un joueur occupe **au plus un poste** ;
 - un poste porte **au plus un joueur** ;
 - un joueur placé appartient à l'**effectif convoqué** du match (PO-MC-04).
 
 La forme des tables, leurs noms et le DTO relèvent de l'implémentation. Cette spec n'écrit pas de SQL (`CLAUDE.md` §7).
+
+### Numéro de maillot — amendement du 2026-10-12 (PO-MC-07 tranché)
+
+Demande du Bureau : afficher les numéros de maillot dans la composition. Le numéro n'est **pas fixe d'un match à l'autre**, d'où deux niveaux.
+
+1. **Valeur par défaut, portée par l'adhésion.** `Membership` (une ligne par joueur et par saison, `specs/web-memberships.md`) reçoit un champ **numéro de maillot**, **nullable** (entier positif, plage : PO-MC-15). Il se modifie d'une saison à l'autre en éditant l'adhésion de la nouvelle saison, sans toucher à l'historique des saisons passées. C'est la raison du choix de l'adhésion plutôt que de `User` : le numéro change avec la saison.
+2. **Valeur effective, portée par la composition.** Chaque poste occupé stocke le numéro **effectivement porté pour ce match**. À la **sélection d'un joueur** (placement, « Remplacer », poste vide), le numéro est **prérempli depuis l'adhésion de la saison en cours** (saison de la convocation, PO-MC-16), puis le coach peut le **modifier pour ce match seulement**.
+3. **Aucune propagation.** Modifier le numéro dans une composition **n'écrit jamais** dans l'adhésion, et modifier l'adhésion ensuite **ne réécrit pas** les compositions déjà enregistrées. Le numéro d'une composition enregistrée est un **instantané** voulu : un match passé garde les numéros portés ce jour-là.
+4. **Pas de numéro disponible** (adhésion sans numéro, ou aucune adhésion pour la saison) : le champ est **vide mais éditable**, jamais un blocage du placement. Le jeton affiche alors un repli lisible (pas de « 0 » ni de « null »).
+5. **Échange de postes** (« Changer de position ») : chaque joueur **garde son numéro**, seul le poste change.
+
+6. **Compositions existantes.** Un poste enregistré **sans numéro propre** (composition antérieure à cet amendement, ou champ laissé vide) **retombe, à la lecture, sur le numéro de l'adhésion** de la saison de la convocation. Un numéro stocké sur le poste l'emporte toujours (point 3). Rien n'est réécrit en base : modifier ensuite l'adhésion change ce que montre un poste sans numéro, jamais un poste qui a le sien. Conséquence assumée : un coach ne peut pas « effacer » durablement un numéro pour retomber sur « sans numéro » tant que l'adhésion en porte un.
+
+Ce qui reste hors périmètre : écrire le numéro par défaut depuis l'écran de composition, un numéro unique garanti à l'échelle du club, et tout historique des numéros (la composition suffit comme trace).
+
+Écriture du numéro par défaut : elle relève de l'édition d'adhésion du backoffice (`specs/web-memberships.md`, note d'amendement). Aucune action RBAC nouvelle n'est créée ici : l'écriture de la valeur par match reste couverte par `'match_lineup:write'`, et celle de l'adhésion par les actions d'adhésion existantes.
 
 ### Hors périmètre — explicitement
 
@@ -223,6 +242,12 @@ Côté Supabase (`docs/RETENTION_PURGE.md`). `domain/` ne connaît pas l'expirat
 | AC-MC-21 | Affichage complet de l'onglet en moins de 3 secondes sur mobile en réseau normal (CDC §12) |
 | AC-MC-22 | Un coach de l'équipe peut enregistrer une composition **après le coup d'envoi** et **sur une convocation `closed`**. La base l'accepte (aucun prédicat temporel sur l'écriture, PO-MC-05) |
 | AC-MC-23 | Un coach de l'équipe voit la composition **avant** l'heure du RDV (aucune fenêtre côté coach, hypothèse PO-MC-02), vérifié par appel direct à l'API avec un jeton coach |
+| AC-MC-24 | *(amendement 2026-10-12)* L'adhésion porte un **numéro de maillot nullable**, propre à la saison. Le modifier sur l'adhésion d'une saison ne change ni le numéro des autres saisons ni les compositions déjà enregistrées |
+| AC-MC-25 | Chaque jeton affiche le **numéro de maillot effectif** du joueur pour ce match, plus le nom. Sans numéro, un repli lisible est rendu (ni « 0 », ni « null », ni « undefined »). Les mêmes numéros sont rendus après rechargement |
+| AC-MC-26 | À la **sélection d'un joueur** (poste vide, « Remplacer »), le numéro est **prérempli depuis l'adhésion de la saison de la convocation**. Le coach peut le modifier ensuite, par **appui long** sur le jeton ou via « Modifier le numéro » dans le panneau (alternative accessible), sans effet sur l'adhésion |
+| AC-MC-27 | Le numéro modifié pour un match est **persisté avec la composition** (« Terminé », AC-MC-08). Modifier ensuite l'adhésion **ne réécrit pas** la composition enregistrée ; modifier la composition **n'écrit jamais** dans l'adhésion |
+| AC-MC-28 | « Changer de position » **conserve le numéro** de chacun des deux joueurs. Changer de formation conserve aussi les numéros |
+| AC-MC-29 | Un joueur sans numéro à l'adhésion (ou sans adhésion pour la saison) **peut être placé** : le champ numéro est vide et éditable, le placement n'est jamais bloqué. Le numéro saisi est validé (entier dans la plage de PO-MC-15) **par la base**, pas seulement par l'interface. Côté joueur, le numéro n'est visible qu'**avec** la composition, donc **jamais avant l'heure du RDV** (AC-MC-09). Il vient de la composition et **n'expose aucune autre donnée de l'adhésion** (statut, cotisation, licence) |
 
 ## 6. Points ouverts
 
@@ -234,7 +259,10 @@ Côté Supabase (`docs/RETENTION_PURGE.md`). `domain/` ne connaît pas l'expirat
 | ~~PO-MC-04~~ | ~~Qui peut être placé ?~~ **TRANCHÉ (2026-10-01, développeuse)** : **uniquement les joueurs convoqués**. Lecture opérationnelle : l'effectif convoqué dérivé (§1), faute de liste par convocation (PO-6b reste ouvert). Sous-question restante → PO-MC-13 | — | — |
 | ~~PO-MC-05~~ | ~~Jusqu'à quand le coach peut-il modifier ?~~ **TRANCHÉ (2026-10-01, développeuse)** : **sans limite de temps**, y compris après le match, aucune contrainte pour l'instant. Aucun prédicat temporel sur l'écriture (§2, AC-MC-22). Conséquence d'audit consignée en §4 comme réserve, pas comme question ouverte | — | — |
 | **PO-MC-06** | **Des remplaçants désignés (banc) font-ils partie de la composition ?** Les maquettes montrent 11 titulaires et un vivier de « remplaçants disponibles » dans le flux « Remplacer », mais aucun banc en lecture. V1 = titulaires seulement, sauf décision contraire | Développeuse | Non |
-| **PO-MC-07** | **Que représente le numéro des jetons (1 à 11) ?** Un numéro de maillot (aucun champ n'existe, ni sur `User` ni sur l'appartenance à une équipe) ou l'indice du poste dans la formation ? Un numéro de maillot serait une donnée nouvelle, hors de cette feature | Développeuse | Non. Traité comme indice de poste en attendant |
+| ~~PO-MC-07~~ | ~~Que représente le numéro des jetons ?~~ **TRANCHÉ (2026-10-12, Bureau)** : un **numéro de maillot**, porté par l'adhésion (par saison), préremplie à la sélection du joueur et **modifiable par match** dans la composition (§1 « Numéro de maillot ») | — | — |
+| ~~PO-MC-14~~ | **TRANCHÉ (2026-10-12, développeuse)** : aucune contrainte d'unicité, ni en composition ni à l'adhésion. Un avertissement d'interface en cas de doublon reste possible (designer-agent) | — | — |
+| ~~PO-MC-15~~ | **TRANCHÉ (2026-10-12, développeuse)** : entier de **1 à 99** | — | — |
+| ~~PO-MC-16~~ | **TRANCHÉ (2026-10-12, développeuse)** : saison de la date de la convocation ; préremplissage vide si aucune saison ne correspond | — | — |
 | ~~PO-MC-08~~ | ~~Libellé et place de l'onglet.~~ **TRANCHÉ (2026-10-01, développeuse)** : libellé **« Composition »**. Sa position dans la barre d'onglets relève de designer-agent | — | — |
 | ~~PO-MC-09~~ | ~~Sport et format.~~ **TRANCHÉ (2026-10-01, développeuse)** : **football uniquement** (AC-MC-01). Résidu non bloquant : `Team` ne porte aucun format, et une équipe de football ne jouant pas à 11 (à 7/8, futsal) recevrait les mêmes formations à 11. À signaler si le cas existe au club | Développeuse + Bureau (résidu) | Non |
 | **PO-MC-10** | **Élargissement de l'écriture** au Responsable de section, au Dirigeant habilité et à l'Administrateur, que la ligne « Créer/modifier une convocation » autorise. Même situation que PO-EM-01 : aucun chemin vers cet écran pour ces rôles aujourd'hui | Bureau + développeuse | Non pour cette passe |
@@ -269,6 +297,18 @@ Côté Supabase (`docs/RETENTION_PURGE.md`). `domain/` ne connaît pas l'expirat
   - échec de sauvegarde (message lisible, saisie non perdue).
 
 **Prêt pour designer-agent : oui.** Aucun point bloquant. PO-MC-02 et PO-MC-12 sont des hypothèses non bloquantes à confirmer.
+
+## Amendement UI du 2026-10-12 — numéro de maillot (à compléter par designer-agent)
+
+Les sections ci-dessous qui parlent du numéro comme d'un **indice de poste** (§3 `PlayerToken`, §5 tableau, rappel PO-MC-07) sont **remplacées** par ce qui suit. Aucune maquette n'existe pour ces changements.
+
+- **Jeton** : la pastille affiche le **numéro de maillot effectif** (AC-MC-25). Sans numéro : repli visuel neutre (par exemple « – »), libellé accessible « {nom}, sans numéro ». Libellé accessible normal : « {nom}, numéro {n} ».
+- **Édition du numéro** : champ numérique dans le `PlayerActionPanel`, rendu pour un joueur placé (sélectionné) et dans le panneau de choix après le choix d'un joueur d'un poste vide / « Remplacer ». Valeur initiale = numéro de l'adhésion (AC-MC-26), modifiable. `Input` à `h-11`, `inputMode="numeric"`, étiquette textuelle « Numéro de maillot », message d'erreur lisible hors plage. Le changement s'applique à la composition locale et n'est enregistré qu'à « Terminé » (AC-MC-27).
+- **Séquence « Remplacer » / poste vide** : inchangée, toucher un joueur de la liste le place avec son numéro prérempli et ferme le panneau. Le panneau ne reste pas ouvert (Q-UI-9 tranché).
+- **Modification du numéro : clic long** (Q-UI-9 tranché, 2026-10-12). En édition, un appui long sur le jeton d'un joueur placé ouvre l'édition de son numéro. Un appui court garde son rôle (sélection). Un appui long ne doit **déclencher ni sélection ni échange** en plus. Le clic long n'étant ni découvrable ni accessible au clavier, une **alternative équivalente** est requise (AC-MC-19) : action « Modifier le numéro » dans le `PlayerActionPanel` du joueur sélectionné. Forme de l'éditeur (champ `h-11` dans le panneau ou feuille), seuil d'appui et indice de découvrabilité : designer-agent.
+- **Lecture joueur** : le numéro est visible, la saisie ne l'est pas (AC-MC-11).
+- **Backoffice adhésions** : champ « Numéro de maillot » (optionnel) dans le formulaire d'édition d'une adhésion et colonne de lecture si pertinent. Voir la note dans `specs/web-memberships.md`.
+- ~~Q-UI-9~~ **TRANCHÉ (2026-10-12, développeuse)** : modification du numéro par **clic long** sur le jeton, avec une action équivalente dans le panneau pour l'accessibilité.
 
 ## UI design
 
@@ -381,4 +421,4 @@ Primitives shadcn : aucune de plus (`button`, `card`, `avatar`, `skeleton` déj�
 - **Q-UI-6 — Panneau d'action sous le terrain** : sur petit écran, « Terminé » (en haut) et le panneau (en bas) ne sont pas visibles en même temps ; retenu : `scrollIntoView` sur sélection, pas de second bloc sticky.
 - **Q-UI-7 — Déplacer vers un poste vide** : en « Changer de position », toucher un poste vide déplace le joueur (extension de l'échange, non montrée en maquette). À confirmer.
 - **Q-UI-8 — Composition incomplète** : « Terminé » enregistre une composition incomplète (PO-MC-11c toujours ouvert) ; zéro joueur placé = pas d'enregistrement. À confirmer.
-- **Rappel PO-MC-06/07/09/13** : aucun banc affiché, numéro = indice de poste, football à 11 seulement, aucun filtrage sur la réponse « absent » dans « Remplacer ». Aucun nom de personne des maquettes ne doit être repris (AC-MC-20).
+- **Rappel PO-MC-06/09/13** : aucun banc affiché, football à 11 seulement, aucun filtrage sur la réponse « absent » dans « Remplacer ». Aucun nom de personne des maquettes ne doit être repris (AC-MC-20).

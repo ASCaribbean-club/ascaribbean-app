@@ -20,7 +20,7 @@ const mockedUseAuth = vi.mocked(useAuth)
 
 function buildRow(): MembershipAdminRow {
   return {
-    membership: { id: 'membership-1', userId: 'user-1', licenceNumber: 'FR-1', status: 'pending', seasonId: 'season-1', validUntil: '2027-06-30', amountDueCents: null },
+    membership: { id: 'membership-1', userId: 'user-1', licenceNumber: 'FR-1', status: 'pending', seasonId: 'season-1', validUntil: '2027-06-30', amountDueCents: null, jerseyNumber: null },
     userFullName: 'Compte Un',
     seasonLabel: '2025-2026',
     seasonCotisationAmount: null,

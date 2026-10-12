@@ -55,6 +55,7 @@ function renderViewModel({
           status: 'pending',
           validUntil: '2027-06-30',
           amountDueCents: null,
+          jerseyNumber: null,
         })),
       ),
     },
@@ -123,6 +124,38 @@ describe('useMembershipFormDialogViewModel', () => {
 
     await waitFor(() => expect(createMembership).toHaveBeenCalledTimes(1))
     expect(createMembership).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }))
+  })
+
+  // AC-MC-24 — optional "Numéro de maillot" (1..99), sent as a number or null.
+  it('sends the typed jersey number, or null when left empty', async () => {
+    const createMembership = vi.fn().mockResolvedValue(undefined)
+    const { result } = renderViewModel({ createMembership })
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false))
+
+    act(() => result.current.setUserId('user-1'))
+    act(() => result.current.setSeasonId('season-1'))
+    act(() => result.current.setJerseyNumber('10'))
+    act(() => result.current.submit())
+    await waitFor(() => expect(createMembership).toHaveBeenCalledTimes(1))
+    expect(createMembership).toHaveBeenLastCalledWith(expect.objectContaining({ jerseyNumber: 10 }))
+
+    act(() => result.current.setJerseyNumber(''))
+    act(() => result.current.submit())
+    await waitFor(() => expect(createMembership).toHaveBeenCalledTimes(2))
+    expect(createMembership).toHaveBeenLastCalledWith(expect.objectContaining({ jerseyNumber: null }))
+  })
+
+  it('blocks submit and exposes an error for an out-of-range jersey number', async () => {
+    const { result } = renderViewModel()
+    await waitFor(() => expect(result.current.isLoadingOptions).toBe(false))
+
+    act(() => result.current.setUserId('user-1'))
+    act(() => result.current.setSeasonId('season-1'))
+    expect(result.current.jerseyNumberError).toBeNull()
+
+    act(() => result.current.setJerseyNumber('100'))
+    expect(result.current.jerseyNumberError).not.toBeNull()
+    expect(result.current.canSubmit).toBe(false)
   })
 
   // Developer decision (2026-09-23) — an admin must not be able to pick a

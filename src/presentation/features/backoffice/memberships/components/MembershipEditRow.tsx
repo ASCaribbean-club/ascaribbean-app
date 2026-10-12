@@ -81,6 +81,34 @@ export function MembershipEditRow({ row, email, columnCount, onClose }: Membersh
                 />
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor={`edit-jersey-number-${row.membership.id}`}
+                  className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                  Numéro de maillot
+                </Label>
+                {/* AC-MC-24 — optional (1 à 99), default for the lineup of THIS
+                    season only; the lineup can override it per match. */}
+                <Input
+                  id={`edit-jersey-number-${row.membership.id}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  disabled={vm.isSubmitting}
+                  value={vm.values.jerseyNumber}
+                  onChange={(event) => vm.setJerseyNumber(event.target.value)}
+                  aria-invalid={vm.jerseyNumberError !== null}
+                  aria-describedby={vm.jerseyNumberError ? `edit-jersey-number-error-${row.membership.id}` : undefined}
+                  className="h-11 rounded-xl"
+                />
+                {vm.jerseyNumberError && (
+                  <p id={`edit-jersey-number-error-${row.membership.id}`} role="alert" className="text-sm text-destructive">
+                    {vm.jerseyNumberError}
+                  </p>
+                )}
+              </div>
+
               {/* UI design — "Valide jusqu'au" and status côte à côte, exactly
                   as export payment-1 shows them: min-w-0 mandatory on EACH
                   cell (CLAUDE.md §6, the <input type="date"> piège). */}

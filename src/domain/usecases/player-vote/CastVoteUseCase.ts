@@ -4,9 +4,10 @@ import type { ConvocationRepository } from '@domain/repositories/convocation-rep
 import type { UserRepository } from '@domain/repositories/user-repository'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
 import { NotFoundError } from '@domain/errors/not-found-error'
+import { VotingClosedError } from '@domain/errors/voting-closed-error'
 import { VotingNotOpenError } from '@domain/errors/voting-not-open-error'
 import { can } from '@domain/policies/can'
-import { isVotingOpen } from '@domain/policies/player-vote-rules'
+import { isVotingClosed, isVotingOpen } from '@domain/policies/player-vote-rules'
 
 export interface CastVoteInput {
   convocationId: string
@@ -28,11 +29,8 @@ export interface CastVoteInput {
 //
 // PO-PV-06(d) is now resolved (2026-09-29, developer decision): voting
 // opens once the match kicks off — see isVotingOpen/VotingNotOpenError
-// below. The rest of PO-PV-06/AC-PV-12 (the 48h-after-match CLOSING half)
-// stays open and NOT enforced here, deliberately: there is no rule to
-// enforce yet (48h-after-match has no basis in any scoping document), and
-// guessing one would be worse than leaving the gap visible. Flag, don't
-// guess (CLAUDE.md §7).
+// below. The CLOSING half is resolved too (2026-10-12, developer decision):
+// kickoff + 1h + 3 days — see isVotingClosed/VotingClosedError.
 //
 // PO-PV-10b (self-voting) is resolved (2026-09-16, developer decision):
 // NOT permitted. Enforced both here (ForbiddenError, so the candidate list
@@ -61,6 +59,11 @@ export class CastVoteUseCase {
     // PO-PV-06(d).
     if (!isVotingOpen(new Date(convocation.date), input.now)) {
       throw new VotingNotOpenError(`Voting is not open yet for convocation ${input.convocationId}.`)
+    }
+
+    // PO-PV-06 closing half (2026-10-12): kickoff + 1h + 3 days.
+    if (isVotingClosed(new Date(convocation.date), input.now)) {
+      throw new VotingClosedError(`Voting is closed for convocation ${input.convocationId}.`)
     }
 
     const canVote = can(user, 'vote:cast', { teamId: convocation.teamId })

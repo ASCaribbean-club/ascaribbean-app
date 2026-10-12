@@ -16,7 +16,7 @@ import { MATCH_OUTCOME_BADGE_CLASSNAME, MATCH_OUTCOME_LABEL } from '@presentatio
 import { cn } from '@presentation/shared/lib/utils'
 import type { CalendarMatchResult } from './calendar-list-item'
 import type { CalendarResponseBlock } from './calendar-response-block'
-import { ResponseCountsRecap } from './ResponseCountsRecap'
+import { ResponseCountsRecap } from '@presentation/shared/components/ResponseCountsRecap'
 import { ResponseStatusPill } from './ResponseStatusPill'
 import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
@@ -117,6 +117,12 @@ export function CalendarConvocationRow({
       <div onClick={(event) => event.stopPropagation()}>
         {responseBlock.kind === 'coach' && <ResponseBar counts={responseBlock.counts} />}
         {responseBlock.kind === 'coach-past' && <ResponseCountsRecap counts={responseBlock.counts} />}
+        {/* Players see the same team-wide ✓/✗/? tally as the coach, numbers only. */}
+        {(responseBlock.kind === 'player-actions' || responseBlock.kind === 'player-readonly') && (
+          <div className="mb-2.5">
+            <ResponseCountsRecap counts={responseBlock.counts} />
+          </div>
+        )}
         {responseBlock.kind === 'player-actions' && (
           <ResponseActions
             canRespond={responseBlock.canRespond}

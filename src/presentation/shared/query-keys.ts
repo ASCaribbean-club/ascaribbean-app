@@ -27,6 +27,7 @@ export const queryKeys = {
   // coach+player multi-role account viewing the same convocation.
   convocationDetail: (convocationId: string) => ['convocations', convocationId, 'detail'] as const,
   convocationResponders: (convocationId: string) => ['convocations', convocationId, 'responders'] as const,
+  convocationResponseCounts: (convocationId: string) => ['convocations', convocationId, 'response-counts'] as const,
   convocationRosterForCoach: (convocationId: string) => ['convocations', convocationId, 'roster', 'coach'] as const,
   playerConvocationResponse: (convocationId: string, userId: string) => ['convocations', convocationId, 'player', userId] as const,
 

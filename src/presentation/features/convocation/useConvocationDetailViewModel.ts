@@ -183,7 +183,6 @@ export function useConvocationDetailViewModel() {
     teamId: convocation?.teamId,
     convocationType: convocation?.type,
     kickoff: convocation?.date,
-    meetingPointTime: matchDetails?.meetingPointTime ?? null,
     sectionType: sectionQuery.data?.type,
     activeRole,
     roleMatchesConvocationTeam,

@@ -15,26 +15,16 @@ import {
 // supabase/migrations/20261001075331_match_lineup.sql, rule name
 // 'match_lineup:read-window' on both sides.
 
-const FALLBACK_OPENING_OFFSET_MINUTES = 60
+const OPENING_OFFSET_HOURS = 24
 
 /**
- * Instant from which a PLAYER may see the lineup: the RDV time
- * (`meetingPointTime`), or — PO-MC-12 assumption, unconfirmed — kickoff minus
- * one hour when no RDV is set. The only place that fallback lives.
+ * Instant from which a PLAYER may see the lineup: kickoff minus 24 hours,
+ * whatever the RDV time is. The only place that offset lives.
  */
-export function getLineupOpeningTime(meetingPointTime: string | null, kickoff: string): Date {
-  if (meetingPointTime) return new Date(meetingPointTime)
-  const opening = new Date(kickoff)
-  opening.setMinutes(opening.getMinutes() - FALLBACK_OPENING_OFFSET_MINUTES)
-  return opening
-}
-
-/**
- * Whether the opening time comes from the fallback (no RDV) — drives the
- * waiting-message wording (never mention a rendez-vous that does not exist).
- */
-export function isLineupOpeningFromFallback(meetingPointTime: string | null): boolean {
-  return !meetingPointTime
+export function getLineupOpeningTime(kickoff: string): Date {
+  // Absolute milliseconds, not setHours: a DST change must not shift the
+  // window away from SQL's `interval '24 hours'`.
+  return new Date(new Date(kickoff).getTime() - OPENING_OFFSET_HOURS * 3_600_000)
 }
 
 /**
@@ -42,8 +32,8 @@ export function isLineupOpeningFromFallback(meetingPointTime: string | null): bo
  * `now` exactly equal to the opening time is still "not yet". Coaches are
  * never subject to this window (PO-MC-02) — callers apply it to players only.
  */
-export function isLineupVisibleToPlayer(meetingPointTime: string | null, kickoff: string, now: Date): boolean {
-  return now > getLineupOpeningTime(meetingPointTime, kickoff)
+export function isLineupVisibleToPlayer(kickoff: string, now: Date): boolean {
+  return now > getLineupOpeningTime(kickoff)
 }
 
 export function isFormation(value: string): value is Formation {

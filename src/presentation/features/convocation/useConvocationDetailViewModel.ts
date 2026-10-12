@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import type { ActualStatus, ConvocationArrangements, DeclaredStatus } from '@domain/entities/convocation'
 import type { MatchArrangements } from '@domain/entities/match-details'
 import type { MatchEventType } from '@domain/entities/match-event'
@@ -82,7 +82,12 @@ export function useConvocationDetailViewModel() {
   // UI design §"Structure de l'écran" — "deux onglets seulement", local UI
   // state only (never persisted, never a route param): switching tabs isn't
   // a business action.
-  const [activeTab, setActiveTab] = useState<ConvocationDetailTab>('infos')
+  // Exception to "never a route param": the dashboard's vote reminder deep-
+  // links with `?tab=votes`; only read once, as the initial tab.
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState<ConvocationDetailTab>(
+    searchParams.get('tab') === 'votes' ? 'votes' : 'infos',
+  )
 
   const detailedConvocationQuery = useQuery({
     queryKey: queryKeys.convocationDetail(convocationId ?? ''),
@@ -791,6 +796,10 @@ export function useConvocationDetailViewModel() {
       if (!convocationId || !user) return
       void queryClient.invalidateQueries({ queryKey: queryKeys.voteTally(convocationId, POSITIVE_VOTE_CATEGORY_ID) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.voteMyBallot(convocationId, POSITIVE_VOTE_CATEGORY_ID, user.id) })
+      // Clears the dashboard's "élisez le joueur du match" reminder.
+      if (convocation) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.playerPendingVoteReminder(convocation.teamId, user.id) })
+      }
       setIsEditingVote(false)
     },
     onError: (error) => setVoteSubmitError(mapDomainErrorToUiError(error)),

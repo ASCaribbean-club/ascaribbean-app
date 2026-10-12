@@ -13,7 +13,7 @@ import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation
 import { mapDomainErrorToUiError } from '../../shared/errors/map-domain-error-to-ui-error'
 import { useClubOverviewDependencies } from '../../di/hooks/use-club-overview-dependencies'
 import { useConvocationDependencies } from '../../di/hooks/use-convocation-dependencies'
-import { combineDateAndTime, toDateInputValue } from '../../shared/formatters/date-input'
+import { combineDateAndTime, toDateInputValue, toTimeOneHourBefore } from '../../shared/formatters/date-input'
 import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { useSectionFilter } from '../../shared/hooks/use-section-filter'
@@ -184,6 +184,9 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   // edit (see `setField` below), not just on a fresh submit, so a red
   // message doesn't linger after the user has already changed something.
   const [scheduleError, setScheduleError] = useState<string>()
+  // Once the coach touches the RDV field (even to clear it), stop suggesting
+  // "kickoff - 1h" so we never overwrite a deliberate choice.
+  const [isMeetingPointTimeEdited, setIsMeetingPointTimeEdited] = useState(Boolean(initialValues?.meetingPointTime))
 
   function setField<K extends keyof ConvocationFormValues>(key: K, value: ConvocationFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -366,7 +369,11 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     minDate: toDateInputValue(new Date()),
     setType: (type: ConvocationType) => setField('type', type),
     setDate: (date: string) => setField('date', date),
-    setTime: (time: string) => setField('time', time),
+    setTime: (time: string) => {
+      setField('time', time)
+      // Default RDV: one hour before the kickoff typed, until the coach edits it.
+      if (!isMeetingPointTimeEdited) setField('meetingPointTime', toTimeOneHourBefore(time))
+    },
     setLocation: (value: string) => setField('location', value),
     setTrainingLocationId: (value: string) => {
       setField('trainingLocationId', value)
@@ -375,7 +382,10 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     },
     setOpponentId: (value: string) => setField('opponentId', value),
     setIsHome: (value: boolean) => setField('isHome', value),
-    setMeetingPointTime: (value: string) => setField('meetingPointTime', value),
+    setMeetingPointTime: (value: string) => {
+      setIsMeetingPointTimeEdited(true)
+      setField('meetingPointTime', value)
+    },
     setMeetingPointLocation: (value: string) => setField('meetingPointLocation', value),
     setTitle: (value: string) => setField('title', value),
     setAgenda: (agenda: string[]) => setField('agenda', agenda),

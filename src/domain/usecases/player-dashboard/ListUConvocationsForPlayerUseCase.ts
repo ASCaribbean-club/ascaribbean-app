@@ -1,6 +1,7 @@
-import { byDateAscending, isUpcoming } from '@/domain/rules/convocation-rules'
+import { byDateAscending, isUpcoming, type ResponseCounts } from '@/domain/rules/convocation-rules'
 import type { Convocation, ConvocationResponse } from '@/domain/entities/convocation'
 import type { ConvocationRepository } from '@/domain/repositories/convocation-repository'
+import type { ConvocationResponseCountsRepository } from '@/domain/repositories/convocation-response-counts-repository'
 import type { ConvocationResponseRepository } from '@/domain/repositories/convocation-response-repository'
 import type { AssembleConvocationDetailFieldsUseCase, ConvocationDetailFields } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import type { GetConvocationDetailsUseCase } from '@/domain/usecases/convocation/GetConvocationDetailsUseCase'
@@ -14,9 +15,12 @@ export interface ListConvocationsForPlayerInput {
 
 export interface ConvocationForPlayer extends ConvocationDetailFields {
   convocation: Convocation
-  // The player's OWN declared intent for this convocation — never an
-  // aggregate across the team (PO-PD-05, AC-PD-09 — contrast with
-  // ListTeamConvocationsUseCase's `responseCounts`) and never an
+  // Team-wide ✓/✗/? headcounts, numbers only — a player sees the same tally
+  // as the coach, never WHO answered what (supersedes PO-PD-05/AC-PD-09, which
+  // hid the aggregate). Same ConvocationResponse source as the coach's
+  // `responseCounts`, never an AttendanceRecord.
+  responseCounts: ResponseCounts
+  // The player's OWN declared intent for this convocation, never an
   // AttendanceRecord (AC-PD-03). `null` means no response row exists yet,
   // which is a distinct state from a ConvocationResponse whose `status`
   // happens to be 'pending' (domain/entities/convocation.ts, DeclaredStatus).
@@ -29,6 +33,7 @@ export class ListUpcomingConvocationsForPlayerUseCase {
     private readonly convocationResponseRepository: ConvocationResponseRepository,
     private readonly assembleConvocationDetailFieldsUseCase: AssembleConvocationDetailFieldsUseCase,
     private readonly getConvocationDetailsUseCase: GetConvocationDetailsUseCase,
+    private readonly convocationResponseCountsRepository: ConvocationResponseCountsRepository,
   ) { }
 
   async execute(input: ListConvocationsForPlayerInput): Promise<ConvocationForPlayer[]> {
@@ -38,6 +43,12 @@ export class ListUpcomingConvocationsForPlayerUseCase {
     const scopedConvocations = (await this.convocationRepository.listForTeam(input.teamId))
       .filter((convocation) => input.includePast ? true : isUpcoming(convocation, input.now))
       .sort(byDateAscending)
+
+    // One round trip for every convocation's tally; a convocation missing from
+    // the result (out of scope) falls back to zeros rather than failing.
+    const countsByConvocationId = await this.convocationResponseCountsRepository.countForConvocations(
+      scopedConvocations.map((convocation) => convocation.id),
+    )
 
     return await Promise.all(scopedConvocations.map(async (convocation) => {
       const details = convocation.type === 'training' // TODO To remove when training will be mapped
@@ -50,6 +61,7 @@ export class ListUpcomingConvocationsForPlayerUseCase {
       return {
         convocation: convocation,
         myResponse: myResponse,
+        responseCounts: countsByConvocationId[convocation.id] ?? { present: 0, absent: 0, pending: 0 },
         ...detailFields,
       }
     }))

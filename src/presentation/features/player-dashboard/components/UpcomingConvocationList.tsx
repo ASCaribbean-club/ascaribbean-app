@@ -2,6 +2,7 @@ import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/Li
 import { CONVOCATION_TYPE_ACCENT } from '../../../shared/formatters/convocation-type-accent'
 import { formatConvocationType } from '../../../shared/formatters/convocation-labels'
 import { formatEventSchedule } from '../../../shared/formatters/match-schedule'
+import { ResponseCountsRecap } from '@presentation/shared/components/ResponseCountsRecap'
 import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
 interface UpcomingConvocationListProps {
@@ -14,12 +15,9 @@ interface UpcomingConvocationListProps {
 // sous-ligne row shape, same colors (CONVOCATION_TYPE_ACCENT, shared
 // specifically so both screens stay consistent — see that formatter's own
 // comment). Not the SAME component because the two screens' item shapes
-// genuinely differ: coach's ConvocationForCoach carries a team-wide
-// `responseCounts` aggregate, this screen's ConvocationForPlayer
-// carries the player's own `myResponse` instead — and per specs/
-// player-dashboard.md §6 corrections 3 & 4 (AC-PD-09, AC-PD-10), this list
-// renders neither a rate badge ("15/18") nor a "⋮" menu, so there would be
-// nothing left to parameterize away even if the shapes did match.
+// genuinely differ (this screen's ConvocationForPlayer also carries the
+// player's own `myResponse`), and per specs/player-dashboard.md §6
+// correction 4 (AC-PD-10) this list renders no "⋮" menu.
 export function UpcomingConvocationList({ items, onOpen, onSeeAll }: UpcomingConvocationListProps) {
   return (
     <section>
@@ -35,7 +33,7 @@ export function UpcomingConvocationList({ items, onOpen, onSeeAll }: UpcomingCon
         <p className="text-[13px] text-white/50">Aucune échéance à venir</p>
       ) : (
         <ul className="m-0 flex list-none flex-col p-0">
-          {items.map(({ convocation, meetingDetails }) => {
+          {items.map(({ convocation, meetingDetails, responseCounts }) => {
             const accent = CONVOCATION_TYPE_ACCENT[convocation.type]
             return (
               <li
@@ -52,8 +50,9 @@ export function UpcomingConvocationList({ items, onOpen, onSeeAll }: UpcomingCon
                     {formatEventSchedule(convocation.date, getConvocationLocationLabel(convocation))}
                   </p>
                 </div>
-                {/* AC-PD-09 / AC-PD-10 : ni compteur "N/M convoqués", ni
-                    menu "⋮" — la ligne s'arrête à la sous-ligne. */}
+                {/* Team ✓/✗/? headcounts (numbers only), same as the coach's
+                    row; still no "⋮" menu (AC-PD-10). */}
+                <ResponseCountsRecap counts={responseCounts} />
               </li>
             )
           })}

@@ -14,14 +14,14 @@ import { type AttendanceConfirmProps, RosterList, type SelfRosterProps } from '.
 // spread onto the coach variant only, same reasoning as RosterList: a
 // player never needs any of it (AC-AT-06/07).
 type EffectifTabProps =
-  | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[] }
+  | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[]; responseCounts: ResponseCounts }
   | ({ variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts } & AttendanceConfirmProps)
 
 export function EffectifTab(props: EffectifTabProps) {
   return (
     <div className="flex flex-col gap-5 px-5.5 pt-1 pb-8">
       {props.variant === 'player' ? (
-        <RosterList variant="player" self={props.self} others={props.others} />
+        <RosterList variant="player" self={props.self} others={props.others} responseCounts={props.responseCounts} />
       ) : (
         <RosterList
           variant="coach"

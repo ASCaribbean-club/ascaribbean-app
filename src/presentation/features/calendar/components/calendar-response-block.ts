@@ -29,6 +29,8 @@ export type CalendarResponseBlock =
   // duplicate that here.
   | {
       kind: 'player-actions'
+      // Team-wide ✓/✗/? headcounts, numbers only — same tally the coach sees.
+      counts: ResponseCounts
       canRespond: boolean
       myResponse: DeclaredStatus | null
       onRespondPresent: () => void
@@ -38,7 +40,7 @@ export type CalendarResponseBlock =
   // button pair. Distinct from `player-actions` with `canRespond: false`
   // specifically because PO-CA-02 asks for the compact top-right pill
   // (export `_3`), not ResponseActions' own full-width text fallback.
-  | { kind: 'player-readonly'; myResponse: DeclaredStatus | null }
+  | { kind: 'player-readonly'; counts: ResponseCounts; myResponse: DeclaredStatus | null }
   // Dirigeant view (specs/mobile-dirigeant-habilite.md AC-DH-16): the officer
   // cannot read convocation_responses, so NOTHING response-related renders —
   // no bar, no recap, no actions.

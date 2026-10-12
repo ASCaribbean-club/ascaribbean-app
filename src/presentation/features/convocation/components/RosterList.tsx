@@ -44,7 +44,7 @@ export interface AttendanceConfirmProps {
 // sees `self` (a coach doesn't respond, §2) — the two variants are
 // literally mutually exclusive props, not two optional halves of one shape.
 type RosterListProps =
-  | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[] }
+  | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[]; responseCounts: ResponseCounts }
   | ({ variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts } & AttendanceConfirmProps)
 
 // UI design §"Nouveau composant — liste Effectif": section header ("Qui a
@@ -56,37 +56,34 @@ type RosterListProps =
 // attente"/"pending", not a special empty state (UI design §"États à
 // couvrir").
 //
-// The coach variant's counter is the ✓/✗/? tally instead of the player
-// variant's plain "N convoqués" — same aggregate the old ResponseBar showed,
+// Both variants' counter is the ✓/✗/? tally (numbers only for a player),
 // folded into this one header row rather than a separate row above it.
 export function RosterList(props: RosterListProps) {
-  const count = props.variant === 'player' ? props.others.length + 1 : props.roster.length
+  const { present, absent, pending } = props.responseCounts
 
   return (
     <div className="flex flex-col gap-2.5 pt-4">
       <div className="flex items-baseline justify-between">
         <span className="text-[11.5px] font-extrabold tracking-wide text-white/50 uppercase">Qui a répondu</span>
-        {props.variant === 'player' ? (
-          <span className="text-[11.5px] font-bold text-white/40">{count} convoqué{count > 1 ? 's' : ''}</span>
-        ) : (
-          <ul className="m-0 flex list-none items-center gap-3 p-0 text-[13px] font-bold">
-            <li className="flex items-center gap-1 text-coach-green-text">
-              <span aria-hidden>✓</span>
-              {props.responseCounts.present}
-              <span className="sr-only"> présents</span>
-            </li>
-            <li className="flex items-center gap-1 text-coach-red-text">
-              <span aria-hidden>✗</span>
-              {props.responseCounts.absent}
-              <span className="sr-only"> absents</span>
-            </li>
-            <li className="flex items-center gap-1 text-white/50">
-              <span aria-hidden>?</span>
-              {props.responseCounts.pending}
-              <span className="sr-only"> en attente</span>
-            </li>
-          </ul>
-        )}
+        {/* Same ✓/✗/? tally for both variants; only the coach also sees who
+            answered what in the rows below. */}
+        <ul className="m-0 flex list-none items-center gap-3 p-0 text-[13px] font-bold">
+          <li className="flex items-center gap-1 text-coach-green-text">
+            <span aria-hidden>✓</span>
+            {present}
+            <span className="sr-only"> présents</span>
+          </li>
+          <li className="flex items-center gap-1 text-coach-red-text">
+            <span aria-hidden>✗</span>
+            {absent}
+            <span className="sr-only"> absents</span>
+          </li>
+          <li className="flex items-center gap-1 text-white/50">
+            <span aria-hidden>?</span>
+            {pending}
+            <span className="sr-only"> en attente</span>
+          </li>
+        </ul>
       </div>
 
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">

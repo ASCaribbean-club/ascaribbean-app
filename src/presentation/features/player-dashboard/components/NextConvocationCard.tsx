@@ -3,6 +3,7 @@ import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/Li
 import { Card } from '../../../shared/components/ui/card'
 import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
+import { ResponseCountsRecap } from '@presentation/shared/components/ResponseCountsRecap'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
@@ -24,15 +25,15 @@ interface NextConvocationCardProps {
 //     the mockups (§3, "Pas de badge compte à rebours");
 //   - renders EVERY convocation type, not just training/match (§1 point
 //     3), hence the icon + type-specific title logic below;
-//   - no ResponseBar (team aggregate — PO-PD-05, AC-PD-09): the player's
-//     own status is carried entirely by ResponseActions's button states,
-//     never a separate status label (§3, "évite de dupliquer
-//     l'information entre un libellé de statut et l'état visuel des
-//     boutons").
+//   - the team's ✓/✗/? headcounts (ResponseCountsRecap, numbers only —
+//     supersedes PO-PD-05/AC-PD-09), while the player's OWN status stays
+//     carried entirely by ResponseActions's button states, never a separate
+//     status label (§3, "évite de dupliquer l'information entre un libellé
+//     de statut et l'état visuel des boutons").
 export function NextConvocationCard({ data, missionsLine, canRespond, onRespondPresent, onRespondAbsent, onOpen }: NextConvocationCardProps) {
   if (!data) return null // AC-PD-02 : état vide géré par le parent (aucune échéance à venir)
 
-  const { convocation, matchDetails, opponent, meetingDetails, myResponse } = data
+  const { convocation, matchDetails, opponent, meetingDetails, myResponse, responseCounts } = data
   const Icon = getConvocationTypeIcon(convocation.type)
 
 
@@ -69,6 +70,8 @@ export function NextConvocationCard({ data, missionsLine, canRespond, onRespondP
       </div>
 
       <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
+
+      <ResponseCountsRecap counts={responseCounts} />
 
       {missionsLine && <p className="truncate text-[12.5px] text-white/60">Votre mission : {missionsLine}</p>}
 

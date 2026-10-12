@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse } from '@/domain/entities/convocation'
 import type { ConvocationRepository } from '@/domain/repositories/convocation-repository'
+import type { ConvocationResponseCountsRepository } from '@/domain/repositories/convocation-response-counts-repository'
 import type { ConvocationResponseRepository } from '@/domain/repositories/convocation-response-repository'
 import type { AssembleConvocationDetailFieldsUseCase, ConvocationDetailFields } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import type { GetConvocationDetailsUseCase } from '@/domain/usecases/convocation/GetConvocationDetailsUseCase'
@@ -53,6 +54,10 @@ function noopAssembleConvocationDetailFieldsUseCase(): AssembleConvocationDetail
   return { execute: vi.fn().mockResolvedValue(noDetailFields) } as unknown as AssembleConvocationDetailFieldsUseCase
 }
 
+function fakeCountsRepository(counts: Record<string, { present: number; absent: number; pending: number }> = {}): ConvocationResponseCountsRepository {
+  return { countForConvocations: vi.fn().mockResolvedValue(counts) }
+}
+
 describe('ListUpcomingConvocationsForPlayerUseCase', () => {
   const now = new Date('2026-08-19T00:00:00.000Z')
 
@@ -70,6 +75,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result.map((r) => r.convocation.id)).toEqual(['c-upcoming'])
@@ -94,6 +100,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now, includePast: true })
 
     // Same as ListTeamConvocationsUseCase: includePast bypasses isUpcoming
@@ -102,7 +109,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
     expect(result.map((r) => r.convocation.id)).toEqual(['c-past', 'c-closed', 'c-upcoming'])
   })
 
-  it('carries the player\'s OWN response, never an aggregate (PO-PD-05, AC-PD-09)', async () => {
+  it('carries the player\'s OWN response alongside the team headcounts', async () => {
     const convocation = convocationWith({ id: 'c1' })
     const myResponse = responseWith({ id: 'r1', convocationId: 'c1', userId: 'u1', status: 'absent' })
     const listForTeam = vi.fn().mockResolvedValue([convocation])
@@ -115,10 +122,11 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(findByConvocationAndUser).toHaveBeenCalledWith('c1', 'u1')
-    expect(result).toEqual([{ convocation, myResponse, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse, responseCounts: { present: 0, absent: 0, pending: 0 }, ...noDetailFields }])
   })
 
   it('returns null myResponse when the player has not responded yet (distinct from a "pending" status row)', async () => {
@@ -133,9 +141,10 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
-    expect(result).toEqual([{ convocation, myResponse: null, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse: null, responseCounts: { present: 0, absent: 0, pending: 0 }, ...noDetailFields }])
   })
 
   it('skips GetConvocationDetailsUseCase for a training convocation (existing type === "training" guard)', async () => {
@@ -152,6 +161,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       assembleConvocationDetailFieldsUseCase,
       getConvocationDetailsUseCase,
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(getConvocationDetailsUseCase.execute).not.toHaveBeenCalled()
@@ -169,9 +179,29 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result).toEqual([])
     expect(findByConvocationAndUser).not.toHaveBeenCalled()
+  })
+  it('attaches team-wide response counts per convocation, defaulting to zeros when missing', async () => {
+    const withCounts = convocationWith({ id: 'c-with', date: '2026-08-20T18:00:00.000Z' })
+    const withoutCounts = convocationWith({ id: 'c-without', date: '2026-08-21T18:00:00.000Z' })
+    const convocationRepository = { listForTeam: vi.fn().mockResolvedValue([withCounts, withoutCounts]) } as unknown as ConvocationRepository
+    const convocationResponseRepository = { findByConvocationAndUser: vi.fn().mockResolvedValue(null) } as unknown as ConvocationResponseRepository
+
+    const result = await new ListUpcomingConvocationsForPlayerUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      noopAssembleConvocationDetailFieldsUseCase(),
+      noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository({ 'c-with': { present: 4, absent: 1, pending: 2 } }),
+    ).execute({ teamId: 'team-1', userId: 'u1', now })
+
+    expect(result.map((item) => item.responseCounts)).toEqual([
+      { present: 4, absent: 1, pending: 2 },
+      { present: 0, absent: 0, pending: 0 },
+    ])
   })
 })

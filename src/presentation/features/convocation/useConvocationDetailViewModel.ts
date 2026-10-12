@@ -61,6 +61,7 @@ export function useConvocationDetailViewModel() {
     sectionRepository,
     getConvocationWithDetailsUseCase,
     listConvocationRespondersUseCase,
+    getConvocationResponseCountsUseCase,
     getConvocationRosterForCoachUseCase,
     getConvocationResponseByUserUseCase,
     respondToConvocationUseCase,
@@ -143,6 +144,15 @@ export function useConvocationDetailViewModel() {
       !!convocationId &&
       ((activeRole === 'player' && (activeTab === 'effectif' || activeTab === 'votes' || activeTab === 'resultat')) ||
         (activeRole === 'authorized-officer' && (activeTab === 'votes' || activeTab === 'resultat'))),
+  })
+
+  // Player-facing ✓/✗/? tally (numbers only, same figures the coach sees in
+  // the Effectif header) — a separate query from `respondersQuery` because it
+  // comes from its own RPC and must refresh when anyone responds.
+  const responseCountsQuery = useQuery({
+    queryKey: queryKeys.convocationResponseCounts(convocationId ?? ''),
+    queryFn: () => getConvocationResponseCountsUseCase.execute(convocationId!),
+    enabled: !!convocationId && activeRole === 'player' && activeTab === 'effectif',
   })
 
   const playerResponseQuery = useQuery({
@@ -259,6 +269,7 @@ export function useConvocationDetailViewModel() {
           void queryClient.invalidateQueries({ queryKey: queryKeys.playerUpcomingConvocations(playerTeamId, user.id) })
         }
         void queryClient.invalidateQueries({ queryKey: queryKeys.convocationResponders(convocationId) })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.convocationResponseCounts(convocationId) })
         void queryClient.invalidateQueries({ queryKey: queryKeys.playerConvocationResponse(convocationId, user?.id ?? '') })
         // The base-table SELECT fix (20260903205143_convocation_responses_
         // select_own_or_coach.sql) lets a coach read a teammate's response
@@ -1045,6 +1056,7 @@ export function useConvocationDetailViewModel() {
       teamQuery.error ??
       sectionQuery.error ??
       respondersQuery.error ??
+      responseCountsQuery.error ??
       playerResponseQuery.error ??
       rosterForCoachQuery.error ??
       matchEventsQuery.error,
@@ -1084,6 +1096,7 @@ export function useConvocationDetailViewModel() {
       position: user?.position ?? null,
     },
     others,
+    playerResponseCounts: responseCountsQuery.data,
 
     coachRoster: rosterForCoachQuery.data?.roster ?? [],
     responseCounts: rosterForCoachQuery.data?.responseCounts,

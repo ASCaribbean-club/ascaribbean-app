@@ -3,6 +3,7 @@ import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRec
 import { ConvocationMissionRepositoryImpl } from '@data/repositories/ConvocationMissionRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
+import { ConvocationResponseCountsRepositoryImpl } from '@data/repositories/ConvocationResponseCountsRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
 import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepositoryImpl'
 // specs/match-stats.md §7/"Forme technique attendue" — net-new in this pass.
@@ -46,6 +47,7 @@ import { DeleteConvocationUseCase } from '@domain/usecases/convocation/DeleteCon
 import { GetConvocationDetailsUseCase } from '@domain/usecases/convocation/GetConvocationDetailsUseCase'
 import { GetConvocationRosterForCoachUseCase } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
 import { GetConvocationWithDetailsUseCase } from '@domain/usecases/convocation/GetConvocationWithDetailsUseCase'
+import { GetConvocationResponseCountsUseCase } from '@domain/usecases/convocation/GetConvocationResponseCountsUseCase'
 import { ListConvocationRespondersUseCase } from '@domain/usecases/convocation/ListConvocationRespondersUseCase'
 import { UpdateMatchDetailsUseCase } from '@domain/usecases/convocation/UpdateMatchDetailsUseCase'
 import { UpdateTrainingScheduleUseCase } from '@domain/usecases/convocation/UpdateTrainingScheduleUseCase'
@@ -116,6 +118,7 @@ export interface ConvocationContainer {
   getConvocationDetailsUseCase: GetConvocationDetailsUseCase
   getConvocationWithDetailsUseCase: GetConvocationWithDetailsUseCase
   listConvocationRespondersUseCase: ListConvocationRespondersUseCase
+  getConvocationResponseCountsUseCase: GetConvocationResponseCountsUseCase
   getConvocationRosterForCoachUseCase: GetConvocationRosterForCoachUseCase
   respondToConvocationUseCase: RespondToConvocationUseCase
   getConvocationResponseByUserUseCase: GetConvocationResponseByUserUseCase
@@ -179,6 +182,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     assembleConvocationDetailFieldsUseCase,
   )
   const listConvocationRespondersUseCase = new ListConvocationRespondersUseCase(convocationRespondersRepository)
+  const getConvocationResponseCountsUseCase = new GetConvocationResponseCountsUseCase(new ConvocationResponseCountsRepositoryImpl(supabaseClient))
   const getConvocationRosterForCoachUseCase = new GetConvocationRosterForCoachUseCase(
     convocationRespondersRepository,
     convocationResponseRepository,
@@ -253,6 +257,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     getConvocationDetailsUseCase,
     getConvocationWithDetailsUseCase,
     listConvocationRespondersUseCase,
+    getConvocationResponseCountsUseCase,
     getConvocationRosterForCoachUseCase,
     respondToConvocationUseCase,
     getConvocationResponseByUserUseCase,

@@ -1,10 +1,12 @@
 import { Avatar, AvatarFallback } from '../../../shared/components/ui/avatar'
 import { RoleSwitcher } from '../../../shared/components/RoleSwitcher'
+import { MvpStar } from '../../../shared/components/MvpStar'
 import { TeamPill } from './TeamPill'
 
 interface PlayerHeaderProps {
   firstName: string
   initials: string
+  isMvp: boolean
   teamName?: string
   onAvatarClick: () => void
 }
@@ -22,7 +24,7 @@ interface PlayerHeaderProps {
 //   - no ASC Legacy points line either (§6 correction 1, AC-PD-12) — the
 //     salutation is followed directly by whatever the page renders next
 //     (the alert banner or the convocation card), not by this component.
-export function PlayerHeader({ firstName, initials, teamName, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
+export function PlayerHeader({ firstName, initials, isMvp, teamName, onAvatarClick: goToProfilePage }: PlayerHeaderProps) {
   return (
     // `sticky top-0` (CLAUDE.md §6, "Back navigation stays reachable while
     // scrolling") — same reasoning as CoachHeader: the content below can
@@ -62,6 +64,7 @@ export function PlayerHeader({ firstName, initials, teamName, onAvatarClick: goT
         Bonjour,
         <br />
         {firstName}
+        {isMvp && <MvpStar className="ml-2 inline size-6 align-baseline" />}
       </h1>
     </header>
   )

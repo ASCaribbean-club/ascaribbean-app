@@ -27,6 +27,7 @@ export interface PresenceRowModel {
   presentCount: number
   isMuted: boolean
   isOwn: boolean
+  isMvp: boolean
   // "80 % de présence" / "—" — text, never color alone.
   attendanceLabel: string
   // Whole percent, null when no convocation has started yet.
@@ -41,6 +42,8 @@ export interface LeaderboardRowModel {
   value: number
   isMuted: boolean
   isOwn: boolean
+  // Current "joueur du match" (latest closed vote) — star next to the name.
+  isMvp: boolean
   counters: LeaderboardCounter[]
 }
 
@@ -78,7 +81,7 @@ export function useLeaderboardViewModel() {
   const navigate = useNavigate()
   const { activeRole, isOfficerView } = useActiveRole()
   const { selectedCoachTeamId } = useActiveTeam()
-  const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase, getTeamPresenceLeaderboardUseCase } = useLeaderboardDependencies()
+  const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase, getTeamPresenceLeaderboardUseCase, getTeamMvpUseCase } = useLeaderboardDependencies()
 
   const [tab, setTab] = useState<LeaderboardTab>('goals')
   // Dirigeant habilité: section then team, in a collapsible panel that is open
@@ -122,6 +125,15 @@ export function useLeaderboardViewModel() {
     enabled: !!teamId && seasonQuery.isSuccess && !noCurrentSeason,
   })
 
+  // Deliberately NOT part of isLoading/error: a failing read just hides the
+  // stars. Same fixed category as useConvocationDetailViewModel (PO-PV-03).
+  const mvpQuery = useQuery({
+    queryKey: queryKeys.teamMvp(teamId ?? ''),
+    queryFn: () => getTeamMvpUseCase.execute({ teamId: teamId!, categoryId: 'man_of_the_match' }),
+    enabled: !!teamId,
+  })
+  const mvpIds = new Set(mvpQuery.data ?? [])
+
   // Fetched only when the presence tab is opened (UI: one extra request, once).
   const presenceQuery = useQuery({
     queryKey: queryKeys.teamPresenceLeaderboard(teamId ?? ''),
@@ -143,6 +155,7 @@ export function useLeaderboardViewModel() {
     value: entry.value,
     isMuted: entry.isMuted,
     isOwn: isPlayerView && entry.userId === user?.id,
+    isMvp: mvpIds.has(entry.userId),
     counters: COUNTERS_BY_METRIC[metric].map((kind) => ({
       kind,
       count: countOf(entry, kind),
@@ -157,6 +170,7 @@ export function useLeaderboardViewModel() {
     presentCount: entry.value,
     isMuted: entry.isMuted,
     isOwn: isPlayerView && entry.userId === user?.id,
+    isMvp: mvpIds.has(entry.userId),
     attendanceLabel: entry.attendanceRate === null ? '—' : `${entry.attendanceRate} % de présence`,
     responseRate: entry.responseRate,
     responseLabel: entry.responseRate === null ? 'Réponses : —' : `Réponses : ${entry.responseRate} %`,

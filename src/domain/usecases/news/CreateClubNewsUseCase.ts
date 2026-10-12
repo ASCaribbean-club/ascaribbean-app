@@ -1,4 +1,4 @@
-import type { ClubNews, ClubNewsStatus } from '../../entities/club-news'
+import type { ClubNews, ClubNewsStatus, ClubNewsTag } from '../../entities/club-news'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidNewsInputError } from '../../errors/invalid-news-input-error'
 import { can } from '../../policies/can'
@@ -17,6 +17,7 @@ export interface CreateClubNewsUseCaseInput {
   title: string
   details: string
   link: string | null
+  tag: ClubNewsTag | null
   status: CreatableClubNewsStatus
   // ISO — the DATE field of the dialog. Required only when status is
   // 'published' (club_news_published_has_date, mirrored below) — a draft
@@ -70,6 +71,7 @@ export class CreateClubNewsUseCase {
       title: input.title,
       details: input.details,
       link: input.link,
+      tag: input.tag,
       status: input.status,
       publishedAt: input.publishedAt,
       createdBy: user.id,

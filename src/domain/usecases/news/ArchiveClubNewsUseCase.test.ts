@@ -37,6 +37,7 @@ function archivedNews(): ClubNews {
     title: 'Ancien titre',
     details: 'Ancien contenu',
     link: null,
+    tag: null,
     status: 'archived',
     publishedAt: '2026-08-01T00:00:00.000Z',
     createdAt: '2026-07-30T00:00:00.000Z',

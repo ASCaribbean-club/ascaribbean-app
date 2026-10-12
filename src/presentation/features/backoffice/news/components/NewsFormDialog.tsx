@@ -11,6 +11,7 @@ import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import { Textarea } from '@presentation/shared/components/ui/textarea'
+import { NEWS_TAG_LABELS, NO_NEWS_TAG_VALUE } from '@presentation/shared/formatters/news-tag'
 import type { NewsDialogState } from '../useBackofficeNewsViewModel'
 import { useNewsFormDialogViewModel } from '../useNewsFormDialogViewModel'
 
@@ -138,6 +139,29 @@ function NewsFormDialogContent({ dialog, onClose }: NewsFormDialogProps & { dial
                 {STATUS_OPTIONS.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="news-tag" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              Tag (optionnel)
+            </Label>
+            <Select
+              value={vm.values.tag || NO_NEWS_TAG_VALUE}
+              onValueChange={(value) => vm.setTag(value === NO_NEWS_TAG_VALUE ? '' : (value as typeof vm.values.tag))}
+              disabled={vm.isSubmitting}
+            >
+              <SelectTrigger id="news-tag" className="h-11 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_NEWS_TAG_VALUE}>Aucun</SelectItem>
+                {Object.entries(NEWS_TAG_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
                   </SelectItem>
                 ))}
               </SelectContent>

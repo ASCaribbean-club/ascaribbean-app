@@ -4,7 +4,7 @@ import type { NewsRepository } from '../../repositories/news-repository'
 import { ListManageableNewsUseCase } from './ListManageableNewsUseCase'
 
 function news(id: string, status: ClubNews['status']): ClubNews {
-  return { id, title: id, details: 'x', link: null, status, publishedAt: null, createdAt: '2026-10-01T00:00:00.000Z', createdBy: 'u1', expiresAt: null }
+  return { id, title: id, details: 'x', link: null, tag: null, status, publishedAt: null, createdAt: '2026-10-01T00:00:00.000Z', createdBy: 'u1', expiresAt: null }
 }
 
 function fakeRepository(rows: ClubNews[]): NewsRepository {

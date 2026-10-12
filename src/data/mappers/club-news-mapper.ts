@@ -1,4 +1,4 @@
-import type { ClubNews, ClubNewsStatus } from '@domain/entities/club-news'
+import type { ClubNews, ClubNewsStatus, ClubNewsTag } from '@domain/entities/club-news'
 import type { CreateClubNewsInput, UpdateClubNewsInput } from '@domain/repositories/news-repository'
 import type { ClubNewsInsertRow, ClubNewsRow, ClubNewsUpdateRow } from '../dto/club-news-row'
 
@@ -8,6 +8,7 @@ export function toClubNews(row: ClubNewsRow): ClubNews {
     title: row.title,
     details: row.details,
     link: row.link,
+    tag: row.tag as ClubNewsTag | null,
     status: row.status as ClubNewsStatus,
     publishedAt: row.published_at,
     createdAt: row.created_at,
@@ -24,6 +25,7 @@ export function toClubNewsInsertRow(input: CreateClubNewsInput): ClubNewsInsertR
     title: input.title,
     details: input.details,
     link: input.link,
+    tag: input.tag,
     status: input.status,
     published_at: input.publishedAt,
     created_by: input.createdBy,
@@ -39,6 +41,7 @@ export function toClubNewsUpdateRow(input: UpdateClubNewsInput): ClubNewsUpdateR
     title: input.title,
     details: input.details,
     link: input.link,
+    tag: input.tag,
     status: input.status,
     published_at: input.publishedAt,
     expires_at: input.expiresAt,

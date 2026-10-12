@@ -11,6 +11,7 @@ describe('ListPublishedNewsUseCase', () => {
         title: 'Reprise des entraînements',
         details: 'Les Seniors reprennent au stade municipal.',
         link: null,
+        tag: null,
         status: 'published',
         publishedAt: '2026-08-01T00:00:00.000Z',
         createdAt: '2026-07-30T00:00:00.000Z',

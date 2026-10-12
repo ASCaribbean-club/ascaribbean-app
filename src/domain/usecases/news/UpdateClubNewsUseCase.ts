@@ -1,4 +1,4 @@
-import type { ClubNews } from '../../entities/club-news'
+import type { ClubNews, ClubNewsTag } from '../../entities/club-news'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidNewsInputError } from '../../errors/invalid-news-input-error'
 import { can } from '../../policies/can'
@@ -12,6 +12,7 @@ export interface UpdateClubNewsUseCaseInput {
   title: string
   details: string
   link: string | null
+  tag: ClubNewsTag | null
   // 2026-09-17 developer decision (resolves PO-WA-02 for the edit path):
   // the dialog's status selector offers 'draft'/'published' only — flipping
   // to 'archived' goes exclusively through ArchiveClubNewsUseCase's
@@ -61,6 +62,7 @@ export class UpdateClubNewsUseCase {
       title: input.title,
       details: input.details,
       link: input.link,
+      tag: input.tag,
       status: input.status,
       publishedAt: input.publishedAt,
       expiresAt: input.expiresAt,

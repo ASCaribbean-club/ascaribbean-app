@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MembershipStatus } from '@domain/entities/membership'
+import { parseJerseyNumberInput } from '@domain/policies/match-lineup-rules'
 import { useMembershipsDependencies } from '@presentation/di/hooks/use-memberships-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { eurosToCents } from '@presentation/shared/formatters/currency'
@@ -16,6 +17,8 @@ export interface MembershipEditRowValues {
   // own unit, "Cotisation totale (€)"), converted to integer cents only at
   // submit time (below) — never a float reaching the domain.
   amountDueEuros: string
+  // AC-MC-24 — optional "Numéro de maillot", raw text (1..99 or empty).
+  jerseyNumber: string
 }
 
 // Developer decision (not spec'd by either web-seasons or web-memberships):
@@ -37,6 +40,7 @@ function toEditValues(row: MembershipAdminRow): MembershipEditRowValues {
     validUntil: row.membership.validUntil,
     status: row.membership.status,
     amountDueEuros,
+    jerseyNumber: row.membership.jerseyNumber === null ? '' : String(row.membership.jerseyNumber),
   }
 }
 
@@ -73,6 +77,8 @@ export function useMembershipEditRowViewModel({ row, onSuccess }: UseMembershipE
   })
   const payments = paymentsQuery.data ?? []
 
+  const parsedJerseyNumber = parseJerseyNumberInput(values.jerseyNumber)
+
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) {
@@ -96,6 +102,7 @@ export function useMembershipEditRowViewModel({ row, onSuccess }: UseMembershipE
         status: values.status,
         validUntil: values.validUntil,
         amountDueCents,
+        jerseyNumber: parsedJerseyNumber.ok ? parsedJerseyNumber.value : null,
       })
     },
     onSuccess: () => {
@@ -121,7 +128,7 @@ export function useMembershipEditRowViewModel({ row, onSuccess }: UseMembershipE
   // negative amount never reaches the submit button enabled, in addition to
   // the domain's own authoritative check.
   const hasValidAmountDue = parsedAmountDueEuros === null || (Number.isFinite(parsedAmountDueEuros) && parsedAmountDueEuros >= 0)
-  const canSubmit = !!values.status && !!values.validUntil && hasValidAmountDue && !mutation.isPending
+  const canSubmit = !!values.status && !!values.validUntil && hasValidAmountDue && parsedJerseyNumber.ok && !mutation.isPending
 
   // AC-WM-25/AC-WM-36 — on failure the panel stays open (deployed) with the
   // typed values kept, and shows a French message translated from the
@@ -135,6 +142,8 @@ export function useMembershipEditRowViewModel({ row, onSuccess }: UseMembershipE
     setValidUntil: (value: string) => setField('validUntil', value),
     setStatus: (value: MembershipStatus) => setField('status', value),
     setAmountDueEuros: (value: string) => setField('amountDueEuros', value),
+    setJerseyNumber: (value: string) => setField('jerseyNumber', value),
+    jerseyNumberError: parsedJerseyNumber.ok ? null : parsedJerseyNumber.message,
 
     isLoadingHistory: paymentsQuery.isLoading,
     payments,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { parseJerseyNumberInput } from '@domain/policies/match-lineup-rules'
 import { useMembershipsDependencies } from '@presentation/di/hooks/use-memberships-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
@@ -10,9 +11,11 @@ export interface MembershipFormValues {
   seasonId: string
   licenceNumber: string
   validUntil: string // yyyy-mm-dd, native <input type="date"> value
+  // AC-MC-24 — optional "Numéro de maillot", raw text (1..99 or empty).
+  jerseyNumber: string
 }
 
-const EMPTY_VALUES: MembershipFormValues = { userId: '', seasonId: '', licenceNumber: '', validUntil: '' }
+const EMPTY_VALUES: MembershipFormValues = { userId: '', seasonId: '', licenceNumber: '', validUntil: '', jerseyNumber: '' }
 const EMPTY_SET: ReadonlySet<string> = new Set()
 
 interface UseMembershipFormDialogViewModelParams {
@@ -92,6 +95,8 @@ export function useMembershipFormDialogViewModel({ presetUserId = null, onSucces
   const usersWithMembershipForSelectedSeason = effectiveSeasonId ? (userIdsWithMembershipBySeason.get(effectiveSeasonId) ?? EMPTY_SET) : EMPTY_SET
   const availableUsers = users.filter((candidate) => !usersWithMembershipForSelectedSeason.has(candidate.id))
 
+  const parsedJerseyNumber = parseJerseyNumberInput(values.jerseyNumber)
+
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) {
@@ -116,6 +121,7 @@ export function useMembershipFormDialogViewModel({ presetUserId = null, onSucces
         licenceNumber,
         status: 'pending',
         validUntil: effectiveValidUntil,
+        jerseyNumber: parsedJerseyNumber.ok ? parsedJerseyNumber.value : null,
       })
     },
     onSuccess: () => {
@@ -135,7 +141,7 @@ export function useMembershipFormDialogViewModel({ presetUserId = null, onSucces
     },
   })
 
-  const canSubmit = !!values.userId && !!effectiveSeasonId && !!effectiveValidUntil && !mutation.isPending
+  const canSubmit = !!values.userId && !!effectiveSeasonId && !!effectiveValidUntil && parsedJerseyNumber.ok && !mutation.isPending
 
   // AC-WM-25 — on failure the dialog stays open with the typed values
   // untouched, and shows a French message translated from the DomainError
@@ -162,6 +168,8 @@ export function useMembershipFormDialogViewModel({ presetUserId = null, onSucces
       }),
     setLicenceNumber: (value: string) => setField('licenceNumber', value),
     setValidUntil: (value: string) => setField('validUntil', value),
+    setJerseyNumber: (value: string) => setField('jerseyNumber', value),
+    jerseyNumberError: parsedJerseyNumber.ok ? null : parsedJerseyNumber.message,
 
     users: availableUsers,
     seasons,

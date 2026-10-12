@@ -21,7 +21,8 @@ interface MembershipFormDialogProps {
 
 // specs/web-memberships.md §1/UI design (amendement du 2026-09-17) — the
 // mockup's own fields for "Nouvelle adhésion": UTILISATEUR, SAISON, NUMÉRO
-// DE LICENCE, VALIDE JUSQU'AU. The mockup's own STATUT field is deliberately
+// DE LICENCE, NUMÉRO DE MAILLOT (optionnel, amendement du 2026-10-12),
+// VALIDE JUSQU'AU. The mockup's own STATUT field is deliberately
 // dropped here (developer decision, 2026-09-23): a brand-new membership
 // always starts 'pending' — CreateMembershipUseCase rejects 'active' outright
 // (a new membership can never have a settled cotisation), so offering the
@@ -135,6 +136,31 @@ function MembershipFormDialogContent({ presetUserId, onClose }: { presetUserId: 
               onChange={(event) => vm.setLicenceNumber(event.target.value)}
               className="h-11 rounded-xl"
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="membership-jersey-number" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              Numéro de maillot
+            </Label>
+            {/* AC-MC-24 — optional (1 à 99), default for the lineup of THIS
+                season only; the lineup can override it per match. */}
+            <Input
+              id="membership-jersey-number"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              disabled={vm.isSubmitting}
+              value={vm.values.jerseyNumber}
+              onChange={(event) => vm.setJerseyNumber(event.target.value)}
+              aria-invalid={vm.jerseyNumberError !== null}
+              aria-describedby={vm.jerseyNumberError ? 'membership-jersey-number-error' : undefined}
+              className="h-11 rounded-xl"
+            />
+            {vm.jerseyNumberError && (
+              <p id="membership-jersey-number-error" role="alert" className="text-sm text-destructive">
+                {vm.jerseyNumberError}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

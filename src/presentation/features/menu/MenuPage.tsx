@@ -1,6 +1,5 @@
-import { IconCoins, IconChartBar, IconFileText, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
+import { IconCoins, IconChartBar, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
 import { ChangelogDialog } from './components/ChangelogDialog'
-import { DisabledMenuCard } from './components/DisabledMenuCard'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
 import { MenuNavCard } from './components/MenuNavCard'
@@ -74,17 +73,14 @@ export function MenuPage() {
       </section>
 
       {/* "SERVICES EXTERNES" — addendum point 3: espace fédéral/support
-          rendered with real URLs (./external-links.ts). "Règlement du
-          club" has no destination yet (no club-wide document storage
-          exists) — rendered as a disabled card rather than a dead link
-          (AC-MN-02). */}
+          and règlement du club rendered with real URLs
+          (./external-links.ts). */}
       <section className="flex flex-col gap-2.5">
         <MenuSectionTitle>Services externes</MenuSectionTitle>
         <div className="flex flex-col gap-3">
           {MENU_EXTERNAL_LINKS.map((link) => (
             <ExternalLinkRow key={link.title} link={link} />
           ))}
-          <DisabledMenuCard icon={IconFileText} title="Règlement du club" subtitle="Document du club" layout="row" />
         </div>
       </section>
 

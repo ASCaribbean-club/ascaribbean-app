@@ -1,4 +1,4 @@
-import { IconBrandInstagram, IconFlag, IconHeartHandshake, IconMessageCircle, IconWorld } from '@tabler/icons-react'
+import { IconBrandInstagram, IconFileText, IconFlag, IconHeartHandshake, IconMessageCircle, IconWorld } from '@tabler/icons-react'
 import type { Icon } from '@tabler/icons-react'
 
 export interface MenuExternalLink {
@@ -33,18 +33,21 @@ export const CLUB_ADMINISTRATION_LINKS: MenuExternalLink[] = [
   },
 ]
 
-// specs/menu.md addendum (2026-09-04), point 3 — PO-MN-03 resolved for (a)
-// and (c): both URLs below are real and final. "Règlement du club" (b) is
-// NOT in this list — no club-wide document storage exists yet, so it
-// renders as a DisabledMenuCard in MenuPage.tsx instead of a dead `<a>`
-// (specs/menu.md AC-MN-02 forbids a card that looks tappable but leads
-// nowhere).
+// specs/menu.md addendum (2026-09-04), point 3 — PO-MN-03 resolved: all
+// URLs below are real and final. "Règlement du club" links to the règlement
+// intérieur PDF hosted on Google Drive.
 export const MENU_EXTERNAL_LINKS: MenuExternalLink[] = [
   {
     icon: IconFlag,
     title: 'Espace fédéral',
     subtitle: 'Feuille de match et licences',
     url: 'https://epreuves.fff.fr/competition/club/565351-association-sportive-caribbean/club',
+  },
+  {
+    icon: IconFileText,
+    title: 'Règlement du club',
+    subtitle: 'Règlement intérieur',
+    url: 'https://drive.google.com/file/d/1jbZU6G7REiuFhanoc1lmGtf5RRkIlWij/view?usp=sharing',
   },
   {
     icon: IconMessageCircle,

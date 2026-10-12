@@ -7,6 +7,7 @@ import { DocumentRepositoryImpl } from '@data/repositories/DocumentRepositoryImp
 import { MatchDetailsRepositoryImpl } from '@data/repositories/MatchDetailsRepositoryImpl'
 import { MeetingDetailsRepositoryImpl } from '@data/repositories/MeetingDetailsRepositoryImpl'
 import { OpponentRepositoryImpl } from '@data/repositories/OpponentRepositoryImpl'
+import { VoteRepositoryImpl } from '@data/repositories/VoteRepositoryImpl'
 import { SeasonRepositoryImpl } from '@data/repositories/SeasonRepositoryImpl'
 import { TeamRepositoryImpl } from '@data/repositories/TeamRepositoryImpl'
 import type { ConvocationMissionRepository } from '@domain/repositories/convocation-mission-repository'
@@ -23,6 +24,7 @@ import { GetPlayerTeamUseCase } from '@domain/usecases/player-dashboard/GetPlaye
 import { ListUserMissingOrRejectedDocumentsUseCase } from '@/domain/usecases/player-dashboard/ListUserMissingOrRejectedDocumentsUseCase'
 import { ListUpcomingConvocationsForPlayerUseCase } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { RespondToConvocationUseCase } from '@domain/usecases/player-dashboard/RespondToConvocationUseCase'
+import { GetPendingVoteReminderUseCase } from '@domain/usecases/player-vote/GetPendingVoteReminderUseCase'
 import { GetTeamRecentFormUseCase } from '@domain/usecases/team-form/GetTeamRecentFormUseCase'
 import { AssembleConvocationDetailFieldsUseCase } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import { GetConvocationDetailsUseCase } from '@/domain/usecases/convocation/GetConvocationDetailsUseCase'
@@ -51,6 +53,8 @@ export interface PlayerDashboardContainer {
   getTeamRecentFormUseCase: GetTeamRecentFormUseCase
   // specs/match-details-missions.md AC-MM-23 — "Votre mission" line.
   listConvocationMissionsUseCase: ListConvocationMissionsUseCase
+  // Dashboard "élisez l'homme du match" reminder.
+  getPendingVoteReminderUseCase: GetPendingVoteReminderUseCase
 }
 
 export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): PlayerDashboardContainer {
@@ -91,5 +95,6 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
     listUserMissingOrRejectedDocumentsUseCase: new ListUserMissingOrRejectedDocumentsUseCase(documentRepository),
     getTeamRecentFormUseCase: new GetTeamRecentFormUseCase(convocationRepository, matchDetailsRepository),
     listConvocationMissionsUseCase: new ListConvocationMissionsUseCase(convocationMissionRepository),
+    getPendingVoteReminderUseCase: new GetPendingVoteReminderUseCase(convocationRepository, new VoteRepositoryImpl(supabaseClient), matchDetailsRepository, opponentRepository),
   }
 }

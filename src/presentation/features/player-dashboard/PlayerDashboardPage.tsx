@@ -2,6 +2,7 @@ import { Alert, AlertDescription } from '@presentation/shared/components/ui/aler
 import { TeamFormAndGoalsRow } from '@presentation/shared/components/TeamFormAndGoalsRow'
 import { DuesReminderBanner } from '@presentation/shared/components/DuesReminderBanner'
 import { MissingDocumentAlert } from './components/MissingDocumentAlert'
+import { PendingVoteAlert } from './components/PendingVoteAlert'
 import { NextConvocationCard } from './components/NextConvocationCard'
 import { PlayerHeader } from './components/PlayerHeader'
 import { UpcomingConvocationList } from './components/UpcomingConvocationList'
@@ -28,6 +29,8 @@ export function PlayerDashboardPage() {
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">
         <MissingDocumentAlert visible={vm.hasMissingDocument} onOpen={vm.goToDocuments} />
+
+        <PendingVoteAlert pendingVote={vm.pendingVote} onOpen={vm.goToVote} />
 
         {/* Document alert first, dues reminder after — never merged (amendement (4) UI, (b)). */}
         <DuesReminderBanner />

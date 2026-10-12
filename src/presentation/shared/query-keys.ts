@@ -16,6 +16,7 @@ export const queryKeys = {
   playerUpcomingConvocations: (teamId: string, userId: string) =>
     ['convocations', 'team', teamId, 'player', userId, 'upcoming'] as const,
   playerPendingVoteReminder: (teamId: string, userId: string) => ['votes', 'team', teamId, 'player', userId, 'pending-reminder'] as const,
+  teamMvp: (teamId: string) => ['votes', 'team', teamId, 'mvp'] as const,
   userMissingOrRejectedDocuments: (userId: string) => ['documents', 'missingOrRejected', userId] as const,
 
   // specs/match_details_page.md §7 — "deux clés distinctes quand la forme

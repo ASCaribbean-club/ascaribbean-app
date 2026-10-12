@@ -12,7 +12,6 @@ import {
   placementsToJerseyNumbers,
   hasAnyPlacedPlayer,
   isFormation,
-  isLineupOpeningFromFallback,
   isLineupSupported,
   isLineupVisibleToPlayer,
   placePlayer,
@@ -21,43 +20,24 @@ import {
 } from './match-lineup-rules'
 
 const KICKOFF = '2026-10-10T15:00:00.000Z'
-const RDV = '2026-10-10T13:30:00.000Z'
 
 describe('isLineupVisibleToPlayer (PO-MC-01)', () => {
-  it('is hidden before the RDV', () => {
-    expect(isLineupVisibleToPlayer(RDV, KICKOFF, new Date('2026-10-10T13:29:59.000Z'))).toBe(false)
+  it('is hidden before kickoff minus 24h', () => {
+    expect(isLineupVisibleToPlayer(KICKOFF, new Date('2026-10-09T14:59:59.000Z'))).toBe(false)
   })
 
-  it('is still hidden exactly at the RDV (strict comparison)', () => {
-    expect(isLineupVisibleToPlayer(RDV, KICKOFF, new Date(RDV))).toBe(false)
+  it('is still hidden exactly at kickoff minus 24h (strict)', () => {
+    expect(isLineupVisibleToPlayer(KICKOFF, new Date('2026-10-09T15:00:00.000Z'))).toBe(false)
   })
 
-  it('is visible right after the RDV', () => {
-    expect(isLineupVisibleToPlayer(RDV, KICKOFF, new Date('2026-10-10T13:30:00.001Z'))).toBe(true)
-  })
-
-  it('re-hides when the RDV is moved later (evaluated on the current value)', () => {
-    const now = new Date('2026-10-10T13:45:00.000Z')
-    expect(isLineupVisibleToPlayer(RDV, KICKOFF, now)).toBe(true)
-    expect(isLineupVisibleToPlayer('2026-10-10T14:00:00.000Z', KICKOFF, now)).toBe(false)
-  })
-
-  it('falls back to kickoff minus one hour when there is no RDV (PO-MC-12)', () => {
-    expect(isLineupVisibleToPlayer(null, KICKOFF, new Date('2026-10-10T13:59:59.000Z'))).toBe(false)
-    expect(isLineupVisibleToPlayer(null, KICKOFF, new Date('2026-10-10T14:00:00.000Z'))).toBe(false)
-    expect(isLineupVisibleToPlayer(null, KICKOFF, new Date('2026-10-10T14:00:00.001Z'))).toBe(true)
+  it('is visible right after kickoff minus 24h, whatever the RDV', () => {
+    expect(isLineupVisibleToPlayer(KICKOFF, new Date('2026-10-09T15:00:00.001Z'))).toBe(true)
   })
 })
 
-describe('getLineupOpeningTime / isLineupOpeningFromFallback', () => {
-  it('returns the RDV when set', () => {
-    expect(getLineupOpeningTime(RDV, KICKOFF).toISOString()).toBe(RDV)
-    expect(isLineupOpeningFromFallback(RDV)).toBe(false)
-  })
-
-  it('returns kickoff - 1h when there is no RDV', () => {
-    expect(getLineupOpeningTime(null, KICKOFF).toISOString()).toBe('2026-10-10T14:00:00.000Z')
-    expect(isLineupOpeningFromFallback(null)).toBe(true)
+describe('getLineupOpeningTime', () => {
+  it('is kickoff minus 24 hours', () => {
+    expect(getLineupOpeningTime(KICKOFF).toISOString()).toBe('2026-10-09T15:00:00.000Z')
   })
 })
 

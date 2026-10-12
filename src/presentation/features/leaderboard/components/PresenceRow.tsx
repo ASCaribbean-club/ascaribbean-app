@@ -1,3 +1,4 @@
+import { MvpStar } from '@presentation/shared/components/MvpStar'
 import { cn } from '@presentation/shared/lib/utils'
 import { ownRowElementId, type PresenceRowModel } from '../useLeaderboardViewModel'
 
@@ -36,6 +37,7 @@ export function PresenceRow({ row, emphasizeOwn }: PresenceRowProps) {
         <p className={cn('flex min-w-0 items-center gap-1.5 text-[14.5px]', emphasized ? 'font-extrabold text-white' : 'font-semibold')}>
           {emphasized && <span className="sr-only">Vous : </span>}
           <span className="min-w-0 truncate">{row.displayName}</span>
+          {row.isMvp && <MvpStar />}
         </p>
         <p className="text-[12px] font-semibold text-white/60">{row.attendanceLabel}</p>
         <div className="flex min-w-0 items-center gap-2 text-[12px] font-semibold">

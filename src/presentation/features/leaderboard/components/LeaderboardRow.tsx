@@ -2,6 +2,7 @@ import type { LeaderboardMetric } from '@domain/entities/leaderboard'
 import { Dot } from '@presentation/shared/components/Dot'
 import { cn } from '@presentation/shared/lib/utils'
 import { ownRowElementId, type LeaderboardRowModel } from '../useLeaderboardViewModel'
+import { MvpStar } from '@presentation/shared/components/MvpStar'
 import { COUNTER_DOT, COUNTER_SHAPE, METRIC_ACCENT } from './leaderboard-accent'
 
 interface LeaderboardRowProps {
@@ -46,6 +47,7 @@ export function LeaderboardRow({ row, metric, emphasizeOwn }: LeaderboardRowProp
         <p className={cn('flex min-w-0 items-center gap-1.5 text-[14.5px]', emphasized ? 'font-extrabold text-white' : 'font-semibold')}>
           {emphasized && <span className="sr-only">Vous : </span>}
           <span className="min-w-0 truncate">{row.displayName}</span>
+          {row.isMvp && <MvpStar />}
         </p>
         <ul className="flex min-w-0 items-center gap-3 text-[12px] font-semibold">
           {row.counters.map((counter) => (

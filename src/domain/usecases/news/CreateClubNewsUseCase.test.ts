@@ -57,6 +57,7 @@ function validInput(overrides: Partial<CreateClubNewsUseCaseInput> = {}): Create
     title: 'Reprise des entraînements',
     details: 'Tous les groupes reprennent le 2 septembre',
     link: null,
+    tag: null,
     status: 'published',
     publishedAt: '2026-09-01T00:00:00.000Z',
     expiresAt: null,

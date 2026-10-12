@@ -8,10 +8,16 @@
 //   read time against current_season(), never stored on the row.
 export type ClubNewsStatus = 'draft' | 'published' | 'archived'
 
+// Optional category shown as a badge and used by the feed's filter chips
+// (docs/designs/actus, v2). Null = untagged: only shown under "Tout".
+export const CLUB_NEWS_TAGS = ['club', 'equipes', 'boutique'] as const
+export type ClubNewsTag = (typeof CLUB_NEWS_TAGS)[number]
+
 export interface ClubNews {
   id: string
   title: string
   details: string
+  tag: ClubNewsTag | null // nullable — an untagged news item is a normal state
   link: string | null // e.g. external article, photo album — nullable, absence is a normal state
   status: ClubNewsStatus
   publishedAt: string | null // ISO — the date SHOWN to users, null until published

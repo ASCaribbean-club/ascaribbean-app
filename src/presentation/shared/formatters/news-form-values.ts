@@ -1,4 +1,4 @@
-import type { ClubNews } from '@domain/entities/club-news'
+import type { ClubNews, ClubNewsTag } from '@domain/entities/club-news'
 import type { CreatableClubNewsStatus } from '@domain/usecases/news/CreateClubNewsUseCase'
 import { toDateInputValue } from './date-input'
 
@@ -14,6 +14,7 @@ export interface NewsFormValues {
   publishedAt: string // yyyy-mm-dd, native <input type="date"> value — may be '' when status is 'draft'
   expiresAt: string // yyyy-mm-dd or '' (optional)
   link: string // free text or '' (optional)
+  tag: ClubNewsTag | '' // '' = no tag
 }
 
 export const EMPTY_NEWS_FORM_VALUES: NewsFormValues = {
@@ -23,6 +24,7 @@ export const EMPTY_NEWS_FORM_VALUES: NewsFormValues = {
   publishedAt: '',
   expiresAt: '',
   link: '',
+  tag: '',
 }
 
 export function toNewsFormValues(news: ClubNews | null): NewsFormValues {
@@ -36,5 +38,6 @@ export function toNewsFormValues(news: ClubNews | null): NewsFormValues {
     publishedAt: news.publishedAt ? toDateInputValue(new Date(news.publishedAt)) : '',
     expiresAt: news.expiresAt ? toDateInputValue(new Date(news.expiresAt)) : '',
     link: news.link ?? '',
+    tag: news.tag ?? '',
   }
 }

@@ -9,6 +9,7 @@ import { Input } from '@presentation/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import { Textarea } from '@presentation/shared/components/ui/textarea'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
+import { NEWS_TAG_LABELS, NO_NEWS_TAG_VALUE } from '@presentation/shared/formatters/news-tag'
 import { useNewsEditorFormViewModel } from '../useNewsEditorFormViewModel'
 import { NewsDiscardDialog } from './NewsDiscardDialog'
 
@@ -90,6 +91,26 @@ export function NewsEditorForm({ mode, title, news }: NewsEditorFormProps) {
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField label="Tag (optionnel)" htmlFor="news-tag">
+          <Select
+            value={vm.values.tag || NO_NEWS_TAG_VALUE}
+            onValueChange={(value) => vm.setTag(value === NO_NEWS_TAG_VALUE ? '' : (value as typeof vm.values.tag))}
+            disabled={vm.isSubmitting}
+          >
+            <SelectTrigger id="news-tag" className={FIELD_CLASSNAME}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_NEWS_TAG_VALUE}>Aucun</SelectItem>
+              {Object.entries(NEWS_TAG_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
                 </SelectItem>
               ))}
             </SelectContent>

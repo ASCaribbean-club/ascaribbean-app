@@ -42,4 +42,4 @@ export type CreateClubNewsInput = Omit<ClubNews, 'id' | 'createdAt'>
 // The 5 mockup fields (§2, "Correspondance champs ↔ colonnes existantes")
 // plus `status` — createdBy/createdAt are never part of an update, there is
 // still no author field in either dialog.
-export type UpdateClubNewsInput = Pick<ClubNews, 'title' | 'details' | 'link' | 'status' | 'publishedAt' | 'expiresAt'>
+export type UpdateClubNewsInput = Pick<ClubNews, 'title' | 'details' | 'link' | 'tag' | 'status' | 'publishedAt' | 'expiresAt'>

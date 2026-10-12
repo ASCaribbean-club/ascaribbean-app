@@ -62,6 +62,7 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
           title: values.title,
           details: values.details,
           link,
+          tag: values.tag || null,
           status: values.status,
           publishedAt,
           expiresAt,
@@ -76,6 +77,7 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
         title: values.title,
         details: values.details,
         link,
+        tag: values.tag || null,
         status: values.status,
         publishedAt,
         expiresAt,
@@ -111,6 +113,7 @@ export function useNewsFormDialogViewModel({ mode, news, onSuccess }: UseNewsFor
     setPublishedAt: (value: string) => setField('publishedAt', value),
     setExpiresAt: (value: string) => setField('expiresAt', value),
     setLink: (value: string) => setField('link', value),
+    setTag: (value: NewsFormValues['tag']) => setField('tag', value),
 
     canSubmit,
     isSubmitting: mutation.isPending,

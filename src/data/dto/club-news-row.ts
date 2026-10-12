@@ -9,6 +9,7 @@ export interface ClubNewsRow {
   title: string
   details: string
   link: string | null
+  tag: string | null
   status: string
   published_at: string | null
   created_at: string
@@ -22,6 +23,7 @@ export interface ClubNewsInsertRow {
   title: string
   details: string
   link: string | null
+  tag: string | null
   status: string
   published_at: string | null
   created_by: string
@@ -35,6 +37,7 @@ export interface ClubNewsUpdateRow {
   title: string
   details: string
   link: string | null
+  tag: string | null
   status: string
   published_at: string | null
   expires_at: string | null

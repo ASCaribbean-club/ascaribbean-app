@@ -449,6 +449,7 @@ export function ConvocationDetailPage() {
                 onRespondAbsent: vm.onRespondAbsent,
               }}
               others={vm.others}
+              responseCounts={vm.playerResponseCounts ?? { present: 0, absent: 0, pending: 0 }}
             />
           )}
         </TabsContent>

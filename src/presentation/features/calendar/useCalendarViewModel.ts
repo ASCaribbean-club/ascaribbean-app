@@ -107,9 +107,10 @@ function buildPlayerDayItems(
     .map((item): CalendarListItem => {
       const myResponse = item.myResponse?.status ?? null
       const responseBlock: CalendarResponseBlock = isPastDate(item.convocation.date, now)
-        ? { kind: 'player-readonly', myResponse }
+        ? { kind: 'player-readonly', counts: item.responseCounts, myResponse }
         : {
           kind: 'player-actions',
+          counts: item.responseCounts,
           canRespond: canPlayerRespond(item.convocation, now) && hasRbacPermission,
           myResponse,
           onRespondPresent: () => onRespond(item.convocation.id, 'present'),

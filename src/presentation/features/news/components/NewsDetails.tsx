@@ -3,11 +3,12 @@ import { cn } from '@presentation/shared/lib/utils'
 
 interface NewsDetailsProps {
   details: string
+  className?: string
 }
 
 // Shared by the member feed (NewsCard) and the Dirigeant console row so both
 // render the description the same way.
-export function NewsDetails({ details }: NewsDetailsProps) {
+export function NewsDetails({ details, className }: NewsDetailsProps) {
   const [expanded, setExpanded] = useState(false)
   const [isClampable, setIsClampable] = useState(false)
   const detailsRef = useRef<HTMLParagraphElement>(null)
@@ -31,6 +32,7 @@ export function NewsDetails({ details }: NewsDetailsProps) {
           'm-0 text-[13.5px] leading-relaxed whitespace-pre-wrap text-white/60',
           !expanded && 'line-clamp-3',
           isClampable && 'cursor-pointer',
+          className,
         )}
         onClick={isClampable ? () => setExpanded((v) => !v) : undefined}
       >

@@ -1,4 +1,6 @@
+import { IconFilter } from '@tabler/icons-react'
 import { NewsCard } from './NewsCard'
+import { NewsTagFilter } from './NewsTagFilter'
 import { useNewsViewModel } from '../useNewsViewModel'
 
 // specs/actus.md UI design (moved here unchanged from NewsPage so NewsPage can
@@ -12,11 +14,27 @@ export function NewsFeed() {
   return (
     <div className="flex min-h-[75svh] flex-col gap-5 px-5.5 pt-[max(1.375rem,env(safe-area-inset-top))] pb-[max(1.375rem,env(safe-area-inset-bottom))] text-white">
       <header className="flex flex-col gap-2 pt-6">
-        <h1 className="text-[26px] font-extrabold text-white">Actus du club</h1>
-        {/* Purely decorative banner from the mockup (club colors) — no
-            interactivity, no state, specific to this screen only. */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[26px] font-extrabold text-white">Actus</h1>
+          {/* Shows/hides the tag filter. The dot signals a filter still
+              applied while the chips are hidden. */}
+          <button
+            type="button"
+            onClick={vm.toggleFilters}
+            aria-label={vm.areFiltersVisible ? 'Masquer les filtres' : 'Afficher les filtres'}
+            aria-expanded={vm.areFiltersVisible}
+            className="relative flex size-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            <IconFilter className="size-5" aria-hidden />
+            {!vm.areFiltersVisible && vm.isFilterActive && (
+              <span className="absolute top-2 right-2 size-2 rounded-full bg-coach-green" aria-hidden />
+            )}
+          </button>
+        </div>
         <div aria-hidden className="h-1 w-24 rounded-full bg-linear-to-r from-coach-red via-coach-green to-white" />
       </header>
+
+      {vm.areFiltersVisible && <NewsTagFilter value={vm.tagFilter} onChange={vm.setTagFilter} />}
 
       {vm.isLoading && <p className="text-[13px] text-white/50">Chargement…</p>}
       {vm.error && <p role="alert" className="text-[13px] text-white/50">Impossible de charger les actualités.</p>}
@@ -27,9 +45,11 @@ export function NewsFeed() {
       )}
 
       {!vm.isLoading && !vm.error && vm.news.length > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-5 p-0">
+        // Full-bleed list: the thick band between cards spans the whole screen
+        // width (docs/designs/actus v2), so the cards pad themselves.
+        <ul className="m-0 -mx-5.5 flex list-none flex-col p-0">
           {vm.news.map((news) => (
-            <li key={news.id} className="border-b border-white/8 pb-5 last:border-b-0 last:pb-0">
+            <li key={news.id} className="border-b-8 border-white/6 px-5.5 pt-5 pb-5 has-[a]:pb-0">
               <NewsCard news={news} />
             </li>
           ))}

@@ -1,4 +1,4 @@
-import type { ClubNews } from '../entities/club-news'
+import type { ClubNews, ClubNewsTag } from '../entities/club-news'
 
 /**
  * A news item is visible iff it is published AND not expired.
@@ -20,4 +20,12 @@ export function isNewsVisible(news: ClubNews, now: Date): boolean {
     news.status === 'published' &&
     (news.expiresAt === null || new Date(news.expiresAt) > now)
   )
+}
+
+// Feed filter chips (docs/designs/actus v2): 'all' shows everything,
+// including untagged items; any other value shows only that exact tag.
+export type NewsTagFilter = 'all' | ClubNewsTag
+
+export function matchesNewsTagFilter(news: Pick<ClubNews, 'tag'>, filter: NewsTagFilter): boolean {
+  return filter === 'all' || news.tag === filter
 }

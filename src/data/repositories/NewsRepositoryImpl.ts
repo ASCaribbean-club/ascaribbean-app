@@ -5,7 +5,7 @@ import type { ClubNewsRow } from '../dto/club-news-row'
 import { mapSupabaseError } from '../errors/map-supabase-error'
 import { toClubNews, toClubNewsInsertRow, toClubNewsUpdateRow } from '../mappers/club-news-mapper'
 
-const CLUB_NEWS_COLUMNS = 'id, title, details, link, status, published_at, created_at, created_by, expires_at'
+const CLUB_NEWS_COLUMNS = 'id, title, details, link, tag, status, published_at, created_at, created_by, expires_at'
 
 export class NewsRepositoryImpl implements NewsRepository {
   private readonly client: SupabaseClient

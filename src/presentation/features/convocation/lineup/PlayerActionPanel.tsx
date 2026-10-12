@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { IconX } from '@tabler/icons-react'
 import { Button } from '@presentation/shared/components/ui/button'
+import { Input } from '@presentation/shared/components/ui/input'
+import { Label } from '@presentation/shared/components/ui/label'
 import { cn } from '@presentation/shared/lib/utils'
 import { CandidateList } from './CandidateList'
 import type { MatchLineupViewModel } from './useMatchLineupViewModel'
@@ -10,6 +12,8 @@ interface PlayerActionPanelProps {
   onClose: () => void
   onToggleSwap: () => void
   onToggleReplace: () => void
+  onToggleNumber: () => void
+  onChangeNumber: (raw: string) => void
   onPickPlayer: (userId: string) => void
 }
 
@@ -18,13 +22,14 @@ interface PlayerActionPanelProps {
 // selected. Repeats the name and number as text so the selection is not
 // colour-only (AC-MC-19). Scrolled into view on mount: the sticky header
 // leaves little height and the panel is under the pitch (Q-UI-6).
-export function PlayerActionPanel({ panel, onClose, onToggleSwap, onToggleReplace, onPickPlayer }: PlayerActionPanelProps) {
+export function PlayerActionPanel({ panel, onClose, onToggleSwap, onToggleReplace, onToggleNumber, onChangeNumber, onPickPlayer }: PlayerActionPanelProps) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     ref.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
   }, [panel.slotIndex])
 
-  const title = panel.isEmptySlot ? `Poste ${panel.number} libre` : `${panel.displayName} — poste ${panel.number}`
+  const numberLabel = panel.jerseyNumber === null ? 'sans numéro' : `numéro ${panel.jerseyNumber}`
+  const title = panel.isEmptySlot ? `Poste ${panel.position} libre` : `${panel.displayName} — ${numberLabel}`
 
   return (
     <div ref={ref} className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-4">
@@ -71,6 +76,49 @@ export function PlayerActionPanel({ panel, onClose, onToggleSwap, onToggleReplac
               Remplacer
             </Button>
           </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            aria-expanded={panel.mode === 'number'}
+            onClick={onToggleNumber}
+            className={cn(
+              'h-auto min-h-11 min-w-0 rounded-2xl border-white/15 bg-white/5 whitespace-normal text-white hover:bg-white/10 hover:text-white',
+              panel.mode === 'number' && 'border-coach-green bg-coach-green/20',
+            )}
+          >
+            Modifier le numéro
+          </Button>
+
+          {panel.mode === 'number' && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="lineup-jersey-number" className="text-xs font-extrabold tracking-wider text-white/50 uppercase">
+                Numéro de maillot
+              </Label>
+              <Input
+                id="lineup-jersey-number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                autoFocus
+                value={panel.numberText}
+                onChange={(event) => onChangeNumber(event.target.value)}
+                aria-invalid={panel.numberError !== null}
+                aria-describedby="lineup-jersey-number-hint"
+                placeholder="1 à 99"
+                className="h-11 min-w-0 rounded-2xl border-white/15 bg-white/5 text-base text-white"
+              />
+              <p id="lineup-jersey-number-hint" role={panel.numberError ? 'alert' : undefined} className="text-sm">
+                {panel.numberError ? (
+                  <span className="text-destructive">{panel.numberError}</span>
+                ) : panel.numberWarning ? (
+                  <span className="text-amber-300">{panel.numberWarning}</span>
+                ) : (
+                  <span className="text-white/60">Pour ce match uniquement. Laissez vide pour aucun numéro.</span>
+                )}
+              </p>
+            </div>
+          )}
 
           {panel.mode === 'swap' && (
             <p className="text-sm font-semibold text-coach-green-text">Touchez un autre joueur pour échanger les positions.</p>

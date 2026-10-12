@@ -1,4 +1,4 @@
-import type { LineupSlots } from '../../entities/match-lineup'
+import type { LineupJerseyNumbers, LineupSlots } from '../../entities/match-lineup'
 import { InvalidMatchLineupInputError } from '../../errors/invalid-match-lineup-input-error'
 import { NotFoundError } from '../../errors/not-found-error'
 import { findLineupViolation, hasAnyPlacedPlayer, isFormation } from '../../policies/match-lineup-rules'
@@ -10,6 +10,8 @@ export interface SaveMatchLineupInput {
   convocationId: string
   formation: string
   slots: LineupSlots
+  // AC-MC-27 — number worn for this match, keyed by user id. Optional: absent = nobody has a number.
+  jerseyNumbers?: LineupJerseyNumbers
 }
 
 // specs/coach-match-composition.md AC-MC-07/AC-MC-08. Does NOT call can():
@@ -38,11 +40,13 @@ export class SaveMatchLineupUseCase {
       throw new InvalidMatchLineupInputError('A lineup only exists for a match.')
     }
 
+    const jerseyNumbers = input.jerseyNumbers ?? {}
     const convoked = await this.convocationRespondersRepository.listForConvocation(input.convocationId)
     const violation = findLineupViolation(
       input.formation,
       input.slots,
       convoked.map((responder) => responder.userId),
+      jerseyNumbers,
     )
     if (violation || !isFormation(input.formation)) {
       throw new InvalidMatchLineupInputError(violation ?? 'Unknown formation.')
@@ -50,7 +54,7 @@ export class SaveMatchLineupUseCase {
 
     if (!hasAnyPlacedPlayer(input.slots)) return false
 
-    await this.matchLineupRepository.save(input.convocationId, input.formation, input.slots)
+    await this.matchLineupRepository.save(input.convocationId, input.formation, input.slots, jerseyNumbers)
     return true
   }
 }

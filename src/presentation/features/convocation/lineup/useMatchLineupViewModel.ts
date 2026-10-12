@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ConvocationType } from '@domain/entities/convocation'
-import type { Formation, LineupSlots } from '@domain/entities/match-lineup'
+import type { Formation, LineupJerseyNumbers, LineupSlots } from '@domain/entities/match-lineup'
 import type { SectionType } from '@domain/entities/section'
 import {
   countEmptySlots,
   getAvailablePlayerIds,
+  getPrefilledJerseyNumber,
+  hasDuplicateJerseyNumber,
   getLineupOpeningTime,
   isLineupOpeningFromFallback,
   isLineupSupported,
   isLineupVisibleToPlayer,
+  parseJerseyNumberInput,
   placePlayer,
+  placementsToJerseyNumbers,
   placementsToSlots,
   swapSlots,
 } from '@domain/policies/match-lineup-rules'
@@ -27,8 +31,10 @@ const SAVE_ERROR_MESSAGE = 'Enregistrement impossible. Réessayez.'
 
 export interface LineupSlotView {
   slotIndex: number
-  // PO-MC-07 — the number on a token is the slot index + 1.
-  number: number
+  // Position label of the slot (index + 1), only used to name a free slot.
+  position: number
+  // PO-MC-07 (decided) — effective jersey number for this match, null = none.
+  jerseyNumber: number | null
   userId: string | null
   displayName: string | null
 }
@@ -38,7 +44,7 @@ export interface LineupCandidateView {
   displayName: string
 }
 
-type PanelMode = 'menu' | 'swap' | 'replace'
+type PanelMode = 'menu' | 'swap' | 'replace' | 'number'
 
 interface MatchLineupViewModelParams {
   convocationId: string | undefined
@@ -65,7 +71,7 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
   const { convocationId, teamId, convocationType, kickoff, meetingPointTime, sectionType, activeRole, roleMatchesConvocationTeam } = params
   const { isTabActive, now, onLeave } = params
   const queryClient = useQueryClient()
-  const { getMatchLineupUseCase, saveMatchLineupUseCase, listConvocationRespondersUseCase } = useConvocationDependencies()
+  const { getMatchLineupUseCase, saveMatchLineupUseCase, listConvocationRespondersUseCase, listLineupDefaultJerseyNumbersUseCase } = useConvocationDependencies()
 
   // AC-MC-03 — RBAC AND the active role, same multi-role guard as
   // canValidateAttendance/canEditMatchDetails. No time condition (PO-MC-05).
@@ -103,18 +109,33 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
     displayName: responder.displayName,
   }))
 
+  // AC-MC-26 — membership numbers of the season of the convocation, used only
+  // to PREFILL on selection. A failure is non-blocking (AC-MC-29): the field
+  // is then simply empty and editable.
+  const defaultNumbersQuery = useQuery({
+    queryKey: queryKeys.matchLineupDefaultNumbers(convocationId ?? ''),
+    queryFn: () => listLineupDefaultJerseyNumbersUseCase.execute(convocationId!),
+    enabled: canRead && canEdit && isTabActive,
+  })
+  const defaultNumbers: Record<string, number> = defaultNumbersQuery.data ?? {}
+
   const baselineFormation: Formation = lineup?.formation ?? DEFAULT_FORMATION
   const baselineSlots: LineupSlots = placementsToSlots(lineup?.placements ?? [])
+  const baselineNumbers: LineupJerseyNumbers = placementsToJerseyNumbers(lineup?.placements ?? [])
 
   const [isEditing, setIsEditing] = useState(false)
   const [draftFormation, setDraftFormation] = useState<Formation>(DEFAULT_FORMATION)
   const [draftSlots, setDraftSlots] = useState<LineupSlots>(baselineSlots)
-  const [selection, setSelection] = useState<{ slotIndex: number; mode: PanelMode } | null>(null)
+  // Edited local-only until "Terminé" (AC-MC-27), keyed by player.
+  const [draftNumbers, setDraftNumbers] = useState<LineupJerseyNumbers>(baselineNumbers)
+  // numberText: the raw text of the number field while mode === 'number'.
+  const [selection, setSelection] = useState<{ slotIndex: number; mode: PanelMode; numberText?: string } | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isLeavePending, setIsLeavePending] = useState(false)
 
   const formation = isEditing ? draftFormation : baselineFormation
   const slots = isEditing ? draftSlots : baselineSlots
+  const numbers = isEditing ? draftNumbers : baselineNumbers
 
   const nameByUserId: Record<string, string> = {}
   for (const player of convokedPlayers) nameByUserId[player.userId] = player.displayName
@@ -122,7 +143,8 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
 
   const slotViews: LineupSlotView[] = slots.map((userId, slotIndex) => ({
     slotIndex,
-    number: slotIndex + 1,
+    position: slotIndex + 1,
+    jerseyNumber: userId ? (numbers[userId] ?? null) : null,
     userId,
     displayName: userId ? (nameByUserId[userId] ?? '—') : null,
   }))
@@ -130,12 +152,18 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
   const emptySlotCount = countEmptySlots(slots)
 
   const hasUnsavedChanges =
-    isEditing && (draftFormation !== baselineFormation || draftSlots.some((userId, index) => userId !== baselineSlots[index]))
+    isEditing &&
+    (draftFormation !== baselineFormation ||
+      draftSlots.some(
+        (userId, index) =>
+          userId !== baselineSlots[index] || (userId !== null && (draftNumbers[userId] ?? null) !== (baselineNumbers[userId] ?? null)),
+      ))
 
   function startEditing() {
     if (!canEdit) return
     setDraftFormation(baselineFormation)
     setDraftSlots(baselineSlots)
+    setDraftNumbers(baselineNumbers)
     setSelection(null)
     setSaveError(null)
     setIsEditing(true)
@@ -150,7 +178,13 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!convocationId) return Promise.reject(new Error('no convocation to save a lineup for yet'))
-      return saveMatchLineupUseCase.execute({ convocationId, formation: draftFormation, slots: draftSlots })
+      return saveMatchLineupUseCase.execute({
+        convocationId,
+        formation: draftFormation,
+        slots: draftSlots,
+        // Only placed players' numbers go out (AC-MC-27).
+        jerseyNumbers: Object.fromEntries(draftSlots.flatMap((userId) => (userId ? [[userId, draftNumbers[userId] ?? null]] : []))),
+      })
     },
     onMutate: () => setSaveError(null),
     onSuccess: async () => {
@@ -166,6 +200,8 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
   // no-op anyway). The use case itself skips an entirely empty lineup.
   function onDone() {
     if (saveMutation.isPending) return
+    // An invalid number is still on screen with its error: do not write past it.
+    if (numberError) return
     if (!hasUnsavedChanges) {
       stopEditing()
       return
@@ -213,7 +249,38 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
     if (!selection) return
     // AC-MC-06 — replaced player leaves the field; a free slot just fills.
     setDraftSlots(placePlayer(draftSlots, selection.slotIndex, userId))
+    // AC-MC-26 — the number is prefilled from the membership of the season (or
+    // left empty, AC-MC-29); editable afterwards, for this match only.
+    setDraftNumbers((current) => ({ ...current, [userId]: getPrefilledJerseyNumber(defaultNumbers, userId) }))
     setSelection(null)
+  }
+
+  function onToggleNumber() {
+    setSelection((current) => {
+      if (!current) return current
+      if (current.mode === 'number') return { slotIndex: current.slotIndex, mode: 'menu' }
+      const userId = draftSlots[current.slotIndex]
+      return { slotIndex: current.slotIndex, mode: 'number', numberText: userId ? String(draftNumbers[userId] ?? '') : '' }
+    })
+  }
+
+  // Long press on a placed token (edit mode): straight to the number field,
+  // without selecting/swapping. The accessible twin is "Modifier le numéro".
+  function onLongPressSlot(slotIndex: number) {
+    if (!isEditing || selection?.mode === 'swap') return
+    const userId = draftSlots[slotIndex]
+    if (!userId) return
+    setSelection({ slotIndex, mode: 'number', numberText: String(draftNumbers[userId] ?? '') })
+  }
+
+  // The draft only ever receives VALID values; an invalid text stays in the
+  // field with its error (the draft keeps the last valid number).
+  function onChangeNumber(raw: string) {
+    if (!selection || selection.mode !== 'number') return
+    setSelection({ ...selection, numberText: raw })
+    const userId = draftSlots[selection.slotIndex]
+    const parsed = parseJerseyNumberInput(raw)
+    if (userId && parsed.ok) setDraftNumbers((current) => ({ ...current, [userId]: parsed.value }))
   }
 
   // Back navigation (UI design §4, Q-UI-2): guard unsaved changes.
@@ -238,10 +305,22 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
     slots,
   ).map((userId) => ({ userId, displayName: nameByUserId[userId] ?? '—' }))
 
+  const parsedNumber = selection?.mode === 'number' ? parseJerseyNumberInput(selection.numberText ?? '') : null
+  const numberError = parsedNumber && !parsedNumber.ok ? parsedNumber.message : null
+  // PO-MC-14 — soft warning only, never blocks.
+  const numberWarning =
+    parsedNumber?.ok && selectedSlot?.userId && hasDuplicateJerseyNumber(slots, numbers, selectedSlot.userId, parsedNumber.value)
+      ? 'Ce numéro est déjà porté par un autre joueur de la composition.'
+      : null
+
   const panel = selectedSlot
     ? {
         slotIndex: selectedSlot.slotIndex,
-        number: selectedSlot.number,
+        position: selectedSlot.position,
+        jerseyNumber: selectedSlot.jerseyNumber,
+        numberText: selection?.numberText ?? '',
+        numberError,
+        numberWarning,
         displayName: selectedSlot.displayName,
         isEmptySlot: selectedSlot.userId === null,
         mode: selection!.mode,
@@ -300,6 +379,9 @@ export function useMatchLineupViewModel(params: MatchLineupViewModelParams) {
     onClosePanel,
     onToggleSwap,
     onToggleReplace,
+    onToggleNumber,
+    onLongPressSlot,
+    onChangeNumber,
     onPickPlayer,
 
     hasUnsavedChanges,

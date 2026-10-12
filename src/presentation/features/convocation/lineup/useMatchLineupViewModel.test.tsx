@@ -17,8 +17,8 @@ const savedLineup: MatchLineup = {
   convocationId: 'c1',
   formation: '4-4-2',
   placements: [
-    { slotIndex: 0, userId: 'a', displayName: 'Player A' },
-    { slotIndex: 1, userId: 'b', displayName: 'Player B' },
+    { slotIndex: 0, userId: 'a', displayName: 'Player A', jerseyNumber: 1 },
+    { slotIndex: 1, userId: 'b', displayName: 'Player B', jerseyNumber: null },
   ],
 }
 
@@ -29,6 +29,7 @@ function setup(overrides: Partial<Parameters<typeof useMatchLineupViewModel>[0]>
   vi.mocked(useConvocationDependencies).mockReturnValue({
     getMatchLineupUseCase: { execute: async () => lineup },
     saveMatchLineupUseCase: { execute: save },
+    listLineupDefaultJerseyNumbersUseCase: { execute: async () => ({ c: 17 }) },
     listConvocationRespondersUseCase: {
       execute: async () =>
         ['a', 'b', 'c'].map((id) => ({ userId: id, hasResponded: false, displayName: `Player ${id.toUpperCase()}`, position: null })),
@@ -178,5 +179,99 @@ describe('useMatchLineupViewModel', () => {
     expect(onLeave).toHaveBeenCalledOnce()
     act(() => result.current.confirmLeave())
     expect(onLeave).toHaveBeenCalledTimes(2)
+  })
+
+  describe('jersey numbers (AC-MC-25..29)', () => {
+    async function startEditing() {
+      const hook = setup()
+      await waitFor(() => expect(hook.result.current.status).toBe('ready'))
+      await waitFor(() => expect(hook.result.current.canEdit).toBe(true))
+      act(() => hook.result.current.onStartEditing())
+      return hook
+    }
+
+    it('exposes the saved number on each token, null when none (AC-MC-25)', async () => {
+      const { result } = setup()
+      await waitFor(() => expect(result.current.status).toBe('ready'))
+      expect(result.current.slots[0].jerseyNumber).toBe(1)
+      expect(result.current.slots[1].jerseyNumber).toBeNull()
+    })
+
+    it('prefills the membership number when placing a player and closes the panel (AC-MC-26)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectSlot(0))
+      act(() => result.current.onToggleReplace())
+      await waitFor(() => expect(result.current.panel?.availablePlayers).toHaveLength(1))
+      await waitFor(() => expect(result.current.slots[0].jerseyNumber).toBe(1))
+      act(() => result.current.onPickPlayer('c'))
+      expect(result.current.slots[0].userId).toBe('c')
+      expect(result.current.slots[0].jerseyNumber).toBe(17)
+      expect(result.current.panel).toBeNull()
+    })
+
+    it('keeps each number with its player on swap (AC-MC-28)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectSlot(0))
+      act(() => result.current.onToggleSwap())
+      act(() => result.current.onSelectSlot(1))
+      expect(result.current.slots[0]).toMatchObject({ userId: 'b', jerseyNumber: null })
+      expect(result.current.slots[1]).toMatchObject({ userId: 'a', jerseyNumber: 1 })
+    })
+
+    it('keeps the numbers when the formation changes (AC-MC-28)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectFormation('3-5-2'))
+      expect(result.current.slots[0].jerseyNumber).toBe(1)
+    })
+
+    it('opens number editing on a long press without selecting a swap (edit mode only)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onLongPressSlot(0))
+      expect(result.current.panel?.mode).toBe('number')
+      expect(result.current.panel?.numberText).toBe('1')
+    })
+
+    it('ignores a long press on a free slot or outside edit mode', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onLongPressSlot(5))
+      expect(result.current.panel).toBeNull()
+    })
+
+    it('edits locally, flags a duplicate softly, and saves only on Terminé (AC-MC-27, PO-MC-14)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectSlot(1))
+      act(() => result.current.onToggleNumber())
+      act(() => result.current.onChangeNumber('1'))
+      expect(result.current.panel?.numberWarning).toMatch(/déjà porté/)
+      expect(result.current.panel?.numberError).toBeNull()
+      expect(result.current.slots[1].jerseyNumber).toBe(1)
+      expect(save).not.toHaveBeenCalled()
+
+      act(() => result.current.onChangeNumber('12'))
+      expect(result.current.panel?.numberWarning).toBeNull()
+      act(() => result.current.onDone())
+      await waitFor(() => expect(save).toHaveBeenCalledOnce())
+      expect(save).toHaveBeenCalledWith(expect.objectContaining({ jerseyNumbers: { a: 1, b: 12 } }))
+    })
+
+    it('shows a readable error out of range and refuses to save past it (AC-MC-29)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectSlot(0))
+      act(() => result.current.onToggleNumber())
+      act(() => result.current.onChangeNumber('100'))
+      expect(result.current.panel?.numberError).toBe('Entrez un nombre entier entre 1 et 99.')
+      expect(result.current.slots[0].jerseyNumber).toBe(1)
+      act(() => result.current.onDone())
+      expect(save).not.toHaveBeenCalled()
+    })
+
+    it('clears the number with an empty field (placement never needs one)', async () => {
+      const { result } = await startEditing()
+      act(() => result.current.onSelectSlot(0))
+      act(() => result.current.onToggleNumber())
+      act(() => result.current.onChangeNumber(''))
+      expect(result.current.slots[0].jerseyNumber).toBeNull()
+      expect(result.current.panel?.numberError).toBeNull()
+    })
   })
 })

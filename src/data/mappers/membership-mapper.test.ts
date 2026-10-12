@@ -15,6 +15,7 @@ describe('toMembership', () => {
       archived_at: null,
       archived_by: null,
       amount_due_cents: 30000,
+      jersey_number: null,
     }
 
     expect(toMembership(row)).toEqual({
@@ -25,6 +26,7 @@ describe('toMembership', () => {
       seasonId: 'season-1',
       validUntil: '2027-06-30',
       amountDueCents: 30000,
+      jerseyNumber: null,
     })
   })
 
@@ -40,6 +42,7 @@ describe('toMembership', () => {
       archived_at: null,
       archived_by: null,
       amount_due_cents: null,
+      jersey_number: null,
     }
 
     expect(toMembership(row).licenceNumber).toBeNull()
@@ -58,6 +61,7 @@ describe('toMembership', () => {
       archived_at: null,
       archived_by: null,
       amount_due_cents: null,
+      jersey_number: null,
     }
 
     expect(toMembership(row).amountDueCents).toBeNull()
@@ -73,6 +77,7 @@ describe('toMembershipInsertRow', () => {
       status: 'active',
       validUntil: '2027-06-30',
       amountDueCents: null,
+      jerseyNumber: null,
     }
 
     expect(toMembershipInsertRow(input)).toEqual({
@@ -82,6 +87,7 @@ describe('toMembershipInsertRow', () => {
       season_id: 'season-1',
       valid_until: '2027-06-30',
       amount_due_cents: null,
+      jersey_number: null,
     })
   })
 
@@ -93,6 +99,7 @@ describe('toMembershipInsertRow', () => {
       status: 'pending',
       validUntil: '2027-06-30',
       amountDueCents: null,
+      jerseyNumber: null,
     }
 
     expect(toMembershipInsertRow(input).licence_number).toBeNull()
@@ -108,6 +115,7 @@ describe('toMembershipUpdateRow', () => {
       status: 'suspended',
       validUntil: '2026-06-30',
       amountDueCents: 30000,
+      jerseyNumber: null,
     }
 
     expect(toMembershipUpdateRow(input)).toEqual({
@@ -117,6 +125,7 @@ describe('toMembershipUpdateRow', () => {
       season_id: 'season-1',
       valid_until: '2026-06-30',
       amount_due_cents: 30000,
+      jersey_number: null,
     })
   })
 
@@ -130,8 +139,43 @@ describe('toMembershipUpdateRow', () => {
       status: 'pending',
       validUntil: '2026-06-30',
       amountDueCents: null,
+      jerseyNumber: null,
     }
 
     expect(toMembershipUpdateRow(input).amount_due_cents).toBeNull()
+  })
+})
+
+describe('jersey number (AC-MC-24)', () => {
+  const row: MembershipRow = {
+    id: 'membership-1',
+    user_id: 'user-1',
+    licence_number: null,
+    status: 'pending',
+    season_id: 'season-1',
+    valid_until: '2027-06-30',
+    archived_at: null,
+    archived_by: null,
+    amount_due_cents: null,
+    jersey_number: 10,
+  }
+
+  it('maps jersey_number to jerseyNumber, and null to null', () => {
+    expect(toMembership(row).jerseyNumber).toBe(10)
+    expect(toMembership({ ...row, jersey_number: null }).jerseyNumber).toBeNull()
+  })
+
+  it('writes jerseyNumber back on insert and update rows', () => {
+    const input = {
+      userId: 'user-1',
+      seasonId: 'season-1',
+      licenceNumber: null,
+      status: 'pending' as const,
+      validUntil: '2027-06-30',
+      amountDueCents: null,
+      jerseyNumber: 7,
+    }
+    expect(toMembershipInsertRow(input).jersey_number).toBe(7)
+    expect(toMembershipUpdateRow({ ...input, jerseyNumber: null }).jersey_number).toBeNull()
   })
 })

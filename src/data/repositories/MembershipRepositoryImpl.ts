@@ -5,7 +5,7 @@ import type { MembershipRow } from '@data/dto/membership-dto'
 import { mapSupabaseError } from '@data/errors/map-supabase-error'
 import { toMembership, toMembershipInsertRow, toMembershipUpdateRow } from '@data/mappers/membership-mapper'
 
-const MEMBERSHIP_COLUMNS = 'id, user_id, licence_number, status, season_id, valid_until, archived_at, archived_by, amount_due_cents'
+const MEMBERSHIP_COLUMNS = 'id, user_id, licence_number, status, season_id, valid_until, archived_at, archived_by, amount_due_cents, jersey_number'
 
 export class MembershipRepositoryImpl implements MembershipRepository {
   constructor(private readonly client: SupabaseClient) {}

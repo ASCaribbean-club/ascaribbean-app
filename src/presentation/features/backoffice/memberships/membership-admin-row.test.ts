@@ -21,6 +21,7 @@ function buildMembership(overrides: Partial<Membership> = {}): Membership {
     seasonId: 'season-1',
     validUntil: '2027-06-30',
     amountDueCents: null,
+    jerseyNumber: null,
     ...overrides,
   }
 }

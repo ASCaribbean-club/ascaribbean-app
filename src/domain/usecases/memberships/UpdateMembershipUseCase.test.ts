@@ -101,6 +101,7 @@ function validInput(overrides: Partial<UpdateMembershipUseCaseInput> = {}): Upda
     status: 'active',
     validUntil: '2027-06-30',
     amountDueCents: 30000,
+    jerseyNumber: null,
     ...overrides,
   }
 }
@@ -128,6 +129,24 @@ describe('UpdateMembershipUseCase', () => {
     await useCase.execute(validInput({ licenceNumber: null, status: 'pending' }))
 
     expect(update).toHaveBeenCalledWith('membership-1', expect.objectContaining({ licenceNumber: null }))
+  })
+
+  it('writes the jersey number through, including clearing it with null (AC-MC-24)', async () => {
+    const update = vi.fn(async (id: string, input: UpdateMembershipInput) => ({ id, ...input }) satisfies Membership)
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
+
+    await useCase.execute(validInput({ jerseyNumber: 99 }))
+    await useCase.execute(validInput({ jerseyNumber: null }))
+
+    expect(update).toHaveBeenNthCalledWith(1, 'membership-1', expect.objectContaining({ jerseyNumber: 99 }))
+    expect(update).toHaveBeenNthCalledWith(2, 'membership-1', expect.objectContaining({ jerseyNumber: null }))
+  })
+
+  it.each([0, 100, 3.5])('throws InvalidMembershipInputError when jerseyNumber is %s (PO-MC-15)', async (jerseyNumber) => {
+    const update = vi.fn()
+    const useCase = new UpdateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ update }), fakePaymentRepository(), fakeAuditLogRepository())
+    await expect(useCase.execute(validInput({ jerseyNumber }))).rejects.toThrow(InvalidMembershipInputError)
+    expect(update).not.toHaveBeenCalled()
   })
 
   it('updates the SAME row (targets membershipId, never inserts a new one)', async () => {

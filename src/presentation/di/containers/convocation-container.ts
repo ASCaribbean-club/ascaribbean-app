@@ -58,6 +58,7 @@ import { ReleaseMissionUseCase } from '@domain/usecases/convocation-missions/Rel
 import { RemoveMemberFromMissionUseCase } from '@domain/usecases/convocation-missions/RemoveMemberFromMissionUseCase'
 import { RemoveMissionUseCase } from '@domain/usecases/convocation-missions/RemoveMissionUseCase'
 import { GetMatchLineupUseCase } from '@domain/usecases/match-lineup/GetMatchLineupUseCase'
+import { ListLineupDefaultJerseyNumbersUseCase } from '@domain/usecases/match-lineup/ListLineupDefaultJerseyNumbersUseCase'
 import { SaveMatchLineupUseCase } from '@domain/usecases/match-lineup/SaveMatchLineupUseCase'
 import { CastVoteUseCase } from '@domain/usecases/player-vote/CastVoteUseCase'
 import { GetMyVoteUseCase } from '@domain/usecases/player-vote/GetMyVoteUseCase'
@@ -139,6 +140,7 @@ export interface ConvocationContainer {
   // specs/coach-match-composition.md — "Composition" tab read/write.
   getMatchLineupUseCase: GetMatchLineupUseCase
   saveMatchLineupUseCase: SaveMatchLineupUseCase
+  listLineupDefaultJerseyNumbersUseCase: ListLineupDefaultJerseyNumbersUseCase
   // specs/match-details-missions.md — "Missions" tab.
   convocationMissionRepository: ConvocationMissionRepository
   listConvocationMissionsUseCase: ListConvocationMissionsUseCase
@@ -199,6 +201,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const getMatchEventsUseCase = new GetMatchEventsUseCase(matchEventRepository)
   const getMatchLineupUseCase = new GetMatchLineupUseCase(matchLineupRepository)
   const saveMatchLineupUseCase = new SaveMatchLineupUseCase(convocationRepository, convocationRespondersRepository, matchLineupRepository)
+  const listLineupDefaultJerseyNumbersUseCase = new ListLineupDefaultJerseyNumbersUseCase(matchLineupRepository)
   const convocationMissionRepository = new ConvocationMissionRepositoryImpl(supabaseClient)
   const listConvocationMissionsUseCase = new ListConvocationMissionsUseCase(convocationMissionRepository)
   const claimMissionUseCase = new ClaimMissionUseCase(
@@ -270,6 +273,7 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     getMatchEventsUseCase,
     getMatchLineupUseCase,
     saveMatchLineupUseCase,
+    listLineupDefaultJerseyNumbersUseCase,
     convocationMissionRepository,
     listConvocationMissionsUseCase,
     claimMissionUseCase,

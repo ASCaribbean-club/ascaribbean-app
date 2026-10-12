@@ -307,6 +307,9 @@ export const queryKeys = {
   // single key per convocation is right: a session has one active role at a
   // time on this screen.
   matchLineup: (convocationId: string) => ['convocations', convocationId, 'lineup'] as const,
+  // AC-MC-26 — default jersey numbers of the convoked pool (membership of the
+  // convocation's season). Own key: coach-only read, distinct from the lineup.
+  matchLineupDefaultNumbers: (convocationId: string) => ['convocations', convocationId, 'lineup', 'default-numbers'] as const,
 
   // specs/web-create-convocation.md AC-WC-16/AC-WC-34 — backoffice
   // convocations. The list key is discriminated by the filters (a change of

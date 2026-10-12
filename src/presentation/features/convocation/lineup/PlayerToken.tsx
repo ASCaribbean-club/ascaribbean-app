@@ -1,8 +1,16 @@
+import { useRef } from 'react'
 import { IconPlus } from '@tabler/icons-react'
 import { cn } from '@presentation/shared/lib/utils'
 
+// Press duration (ms) that turns a tap into "edit this player's number".
+const LONG_PRESS_MS = 500
+const NO_NUMBER_FALLBACK = '–'
+
 interface PlayerTokenProps {
-  number: number
+  // Slot position (index + 1), only used to name a free slot.
+  position: number
+  // Effective jersey number for this match (PO-MC-07), null = none (AC-MC-25).
+  jerseyNumber: number | null
   // null = free slot
   name: string | null
   // Position on the pitch card, in percent.
@@ -14,6 +22,8 @@ interface PlayerTokenProps {
   // draws a plain dashed circle (UI design §7).
   showEmptyHint: boolean
   onSelect: () => void
+  // Edit mode, placed player: opens number editing without selecting.
+  onLongPress: () => void
 }
 
 // specs/coach-match-composition.md UI design §3/§7 — one token of the pitch.
@@ -21,8 +31,44 @@ interface PlayerTokenProps {
 // offers a 44x44 touch zone (`min-h-11 min-w-11`, CLAUDE.md §6). Selection and
 // emptiness are never carried by colour alone (AC-MC-19): aria-pressed, the
 // "Libre" label and the "+" icon, plus the action panel repeating the name.
-export function PlayerToken({ number, name, x, y, interactive, selected, showEmptyHint, onSelect }: PlayerTokenProps) {
+export function PlayerToken({
+  position,
+  jerseyNumber,
+  name,
+  x,
+  y,
+  interactive,
+  selected,
+  showEmptyHint,
+  onSelect,
+  onLongPress,
+}: PlayerTokenProps) {
   const isEmpty = name === null
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressed = useRef(false)
+
+  function cancelPress() {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+  }
+  function startPress() {
+    if (isEmpty) return
+    longPressed.current = false
+    cancelPress()
+    timer.current = setTimeout(() => {
+      longPressed.current = true
+      timer.current = null
+      onLongPress()
+    }, LONG_PRESS_MS)
+  }
+  function handleClick() {
+    // The click that ends a long press must not also select/swap.
+    if (longPressed.current) {
+      longPressed.current = false
+      return
+    }
+    onSelect()
+  }
 
   const content = (
     <>
@@ -34,7 +80,7 @@ export function PlayerToken({ number, name, x, y, interactive, selected, showEmp
           selected && 'ring-4 ring-coach-green',
         )}
       >
-        {isEmpty ? showEmptyHint && <IconPlus className="size-4" /> : number}
+        {isEmpty ? showEmptyHint && <IconPlus className="size-4" /> : (jerseyNumber ?? NO_NUMBER_FALLBACK)}
       </span>
       {(!isEmpty || showEmptyHint) && (
         <span className="max-w-18 truncate text-xs font-semibold text-white drop-shadow">{isEmpty ? 'Libre' : name}</span>
@@ -57,9 +103,16 @@ export function PlayerToken({ number, name, x, y, interactive, selected, showEmp
     <button
       type="button"
       aria-pressed={selected}
-      aria-label={isEmpty ? `Poste ${number} libre` : `${name}, poste ${number}`}
-      onClick={onSelect}
-      className={cn(className, 'rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-white')}
+      aria-label={
+        isEmpty ? `Poste ${position} libre` : jerseyNumber === null ? `${name}, sans numéro` : `${name}, numéro ${jerseyNumber}`
+      }
+      onClick={handleClick}
+      onPointerDown={startPress}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      onContextMenu={(event) => event.preventDefault()}
+      className={cn(className, 'select-none rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-white')}
       style={style}
     >
       {content}

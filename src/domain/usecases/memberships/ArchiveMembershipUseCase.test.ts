@@ -33,7 +33,7 @@ function fakeUserRepository(user: User | null): UserRepository {
 }
 
 function archivedMembership(): Membership {
-  return { id: 'membership-1', userId: 'user-1', licenceNumber: null, status: 'pending', seasonId: 'season-1', validUntil: '2027-06-30', amountDueCents: null }
+  return { id: 'membership-1', userId: 'user-1', licenceNumber: null, status: 'pending', seasonId: 'season-1', validUntil: '2027-06-30', amountDueCents: null, jerseyNumber: null }
 }
 
 function fakeMembershipRepository(overrides: Partial<MembershipRepository> = {}): MembershipRepository {

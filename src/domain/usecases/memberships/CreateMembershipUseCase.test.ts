@@ -46,6 +46,7 @@ function membership(overrides: Partial<Membership> = {}): Membership {
     seasonId: 'season-1',
     validUntil: '2027-06-30',
     amountDueCents: null,
+    jerseyNumber: null,
     ...overrides,
   }
 }
@@ -144,6 +145,22 @@ describe('CreateMembershipUseCase', () => {
   it('throws InvalidMembershipInputError when validUntil is missing', async () => {
     const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
     await expect(useCase.execute(validInput({ validUntil: '' }))).rejects.toThrow(InvalidMembershipInputError)
+  })
+
+  it('writes the optional jersey number through, and null when absent (AC-MC-24)', async () => {
+    const create = vi.fn(async (input: CreateMembershipInput) => ({ id: 'membership-1', ...input }) satisfies Membership)
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository({ create }), fakePaymentRepository(), fakeAuditLogRepository())
+
+    await useCase.execute(validInput({ jerseyNumber: 10 }))
+    await useCase.execute(validInput())
+
+    expect(create).toHaveBeenNthCalledWith(1, expect.objectContaining({ jerseyNumber: 10 }))
+    expect(create).toHaveBeenNthCalledWith(2, expect.objectContaining({ jerseyNumber: null }))
+  })
+
+  it('throws InvalidMembershipInputError when jerseyNumber is out of range (PO-MC-15)', async () => {
+    const useCase = new CreateMembershipUseCase(fakeUserRepository(adminUser()), fakeMembershipRepository(), fakePaymentRepository(), fakeAuditLogRepository())
+    await expect(useCase.execute(validInput({ jerseyNumber: 100 }))).rejects.toThrow(InvalidMembershipInputError)
   })
 
   // AC-WM-15 — an empty licence number is a VALID case (mockup row 1), never

@@ -96,6 +96,7 @@ export function LineupTab({ lineup }: LineupTabProps) {
         selectedSlotIndex={lineup.selectedSlotIndex}
         showEmptyHints={lineup.canEdit}
         onSelectSlot={lineup.onSelectSlot}
+        onLongPressSlot={lineup.onLongPressSlot}
       />
 
       {lineup.isEditing && lineup.panel && (
@@ -104,6 +105,8 @@ export function LineupTab({ lineup }: LineupTabProps) {
           onClose={lineup.onClosePanel}
           onToggleSwap={lineup.onToggleSwap}
           onToggleReplace={lineup.onToggleReplace}
+          onToggleNumber={lineup.onToggleNumber}
+          onChangeNumber={lineup.onChangeNumber}
           onPickPlayer={lineup.onPickPlayer}
         />
       )}

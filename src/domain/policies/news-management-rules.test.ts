@@ -8,6 +8,7 @@ function news(overrides: Partial<ClubNews> = {}): ClubNews {
     title: 'Titre',
     details: 'Contenu',
     link: null,
+    tag: null,
     status: 'published',
     publishedAt: '2026-10-01T00:00:00.000Z',
     createdAt: '2026-09-30T00:00:00.000Z',

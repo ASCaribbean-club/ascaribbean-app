@@ -4,6 +4,7 @@ import type { User } from '../../entities/user'
 import type { Vote } from '../../entities/vote'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { NotFoundError } from '../../errors/not-found-error'
+import { VotingClosedError } from '../../errors/voting-closed-error'
 import { VotingNotOpenError } from '../../errors/voting-not-open-error'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { UserRepository } from '../../repositories/user-repository'
@@ -115,6 +116,19 @@ describe('CastVoteUseCase', () => {
     await expect(
       useCase.execute({ convocationId: 'convocation-1', categoryId: 'positive', voterId: 'player-1', candidateId: 'player-2', now: NOW }),
     ).rejects.toThrow(VotingNotOpenError)
+  })
+
+  // PO-PV-06 closing half, resolved 2026-10-12: kickoff + 1h + 3 days.
+  it('throws VotingClosedError once the voting deadline has passed', async () => {
+    const useCase = new CastVoteUseCase(
+      fakeUserRepository(playerUser('team-1')),
+      fakeConvocationRepository(convocationWith({ date: '2026-09-12T18:00:00.000Z' })),
+      fakeVoteRepository(),
+    )
+
+    await expect(
+      useCase.execute({ convocationId: 'convocation-1', categoryId: 'positive', voterId: 'player-1', candidateId: 'player-2', now: NOW }),
+    ).rejects.toThrow(VotingClosedError)
   })
 
   // AC-02, same class of gap the can.ts team-scope fix closes for

@@ -49,6 +49,7 @@ import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-traini
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { UserAlreadyRegisteredError } from '@domain/errors/user-already-registered-error'
 import { UserDirectoryInsertFailedError } from '@domain/errors/user-directory-insert-failed-error'
+import { VotingClosedError } from '@domain/errors/voting-closed-error'
 import { VotingNotOpenError } from '@domain/errors/voting-not-open-error'
 import { WeakPasswordError } from '@domain/errors/weak-password-error'
 import type { UiError } from './ui-error'
@@ -394,6 +395,15 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
       message: 'Le vote ne peut être enregistré qu’après le coup d’envoi du match.',
       variant: 'inline',
       retryable: true,
+    }
+  }
+
+  if (error instanceof VotingClosedError) {
+    // PO-PV-06 closing half — the deadline passing never reverses, so not retryable.
+    return {
+      message: 'Les votes sont clos pour ce match.',
+      variant: 'inline',
+      retryable: false,
     }
   }
 

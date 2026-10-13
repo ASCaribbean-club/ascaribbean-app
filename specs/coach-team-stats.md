@@ -1,5 +1,7 @@
 # Spec — Statistiques de l'équipe (vue Coach/Staff)
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** PO-CTS-01, PO-CTS-02, AC-CTS-12 et PO-CTS-04 sont **débloqués** par la colonne `match_details.competition_type` (`'official' | 'friendly'`, PO-CPS-01/02 tranchés) ; les dénominateurs de présence sont les convoqués. La construction des agrégats reste dans cette spec.
+
 > Statut : **rédaction initiale du 2026-09-29** (product-owner-agent). Aucun point ouvert ne bloque la transmission à designer-agent (la maquette est versionnée et exploitable). **Trois points bloquent l'implémentation** — PO-CTS-01, PO-CTS-02 et PO-CTS-04, voir §5.
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P0/P1 + matrice RBAC), `docs/roles-personas-as-caribbean.md` (8 rôles, comptes multi-rôles), `specs/match-stats.md` (buts/cartons, agrégats d'équipe, précédent RBAC PO-MS-01), `specs/coach-attendance-confirmation.md` (source de la présence constatée, PO-AT-05/06/07), `specs/menu.md` (carte « Statistiques » désactivée, AC-MN-04), `specs/coach-dashboard.md` (nav basse, PO-6b).
 > Code et base lus pour cadrer : `src/domain/policies/{actions,rbac-matrix,can}.ts`, `supabase/migrations/20260811171754_initial_schema.sql` (`attendance_records` + RLS), `supabase/migrations/20260924100000_match_statistics_schema.sql` (`match_events` + RLS, **et son bloc STOP**), `supabase/migrations/20260819153918_season_scoping_correction.sql` (`current_season()`), `supabase/migrations/20260917145402_section_team_write_policies.sql` (`teams.season_id not null`).

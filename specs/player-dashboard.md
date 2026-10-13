@@ -1,5 +1,7 @@
 # Spec — Tableau de bord Joueur/Joueuse
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** Une convocation où le joueur n'est **pas convoqué** n'est pas « à répondre » : pas de boutons Présent / Absent, mention « Non convoqué(e) » (hypothèse PO-CPS-03). La carte « Prochaine convocation » affiche l'icône coupe pour un match officiel.
+
 > Statut : première rédaction (product-owner-agent, 2026-08-25), **révisée le même jour après ajout des maquettes** `docs/designs/player-dashboard/`. 7 points ouverts (PO-PD-01 à PO-PD-07). Aucun ne bloque la mise en page générale ; **PO-PD-02 et PO-PD-03 bloquent deux blocs précis des maquettes** (bloc « Mes stats » et variante « Absent »), PO-PD-01 et PO-PD-04 bloquent l'implémentation. Voir §5.
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P0/P1 + matrice RBAC), `docs/roles-personas-as-caribbean.md` (8 rôles, comptes multi-rôles), `docs/ARCHITECTURE.md` (§7 permissions, §11 journal d'audit, §13.4 nav basse), `docs/season-scoping-correction.md` (saison en cours), `specs/coach-dashboard.md` (patterns d'écran, PO-1/PO-2/PO-5, AC-CD-xx), `specs/create-convocation.md` (§2 modèle de données, §4 données sensibles, §6 libellé de bouton).
 > Maquettes : `docs/designs/player-dashboard/v2_joueur_dashboard.png` (état par défaut) et `docs/designs/player-dashboard/v2_joueur_dashboard_absent.png` (variante après choix « Absent »).

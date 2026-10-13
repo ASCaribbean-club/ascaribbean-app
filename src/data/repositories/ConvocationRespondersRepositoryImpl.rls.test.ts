@@ -116,6 +116,15 @@ describe('convocation_responders / get_convocation_responders / convocations_sel
     if (convocationBError) throw convocationBError
     convocationBId = convocationB.id
 
+    // specs/convocation-player-selection.md — "convoked" is the real list
+    // (convocation_attendees), no longer every player of the team: seed it.
+    const { error: attendeesError } = await admin.from('convocation_attendees').insert([
+      { convocation_id: convocationAId, user_id: playerA1.id },
+      { convocation_id: convocationAId, user_id: playerA2.id },
+      { convocation_id: convocationBId, user_id: playerB1.id },
+    ])
+    if (attendeesError) throw attendeesError
+
     // Player A2 has responded, player A1 hasn't (no row at all) — this is
     // what makes test 1's has_responded assertion meaningful for both the
     // responded and the "en attente" case, per the view's LEFT JOIN roster
@@ -136,35 +145,20 @@ describe('convocation_responders / get_convocation_responders / convocations_sel
     await sectionManagerClient?.auth.signOut()
   })
 
-  // docs/convocation_visibility_rls_correction.md §5, test 1 — updated to
-  // match what the currently-applied migration actually returns, not the
-  // full-team-roster shape that migration's own comment assumed.
-  //
-  // Real gap this test caught and now locks in as a regression test (flagged
-  // to the developer, not silently fixed — changing convocation_responders'
-  // RLS is a schema/security decision, out of scope for "write the tests"):
-  // the view is `security_invoker = true`, and its roster join
-  // (`user_roles ur ON ur.team_id = c.team_id`) is therefore itself subject
-  // to user_roles_select_own (own-row-only). So a DIRECT query against this
-  // view — as opposed to going through get_convocation_responders, see test
-  // 2 below — only ever returns the CALLER's own roster row, never
-  // teammates'. Confirmed by direct query as player A1: `user_roles` visible
-  // to them is exactly their own row, and `convocation_responders` mirrors
-  // that. This doesn't affect the app today —
-  // ConvocationRespondersRepositoryImpl only ever calls the RPC, which is
-  // unaffected (SECURITY DEFINER's table-owner exemption bypasses
-  // user_roles_select_own too) — but it does mean this view is not
-  // independently usable for a full-roster read the way its own migration
-  // comment claims. Follow-up: route the roster join through a SECURITY
-  // DEFINER helper (mirrors is_team_member) if a future screen ever needs to
-  // query this view directly instead of through the RPC.
-  it('a player token querying convocation_responders directly gets has_responded booleans only for their own roster row — status/reason absent from the response shape entirely, not merely unused (AC-MD-08); full-team visibility is only guaranteed via get_convocation_responders, see test 2', async () => {
+  // docs/convocation_visibility_rls_correction.md §5, test 1 — rewritten for
+  // specs/convocation-player-selection.md: the view now joins the list of
+  // convoked players (convocation_attendees), whose SELECT policy is
+  // team-scoped (is_team_member), no longer the own-row-only user_roles. A
+  // direct query as a player of the team therefore returns the whole convoked
+  // list — but still booleans only: status/reason are absent from the response
+  // shape entirely, not merely unused (AC-MD-08).
+  it('a player token querying convocation_responders directly gets has_responded booleans for the convoked list of their team — status/reason absent from the response shape entirely, not merely unused (AC-MD-08)', async () => {
     const { data, error } = await playerA1Client.from('convocation_responders').select('*').eq('convocation_id', convocationAId)
 
     expect(error).toBeNull()
     expect(data).not.toBeNull()
     const rows = data!
-    expect(rows).toHaveLength(1)
+    expect(rows).toHaveLength(2)
 
     for (const row of rows) {
       expect(row).not.toHaveProperty('status')
@@ -218,7 +212,7 @@ describe('convocation_responders / get_convocation_responders / convocations_sel
       .insert({
         team_id: teamAId,
         type: 'training',
-        date: new Date().toISOString(),
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         location: 'Gymnase C',
         created_by: sectionManagerId,
       })

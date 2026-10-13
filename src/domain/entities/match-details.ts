@@ -1,3 +1,5 @@
+import type { CompetitionType } from './competition-type'
+
 // specs/create-convocation.md §2, corrected per the satellite-table pattern
 // established for MeetingDetails (see meeting-details.ts): a nullable field
 // whose validity depends on another column (Convocation.type) doesn't belong
@@ -29,14 +31,11 @@ export interface MatchDetails {
   goalsFor: number | null
   goalsAgainst: number | null
 
-  // specs/match-stats.md MS-06/AC-MS-06 — NOT added here. `competition_type`
-  // requires a backfill decision the developer hasn't made yet (7 existing
-  // match_details rows on the remote project as of 2026-09-24 — see the
-  // STOP block at the top of
-  // supabase/migrations/20260924100000_match_statistics_schema.sql). No
-  // column exists to back a `competitionType` field, so it isn't added to
-  // this entity — adding it here without a backing column would be exactly
-  // the kind of silent guess the spec's stop-and-report rule forbids.
+  // specs/match-stats.md MS-06/AC-MS-06 + specs/convocation-player-selection.md
+  // PO-CPS-01 (decided): 'official' | 'friendly', not null, no default in the
+  // database. Only an official match is capped at 14 convoked players — see
+  // domain/policies/convocation-attendee-rules.ts.
+  competitionType: CompetitionType
 }
 
 // specs/edit-match-details.md §5 — the three logistics fields a coach may

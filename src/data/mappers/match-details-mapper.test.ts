@@ -13,6 +13,7 @@ describe('match-details-mapper', () => {
       meeting_point_location: 'Vestiaires',
       goals_for: null,
       goals_against: null,
+      competition_type: 'official',
     }
 
     expect(toMatchDetails(row)).toEqual({
@@ -23,6 +24,7 @@ describe('match-details-mapper', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     })
   })
 
@@ -35,6 +37,7 @@ describe('match-details-mapper', () => {
       meeting_point_location: 'Vestiaires',
       goals_for: 2,
       goals_against: 1,
+      competition_type: 'official',
     }
 
     const details = toMatchDetails(row)
@@ -51,6 +54,7 @@ describe('match-details-mapper', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
 
     expect(toMatchDetailsRow(details)).toEqual({
@@ -61,6 +65,7 @@ describe('match-details-mapper', () => {
       meeting_point_location: 'Vestiaires',
       goals_for: null,
       goals_against: null,
+      competition_type: 'official',
     })
   })
 
@@ -73,6 +78,7 @@ describe('match-details-mapper', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor: 0,
       goalsAgainst: 0,
+      competitionType: 'official',
     }
 
     expect(toMatchDetailsRow(details)).toEqual({
@@ -83,6 +89,7 @@ describe('match-details-mapper', () => {
       meeting_point_location: 'Vestiaires',
       goals_for: 0,
       goals_against: 0,
+      competition_type: 'official',
     })
   })
 })
@@ -128,5 +135,22 @@ describe('toMatchArrangementsUpdateRow', () => {
       meeting_point_time: null,
       meeting_point_location: null,
     })
+  })
+
+  // specs/convocation-player-selection.md PO-CPS-01 — both values round-trip.
+  it.each(['official', 'friendly'] as const)('maps competition_type %s both ways', (competitionType) => {
+    const row: MatchDetailsRow = {
+      convocation_id: 'c1',
+      opponent_id: 'opponent-1',
+      is_home: true,
+      meeting_point_time: null,
+      meeting_point_location: null,
+      goals_for: null,
+      goals_against: null,
+      competition_type: competitionType,
+    }
+    const details = toMatchDetails(row)
+    expect(details.competitionType).toBe(competitionType)
+    expect(toMatchDetailsRow(details)).toEqual(row)
   })
 })

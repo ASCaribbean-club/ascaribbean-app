@@ -9,6 +9,10 @@ import { RosterRow } from './RosterRow'
 import { SelfRosterRow } from './SelfRosterRow'
 
 export interface SelfRosterProps {
+  // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — false when
+  // the player is not on the list of convoked players: no Présent / Absent
+  // buttons, an information line instead.
+  isConvoked: boolean
   name: string
   position: PlayerPosition | null
   canRespond: boolean
@@ -44,7 +48,14 @@ export interface AttendanceConfirmProps {
 // sees `self` (a coach doesn't respond, §2) — the two variants are
 // literally mutually exclusive props, not two optional halves of one shape.
 type RosterListProps =
-  | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[] }
+  | {
+      variant: 'player'
+      self: SelfRosterProps
+      others: ConvocationResponderStatus[]
+      // The real number of convoked players, computed by the ViewModel: the
+      // viewer is no longer necessarily one of them (was others.length + 1).
+      convokedCount: number
+    }
   | ({ variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts } & AttendanceConfirmProps)
 
 // UI design §"Nouveau composant — liste Effectif": section header ("Qui a
@@ -60,7 +71,7 @@ type RosterListProps =
 // variant's plain "N convoqués" — same aggregate the old ResponseBar showed,
 // folded into this one header row rather than a separate row above it.
 export function RosterList(props: RosterListProps) {
-  const count = props.variant === 'player' ? props.others.length + 1 : props.roster.length
+  const count = props.variant === 'player' ? props.convokedCount : props.roster.length
 
   return (
     <div className="flex flex-col gap-2.5 pt-4">
@@ -92,14 +103,22 @@ export function RosterList(props: RosterListProps) {
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {props.variant === 'player' ? (
           <>
-            <SelfRosterRow
-              name={props.self.name}
-              position={props.self.position}
-              canRespond={props.self.canRespond}
-              myResponse={props.self.myResponse}
-              onRespondPresent={props.self.onRespondPresent}
-              onRespondAbsent={props.self.onRespondAbsent}
-            />
+            {props.self.isConvoked ? (
+              <SelfRosterRow
+                name={props.self.name}
+                position={props.self.position}
+                canRespond={props.self.canRespond}
+                myResponse={props.self.myResponse}
+                onRespondPresent={props.self.onRespondPresent}
+                onRespondAbsent={props.self.onRespondAbsent}
+              />
+            ) : (
+              <RosterRow
+                name={`${props.self.name} (moi)`}
+                position={props.self.position}
+                badge={<span className="text-[12px] font-semibold text-white/60">Non convoqué(e)</span>}
+              />
+            )}
             {props.others.map((responder) => (
               <RosterRow
                 key={responder.userId}

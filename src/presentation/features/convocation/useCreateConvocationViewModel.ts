@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
+import type { CompetitionType } from '@domain/entities/competition-type'
 import type { ConvocationType } from '@domain/entities/convocation'
+import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
 import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
+import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
+import { getAttendeeCap } from '@domain/policies/convocation-attendee-rules'
 import { getConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import { filterTeamsBySection } from '@domain/rules/club-schedule-rules'
@@ -19,17 +23,26 @@ import { useAuth } from '../../shared/hooks/use-auth'
 import { useSectionFilter } from '../../shared/hooks/use-section-filter'
 import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
+import {
+  describeCounter,
+  EMPTY_TEAM_MESSAGE,
+  getSelectionBlockingMessage,
+  isAllTeamLocked,
+  resolveSelectedIds,
+  toggleSelection,
+  type RecipientsViewModel,
+} from './recipients-selection'
 
 // specs/create-convocation.md §1, "Décision — l'équipe cible n'est pas
-// choisie sur cet écran" — the target team (and its headcount, "même
-// source que le compteur licenciés du tableau de bord") is inherited from
-// whichever screen pushed this route, passed as router state rather than
-// re-derived here. Today the only caller is CoachDashboardPage's FAB (see
+// choisie sur cet écran" — the target team is inherited from whichever
+// screen pushed this route, passed as router state rather than re-derived
+// here. (The headcount that used to travel with it, `activeMemberCount`, is no
+// longer read: the DESTINATAIRES card now lists the team's real players,
+// specs/convocation-player-selection.md.) Today the only caller is CoachDashboardPage's FAB (see
 // useCoachDashboardViewModel.openConvocationCreate); a future Calendrier
 // entry point (§7, not built yet) would push the same shape.
 interface CreateConvocationRouteState {
   teamId: string
-  activeMemberCount?: number
 }
 
 export interface ConvocationFormValues {
@@ -45,6 +58,10 @@ export interface ConvocationFormValues {
   // match only (see domain/entities/match-details.ts)
   opponentId: string
   isHome: boolean
+  // specs/convocation-player-selection.md AC-CPS-05/PO-CPS-10 — no
+  // preselected value (null = not chosen yet): submission stays impossible
+  // until the coach picks Officiel or Amical.
+  competitionType: CompetitionType | null
   meetingPointTime: string
   meetingPointLocation: string
 
@@ -65,6 +82,7 @@ const EMPTY_VALUES: ConvocationFormValues = {
   trainingLocationId: '',
   opponentId: '',
   isHome: true,
+  competitionType: null,
   meetingPointTime: '',
   meetingPointLocation: '',
   title: '',
@@ -84,7 +102,7 @@ function isFormComplete(values: ConvocationFormValues, selectedTrainingLocationI
 
   switch (values.type) {
     case 'match':
-      return !!values.opponentId && !!values.location
+      return !!values.opponentId && !!values.location && values.competitionType !== null
     case 'training':
       // specs/web-localizations.md §2.7/AC-WL-17 — a venue must be selected;
       // with an empty venue list this stays false, so submission is
@@ -116,6 +134,15 @@ function toFieldErrorMessage(error: unknown): string {
   if (error instanceof ConvocationCreationWindowClosedError) {
     return 'Les réponses des joueurs sont closes pour ce créneau : choisissez une heure plus tardive.'
   }
+  // specs/convocation-player-selection.md §3, "Échec de la création" — the
+  // database refused the selection (cap hit by a concurrent write, a player no
+  // longer on the team): readable reason, selection kept.
+  if (error instanceof ConvocationAttendeeCapExceededError) {
+    return 'Impossible de créer la convocation : un match officiel est limité à 14 convoqués.'
+  }
+  if (error instanceof InvalidConvocationInputError) {
+    return 'Impossible de créer la convocation : la sélection des joueurs n’est pas valide.'
+  }
   return 'Impossible de créer la convocation. Réessayez.'
 }
 
@@ -124,7 +151,8 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { createConvocationUseCase, opponentRepository, listAvailableTrainingLocationsUseCase } = useConvocationDependencies()
+  const { createConvocationUseCase, opponentRepository, listAvailableTrainingLocationsUseCase, listTeamPlayersUseCase } =
+    useConvocationDependencies()
 
   const routeState = location.state as CreateConvocationRouteState | null
 
@@ -166,15 +194,23 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   // applies to what happens WITH these values, see the TODOs below).
   const [values, setValues] = useState<ConvocationFormValues>({ ...EMPTY_VALUES, ...initialValues })
 
+  // specs/convocation-player-selection.md PO-CPS-10 — `null` = "Toute l'équipe"
+  // (every player of the team convoked); an array = the explicit selection of
+  // the list. A new team (Dirigeant's picker) always starts back on "Toute
+  // l'équipe" for that team.
+  const [customSelection, setCustomSelection] = useState<string[] | null>(null)
+
   // Changing section clears the team; changing team resets the opponent
-  // (an opponent belongs to a team, §1.4).
+  // (an opponent belongs to a team, §1.4) and the selection.
   function onPickSection(sectionId: string) {
     setPickedSectionId(sectionId)
     setPickedTeamId(null)
+    setCustomSelection(null)
     setValues((current) => ({ ...current, opponentId: '' }))
   }
   function onPickTeam(nextTeamId: string) {
     setPickedTeamId(nextTeamId)
+    setCustomSelection(null)
     setValues((current) => ({ ...current, opponentId: '' }))
   }
 
@@ -207,6 +243,60 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     ? values.trainingLocationId
     : ''
 
+  // specs/convocation-player-selection.md §3 — the team's real players, the
+  // base of the DESTINATAIRES card (replaces the headcount that used to come
+  // through router state).
+  const teamPlayersQuery = useQuery({
+    queryKey: queryKeys.teamPlayersForConvocation(teamId ?? ''),
+    queryFn: () => listTeamPlayersUseCase.execute(teamId!),
+    enabled: !!teamId,
+  })
+  const teamPlayers = teamPlayersQuery.data ?? []
+  const allPlayerIds = teamPlayers.map((player) => player.userId)
+  const selectedIds = resolveSelectedIds(allPlayerIds, customSelection)
+
+  const competitionType = values.type === 'match' ? values.competitionType : null
+  // Official match + team above the cap: "Toute l'équipe" cannot stay active,
+  // the list is forced open with everyone pre-ticked (PO-CPS-10).
+  const allTeamLocked = isAllTeamLocked(teamPlayers.length, values.type, competitionType)
+  const isAllTeamActive = customSelection === null && !allTeamLocked
+  const recipientsStatus: RecipientsViewModel['status'] = teamPlayersQuery.isLoading
+    ? 'loading'
+    : teamPlayersQuery.isError
+      ? 'error'
+      : teamPlayers.length === 0
+        ? 'empty'
+        : 'ready'
+  const selectionBlockingMessage =
+    recipientsStatus === 'ready' ? getSelectionBlockingMessage(selectedIds.length, values.type, competitionType) : null
+  const cap = getAttendeeCap(values.type, competitionType)
+
+  const recipients: RecipientsViewModel = {
+    status: recipientsStatus,
+    players: teamPlayers.map((player) => ({
+      userId: player.userId,
+      displayName: player.displayName,
+      selected: selectedIds.includes(player.userId),
+    })),
+    isAllTeamActive,
+    isAllTeamLocked: allTeamLocked,
+    allTeamLockedMessage: allTeamLocked
+      ? `Indisponible : l’équipe compte ${teamPlayers.length} joueurs, un match officiel est limité à ${cap}.`
+      : null,
+    playerCountLabel: `${teamPlayers.length} joueur${teamPlayers.length > 1 ? 's' : ''}`,
+    counter: recipientsStatus === 'ready' ? describeCounter(selectedIds.length, values.type, competitionType) : null,
+    blockingMessage: selectionBlockingMessage,
+    // "Tout sélectionner" is absent (not greyed) when it could only break the cap.
+    bulkActionLabel:
+      selectedIds.length > 0 ? 'Tout désélectionner' : allTeamLocked ? null : 'Tout sélectionner',
+    // Off -> list opens with everyone ticked; on -> back to the whole team
+    // (manual selection dropped, no confirmation: cheap to redo).
+    onToggleAllTeam: (active) => setCustomSelection(active ? null : allPlayerIds),
+    onTogglePlayer: (userId) => setCustomSelection(toggleSelection(selectedIds, userId)),
+    onBulkAction: () => setCustomSelection(selectedIds.length > 0 ? [] : allPlayerIds),
+    onRetry: () => void teamPlayersQuery.refetch(),
+  }
+
   const createConvocation = useMutation({
     mutationFn: (input: CreateConvocationUseCaseInput) => createConvocationUseCase.execute(input),
     onError: (error) => {
@@ -230,6 +320,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       // component instance still alive, and without this it would show the
       // just-submitted convocation's values instead of a blank form.
       setValues(EMPTY_VALUES)
+      setCustomSelection(null)
       navigate(-1)
     },
   })
@@ -249,6 +340,8 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const canSubmit =
     !!teamId &&
     isFormComplete(values, selectedTrainingLocationId) &&
+    recipientsStatus === 'ready' &&
+    selectionBlockingMessage === null &&
     !isResponseWindowClosed &&
     !createConvocation.isPending
 
@@ -262,13 +355,18 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const fieldError =
     (needsTeamPicker && !teamId ? 'Choisissez une section puis une équipe.' : undefined) ??
     scheduleError ??
+    (values.type === 'match' && values.competitionType === null ? 'Choisissez Officiel ou Amical' : undefined) ??
+    (recipientsStatus === 'empty' ? EMPTY_TEAM_MESSAGE : undefined) ??
+    selectionBlockingMessage ??
     (isResponseWindowClosed
       ? 'Les réponses des joueurs sont closes pour ce créneau : choisissez une heure plus tardive.'
       : undefined) ??
     (createConvocation.error && !trainingLocationError ? toFieldErrorMessage(createConvocation.error) : undefined)
 
   function onSubmit() {
-    if (!teamId || !user) return
+    if (!teamId || !user || recipientsStatus !== 'ready') return
+    // The ids actually submitted: the selection, restricted to current players.
+    const attendeeIds = selectedIds
 
     const isoDate = combineDateAndTime(values.date, values.time)
 
@@ -293,8 +391,12 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
           setScheduleError('Le rendez-vous doit précéder le coup d’envoi, le même jour.')
           return
         }
+        // Disabled-submit guarantees a chosen competition; kept as a guard for the types.
+        if (values.competitionType === null) return
         input = {
           type: 'match',
+          competitionType: values.competitionType,
+          attendeeIds,
           teamId,
           createdBy: user.id,
           date: isoDate,
@@ -309,6 +411,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       case 'training':
         input = {
           type: 'training',
+          attendeeIds,
           teamId,
           createdBy: user.id,
           date: isoDate,
@@ -318,6 +421,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       case 'meeting':
         input = {
           type: 'meeting',
+          attendeeIds,
           teamId,
           createdBy: user.id,
           date: isoDate,
@@ -375,6 +479,10 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     },
     setOpponentId: (value: string) => setField('opponentId', value),
     setIsHome: (value: boolean) => setField('isHome', value),
+    // true = Officiel, false = Amical — converted to the domain value here,
+    // never in the component (specs/convocation-player-selection.md UI design §1).
+    isOfficial: values.competitionType === null ? null : values.competitionType === 'official',
+    setIsOfficial: (isOfficial: boolean) => setField('competitionType', isOfficial ? 'official' : 'friendly'),
     setMeetingPointTime: (value: string) => setField('meetingPointTime', value),
     setMeetingPointLocation: (value: string) => setField('meetingPointLocation', value),
     setTitle: (value: string) => setField('title', value),
@@ -393,13 +501,14 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     trainingLocationError,
     retryLoadTrainingLocations: () => void trainingLocationsQuery.refetch(),
 
-    recipientsCount: routeState?.activeMemberCount,
-
-    // specs/mobile-dirigeant-habilite.md §1.4 — null for the coach (flow
-    // unchanged: no picker, RecipientsCard kept). For the Dirigeant:
-    // PO-DH-17 default, RecipientsCard is omitted (hasRecipientsCard false).
-    hasRecipientsCard: !needsTeamPicker,
+    // specs/convocation-player-selection.md §3 — the card is interactive for the
+    // three types and, once a team is known, also for the Dirigeant (the form
+    // is shared). It supersedes the PO-DH-17 omission of the card.
+    recipients,
+    hasRecipientsCard: !!teamId,
     hasSelectedTeam: !!teamId,
+    // specs/mobile-dirigeant-habilite.md §1.4 — null for the coach (flow
+    // unchanged: no picker).
     teamPicker: needsTeamPicker
       ? {
           sections: sectionsQuery.data ?? [],

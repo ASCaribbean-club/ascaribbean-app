@@ -49,7 +49,7 @@ function buildConvocation(overrides: Partial<Convocation> = {}): Convocation {
 }
 
 function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse | null = null): ConvocationForPlayer {
-  return { convocation, myResponse, matchDetails: null, opponent: null, meetingDetails: null }
+  return { convocation, myResponse, isConvoked: true, matchDetails: null, opponent: null, meetingDetails: null }
 }
 
 function renderViewModel(upcoming: ConvocationForPlayer[]) {

@@ -99,6 +99,9 @@ function grants(
         action === 'team_stats:view' ||
         // specs/coach-match-composition.md §2 — team-scoped, same gap class as above.
         action === 'match_lineup:write' ||
+        // specs/convocation-player-selection.md §3 — team-scoped: a coach of
+        // team A must not pass can() for a convocation of team B (AC-02).
+        action === 'convocation_attendee:add' ||
         // specs/web-create-convocation.md §2 — inert today (admin only in the
         // matrix), listed now so a future widening carries a scope check.
         action === 'meeting_details:update' ||
@@ -150,6 +153,9 @@ function grants(
         // specs/coach-match-composition.md §2 — pre-wired, inert today
         // (rbacMatrix['match_lineup:write'] is ['coach']-only, PO-MC-10).
         action === 'match_lineup:write' ||
+        // specs/convocation-player-selection.md §3 — pre-wired, inert today
+        // (rbacMatrix['convocation_attendee:add'] is ['coach']-only, PO-CPS-11).
+        action === 'convocation_attendee:add' ||
         // specs/web-create-convocation.md §2 — pre-wired, inert today.
         action === 'meeting_details:update' ||
         // specs/match-details-missions.md §3 — LIVE (unlike the pre-wired

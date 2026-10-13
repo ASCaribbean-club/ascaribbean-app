@@ -57,6 +57,7 @@ describe('toDirigeantEventView', () => {
       meetingPointLocation: null,
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
     expect(toDirigeantEventView(match, sections).meetingPointTime).toBe('2026-10-08T16:30:00.000Z')
     expect(toDirigeantEventView(item('s-esport'), sections).meetingPointTime).toBeNull()

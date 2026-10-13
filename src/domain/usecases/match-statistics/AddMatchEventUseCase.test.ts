@@ -59,6 +59,7 @@ function matchDetailsWith(overrides: Partial<MatchDetails> = {}): MatchDetails {
     meetingPointLocation: 'Vestiaires',
     goalsFor: null,
     goalsAgainst: null,
+    competitionType: 'official',
     ...overrides,
   }
 }

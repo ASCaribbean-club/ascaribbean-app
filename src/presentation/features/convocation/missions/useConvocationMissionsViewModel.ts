@@ -114,7 +114,7 @@ export function useConvocationMissionsViewModel(params: MissionsViewModelParams)
     removeMemberFromMissionUseCase,
     addAdHocMissionUseCase,
     removeMissionUseCase,
-    listConvocationRespondersUseCase,
+    listConvocationTeamPlayersUseCase,
   } = useConvocationDependencies()
 
   const scope = { teamId: convocation?.teamId, sectionId }
@@ -138,11 +138,13 @@ export function useConvocationMissionsViewModel(params: MissionsViewModelParams)
   })
   const entries: ConvocationMissionWithAssignees[] = missionsQuery.data ?? []
 
-  // Eligible members (PO-MM-06 assumption: the team's players), same read as
-  // the Effectif tab. Only the manager's picker needs it.
+  // Eligible members (PO-MM-06 assumption: the team's players). Since
+  // specs/convocation-player-selection.md the Effectif read is the CONVOKED
+  // list, but missions stay open to every player of the team (AC-CPS-12), so
+  // the picker reads the team's players. Only the manager's picker needs it.
   const membersQuery = useQuery({
-    queryKey: queryKeys.convocationResponders(convocationId ?? ''),
-    queryFn: () => listConvocationRespondersUseCase.execute(convocationId!),
+    queryKey: queryKeys.convocationTeamPlayers(convocationId ?? ''),
+    queryFn: () => listConvocationTeamPlayersUseCase.execute(convocationId!),
     enabled: !!convocationId && isManagerVariant && isTabActive,
   })
   const eligibleMembers: MissionMemberView[] = (membersQuery.data ?? []).map((member) => ({

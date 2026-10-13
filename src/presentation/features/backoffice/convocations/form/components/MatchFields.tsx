@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom'
 import { Input } from '@presentation/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
 import type { ConvocationFormViewModel } from '../useConvocationFormViewModel'
+import { CompetitionToggle } from './CompetitionToggle'
 import { DateTimeFields } from './DateTimeFields'
 import { FormFieldShell } from './FormFieldShell'
 import { HomeAwayToggle } from './HomeAwayToggle'
 
 type MatchFieldsProps = {
-  vm: Pick<ConvocationFormViewModel, 'values' | 'errors' | 'setField' | 'isSubmitting' | 'minDate' | 'opponents' | 'hasNoOpponents'>
+  vm: Pick<ConvocationFormViewModel, 'isEdit' | 'values' | 'errors' | 'setField' | 'isSubmitting' | 'minDate' | 'opponents' | 'hasNoOpponents'>
 }
 
 // Match: Adversaire (only the chosen team's opponents), Domicile/Extérieur,
@@ -51,6 +52,7 @@ export function MatchFields({ vm }: MatchFieldsProps) {
         </Select>
       </FormFieldShell>
 
+      {!vm.isEdit && <CompetitionToggle vm={vm} />}
       <HomeAwayToggle vm={vm} />
       <DateTimeFields vm={vm} />
 

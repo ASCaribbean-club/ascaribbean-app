@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse } from '@/domain/entities/convocation'
+import type { ConvocationAttendeeRepository } from '@/domain/repositories/convocation-attendee-repository'
 import type { ConvocationRepository } from '@/domain/repositories/convocation-repository'
 import type { ConvocationResponseRepository } from '@/domain/repositories/convocation-response-repository'
 import type { AssembleConvocationDetailFieldsUseCase, ConvocationDetailFields } from '@/domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
@@ -38,6 +39,21 @@ function responseWith(overrides: Partial<ConvocationResponse>): ConvocationRespo
   }
 }
 
+// specs/convocation-player-selection.md PO-CPS-03 — which convocations the
+// player is convoked to; `allConvoked` = every id asked for (the default case).
+function attendeesConvokedTo(...convokedIds: string[]): ConvocationAttendeeRepository {
+  return {
+    add: vi.fn(),
+    listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids.filter((id) => convokedIds.includes(id))),
+  }
+}
+function allConvoked(): ConvocationAttendeeRepository {
+  return {
+    add: vi.fn(),
+    listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids),
+  }
+}
+
 const noDetailFields: ConvocationDetailFields = { matchDetails: null, opponent: null, meetingDetails: null }
 
 // Type-conditional detail assembly is AssembleConvocationDetailFieldsUseCase's
@@ -70,6 +86,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result.map((r) => r.convocation.id)).toEqual(['c-upcoming'])
@@ -94,6 +111,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now, includePast: true })
 
     // Same as ListTeamConvocationsUseCase: includePast bypasses isUpcoming
@@ -115,10 +133,11 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(findByConvocationAndUser).toHaveBeenCalledWith('c1', 'u1')
-    expect(result).toEqual([{ convocation, myResponse, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse, isConvoked: true, ...noDetailFields }])
   })
 
   it('returns null myResponse when the player has not responded yet (distinct from a "pending" status row)', async () => {
@@ -133,9 +152,10 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
-    expect(result).toEqual([{ convocation, myResponse: null, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse: null, isConvoked: true, ...noDetailFields }])
   })
 
   it('skips GetConvocationDetailsUseCase for a training convocation (existing type === "training" guard)', async () => {
@@ -152,6 +172,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       assembleConvocationDetailFieldsUseCase,
       getConvocationDetailsUseCase,
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(getConvocationDetailsUseCase.execute).not.toHaveBeenCalled()
@@ -169,9 +190,32 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       convocationResponseRepository,
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result).toEqual([])
     expect(findByConvocationAndUser).not.toHaveBeenCalled()
+  })
+
+  it('flags a convocation the player is not convoked to (PO-CPS-03)', async () => {
+    const convoked = convocationWith({ id: 'c-in', date: '2026-08-20T18:00:00.000Z' })
+    const notConvoked = convocationWith({ id: 'c-out', date: '2026-08-21T18:00:00.000Z' })
+    const convocationRepository = { listForTeam: vi.fn().mockResolvedValue([convoked, notConvoked]) } as unknown as ConvocationRepository
+    const convocationResponseRepository = {
+      findByConvocationAndUser: vi.fn().mockResolvedValue(null),
+    } as unknown as ConvocationResponseRepository
+
+    const result = await new ListUpcomingConvocationsForPlayerUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      noopAssembleConvocationDetailFieldsUseCase(),
+      noopGetConvocationDetailsUseCase(),
+      attendeesConvokedTo('c-in'),
+    ).execute({ teamId: 'team-1', userId: 'u1', now })
+
+    expect(result.map((item) => [item.convocation.id, item.isConvoked])).toEqual([
+      ['c-in', true],
+      ['c-out', false],
+    ])
   })
 })

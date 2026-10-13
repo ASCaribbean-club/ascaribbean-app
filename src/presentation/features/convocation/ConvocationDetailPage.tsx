@@ -86,6 +86,9 @@ function buildVoteCategories(
         id: votes.categoryId,
         icon,
         label: votes.categoryLabel,
+        // specs/convocation-player-selection.md §5 — only the viewer who is not
+        // convoked reads this, so they do not look for themselves in the list.
+        subtitle: votes.isNotConvoked ? 'Seuls les joueurs convoqués peuvent être élus.' : undefined,
         statusBadge: (
           <Badge className={cn('rounded-full border px-2.5 py-1 text-[11px] font-bold', 'border-white/12 bg-white/8 text-white/60')}>
             Résultats masqués
@@ -273,6 +276,7 @@ export function ConvocationDetailPage() {
             opponent={vm.opponent}
             meetingDetails={vm.meetingDetails}
             attendanceConfirmationMissing={vm.attendanceConfirmationMissing}
+            isOfficialMatch={vm.isOfficialMatch}
           />
 
           {/* Three tabs (UI design §"Barre d'onglets à trois entrées",
@@ -436,11 +440,13 @@ export function ConvocationDetailPage() {
               errorByUserId={vm.attendanceErrorByUserId}
               onConfirmPresent={vm.onConfirmAttendancePresent}
               onConfirmAbsent={vm.onConfirmAttendanceAbsent}
+              addAttendee={vm.addAttendee}
             />
           ) : (
             <EffectifTab
               variant="player"
               self={{
+                isConvoked: vm.isConvoked,
                 name: vm.self.name,
                 position: vm.self.position,
                 canRespond: vm.canRespond,
@@ -449,6 +455,7 @@ export function ConvocationDetailPage() {
                 onRespondAbsent: vm.onRespondAbsent,
               }}
               others={vm.others}
+              convokedCount={vm.convokedCount}
             />
           )}
         </TabsContent>

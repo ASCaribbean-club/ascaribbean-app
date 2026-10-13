@@ -2,6 +2,7 @@ import type { ConvocationForCoach } from '@/domain/usecases/coach-dashboard/List
 import { formatCountdown } from '../../../shared/formatters/countdown'
 import { Badge } from '../../../shared/components/ui/badge'
 import { Card } from '../../../shared/components/ui/card'
+import { OfficialMatchBadge } from '@presentation/shared/components/OfficialMatchBadge'
 import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
 import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
@@ -42,7 +43,13 @@ export function NextTrainingOrMatchCard({ nextTrainingOrMatch, onOpen }: NextTra
         </Badge>
       </div>
 
-      {opponent && <p className="text-[21px] leading-tight font-extrabold text-white">{opponent.name}</p>}
+      {opponent && (
+        <p className="flex items-center gap-2 text-[21px] leading-tight font-extrabold text-white">
+          {opponent.name}
+          {/* specs/convocation-player-selection.md AC-CPS-09 — icon + sr-only label. */}
+          {matchDetails?.competitionType === 'official' && <OfficialMatchBadge />}
+        </p>
+      )}
 
       <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
 

@@ -36,6 +36,7 @@ export function PlayerDashboardPage() {
           data={vm.nextConvocation}
           missionsLine={vm.missionsLine}
           canRespond={vm.canRespond}
+          isNotConvoked={vm.isNotConvoked}
           onRespondPresent={vm.onRespondPresent}
           onRespondAbsent={vm.onRespondAbsent}
           onOpen={() => vm.nextConvocation && vm.goToConvocationDetail(vm.nextConvocation.convocation.id)}

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ConvocationAttendeeRepositoryImpl } from '@data/repositories/ConvocationAttendeeRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
@@ -97,6 +98,7 @@ export function createCalendarContainer(supabaseClient: SupabaseClient): Calenda
       convocationResponseRepository,
       assembleConvocationDetailFieldsUseCase,
       getConvocationDetailsUseCase,
+      new ConvocationAttendeeRepositoryImpl(supabaseClient),
     ),
     respondToConvocationUseCase: new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository),
   }

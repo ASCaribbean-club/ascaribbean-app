@@ -22,6 +22,16 @@ export interface ConvocationResponderStatus {
   position: PlayerPosition | null
 }
 
+// specs/convocation-player-selection.md §1 — a player of the convocation's
+// team, convoked or not. Used where the pool is "players of the team" and not
+// "the list of convoked players" (missions: eligibility and member picker,
+// AC-CPS-12; the "Convoquer un joueur" panel).
+export interface ConvocationTeamPlayer {
+  userId: string
+  displayName: string
+  position: PlayerPosition | null
+}
+
 export interface ConvocationRespondersRepository {
   // Full convoked roster for this convocation, one entry per player —
   // including players with no `convocation_responses` row yet (AC-MD-09,
@@ -31,5 +41,12 @@ export interface ConvocationRespondersRepository {
   // resolves to an empty array, same "no existence leak" shape as
   // ConvocationRepository.findById returning null (specs/match_details_page.md
   // §1, "Périmètre de données").
+  //
+  // specs/convocation-player-selection.md §2 — "convoked" is now the REAL list
+  // (convocation_attendees), no longer "every player of the team".
   listForConvocation(convocationId: string): Promise<ConvocationResponderStatus[]>
+
+  // Every player of the convocation's team, whether convoked or not (same
+  // scoping as above: out-of-scope convocation -> empty array).
+  listTeamPlayers(convocationId: string): Promise<ConvocationTeamPlayer[]>
 }

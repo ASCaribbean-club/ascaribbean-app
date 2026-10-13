@@ -35,7 +35,7 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
     // wired, but this repository must not throw on it) is a valid `null`.
     const { data, error } = await this.client
       .from('match_details')
-      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against, competition_type')
       .eq('convocation_id', convocationId)
       .maybeSingle()
 
@@ -57,7 +57,7 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
       .from('match_details')
       .update({ goals_for: goalsFor, goals_against: goalsAgainst })
       .eq('convocation_id', convocationId)
-      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against, competition_type')
       .single()
 
     if (error) throw mapSupabaseError(error)
@@ -84,7 +84,7 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
       .from('match_details')
       .update(toMatchArrangementsUpdateRow(arrangements))
       .eq('convocation_id', convocationId)
-      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against, competition_type')
       .single()
 
     if (error) throw mapSupabaseError(error)
@@ -101,7 +101,7 @@ export class MatchDetailsRepositoryImpl implements MatchDetailsRepository {
 
     const { data, error } = await this.client
       .from('match_details')
-      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against')
+      .select('convocation_id, opponent_id, is_home, meeting_point_time, meeting_point_location, goals_for, goals_against, competition_type')
       .in('convocation_id', convocationIds)
 
     if (error) throw mapSupabaseError(error)

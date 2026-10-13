@@ -15,6 +15,7 @@ import type { OpponentRepository } from '@domain/repositories/opponent-repositor
 import type { SeasonRepository } from '@domain/repositories/season-repository'
 import type { SectionRepository } from '@domain/repositories/section-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
+import { ListTeamPlayersUseCase } from '@domain/usecases/convocation/ListTeamPlayersUseCase'
 import { CreateConvocationUseCase } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import { UpdateConvocationUseCase } from '@domain/usecases/convocation/UpdateConvocationUseCase'
 import { GetAdminAttendanceSheetUseCase } from '@domain/usecases/convocation-admin/GetAdminAttendanceSheetUseCase'
@@ -37,6 +38,8 @@ export interface ConvocationAdminContainer {
   listAdminConvocationsUseCase: ListAdminConvocationsUseCase
   listAvailableTrainingLocationsUseCase: ListAvailableTrainingLocationsUseCase
   createConvocationUseCase: CreateConvocationUseCase
+  // specs/convocation-player-selection.md PO-CPS-08 — the web creation convokes the whole team.
+  listTeamPlayersUseCase: ListTeamPlayersUseCase
   updateConvocationUseCase: UpdateConvocationUseCase
   getAdminAttendanceSheetUseCase: GetAdminAttendanceSheetUseCase
   recordAttendanceByAdminUseCase: RecordAttendanceByAdminUseCase
@@ -64,6 +67,7 @@ export function createConvocationAdminContainer(supabaseClient: SupabaseClient):
     listAdminConvocationsUseCase: new ListAdminConvocationsUseCase(adminConvocationRepository),
     listAvailableTrainingLocationsUseCase: new ListAvailableTrainingLocationsUseCase(trainingLocationRepository),
     createConvocationUseCase: new CreateConvocationUseCase(userRepository, teamRepository, convocationRepository),
+    listTeamPlayersUseCase: new ListTeamPlayersUseCase(teamRosterRepository),
     updateConvocationUseCase: new UpdateConvocationUseCase(userRepository, convocationRepository, opponentRepository),
     getAdminAttendanceSheetUseCase: new GetAdminAttendanceSheetUseCase(
       convocationRepository,

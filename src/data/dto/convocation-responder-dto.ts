@@ -13,3 +13,13 @@ export interface ConvocationResponderDto {
   // RPC with it doesn't reopen the AC-MD-08 leak the RPC exists to close.
   position: string | null
 }
+
+// `get_convocation_team_players` RPC return value
+// (supabase/migrations/20261012181317_convocation_attendees_rewire.sql) — every
+// player of the convocation's team, convoked or not. Identity and position
+// only: no response, no status.
+export interface ConvocationTeamPlayerDto {
+  user_id: string
+  display_name: string
+  position: string | null
+}

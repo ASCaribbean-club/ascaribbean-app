@@ -41,7 +41,9 @@ export class AssignMemberToMissionUseCase {
       throw new ForbiddenError(`User ${input.actorId} is not authorized to manage missions of team ${convocation.teamId}`)
     }
 
-    const roster = await this.respondersRepository.listForConvocation(input.convocationId)
+    // specs/convocation-player-selection.md AC-CPS-12 — the pool stays "players of the
+    // team", convoked or not (claim_mission is unchanged): NOT the convoked list.
+    const roster = await this.respondersRepository.listTeamPlayers(input.convocationId)
     if (!isEligibleMissionAssignee(input.targetUserId, roster.map((member) => member.userId))) {
       throw new ForbiddenError(`User ${input.targetUserId} is not eligible for missions of convocation ${input.convocationId}`)
     }

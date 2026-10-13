@@ -58,7 +58,7 @@ describe('AssignMemberToMissionUseCase', () => {
     for (const user of [playerUser(), treasurerUser()]) {
       const d = deps(user)
       await expect(run(d)).rejects.toBeInstanceOf(ForbiddenError)
-      expect(d.responders.listForConvocation).not.toHaveBeenCalled()
+      expect(d.responders.listTeamPlayers).not.toHaveBeenCalled()
       expect(d.missions.claim).not.toHaveBeenCalled()
     }
   })

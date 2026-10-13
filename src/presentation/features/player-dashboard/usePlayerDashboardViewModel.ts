@@ -101,7 +101,10 @@ export function usePlayerDashboardViewModel() {
   // response-deadline.ts). Without a nextConvocation yet, there's nothing
   // to respond to, so the window half defaults to false.
   const hasRbacPermission = usePermission('convocation:respond', { teamId })
-  const canRespond = hasRbacPermission && !!nextConvocation && canPlayerRespond(nextConvocation.convocation, now)
+  // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — a convocation
+  // the player is not convoked to is never "à répondre".
+  const isNotConvoked = !!nextConvocation && !nextConvocation.isConvoked
+  const canRespond = hasRbacPermission && !!nextConvocation && !isNotConvoked && canPlayerRespond(nextConvocation.convocation, now)
 
   const [respondError, setRespondError] = useState<UiError | null>(null)
 
@@ -157,6 +160,7 @@ export function usePlayerDashboardViewModel() {
     nextConvocation,
     missionsLine,
     canRespond,
+    isNotConvoked,
     respondError,
     // Guards against a duplicate upsert for the same convocation/status:
     // - respondMutation.isPending blocks a second tap while the first

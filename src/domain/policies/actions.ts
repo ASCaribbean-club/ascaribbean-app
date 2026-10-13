@@ -257,6 +257,12 @@ export type Action =
   // Team-scoped, coach only; NO temporal predicate (PO-MC-05). Reading a
   // lineup stays RLS-only (no matrix entry, §2 "Lecture").
   | 'match_lineup:write'
+  // specs/convocation-player-selection.md §3 — names the resource ACTUALLY
+  // written (the list of convoked players, public.convocation_attendees),
+  // never 'convocation:update'. Team-scoped, coach only (PO-CPS-11: the
+  // other roles the matrix allows have no path to the screen). The choice of
+  // attendees at creation stays covered by 'convocation:create'.
+  | 'convocation_attendee:add'
   // specs/web-create-convocation.md §2 — names the resource ACTUALLY written
   // (public.meeting_details: title, agenda), same convention as
   // 'match_details:update'. A NEW permission, admin only: no UPDATE policy

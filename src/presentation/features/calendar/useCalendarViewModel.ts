@@ -106,7 +106,11 @@ function buildPlayerDayItems(
     .filter((item) => isSameDay(new Date(item.convocation.date), selectedDate))
     .map((item): CalendarListItem => {
       const myResponse = item.myResponse?.status ?? null
-      const responseBlock: CalendarResponseBlock = isPastDate(item.convocation.date, now)
+      // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — not
+      // convoked: nothing to answer, nothing to show (the row stays openable).
+      const responseBlock: CalendarResponseBlock = !item.isConvoked
+        ? { kind: 'none' }
+        : isPastDate(item.convocation.date, now)
         ? { kind: 'player-readonly', counts: item.responseCounts, myResponse }
         : {
           kind: 'player-actions',

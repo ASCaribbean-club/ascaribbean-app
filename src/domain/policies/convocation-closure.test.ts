@@ -35,4 +35,10 @@ describe('isConvocationComplete', () => {
   it('is true trivially when no players are required', () => {
     expect(isConvocationComplete([], [])).toBe(true)
   })
+
+  // AC-CPS-15 — the required ids are the CONVOKED players only: a record of a
+  // non-convoked user never completes the set of a convoked one.
+  it('is false when the only record belongs to a non-convoked user', () => {
+    expect(isConvocationComplete(['convoked-1'], [recordFor('not-convoked')])).toBe(false)
+  })
 })

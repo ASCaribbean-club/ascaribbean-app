@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { ConvocationType } from '@domain/entities/convocation'
 import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
+import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
+import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { isConvocationEditable } from '@domain/policies/convocation-admin-windows'
 import { useConvocationAdminDependencies } from '@presentation/di/hooks/use-convocation-admin-dependencies'
@@ -32,6 +34,9 @@ export type ConvocationFormMode = { mode: 'create' } | { mode: 'edit'; convocati
 
 const LIST_PATH = '/admin/convocations'
 const CREATE_ERROR_MESSAGE = 'La convocation n’a pas pu être créée. Réessayez.'
+const OFFICIAL_CAP_MESSAGE =
+  'Un match officiel est limité à 14 convoqués : cette équipe compte plus de joueurs. Choisissez Amical, ou créez la convocation depuis l’application mobile pour sélectionner les joueurs.'
+const EMPTY_TEAM_MESSAGE = 'Cette équipe n’a aucun joueur à convoquer.'
 const UPDATE_ERROR_MESSAGE = 'La convocation n’a pas pu être modifiée. Réessayez.'
 
 // specs/web-create-convocation.md UI design "Écran 2/3" — one ViewModel for the
@@ -54,6 +59,7 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     listAvailableTrainingLocationsUseCase,
     createConvocationUseCase,
     updateConvocationUseCase,
+    listTeamPlayersUseCase,
   } = useConvocationAdminDependencies()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -145,7 +151,17 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
           }),
         )
       }
-      return createConvocationUseCase.execute(buildCreateInput(values, user.id))
+      // specs/convocation-player-selection.md PO-CPS-08 — no selection list on
+      // the web in this pass: the whole team is convoked. The roster is read
+      // at submit time so the list is the team's players as of now.
+      const players = await listTeamPlayersUseCase.execute(values.teamId)
+      return createConvocationUseCase.execute(
+        buildCreateInput(
+          values,
+          user.id,
+          players.map((player) => player.userId),
+        ),
+      )
     },
     onSuccess: async () => {
       // AC-WC-16 — the list (and the panel) refresh by key invalidation; the
@@ -180,6 +196,16 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
         setServerFieldErrors({
           trainingLocationId: mapDomainErrorToUiError(error).message,
         })
+        return
+      }
+      // PO-CPS-08 — an official match above the cap is refused readably, the
+      // team is never truncated; an empty team cannot be convoked.
+      if (error instanceof ConvocationAttendeeCapExceededError) {
+        setSubmitError(OFFICIAL_CAP_MESSAGE)
+        return
+      }
+      if (error instanceof InvalidConvocationInputError && !isEdit) {
+        setSubmitError(EMPTY_TEAM_MESSAGE)
         return
       }
       setSubmitError(isEdit ? UPDATE_ERROR_MESSAGE : CREATE_ERROR_MESSAGE)

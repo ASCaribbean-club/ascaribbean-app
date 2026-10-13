@@ -21,6 +21,7 @@ function build(options: { convocation?: Partial<Convocation> | null; convokedIds
         displayName: userId,
         position: null,
       })),
+    listTeamPlayers: async () => [],
   }
   const lineupRepository: MatchLineupRepository = { findByConvocationId: async () => null, save, listDefaultJerseyNumbers: async () => ({}) }
   return { useCase: new SaveMatchLineupUseCase(convocationRepository, respondersRepository, lineupRepository), save }

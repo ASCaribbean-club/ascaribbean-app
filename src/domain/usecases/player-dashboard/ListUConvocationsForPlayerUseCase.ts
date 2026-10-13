@@ -1,5 +1,6 @@
 import { byDateAscending, isUpcoming, type ResponseCounts } from '@/domain/rules/convocation-rules'
 import type { Convocation, ConvocationResponse } from '@/domain/entities/convocation'
+import type { ConvocationAttendeeRepository } from '@/domain/repositories/convocation-attendee-repository'
 import type { ConvocationRepository } from '@/domain/repositories/convocation-repository'
 import type { ConvocationResponseCountsRepository } from '@/domain/repositories/convocation-response-counts-repository'
 import type { ConvocationResponseRepository } from '@/domain/repositories/convocation-response-repository'
@@ -25,6 +26,10 @@ export interface ConvocationForPlayer extends ConvocationDetailFields {
   // which is a distinct state from a ConvocationResponse whose `status`
   // happens to be 'pending' (domain/entities/convocation.ts, DeclaredStatus).
   myResponse: ConvocationResponse | null
+  // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — false when
+  // the player is not on the list of convoked players of this convocation:
+  // not "à répondre", no response buttons.
+  isConvoked: boolean
 }
 
 export class ListUpcomingConvocationsForPlayerUseCase {
@@ -34,6 +39,7 @@ export class ListUpcomingConvocationsForPlayerUseCase {
     private readonly assembleConvocationDetailFieldsUseCase: AssembleConvocationDetailFieldsUseCase,
     private readonly getConvocationDetailsUseCase: GetConvocationDetailsUseCase,
     private readonly convocationResponseCountsRepository: ConvocationResponseCountsRepository,
+    private readonly convocationAttendeeRepository: ConvocationAttendeeRepository,
   ) { }
 
   async execute(input: ListConvocationsForPlayerInput): Promise<ConvocationForPlayer[]> {
@@ -50,6 +56,15 @@ export class ListUpcomingConvocationsForPlayerUseCase {
       scopedConvocations.map((convocation) => convocation.id),
     )
 
+    // One read for the whole set: which of these convocations the player is
+    // convoked to.
+    const convokedIds = new Set(
+      await this.convocationAttendeeRepository.listConvokedConvocationIds(
+        input.userId,
+        scopedConvocations.map((convocation) => convocation.id),
+      ),
+    )
+
     return await Promise.all(scopedConvocations.map(async (convocation) => {
       const details = convocation.type === 'training' // TODO To remove when training will be mapped
         ? null
@@ -62,6 +77,7 @@ export class ListUpcomingConvocationsForPlayerUseCase {
         convocation: convocation,
         myResponse: myResponse,
         responseCounts: countsByConvocationId[convocation.id] ?? { present: 0, absent: 0, pending: 0 },
+        isConvoked: convokedIds.has(convocation.id),
         ...detailFields,
       }
     }))

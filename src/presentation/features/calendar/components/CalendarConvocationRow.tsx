@@ -3,6 +3,7 @@ import type { MatchDetails } from '@domain/entities/match-details'
 import type { MeetingDetails } from '@domain/entities/meeting-details'
 import type { Opponent } from '@domain/entities/opponent'
 import { AttendanceConfirmationAlert } from '@presentation/shared/components/AttendanceConfirmationAlert'
+import { OfficialMatchBadge } from '@presentation/shared/components/OfficialMatchBadge'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ResponseBar } from '@presentation/shared/components/ResponseBar'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
@@ -87,6 +88,10 @@ export function CalendarConvocationRow({
           <p className="m-0 text-[13.5px] leading-[1.25] font-bold text-white">
             {formatConvocationType(convocation.type)}
             {titleSuffix}
+            {/* specs/convocation-player-selection.md AC-CPS-09 — icon only, with its sr-only label. */}
+            {convocation.type === 'match' && matchDetails?.competitionType === 'official' && (
+              <OfficialMatchBadge className="ml-1.5 align-text-bottom" />
+            )}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

@@ -95,6 +95,7 @@ describe('ListClubScheduleUseCase', () => {
       meetingPointLocation: null,
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
     const { useCase } = setup({
       matchDetails: [matchDetails],

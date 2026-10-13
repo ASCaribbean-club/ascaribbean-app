@@ -1,10 +1,14 @@
+import type { CompetitionType } from '@domain/entities/competition-type'
 import type { Convocation } from '@domain/entities/convocation'
+import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
 import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { ForbiddenError } from '@domain/errors/forbidden-error'
+import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { InvalidScheduleError } from '@domain/errors/invalid-schedule-error'
 import { InvalidTrainingLocationInputError } from '@domain/errors/invalid-training-location-input-error'
 import { can } from '@domain/policies/can'
 import { getConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
+import { hasMinimumAttendees, isWithinAttendeeCap } from '@domain/policies/convocation-attendee-rules'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
@@ -14,6 +18,11 @@ interface CreateConvocationBaseInput {
   teamId: string
   createdBy: string
   date: string // ISO — kickoff (match) / start time (training, meeting)
+  // specs/convocation-player-selection.md §2 — the convoked players, written
+  // in the same transaction as the convocation (create_*_convocation). Players
+  // of the team only: the database refuses anyone else (AC-CPS-04). At least
+  // one (PO-CPS-10, hypothesis).
+  attendeeIds: string[]
 }
 
 // specs/web-localizations.md §2.3/AC-WL-10 — a training references its
@@ -29,6 +38,9 @@ export interface CreateMatchConvocationInput extends CreateConvocationBaseInput 
   location: string
   opponentId: string
   isHome: boolean
+  // specs/convocation-player-selection.md AC-CPS-05 — mandatory, no default:
+  // the form refuses to submit until the coach chooses (PO-CPS-10).
+  competitionType: CompetitionType
   // Coach feedback (2026-09-25): both optional — a coach may create a match
   // without knowing the RDV yet. `isValidMatchSchedule` (§5, PO-CV-09) below
   // only applies when a meeting point time is actually provided.
@@ -101,6 +113,22 @@ export class CreateConvocationUseCase {
     if (creationWindow === 'retroactive' && !can(user, 'convocation:create_retroactive')) {
       throw new ForbiddenError(
         `User ${input.createdBy} is not authorized to create a convocation in the past: ${input.date}`,
+      )
+    }
+
+    // specs/convocation-player-selection.md §2 — the list of convoked players.
+    // Duplicates collapse (the list holds one row per player); at least one
+    // (PO-CPS-10); at most 14 for an official match (AC-CPS-06, rule
+    // 'convocation-attendees:official-match-cap' — the database trigger is the
+    // authority, this is the readable mirror). Team membership of each id is
+    // the database's check (trigger convocation_attendees_must_be_team_player).
+    const attendeeCount = new Set(input.attendeeIds).size
+    if (!hasMinimumAttendees(attendeeCount)) {
+      throw new InvalidConvocationInputError('A convocation needs at least one convoked player')
+    }
+    if (!isWithinAttendeeCap(attendeeCount, input.type, input.type === 'match' ? input.competitionType : null)) {
+      throw new ConvocationAttendeeCapExceededError(
+        `An official match holds at most 14 convoked players, got ${attendeeCount}`,
       )
     }
 

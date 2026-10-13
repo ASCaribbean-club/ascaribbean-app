@@ -43,7 +43,9 @@ export class ReleaseMissionUseCase {
       throw new ForbiddenError(`User ${input.actorId} is not authorized to withdraw from a mission`)
     }
 
-    const roster = await this.respondersRepository.listForConvocation(input.convocationId)
+    // specs/convocation-player-selection.md AC-CPS-12 — the pool stays "players of the
+    // team", convoked or not (claim_mission is unchanged): NOT the convoked list.
+    const roster = await this.respondersRepository.listTeamPlayers(input.convocationId)
     if (!isEligibleMissionAssignee(
         input.actorId,
         roster.map((member) => member.userId),

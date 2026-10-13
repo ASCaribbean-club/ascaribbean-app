@@ -1,4 +1,5 @@
 import type { AdminConvocationListItem } from '@domain/entities/admin-convocation'
+import type { CompetitionType } from '@domain/entities/competition-type'
 import type { ConvocationType } from '@domain/entities/convocation'
 import { getConvocationCreationWindow, type ConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
@@ -22,6 +23,10 @@ export interface ConvocationFormValues {
   trainingLocationId: string
   opponentId: string
   isHome: boolean
+  // specs/convocation-player-selection.md AC-CPS-05 — create only, match only;
+  // '' = not chosen yet (no preselected value, the database has no default).
+  // Never editable afterwards (PO-CPS-05), hence absent from valuesFromItem.
+  competitionType: CompetitionType | ''
   location: string
   meetingPointTime: string // HH:MM, optional, same day as `date`
   meetingPointLocation: string
@@ -30,7 +35,7 @@ export interface ConvocationFormValues {
 }
 
 export type ConvocationFormField =
-  'sectionId' | 'teamId' | 'date' | 'time' | 'trainingLocationId' | 'opponentId' | 'location' | 'meetingPointTime' | 'title'
+  'sectionId' | 'teamId' | 'date' | 'time' | 'trainingLocationId' | 'opponentId' | 'competitionType' | 'location' | 'meetingPointTime' | 'title'
 
 export type ConvocationFormErrors = Partial<Record<ConvocationFormField, string>>
 
@@ -47,6 +52,7 @@ export const EMPTY_CONVOCATION_FORM_VALUES: ConvocationFormValues = {
   trainingLocationId: '',
   opponentId: '',
   isHome: true, // "Domicile" by default (export 3)
+  competitionType: '',
   location: '',
   meetingPointTime: '',
   meetingPointLocation: '',
@@ -63,6 +69,7 @@ export function resetTypeSpecificValues(values: ConvocationFormValues, type: Con
     trainingLocationId: EMPTY_CONVOCATION_FORM_VALUES.trainingLocationId,
     opponentId: EMPTY_CONVOCATION_FORM_VALUES.opponentId,
     isHome: EMPTY_CONVOCATION_FORM_VALUES.isHome,
+    competitionType: EMPTY_CONVOCATION_FORM_VALUES.competitionType,
     location: EMPTY_CONVOCATION_FORM_VALUES.location,
     meetingPointTime: EMPTY_CONVOCATION_FORM_VALUES.meetingPointTime,
     meetingPointLocation: EMPTY_CONVOCATION_FORM_VALUES.meetingPointLocation,
@@ -102,6 +109,7 @@ export function valuesEqual(a: ConvocationFormValues, b: ConvocationFormValues):
     a.trainingLocationId === b.trainingLocationId &&
     a.opponentId === b.opponentId &&
     a.isHome === b.isHome &&
+    a.competitionType === b.competitionType &&
     a.location === b.location &&
     a.meetingPointTime === b.meetingPointTime &&
     a.meetingPointLocation === b.meetingPointLocation &&
@@ -146,6 +154,8 @@ export function validateConvocationForm(values: ConvocationFormValues, mode: 'cr
       break
     case 'match':
       if (!values.opponentId) errors.opponentId = REQUIRED_FIELD_MESSAGE
+      // Create only: a match without a competition type is refused (AC-CPS-05).
+      if (mode === 'create' && !values.competitionType) errors.competitionType = REQUIRED_FIELD_MESSAGE
       if (!values.location.trim()) errors.location = REQUIRED_FIELD_MESSAGE
       // The RDV is optional; when set it must precede the kickoff, same day.
       if (values.meetingPointTime && kickoff && values.date) {
@@ -171,11 +181,15 @@ function meetingPointIso(values: ConvocationFormValues): string | null {
 }
 
 // Only the fields of the chosen type are persisted (AC-WC-15).
-export function buildCreateInput(values: ConvocationFormValues, actorId: string): CreateConvocationUseCaseInput {
+// `attendeeIds` = the players to convoke. The web form has no selection list in
+// this pass (PO-CPS-08): the ViewModel passes the whole team. The use case
+// refuses an official match above the cap — never a silent truncation.
+export function buildCreateInput(values: ConvocationFormValues, actorId: string, attendeeIds: string[]): CreateConvocationUseCaseInput {
   const base = {
     teamId: values.teamId,
     createdBy: actorId,
     date: combineDateAndTime(values.date, values.time),
+    attendeeIds,
   }
   switch (values.type) {
     case 'training':
@@ -185,12 +199,15 @@ export function buildCreateInput(values: ConvocationFormValues, actorId: string)
         trainingLocationId: values.trainingLocationId,
       }
     case 'match':
+      // validateConvocationForm refuses a submission without a competition type.
+      if (!values.competitionType) throw new Error('A match needs a competition type')
       return {
         ...base,
         type: 'match',
         location: values.location.trim(),
         opponentId: values.opponentId,
         isHome: values.isHome,
+        competitionType: values.competitionType,
         meetingPointTime: meetingPointIso(values),
         meetingPointLocation: values.meetingPointLocation.trim() || null,
       }

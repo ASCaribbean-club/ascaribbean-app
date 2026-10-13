@@ -55,6 +55,10 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
     return data ? toConvocation(data) : null
   }
 
+  // specs/convocation-player-selection.md §2 — each RPC also receives the
+  // list of convoked players (p_attendee_ids) and writes it in the same
+  // transaction as the convocation; a match also receives its competition type.
+  //
   // Each create* method calls a dedicated Postgres RPC (see
   // supabase/migrations/) that inserts the convocation row and its
   // type-specific satellite in a single PL/pgSQL transaction — the RPC
@@ -69,6 +73,7 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
         p_created_by: input.createdBy,
         p_date: input.date,
         p_training_location_id: input.trainingLocationId,
+        p_attendee_ids: input.attendeeIds,
       })
       .single<ConvocationRow>()
 
@@ -92,6 +97,8 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
         p_is_home: input.isHome,
         p_meeting_point_time: input.meetingPointTime,
         p_meeting_point_location: input.meetingPointLocation,
+        p_competition_type: input.competitionType,
+        p_attendee_ids: input.attendeeIds,
       })
       .single<ConvocationRow>()
 
@@ -108,6 +115,7 @@ export class ConvocationRepositoryImpl implements ConvocationRepository {
         p_location: input.location,
         p_title: input.title,
         p_agenda: input.agenda,
+        p_attendee_ids: input.attendeeIds,
       })
       .single<ConvocationRow>()
 

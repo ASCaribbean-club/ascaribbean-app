@@ -7,6 +7,7 @@ import { ListConvocationRespondersUseCase } from './ListConvocationRespondersUse
 function fakeConvocationRespondersRepository(roster: ConvocationResponderStatus[]): ConvocationRespondersRepository {
   return {
     listForConvocation: async () => roster,
+    listTeamPlayers: async () => [],
   }
 }
 

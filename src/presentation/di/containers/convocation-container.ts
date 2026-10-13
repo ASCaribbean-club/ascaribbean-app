@@ -1,5 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRecordRepositoryImpl'
+// specs/convocation-player-selection.md — list of convoked players (write side
+// after creation) and the roster behind the creation form's selection.
+import { ConvocationAttendeeRepositoryImpl } from '@data/repositories/ConvocationAttendeeRepositoryImpl'
+import { TeamRosterRepositoryImpl } from '@data/repositories/TeamRosterRepositoryImpl'
 import { ConvocationMissionRepositoryImpl } from '@data/repositories/ConvocationMissionRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
@@ -23,6 +27,7 @@ import { VoteCategoryRepositoryImpl } from '@data/repositories/VoteCategoryRepos
 import { VoteRepositoryImpl } from '@data/repositories/VoteRepositoryImpl'
 import { VoteTallyRepositoryImpl } from '@data/repositories/VoteTallyRepositoryImpl'
 import type { AttendanceRecordRepository } from '@domain/repositories/attendance-record-repository'
+import type { ConvocationAttendeeRepository } from '@domain/repositories/convocation-attendee-repository'
 import type { ConvocationMissionRepository } from '@domain/repositories/convocation-mission-repository'
 import type { ConvocationRepository } from '@domain/repositories/convocation-repository'
 import type { ConvocationRespondersRepository } from '@domain/repositories/convocation-responders-repository'
@@ -39,6 +44,10 @@ import type { UserRepository } from '@domain/repositories/user-repository'
 import type { VoteCategoryRepository } from '@domain/repositories/vote-category-repository'
 import type { VoteRepository } from '@domain/repositories/vote-repository'
 import type { VoteTallyRepository } from '@domain/repositories/vote-tally-repository'
+import { AddConvocationAttendeeUseCase } from '@domain/usecases/convocation/AddConvocationAttendeeUseCase'
+import { ListConvocationTeamPlayersUseCase } from '@domain/usecases/convocation/ListConvocationTeamPlayersUseCase'
+import { ListTeamPlayersUseCase } from '@domain/usecases/convocation/ListTeamPlayersUseCase'
+import { ListUnconvokedPlayersUseCase } from '@domain/usecases/convocation/ListUnconvokedPlayersUseCase'
 import { AssembleConvocationDetailFieldsUseCase } from '@domain/usecases/convocation/AssembleConvocationDetailFieldsUseCase'
 import { ConfirmAttendanceUseCase } from '@domain/usecases/convocation/ConfirmAttendanceUseCase'
 import { ListAvailableTrainingLocationsUseCase } from '@domain/usecases/training-locations/ListAvailableTrainingLocationsUseCase'
@@ -110,8 +119,15 @@ export interface ConvocationContainer {
   voteTallyRepository: VoteTallyRepository
   voteCategoryRepository: VoteCategoryRepository
 
+  // specs/convocation-player-selection.md — net-new.
+  convocationAttendeeRepository: ConvocationAttendeeRepository
+
   // Use cases
   createConvocationUseCase: CreateConvocationUseCase
+  listTeamPlayersUseCase: ListTeamPlayersUseCase
+  addConvocationAttendeeUseCase: AddConvocationAttendeeUseCase
+  listUnconvokedPlayersUseCase: ListUnconvokedPlayersUseCase
+  listConvocationTeamPlayersUseCase: ListConvocationTeamPlayersUseCase
   // specs/web-localizations.md §2.7 — feeds the training form's location
   // select (non-archived venues only). This container's OWN repository
   // instance, same per-container pattern as every other one above.
@@ -172,6 +188,19 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
   const voteRepository = new VoteRepositoryImpl(supabaseClient)
   const voteTallyRepository = new VoteTallyRepositoryImpl(supabaseClient)
   const voteCategoryRepository = new VoteCategoryRepositoryImpl(supabaseClient)
+  const convocationAttendeeRepository = new ConvocationAttendeeRepositoryImpl(supabaseClient)
+  const teamRosterRepository = new TeamRosterRepositoryImpl(supabaseClient)
+  const listTeamPlayersUseCase = new ListTeamPlayersUseCase(teamRosterRepository)
+  const addConvocationAttendeeUseCase = new AddConvocationAttendeeUseCase(
+    userRepository,
+    convocationRepository,
+    teamRepository,
+    matchDetailsRepository,
+    convocationRespondersRepository,
+    convocationAttendeeRepository,
+  )
+  const listUnconvokedPlayersUseCase = new ListUnconvokedPlayersUseCase(convocationRespondersRepository)
+  const listConvocationTeamPlayersUseCase = new ListConvocationTeamPlayersUseCase(convocationRespondersRepository)
   const trainingLocationRepository = new TrainingLocationRepositoryImpl(supabaseClient)
   const listAvailableTrainingLocationsUseCase = new ListAvailableTrainingLocationsUseCase(trainingLocationRepository)
   const getConvocationDetailsUseCase = new GetConvocationDetailsUseCase(meetingDetailsRepository, matchDetailsRepository)
@@ -255,7 +284,12 @@ export function createConvocationContainer(supabaseClient: SupabaseClient): Conv
     voteRepository,
     voteTallyRepository,
     voteCategoryRepository,
+    convocationAttendeeRepository,
     createConvocationUseCase,
+    listTeamPlayersUseCase,
+    addConvocationAttendeeUseCase,
+    listUnconvokedPlayersUseCase,
+    listConvocationTeamPlayersUseCase,
     listAvailableTrainingLocationsUseCase,
     getConvocationDetailsUseCase,
     getConvocationWithDetailsUseCase,

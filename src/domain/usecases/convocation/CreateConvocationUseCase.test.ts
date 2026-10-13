@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationType } from '../../entities/convocation'
 import type { Team } from '../../entities/team'
 import type { User } from '../../entities/user'
+import { ConvocationAttendeeCapExceededError } from '../../errors/convocation-attendee-cap-exceeded-error'
+import { InvalidConvocationInputError } from '../../errors/invalid-convocation-input-error'
 import { ConvocationCreationWindowClosedError } from '../../errors/convocation-creation-window-closed-error'
 import { ForbiddenError } from '../../errors/forbidden-error'
 import { InvalidTrainingLocationInputError } from '../../errors/invalid-training-location-input-error'
@@ -157,6 +159,7 @@ function trainingInput(overrides: Partial<CreateTrainingConvocationInput> = {}):
     createdBy: 'coach-1',
     date: FUTURE_DATE,
     trainingLocationId: 'training-location-1',
+    attendeeIds: ['player-1', 'player-2'],
     ...overrides,
   }
 }
@@ -172,6 +175,8 @@ function matchInput(overrides: Partial<CreateMatchConvocationInput> = {}): Creat
     isHome: true,
     meetingPointTime: timeOnFutureDate(13, 30),
     meetingPointLocation: 'Vestiaires',
+    competitionType: 'friendly',
+    attendeeIds: ['player-1', 'player-2'],
     ...overrides,
   }
 }
@@ -185,6 +190,7 @@ function meetingInput(overrides: Partial<CreateMeetingConvocationInput> = {}): C
     location: 'Salle de réunion',
     title: 'Réunion de rentrée',
     agenda: ['Objectifs de la saison'],
+    attendeeIds: ['player-1', 'player-2'],
     ...overrides,
   }
 }
@@ -375,5 +381,64 @@ describe('CreateConvocationUseCase', () => {
 
     expect(createMeeting).toHaveBeenCalledTimes(1)
     expect(result.type).toBe('meeting')
+  })
+  // specs/convocation-player-selection.md §2 / AC-CPS-03, AC-CPS-06..08.
+  describe('convoked players', () => {
+    const range = (n: number) => Array.from({ length: n }, (_, i) => `player-${i + 1}`)
+
+    function useCaseWith(overrides: Partial<ConvocationRepository> = {}) {
+      return new CreateConvocationUseCase(
+        fakeUserRepository(coachUser(['team-1'])),
+        fakeTeamRepository([teamWith('team-1')]),
+        fakeConvocationRepository(overrides),
+      )
+    }
+
+    it('passes the list of convoked players through to the repository', async () => {
+      const createMeeting = vi.fn(async (input: CreateMeetingConvocationInput) => convocationFrom(input))
+      await useCaseWith({ createMeeting }).execute(meetingInput({ attendeeIds: ['a', 'b', 'c'] }))
+      expect(createMeeting).toHaveBeenCalledWith(expect.objectContaining({ attendeeIds: ['a', 'b', 'c'] }))
+    })
+
+    it('refuses an empty list, with no repository call', async () => {
+      const createTraining = vi.fn(async (input: CreateTrainingConvocationInput) => convocationFrom(input))
+      await expect(useCaseWith({ createTraining }).execute(trainingInput({ attendeeIds: [] }))).rejects.toBeInstanceOf(
+        InvalidConvocationInputError,
+      )
+      expect(createTraining).not.toHaveBeenCalled()
+    })
+
+    it('counts duplicated ids once', async () => {
+      await expect(useCaseWith().execute(trainingInput({ attendeeIds: ['a', 'a'] }))).resolves.toBeDefined()
+      await expect(
+        useCaseWith().execute(matchInput({ competitionType: 'official', attendeeIds: [...range(14), 'player-1', 'player-2'] })),
+      ).resolves.toBeDefined()
+    })
+
+    it('accepts exactly 14 convoked players for an official match', async () => {
+      await expect(
+        useCaseWith().execute(matchInput({ competitionType: 'official', attendeeIds: range(14) })),
+      ).resolves.toBeDefined()
+    })
+
+    it('refuses 15 convoked players for an official match, with no repository call', async () => {
+      const createMatch = vi.fn(async (input: CreateMatchConvocationInput) => convocationFrom(input))
+      await expect(
+        useCaseWith({ createMatch }).execute(matchInput({ competitionType: 'official', attendeeIds: range(15) })),
+      ).rejects.toBeInstanceOf(ConvocationAttendeeCapExceededError)
+      expect(createMatch).not.toHaveBeenCalled()
+    })
+
+    it('does not cap a friendly match, a training or a meeting (AC-CPS-07)', async () => {
+      await expect(useCaseWith().execute(matchInput({ competitionType: 'friendly', attendeeIds: range(25) }))).resolves.toBeDefined()
+      await expect(useCaseWith().execute(trainingInput({ attendeeIds: range(25) }))).resolves.toBeDefined()
+      await expect(useCaseWith().execute(meetingInput({ attendeeIds: range(25) }))).resolves.toBeDefined()
+    })
+
+    it('passes the competition type through to ConvocationRepository.createMatch', async () => {
+      const createMatch = vi.fn(async (input: CreateMatchConvocationInput) => convocationFrom(input))
+      await useCaseWith({ createMatch }).execute(matchInput({ competitionType: 'official', attendeeIds: range(3) }))
+      expect(createMatch).toHaveBeenCalledWith(expect.objectContaining({ competitionType: 'official' }))
+    })
   })
 })

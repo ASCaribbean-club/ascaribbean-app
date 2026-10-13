@@ -1,5 +1,7 @@
 # Spec — Missions d'une convocation, mobile joueur et coach (`match-details-missions`)
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** L'éligibilité à l'inscription est **inchangée** : tout joueur de l'équipe, convoqué ou non (`claim_mission` inchangé ; la liste des éligibles côté application passe par `get_convocation_team_players`).
+
 > Statut : **première rédaction (2026-10-02)**, branche `feature/match-details-missions`. Règles métier données par la développeuse (brief du 2026-10-02), reprises au §2 sans les réinterpréter. **Une question bloque l'écriture de la migration** (PO-MM-01). **Aucune ne bloque le passage à designer-agent** (§7).
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (module P1 « Événements et bénévoles », ligne de matrice « Gérer postes/missions bénévoles », exigences transversales), `docs/roles-personas-as-caribbean.md`, `CLAUDE.md` §3 à §9, `docs/ARCHITECTURE.md`, specs sœurs `web-mission-templates.md` (référentiel, prérequis), `create-convocation.md` (§2 « Écriture — un point d'entrée par type, une transaction »), `match_details_page.md` (écran hôte), `player-dashboard.md` (carte « Prochaine convocation »).
 > État du code lu : voir §0.1 et §0.2. Maquettes : `docs/designs/match-missions/` (§0).

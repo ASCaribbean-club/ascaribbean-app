@@ -1,5 +1,7 @@
 # Spec — Modification des informations d'un match avant le coup d'envoi
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** La consigne « ne pas créer de table `convocation_attendees` » est **levée**. `competition_type` n'est pas modifiable (PO-CPS-05) : aucun chemin d'édition, colonne absente des `grant update`.
+
 > Statut : **rédaction initiale** (product-owner-agent, 2026-09-24). 7 points ouverts (PO-EM-01 à PO-EM-07). **Aucun ne bloque la transmission à designer-agent.** PO-EM-01 (rôles au-delà du coach) et PO-EM-04 (`isHome` modifiable sans `Convocation.location`) doivent être tranchés avant que le périmètre ne soit élargi, mais la passe coach seule est livrable sans eux.
 > Demande d'origine (développeuse, verbatim) : « Coach should be able to edit match infos before it begins. Add an edit icon button before info card in match details page (infos tabs). »
 > Sources : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P0 « Calendrier et convocations » + matrice RBAC, ligne « Créer/**modifier** une convocation »), `docs/roles-personas-as-caribbean.md` (8 rôles, moindre privilège), `specs/match_details_page.md` (écran hôte : §1 « Hors périmètre », §2, AC-MD-03, AC-MD-17, AC-MD-19, AC-MD-23), `specs/create-convocation.md` (§2 modèle `MatchDetails` et tables satellites, §5 règles métier, §3 RBAC), `specs/coach-attendance-confirmation.md` (§2 « Décision de cadrage » — patron de l'action coach scopée équipe), `docs/GOUVERNANCE.md` §7 (référent RGPD **toujours non désigné**).

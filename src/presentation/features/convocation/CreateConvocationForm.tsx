@@ -1,3 +1,4 @@
+import { IconTrophy } from '@tabler/icons-react'
 import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { Button } from '../../shared/components/ui/button'
 import { Input } from '../../shared/components/ui/input'
@@ -72,6 +73,22 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
                   ))}
                 </SelectContent>
               </Select>
+            </FormField>
+
+            {/* specs/convocation-player-selection.md UI design §1 — no
+                preselected value (MS-06): both options start unselected, the
+                submit stays disabled until one is chosen. */}
+            <FormField label="Compétition" htmlFor="competitionType">
+              <SegmentedToggle
+                value={vm.isOfficial}
+                onChange={vm.setIsOfficial}
+                trueLabel="Officiel"
+                falseLabel="Amical"
+                trueColor="coach-amber"
+                falseColor="coach-green"
+                ariaLabel="Compétition"
+                trueIcon={<IconTrophy aria-hidden className="size-4" />}
+              />
             </FormField>
 
             <FormField label="Lieu de la rencontre" htmlFor="isHome">
@@ -227,7 +244,7 @@ export function CreateConvocationForm({ initialValues }: CreateConvocationFormPr
           </div>
         )}
 
-        {vm.hasRecipientsCard && <RecipientsCard count={vm.recipientsCount} />}
+        {vm.hasRecipientsCard && <RecipientsCard recipients={vm.recipients} />}
       </div>
 
       {/* Anchored submit button (UI design §"Structure de l'écran", point 5)

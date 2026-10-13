@@ -64,6 +64,7 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
       opponentId: 'opponent-1',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official' as const,
       ...arrangements,
     }),
     findByConvocations: async () => [],
@@ -189,6 +190,7 @@ describe('UpdateMatchDetailsUseCase', () => {
       opponentId: 'opponent-1',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official' as const,
       ...arrangements,
     }))
     const useCase = new UpdateMatchDetailsUseCase(
@@ -213,6 +215,7 @@ describe('UpdateMatchDetailsUseCase', () => {
       opponentId: 'opponent-1',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official' as const,
       ...arrangements,
     }))
     const useCase = new UpdateMatchDetailsUseCase(
@@ -260,6 +263,7 @@ describe('UpdateMatchDetailsUseCase', () => {
         opponentId: 'opponent-1',
         goalsFor: null,
         goalsAgainst: null,
+        competitionType: 'official' as const,
         ...arrangements,
       }))
       const useCase = new UpdateMatchDetailsUseCase(

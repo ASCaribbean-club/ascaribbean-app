@@ -2,9 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   ConvocationRespondersRepository,
   ConvocationResponderStatus,
+  ConvocationTeamPlayer,
 } from '@domain/repositories/convocation-responders-repository'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { ConvocationResponderMapper } from '../mappers/convocation-responder-mapper'
+import { ConvocationResponderMapper, ConvocationTeamPlayerMapper } from '../mappers/convocation-responder-mapper'
 
 export class ConvocationRespondersRepositoryImpl implements ConvocationRespondersRepository {
   constructor(private supabaseClient: SupabaseClient) { }
@@ -30,5 +31,18 @@ export class ConvocationRespondersRepositoryImpl implements ConvocationResponder
     if (error) throw mapSupabaseError(error)
 
     return (data ?? []).map(ConvocationResponderMapper.toDomain)
+  }
+
+  // specs/convocation-player-selection.md AC-CPS-12 — every player of the
+  // team, convoked or not (get_convocation_team_players, SECURITY DEFINER with
+  // the same explicit team-scope check as get_convocation_responders).
+  async listTeamPlayers(convocationId: string): Promise<ConvocationTeamPlayer[]> {
+    const { data, error } = await this.supabaseClient.rpc('get_convocation_team_players', {
+      p_convocation_id: convocationId,
+    })
+
+    if (error) throw mapSupabaseError(error)
+
+    return (data ?? []).map(ConvocationTeamPlayerMapper.toDomain)
   }
 }

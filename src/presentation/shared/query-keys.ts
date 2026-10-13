@@ -30,6 +30,13 @@ export const queryKeys = {
   convocationDetail: (convocationId: string) => ['convocations', convocationId, 'detail'] as const,
   convocationResponders: (convocationId: string) => ['convocations', convocationId, 'responders'] as const,
   convocationResponseCounts: (convocationId: string) => ['convocations', convocationId, 'response-counts'] as const,
+  // specs/convocation-player-selection.md — the players of the convocation's
+  // team (convoked or not) and the ones NOT convoked yet: distinct keys from
+  // `convocationResponders` (the convoked list), the returned shapes differ.
+  convocationTeamPlayers: (convocationId: string) => ['convocations', convocationId, 'team-players'] as const,
+  convocationUnconvokedPlayers: (convocationId: string) => ['convocations', convocationId, 'unconvoked-players'] as const,
+  // The creation form's selection list — players of a team, no convocation yet.
+  teamPlayersForConvocation: (teamId: string) => ['teams', teamId, 'players', 'for-convocation'] as const,
   convocationRosterForCoach: (convocationId: string) => ['convocations', convocationId, 'roster', 'coach'] as const,
   playerConvocationResponse: (convocationId: string, userId: string) => ['convocations', convocationId, 'player', userId] as const,
 

@@ -6,6 +6,7 @@ import { formatConvocationType, getConvocationTypeIcon } from '@presentation/sha
 import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { TeamCrestAvatar } from '@presentation/shared/components/TeamCrestAvatar'
 import { AttendanceConfirmationAlert } from '@presentation/shared/components/AttendanceConfirmationAlert'
+import { OfficialMatchBadge } from '@presentation/shared/components/OfficialMatchBadge'
 import { StatusBadge } from './StatusBadge'
 import { getConvocationLocationLabel } from '@domain/rules/convocation-location'
 
@@ -16,6 +17,9 @@ interface ConvocationHeroProps {
   opponent: Opponent | null
   meetingDetails: MeetingDetails | null
   attendanceConfirmationMissing: boolean
+  // specs/convocation-player-selection.md AC-CPS-09 — computed by the
+  // ViewModel from MatchDetails.competitionType.
+  isOfficialMatch: boolean
 }
 
 // The "hero" zone below BackHeader (UI design §"Structure de l'écran",
@@ -32,7 +36,7 @@ interface ConvocationHeroProps {
 // The status pastille (top-right in the mockup) and the cancellation reason
 // line are common to all three types — rendered once, outside the
 // match/non-match branch.
-export function ConvocationHero({ convocation, teamName, sectionName, opponent, meetingDetails, attendanceConfirmationMissing }: ConvocationHeroProps) {
+export function ConvocationHero({ convocation, teamName, sectionName, opponent, meetingDetails, attendanceConfirmationMissing, isOfficialMatch }: ConvocationHeroProps) {
   const Icon = getConvocationTypeIcon(convocation.type)
 
   const title =
@@ -57,7 +61,9 @@ export function ConvocationHero({ convocation, teamName, sectionName, opponent, 
             droite quand le hero n'a pas de face-à-face (cf. training/meeting
             ci-dessous, qui n'a pas de première ligne de titre à afficher deux
             fois). */}
-        <span />
+        {/* specs/convocation-player-selection.md UI design §2 — the slot that
+            used to hold a placeholder now carries the official-match pill. */}
+        {isOfficialMatch ? <OfficialMatchBadge variant="pill" /> : <span />}
         <div className="flex items-center gap-2">
           <AttendanceConfirmationAlert visible={attendanceConfirmationMissing} />
           <StatusBadge status={convocation.status} />

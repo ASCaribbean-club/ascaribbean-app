@@ -1,6 +1,8 @@
 import type { ConvocationResponderStatus } from '@domain/repositories/convocation-responders-repository'
 import type { ResponseCounts } from '@domain/rules/convocation-rules'
 import type { CoachRosterStatusItem } from '@domain/usecases/convocation/GetConvocationRosterForCoachUseCase'
+import { AddAttendeePanel } from '../attendees/AddAttendeePanel'
+import type { AddAttendeeViewModel } from '../attendees/useAddAttendeeViewModel'
 import { type AttendanceConfirmProps, RosterList, type SelfRosterProps } from './RosterList'
 
 // Same variant split as RosterList mirrors below: the coach view's header
@@ -15,7 +17,13 @@ import { type AttendanceConfirmProps, RosterList, type SelfRosterProps } from '.
 // player never needs any of it (AC-AT-06/07).
 type EffectifTabProps =
   | { variant: 'player'; self: SelfRosterProps; others: ConvocationResponderStatus[]; responseCounts: ResponseCounts }
-  | ({ variant: 'coach'; roster: CoachRosterStatusItem[]; responseCounts: ResponseCounts } & AttendanceConfirmProps)
+  | ({
+      variant: 'coach'
+      roster: CoachRosterStatusItem[]
+      responseCounts: ResponseCounts
+      // specs/convocation-player-selection.md §4 — "Convoquer un joueur".
+      addAttendee: AddAttendeeViewModel
+    } & AttendanceConfirmProps)
 
 export function EffectifTab(props: EffectifTabProps) {
   return (
@@ -23,16 +31,19 @@ export function EffectifTab(props: EffectifTabProps) {
       {props.variant === 'player' ? (
         <RosterList variant="player" self={props.self} others={props.others} responseCounts={props.responseCounts} />
       ) : (
-        <RosterList
-          variant="coach"
-          roster={props.roster}
-          responseCounts={props.responseCounts}
-          canValidateAttendance={props.canValidateAttendance}
-          savingUserId={props.savingUserId}
-          errorByUserId={props.errorByUserId}
-          onConfirmPresent={props.onConfirmPresent}
-          onConfirmAbsent={props.onConfirmAbsent}
-        />
+        <>
+          <RosterList
+            variant="coach"
+            roster={props.roster}
+            responseCounts={props.responseCounts}
+            canValidateAttendance={props.canValidateAttendance}
+            savingUserId={props.savingUserId}
+            errorByUserId={props.errorByUserId}
+            onConfirmPresent={props.onConfirmPresent}
+            onConfirmAbsent={props.onConfirmAbsent}
+          />
+          <AddAttendeePanel attendee={props.addAttendee} />
+        </>
       )}
     </div>
   )

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { ConvocationAttendeeRepositoryImpl } from '@data/repositories/ConvocationAttendeeRepositoryImpl'
 import { ConvocationMissionRepositoryImpl } from '@data/repositories/ConvocationMissionRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationResponseCountsRepositoryImpl } from '@data/repositories/ConvocationResponseCountsRepositoryImpl'
@@ -94,6 +95,7 @@ export function createPlayerDashboardContainer(supabaseClient: SupabaseClient): 
       assembleConvocationDetailFieldsUseCase,
       getConvocationDetailsUseCase,
       new ConvocationResponseCountsRepositoryImpl(supabaseClient),
+      new ConvocationAttendeeRepositoryImpl(supabaseClient),
     ),
     respondToConvocationUseCase: new RespondToConvocationUseCase(userRepository, convocationRepository, convocationResponseRepository),
     listUserMissingOrRejectedDocumentsUseCase: new ListUserMissingOrRejectedDocumentsUseCase(documentRepository),

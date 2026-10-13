@@ -10,6 +10,7 @@ export function toMatchDetails(row: MatchDetailsRow): MatchDetails {
     meetingPointLocation: row.meeting_point_location,
     goalsFor: row.goals_for,
     goalsAgainst: row.goals_against,
+    competitionType: row.competition_type,
   }
 }
 
@@ -22,6 +23,7 @@ export function toMatchDetailsRow(details: MatchDetails): MatchDetailsRow {
     meeting_point_location: details.meetingPointLocation,
     goals_for: details.goalsFor,
     goals_against: details.goalsAgainst,
+    competition_type: details.competitionType,
   }
 }
 

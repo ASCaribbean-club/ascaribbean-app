@@ -70,7 +70,7 @@ describe('ClaimMissionUseCase', () => {
       )
       await expect(useCase.execute(input(user.id))).rejects.toBeInstanceOf(ForbiddenError)
     }
-    expect(responders.listForConvocation).not.toHaveBeenCalled()
+    expect(responders.listTeamPlayers).not.toHaveBeenCalled()
     expect(repo.claim).not.toHaveBeenCalled()
   })
 

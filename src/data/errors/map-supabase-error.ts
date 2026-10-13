@@ -1,4 +1,7 @@
 import type { PostgrestError } from '@supabase/supabase-js'
+import { ConvocationAttendeeAddRefusedError } from '@domain/errors/convocation-attendee-add-refused-error'
+import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
+import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { DomainError } from '@domain/errors/domain-error'
 import { ExpenseCategoryInUseError } from '@domain/errors/expense-category-in-use-error'
@@ -49,8 +52,27 @@ export function mapSupabaseError(error: PostgrestError): DomainError {
       if (error.message.includes('mission_full')) {
         return new MissionFullError(error.message)
       }
+      // specs/convocation-player-selection.md §4 — the insert policy
+      // convocation_attendees_insert_add refused the addition (not the coach of
+      // the team, convocation not open, kickoff passed): a window/right, with
+      // its own lisible message. Checked on the table name, which PostgREST
+      // puts in a row-level-security violation message.
+      if (error.message.includes('convocation_attendees')) {
+        return new ConvocationAttendeeAddRefusedError(error.message)
+      }
       return new ForbiddenError(error.message)
     case '23514':
+      // specs/convocation-player-selection.md AC-CPS-04/AC-CPS-06 — named
+      // tokens raised by the triggers and create_*_convocation functions.
+      if (error.message.includes('convocation_attendee_cap_exceeded')) {
+        return new ConvocationAttendeeCapExceededError(error.message)
+      }
+      if (
+        error.message.includes('convocation_attendee_not_team_player') ||
+        error.message.includes('convocation_attendees_required')
+      ) {
+        return new InvalidConvocationInputError(error.message)
+      }
       // check_violation on user_roles_scope_check means the caller tried to
       // insert/update a role assignment with a team_id/section_id combination
       // that doesn't match the role. This should only ever happen from a bug

@@ -34,6 +34,7 @@ function matchDetailsWith(overrides: Partial<MatchDetails>): MatchDetails {
     meetingPointLocation: null,
     goalsFor: null,
     goalsAgainst: null,
+    competitionType: 'official',
     ...overrides,
   }
 }

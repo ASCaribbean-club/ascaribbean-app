@@ -57,6 +57,7 @@ describe('AssembleConvocationDetailFieldsUseCase', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
     const opponent: Opponent = { id: 'opponent-1', name: 'FC Rival' }
     const useCase = new AssembleConvocationDetailFieldsUseCase(fakeOpponentRepository(opponent))

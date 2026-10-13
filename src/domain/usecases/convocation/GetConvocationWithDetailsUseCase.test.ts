@@ -67,7 +67,7 @@ function fakeMatchDetailsRepository(record: MatchDetails | null): MatchDetailsRe
     recordScore: async (convocationId, goalsFor, goalsAgainst) => ({ ...(record as MatchDetails), convocationId, goalsFor, goalsAgainst }),
     // Not exercised by GetConvocationWithDetailsUseCase (a read-only use
     // case) — present only to satisfy the interface.
-    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', goalsFor: null, goalsAgainst: null, ...arrangements }),
+    updateArrangements: async (convocationId, arrangements) => ({ convocationId, opponentId: '', goalsFor: null, goalsAgainst: null, competitionType: 'official', ...arrangements }),
     findByConvocations: async () => [],
   }
 }
@@ -130,6 +130,7 @@ describe('GetConvocationWithDetailsUseCase', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
     const opponent: Opponent = { id: 'opponent-1', name: 'FC Rival' }
     const useCase = buildUseCase({ convocation, matchRecord, opponent })

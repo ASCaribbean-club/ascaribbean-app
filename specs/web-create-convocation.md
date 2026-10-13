@@ -1,5 +1,7 @@
 # Spec — Backoffice web : convocations et présences (`web-create-convocation`)
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** La consigne « ne pas créer de table `convocation_attendees` » est **levée**. Le formulaire web n'a pas de liste de sélection dans cette passe (PO-CPS-08) : la création convoque **toute l'équipe** ; un match officiel d'une équipe de plus de 14 joueurs est refusé lisiblement (jamais de troncature). Un champ « Compétition » (Officiel / Amical, sans valeur préselectionnée) est ajouté à la création d'un match.
+
 > Statut : **troisième rédaction** (product-owner-agent, 2026-10-01). **Aucun point ouvert bloquant.** PO-WC-01 et PO-WC-12 ont été tranchés par la développeuse. La spec est prête pour designer-agent puis l'implémentation (§7). Les points restants (§6) sont tous non bloquants.
 > Demande d'origine (développeuse) : « Admin should be able to create and edit convocation (and attendance record). Base on designs in docs/designs/desktop/convocation/. Admin can edit attendance records. This should be added in audit logs. »
 > Sources CDC : `docs/priorisation-fonctionnelle-as-acaribbean.md` (P0 « Calendrier et convocations », P0 « Présences et suivi sportif », matrice RBAC lignes « Créer/modifier une convocation » et « Saisir une évaluation sportive », exigence transversale §11.3 « Journal d'audit »), `docs/roles-personas-as-caribbean.md` (rôle Administrateur : « actions sensibles journalisées » ; comptes multi-rôles).

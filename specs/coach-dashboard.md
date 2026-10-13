@@ -1,5 +1,7 @@
 # Spec — Tableau de bord Coach
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** La partie « convoqués requis » de PO-6b est **tranchée** : c'est la liste de convoqués. PO-6b (statut de licence individuel vu par le coach) **reste ouvert**. AC-CD-04/05 : les compteurs portent sur les convoqués. La carte « Prochain match » affiche l'icône coupe (« Match officiel ») pour un match officiel.
+
 > Statut : PO-1, PO-2, PO-3, PO-4, PO-5, PO-6 et PO-7 tranchés (décision développeuse, 2026-08-18) — prête pour la conception d'interface (designer-agent). Seul PO-6b reste ouvert et ne bloque pas le design (voir §5).
 > Sources : `priorisation-fonctionnelle-as-acaribbean.md` (P0/P1 + matrice RBAC), `roles-personas-as-caribbean.md` (8 rôles, comptes multi-rôles), `ARCHITECTURE.md` (§7 permissions, §11 journal d'audit, §13.4 BottomNav), maquette `docs/designs/v4_coach_dashboard.png`.
 > Aucune spec antérieure n'existe : ce document est le premier de la série.

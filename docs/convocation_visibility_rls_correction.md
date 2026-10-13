@@ -1,5 +1,7 @@
 # Spec — Convocation responder visibility: RLS correction
 
+> **Amendement du 2026-10-12 — `specs/convocation-player-selection.md`.** §2.1 : la vue `convocation_responders` lit désormais la liste `convocation_attendees` (plus l'effectif dérivé de `user_roles`) ; le `LEFT JOIN` vers les réponses est conservé. §3 (6.1 « stays OPEN ») : **résolue** par `specs/convocation-player-selection.md`. La règle « badge binaire, jamais le statut » est inchangée.
+
 > Consumed by: Claude Code (Developer agent).
 > Produced by: mentoring session following a recette finding on the match convocation detail screen for players (AC-MD-08 failure).
 > Status: decisions below are final for this iteration. One point deferred as OPEN — do not resolve it implicitly.

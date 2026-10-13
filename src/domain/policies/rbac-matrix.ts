@@ -426,6 +426,14 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // Deliberately NO time window (PO-MC-05), unlike match_details_update_arrangements.
   'match_lineup:write': ['coach'],
 
+  // specs/convocation-player-selection.md §3 — 'convocation_attendee:add':
+  // ['coach'], scoped to the coach's own team (can.ts). Deliberate
+  // restrictive gap, same reasoning as 'match_lineup:write' (PO-CPS-11).
+  // Manual mirror (CLAUDE.md §7) of convocation_attendees_insert_add — see
+  // supabase/migrations/20261012181248_convocation_attendees_schema.sql
+  // (coach of the team, convocation open, before kickoff — PO-CPS-06).
+  'convocation_attendee:add': ['coach'],
+
   // specs/web-create-convocation.md §2 — NEW permission: the admin edits a
   // meeting's title and agenda before it starts. Admin only; club-wide by
   // construction (no scope field on the admin assignment). can.ts also lists

@@ -26,6 +26,7 @@ import { queryKeys } from '@presentation/shared/query-keys'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 import type { MatchDetailsFormValues } from './components/MatchDetailsEditForm'
 import type { TrainingFormValues } from './components/TrainingEditForm'
+import { useAddAttendeeViewModel } from './attendees/useAddAttendeeViewModel'
 import { useMatchLineupViewModel } from './lineup/useMatchLineupViewModel'
 import { useConvocationMissionsViewModel } from './missions/useConvocationMissionsViewModel'
 
@@ -219,6 +220,18 @@ export function useConvocationDetailViewModel() {
     now,
   })
 
+  // specs/convocation-player-selection.md §4 — "Convoquer un joueur" (coach,
+  // Effectif tab). Called here (page level) like the two ViewModels above.
+  const addAttendee = useAddAttendeeViewModel({
+    convocationId,
+    convocation,
+    competitionType: matchDetails?.competitionType ?? null,
+    convokedCount: rosterForCoachQuery.data?.roster.length ?? 0,
+    activeRole,
+    roleMatchesConvocationTeam,
+    now,
+  })
+
   // specs/coach-attendance-confirmation.md §2 — RBAC-only render gate,
   // moindre privilège (AC-AT-06/07): buttons must be ABSENT, never disabled,
   // for anyone this evaluates false for. `activeRole === 'coach'` is also
@@ -245,7 +258,17 @@ export function useConvocationDetailViewModel() {
   // ('coach' never responds, §2) — unchanged call site, `can()`/
   // `usePermission` still the sole authorization decision, only the
   // variant source (`variant` → `activeRole`) changed.
-  const canRespond = activeRole === 'player' && hasRbacPermission && !!convocation && canPlayerRespond(convocation, now)
+  // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — a player who
+  // is not on the list of convoked players does not respond: no buttons, a
+  // "Non convoqué(e)" line instead. Only decided once the convoked list is
+  // loaded (a still-loading list never flashes the "not convoked" state).
+  const isNotConvoked =
+    activeRole === 'player' &&
+    respondersQuery.isSuccess &&
+    !!user &&
+    !respondersQuery.data.some((responder) => responder.userId === user.id)
+  const canRespond =
+    activeRole === 'player' && hasRbacPermission && !isNotConvoked && !!convocation && canPlayerRespond(convocation, now)
 
   const playerResponse: DeclaredStatus | null = playerResponseQuery.data?.status ?? null
 
@@ -1084,6 +1107,7 @@ export function useConvocationDetailViewModel() {
     teamName: teamQuery.data?.name,
     sectionName: sectionQuery.data?.name,
     matchDetails,
+    isOfficialMatch: matchDetails?.competitionType === 'official',
     opponent: detailedConvocationQuery.data?.opponent ?? null,
     meetingDetails: detailedConvocationQuery.data?.meetingDetails ?? null,
     attendanceConfirmationMissing,
@@ -1106,6 +1130,10 @@ export function useConvocationDetailViewModel() {
     },
     others,
     playerResponseCounts: responseCountsQuery.data,
+    // specs/convocation-player-selection.md §5 — the viewer's own convoked
+    // state (the viewer may or may not be on the list).
+    isConvoked: !isNotConvoked,
+    addAttendee,
 
     coachRoster: rosterForCoachQuery.data?.roster ?? [],
     responseCounts: rosterForCoachQuery.data?.responseCounts,
@@ -1166,6 +1194,9 @@ export function useConvocationDetailViewModel() {
       categoryLabel: voteCategoryQuery.data?.label ?? null,
       canCastVote,
       votingOpen,
+      // specs/convocation-player-selection.md §5 / PO-CPS-09 — a non-convoked
+      // player votes but cannot be elected: a discreet hint, for them only.
+      isNotConvoked,
       candidates: voteCandidates,
       myVote: myVoteQuery.data ?? null,
       tally: voteTallyQuery.data ?? null,

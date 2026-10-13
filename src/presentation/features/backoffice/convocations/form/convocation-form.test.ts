@@ -72,9 +72,12 @@ describe('validateConvocationForm', () => {
     const errors = validateConvocationForm(values({ type: 'match' }), 'create', NOW)
     expect(errors).toEqual({
       opponentId: REQUIRED_FIELD_MESSAGE,
+      competitionType: REQUIRED_FIELD_MESSAGE,
       location: REQUIRED_FIELD_MESSAGE,
     })
-    expect(validateConvocationForm(values({ type: 'match', opponentId: 'o1', location: 'Stade' }), 'create', NOW)).toEqual({})
+    expect(
+      validateConvocationForm(values({ type: 'match', opponentId: 'o1', location: 'Stade', competitionType: 'friendly' }), 'create', NOW),
+    ).toEqual({})
   })
 
   it('validates a set RDV against the kickoff, the same day', () => {
@@ -82,6 +85,7 @@ describe('validateConvocationForm', () => {
       type: 'match' as const,
       opponentId: 'o1',
       location: 'Stade',
+      competitionType: 'official' as const,
     }
     expect(validateConvocationForm(values({ ...base, meetingPointTime: '14:00' }), 'create', NOW)).toEqual({})
     expect(validateConvocationForm(values({ ...base, meetingPointTime: '15:00' }), 'create', NOW).meetingPointTime).toBe(
@@ -98,6 +102,7 @@ describe('validateConvocationForm', () => {
         type: 'match',
         opponentId: 'o1',
         location: 'Stade',
+        competitionType: 'official',
         meetingPointLocation: 'Vestiaires',
       }),
       'create',
@@ -148,6 +153,7 @@ describe('buildCreateInput', () => {
         title: 'ignored',
       }),
       'admin-1',
+      ['p1', 'p2'],
     )
     expect(input).toEqual({
       type: 'training',
@@ -155,13 +161,20 @@ describe('buildCreateInput', () => {
       createdBy: 'admin-1',
       date: new Date(`${FUTURE_DATE}T15:00`).toISOString(),
       trainingLocationId: 'l1',
+      attendeeIds: ['p1', 'p2'],
     })
   })
 
   it('builds a match input, RDV optional both ways', () => {
-    const none = buildCreateInput(values({ type: 'match', opponentId: 'o1', location: ' Stade ' }), 'admin-1')
+    const none = buildCreateInput(
+      values({ type: 'match', opponentId: 'o1', location: ' Stade ', competitionType: 'official' }),
+      'admin-1',
+      ['p1'],
+    )
     expect(none).toMatchObject({
       type: 'match',
+      competitionType: 'official',
+      attendeeIds: ['p1'],
       location: 'Stade',
       isHome: true,
       meetingPointTime: null,
@@ -175,8 +188,10 @@ describe('buildCreateInput', () => {
         location: 'Stade',
         meetingPointTime: '14:00',
         meetingPointLocation: ' Vestiaires ',
+        competitionType: 'friendly',
       }),
       'admin-1',
+      ['p1'],
     )
     expect(some).toMatchObject({
       meetingPointTime: new Date(`${FUTURE_DATE}T14:00`).toISOString(),
@@ -193,6 +208,7 @@ describe('buildCreateInput', () => {
         agenda: ['a', 'b'],
       }),
       'admin-1',
+      ['p1'],
     )
     expect(input).toMatchObject({
       type: 'meeting',
@@ -200,6 +216,23 @@ describe('buildCreateInput', () => {
       location: 'Salle',
       agenda: ['a', 'b'],
     })
+  })
+})
+
+describe('competition type (create only)', () => {
+  it('is required for a match on creation, never on edit', () => {
+    const match = values({ type: 'match', opponentId: 'o1', location: 'Stade' })
+    expect(validateConvocationForm(match, 'create', NOW).competitionType).toBe(REQUIRED_FIELD_MESSAGE)
+    expect(validateConvocationForm({ ...match, competitionType: 'official' }, 'create', NOW).competitionType).toBeUndefined()
+    expect(validateConvocationForm(match, 'edit', NOW).competitionType).toBeUndefined()
+  })
+
+  it('is not asked for a training or a meeting', () => {
+    expect(validateConvocationForm(values({ trainingLocationId: 'l1' }), 'create', NOW).competitionType).toBeUndefined()
+  })
+
+  it('refuses to build a match input without a competition type', () => {
+    expect(() => buildCreateInput(values({ type: 'match', opponentId: 'o1', location: 'Stade' }), 'admin-1', ['p1'])).toThrow()
   })
 })
 

@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import { Card } from '../../../shared/components/ui/card'
 import { formatConvocationType, getConvocationTypeIcon } from '../../../shared/formatters/convocation-labels'
+import { OfficialMatchBadge } from '@presentation/shared/components/OfficialMatchBadge'
 import { ResponseActions } from '@presentation/shared/components/ResponseActions'
 import { ResponseCountsRecap } from '@presentation/shared/components/ResponseCountsRecap'
 import { ScheduleInfo } from '@presentation/shared/components/ScheduleInfo'
@@ -13,6 +14,9 @@ interface NextConvocationCardProps {
   // ViewModel (PO-MM-11); null renders nothing.
   missionsLine: string | null
   canRespond: boolean
+  // specs/convocation-player-selection.md PO-CPS-03 — the player is not on the
+  // list of convoked players: no response buttons, an information line.
+  isNotConvoked: boolean
   onRespondPresent: () => void
   onRespondAbsent: () => void
   onOpen: () => void
@@ -30,7 +34,7 @@ interface NextConvocationCardProps {
 //     carried entirely by ResponseActions's button states, never a separate
 //     status label (§3, "évite de dupliquer l'information entre un libellé
 //     de statut et l'état visuel des boutons").
-export function NextConvocationCard({ data, missionsLine, canRespond, onRespondPresent, onRespondAbsent, onOpen }: NextConvocationCardProps) {
+export function NextConvocationCard({ data, missionsLine, canRespond, isNotConvoked, onRespondPresent, onRespondAbsent, onOpen }: NextConvocationCardProps) {
   if (!data) return null // AC-PD-02 : état vide géré par le parent (aucune échéance à venir)
 
   const { convocation, matchDetails, opponent, meetingDetails, myResponse, responseCounts } = data
@@ -67,6 +71,8 @@ export function NextConvocationCard({ data, missionsLine, canRespond, onRespondP
             map lookup and flags a JSX tag bound to a local variable). */}
         {createElement(Icon, { className: 'size-5 shrink-0 text-white/70', 'aria-hidden': true })}
         <p className="text-[19px] leading-tight font-extrabold text-white">{title}</p>
+        {/* specs/convocation-player-selection.md AC-CPS-09 — icon + sr-only label. */}
+        {matchDetails?.competitionType === 'official' && <OfficialMatchBadge />}
       </div>
 
       <ScheduleInfo dateIso={convocation.date} location={getConvocationLocationLabel(convocation)} meetingPointTime={meetingPointTime} />
@@ -75,14 +81,18 @@ export function NextConvocationCard({ data, missionsLine, canRespond, onRespondP
 
       {missionsLine && <p className="truncate text-[12.5px] text-white/60">Votre mission : {missionsLine}</p>}
 
-      <div onClick={(event) => event.stopPropagation()}>
-        <ResponseActions
-          canRespond={canRespond}
-          myResponse={myResponse?.status ?? null}
-          onRespondPresent={onRespondPresent}
-          onRespondAbsent={onRespondAbsent}
-        />
-      </div>
+      {isNotConvoked ? (
+        <p className="text-[13px] font-semibold text-white/60">Non convoqué(e)</p>
+      ) : (
+        <div onClick={(event) => event.stopPropagation()}>
+          <ResponseActions
+            canRespond={canRespond}
+            myResponse={myResponse?.status ?? null}
+            onRespondPresent={onRespondPresent}
+            onRespondAbsent={onRespondAbsent}
+          />
+        </div>
+      )}
     </Card>
   )
 }

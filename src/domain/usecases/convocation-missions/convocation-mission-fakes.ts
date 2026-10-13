@@ -62,6 +62,7 @@ export function fakeTeamRepository(): TeamRepository {
 export function fakeRespondersRepository(userIds: string[]): ConvocationRespondersRepository {
   return {
     listForConvocation: vi.fn(async () => userIds.map((userId) => ({ userId, hasResponded: false, displayName: 'Membre', position: null }))),
+    listTeamPlayers: vi.fn(async () => userIds.map((userId) => ({ userId, displayName: 'Membre', position: null }))),
   }
 }
 

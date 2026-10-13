@@ -71,6 +71,7 @@ function fakeMatchDetailsRepository(overrides: Partial<MatchDetailsRepository> =
       meetingPointLocation: 'Vestiaires',
       goalsFor,
       goalsAgainst,
+      competitionType: 'official' as const,
     }) as MatchDetails,
     updateArrangements: async () => { throw new Error('not used in this test') },
     findByConvocations: async () => [],
@@ -136,6 +137,7 @@ describe('RecordMatchScoreUseCase', () => {
       meetingPointLocation: 'Vestiaires',
       goalsFor,
       goalsAgainst,
+      competitionType: 'official' as const,
     }))
     const useCase = new RecordMatchScoreUseCase(
       fakeConvocationRepository(convocationWith()),

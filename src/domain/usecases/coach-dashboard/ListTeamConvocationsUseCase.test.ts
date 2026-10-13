@@ -191,6 +191,7 @@ describe('ListTeamConvocationsUseCase', () => {
       meetingPointLocation: 'Stade municipal',
       goalsFor: null,
       goalsAgainst: null,
+      competitionType: 'official',
     }
     const opponent: Opponent = { id: 'opponent-1', name: 'Caribbean Girlz' }
     const findByConvocationId = vi.fn().mockResolvedValue(matchDetails)

@@ -1,5 +1,7 @@
 import { AttendanceWindowClosedError } from '@domain/errors/attendance-window-closed-error'
 import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
+import { ConvocationAttendeeAddRefusedError } from '@domain/errors/convocation-attendee-add-refused-error'
+import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
 import { ArchivedMembershipHasPaymentsError } from '@domain/errors/archived-membership-has-payments-error'
@@ -586,6 +588,23 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
 
   // specs/web-create-convocation.md AC-WC-23/AC-WC-26 — window crossed while
   // the screen was open: nothing to retry, the screen offers only a way back.
+  // specs/convocation-player-selection.md §3/§4 — same readable sentences as the
+  // inline alerts of the form and of the "Convoquer un joueur" panel.
+  if (error instanceof ConvocationAttendeeCapExceededError) {
+    return {
+      message: 'Le plafond de 14 convoqués vient d’être atteint.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+  if (error instanceof ConvocationAttendeeAddRefusedError) {
+    return {
+      message: 'Cette convocation n’accepte plus d’ajout.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
   if (error instanceof ConvocationNotEditableError) {
     return {
       message: 'Cette convocation n’est plus modifiable : elle est passée ou son statut a changé.',

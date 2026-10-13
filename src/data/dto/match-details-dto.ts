@@ -1,3 +1,5 @@
+import type { CompetitionType } from '@domain/entities/competition-type'
+
 // Raw shape of public.match_details — 1:1 satellite of convocations, PK = FK
 // (specs/create-convocation.md §2, mid-pass correction — see
 // domain/entities/match-details.ts). Migration not written as part of this
@@ -15,6 +17,10 @@ export interface MatchDetailsRow {
   // the other (match_details_goals_both_or_none_check).
   goals_for: number | null
   goals_against: number | null
+  // specs/convocation-player-selection.md PO-CPS-01 — not null, no default,
+  // check ('official', 'friendly'). Added by
+  // supabase/migrations/20261012181248_convocation_attendees_schema.sql.
+  competition_type: CompetitionType
 }
 
 // specs/edit-match-details.md §5/§6 — the exact 3 columns

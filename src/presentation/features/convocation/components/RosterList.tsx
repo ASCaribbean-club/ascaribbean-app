@@ -9,6 +9,10 @@ import { RosterRow } from './RosterRow'
 import { SelfRosterRow } from './SelfRosterRow'
 
 export interface SelfRosterProps {
+  // specs/convocation-player-selection.md PO-CPS-03 (hypothesis) — false when
+  // the player is not on the list of convoked players: no Présent / Absent
+  // buttons, an information line instead.
+  isConvoked: boolean
   name: string
   position: PlayerPosition | null
   canRespond: boolean
@@ -89,14 +93,22 @@ export function RosterList(props: RosterListProps) {
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {props.variant === 'player' ? (
           <>
-            <SelfRosterRow
-              name={props.self.name}
-              position={props.self.position}
-              canRespond={props.self.canRespond}
-              myResponse={props.self.myResponse}
-              onRespondPresent={props.self.onRespondPresent}
-              onRespondAbsent={props.self.onRespondAbsent}
-            />
+            {props.self.isConvoked ? (
+              <SelfRosterRow
+                name={props.self.name}
+                position={props.self.position}
+                canRespond={props.self.canRespond}
+                myResponse={props.self.myResponse}
+                onRespondPresent={props.self.onRespondPresent}
+                onRespondAbsent={props.self.onRespondAbsent}
+              />
+            ) : (
+              <RosterRow
+                name={`${props.self.name} (moi)`}
+                position={props.self.position}
+                badge={<span className="text-[12px] font-semibold text-white/60">Non convoqué(e)</span>}
+              />
+            )}
             {props.others.map((responder) => (
               <RosterRow
                 key={responder.userId}

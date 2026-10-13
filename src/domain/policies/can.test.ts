@@ -926,3 +926,33 @@ describe('can — finance_carrier:archive', () => {
     expect(can(userWith([role]), 'finance_carrier:archive')).toBe(false)
   })
 })
+
+// specs/convocation-player-selection.md §3/AC-02/AC-CPS-11 — 'convocation_attendee:add'
+// is team-scoped to the coach's own teams, coach only.
+describe('can — convocation_attendee:add', () => {
+  it('allows a coach on their own team', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation_attendee:add', { teamId: 'team-1' })).toBe(true)
+  })
+
+  it('denies a coach of team A on a convocation of team B', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation_attendee:add', { teamId: 'team-2' })).toBe(false)
+  })
+
+  it('denies a coach when no teamId is given', () => {
+    const user = userWith([{ role: 'coach', teamIds: ['team-1'] }])
+    expect(can(user, 'convocation_attendee:add')).toBe(false)
+  })
+
+  it('denies a player, even on their own team', () => {
+    const user = userWith([{ role: 'player', teamId: 'team-1' }])
+    expect(can(user, 'convocation_attendee:add', { teamId: 'team-1' })).toBe(false)
+  })
+
+  it('denies a section-manager, an authorized officer and an admin (PO-CPS-11, not built)', () => {
+    expect(can(userWith([{ role: 'section-manager', sectionId: 'section-a' }]), 'convocation_attendee:add', { teamId: 'team-1', sectionId: 'section-a' })).toBe(false)
+    expect(can(userWith([{ role: 'authorized-officer' }]), 'convocation_attendee:add', { teamId: 'team-1' })).toBe(false)
+    expect(can(userWith([{ role: 'admin' }]), 'convocation_attendee:add', { teamId: 'team-1' })).toBe(false)
+  })
+})

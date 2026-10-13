@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Convocation, ConvocationResponse } from '@/domain/entities/convocation'
+import type { ConvocationAttendeeRepository } from '@/domain/repositories/convocation-attendee-repository'
 import type { ConvocationRepository } from '@/domain/repositories/convocation-repository'
 import type { ConvocationResponseCountsRepository } from '@/domain/repositories/convocation-response-counts-repository'
 import type { ConvocationResponseRepository } from '@/domain/repositories/convocation-response-repository'
@@ -36,6 +37,21 @@ function responseWith(overrides: Partial<ConvocationResponse>): ConvocationRespo
     reason: null,
     respondedAt: null,
     ...overrides,
+  }
+}
+
+// specs/convocation-player-selection.md PO-CPS-03 — which convocations the
+// player is convoked to; `allConvoked` = every id asked for (the default case).
+function attendeesConvokedTo(...convokedIds: string[]): ConvocationAttendeeRepository {
+  return {
+    add: vi.fn(),
+    listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids.filter((id) => convokedIds.includes(id))),
+  }
+}
+function allConvoked(): ConvocationAttendeeRepository {
+  return {
+    add: vi.fn(),
+    listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids),
   }
 }
 
@@ -76,6 +92,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result.map((r) => r.convocation.id)).toEqual(['c-upcoming'])
@@ -101,6 +118,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now, includePast: true })
 
     // Same as ListTeamConvocationsUseCase: includePast bypasses isUpcoming
@@ -123,10 +141,11 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(findByConvocationAndUser).toHaveBeenCalledWith('c1', 'u1')
-    expect(result).toEqual([{ convocation, myResponse, responseCounts: { present: 0, absent: 0, pending: 0 }, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse, responseCounts: { present: 0, absent: 0, pending: 0 }, isConvoked: true, ...noDetailFields }])
   })
 
   it('returns null myResponse when the player has not responded yet (distinct from a "pending" status row)', async () => {
@@ -142,9 +161,10 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
-    expect(result).toEqual([{ convocation, myResponse: null, responseCounts: { present: 0, absent: 0, pending: 0 }, ...noDetailFields }])
+    expect(result).toEqual([{ convocation, myResponse: null, responseCounts: { present: 0, absent: 0, pending: 0 }, isConvoked: true, ...noDetailFields }])
   })
 
   it('skips GetConvocationDetailsUseCase for a training convocation (existing type === "training" guard)', async () => {
@@ -162,6 +182,7 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       assembleConvocationDetailFieldsUseCase,
       getConvocationDetailsUseCase,
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(getConvocationDetailsUseCase.execute).not.toHaveBeenCalled()
@@ -180,11 +201,13 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository(),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result).toEqual([])
     expect(findByConvocationAndUser).not.toHaveBeenCalled()
   })
+
   it('attaches team-wide response counts per convocation, defaulting to zeros when missing', async () => {
     const withCounts = convocationWith({ id: 'c-with', date: '2026-08-20T18:00:00.000Z' })
     const withoutCounts = convocationWith({ id: 'c-without', date: '2026-08-21T18:00:00.000Z' })
@@ -197,11 +220,35 @@ describe('ListUpcomingConvocationsForPlayerUseCase', () => {
       noopAssembleConvocationDetailFieldsUseCase(),
       noopGetConvocationDetailsUseCase(),
       fakeCountsRepository({ 'c-with': { present: 4, absent: 1, pending: 2 } }),
+      allConvoked(),
     ).execute({ teamId: 'team-1', userId: 'u1', now })
 
     expect(result.map((item) => item.responseCounts)).toEqual([
       { present: 4, absent: 1, pending: 2 },
       { present: 0, absent: 0, pending: 0 },
+    ])
+  })
+
+  it('flags a convocation the player is not convoked to (PO-CPS-03)', async () => {
+    const convoked = convocationWith({ id: 'c-in', date: '2026-08-20T18:00:00.000Z' })
+    const notConvoked = convocationWith({ id: 'c-out', date: '2026-08-21T18:00:00.000Z' })
+    const convocationRepository = { listForTeam: vi.fn().mockResolvedValue([convoked, notConvoked]) } as unknown as ConvocationRepository
+    const convocationResponseRepository = {
+      findByConvocationAndUser: vi.fn().mockResolvedValue(null),
+    } as unknown as ConvocationResponseRepository
+
+    const result = await new ListUpcomingConvocationsForPlayerUseCase(
+      convocationRepository,
+      convocationResponseRepository,
+      noopAssembleConvocationDetailFieldsUseCase(),
+      noopGetConvocationDetailsUseCase(),
+      fakeCountsRepository(),
+      attendeesConvokedTo('c-in'),
+    ).execute({ teamId: 'team-1', userId: 'u1', now })
+
+    expect(result.map((item) => [item.convocation.id, item.isConvoked])).toEqual([
+      ['c-in', true],
+      ['c-out', false],
     ])
   })
 })

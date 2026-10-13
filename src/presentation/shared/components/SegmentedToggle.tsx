@@ -1,7 +1,11 @@
+import type { ReactNode } from 'react'
 import { cn } from '@presentation/shared/lib/utils'
 
 interface SegmentedToggleProps {
-  value: boolean
+  // `null` = no option selected yet (specs/convocation-player-selection.md
+  // UI design §1 — the Officiel / Amical choice has no preselected value):
+  // both options render unselected, both `aria-checked="false"`.
+  value: boolean | null
   onChange: (value: boolean) => void
   trueLabel: string
   falseLabel: string
@@ -21,6 +25,9 @@ interface SegmentedToggleProps {
   // is capped, not open-ended. Defaults to `'default'`, which keeps
   // CreateConvocationForm's own rendering byte-for-byte unchanged.
   size?: 'default' | 'sm'
+  // Optional leading content of the `true` option (e.g. an icon) — never the
+  // only content: `trueLabel` always stays the accessible name.
+  trueIcon?: ReactNode
 }
 
 // "Lieu de la rencontre — Domicile/Extérieur" (match only, UI design
@@ -44,11 +51,12 @@ export function SegmentedToggle({
   falseColor = 'coach-red',
   ariaLabel,
   size = 'default',
+  trueIcon,
 }: SegmentedToggleProps) {
   return (
     <div className="flex gap-3.5" role="radiogroup" aria-label={ariaLabel}>
-      <SegmentedOption label={trueLabel} selected={value} onClick={() => onChange(true)} color={trueColor} size={size} />
-      <SegmentedOption label={falseLabel} selected={!value} onClick={() => onChange(false)} color={falseColor} size={size} />
+      <SegmentedOption label={trueLabel} selected={value === true} onClick={() => onChange(true)} color={trueColor} size={size} icon={trueIcon} />
+      <SegmentedOption label={falseLabel} selected={value === false} onClick={() => onChange(false)} color={falseColor} size={size} />
     </div>
   )
 }
@@ -65,7 +73,9 @@ function SegmentedOption({
   onClick,
   color,
   size,
+  icon,
 }: {
+  icon?: ReactNode
   label: string
   selected: boolean
   onClick: () => void
@@ -83,11 +93,12 @@ function SegmentedOption({
         // `rounded-lg` matches FIELD_CLASSNAME's Input/Select radius
         // (field-style.ts) — CreateConvocationForm's own fields must read as
         // one consistent set, this toggle sits right among them.
-        'flex-1 rounded-lg border text-center font-extrabold transition-colors',
+        'flex flex-1 items-center justify-center gap-1.5 rounded-lg border text-center font-extrabold transition-colors',
         size === 'sm' ? 'h-11 text-[13px]' : 'py-3 text-[14.5px]',
         selected ? `border-transparent ${bgColor} text-white` : 'border-white/10 bg-white/6 text-white/70'
       )}
     >
+      {icon}
       {label}
     </button>
   )

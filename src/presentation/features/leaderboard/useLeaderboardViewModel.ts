@@ -18,7 +18,7 @@ export interface LeaderboardCounter {
 }
 
 // The two counter tabs plus the presence tab (its own read, own row shape).
-export type LeaderboardTab = LeaderboardMetric | 'presence'
+export type LeaderboardTab = LeaderboardMetric | 'presence' | 'legacy'
 
 export interface PresenceRowModel {
   userId: string
@@ -67,6 +67,18 @@ function countOf(entry: LeaderboardEntry, kind: LeaderboardCounterKind): number 
   return entry.redCount
 }
 
+export interface LegacyRowModel {
+  userId: string
+  rank: number
+  displayName: string
+  points: number
+  isMuted: boolean
+  isOwn: boolean
+  isMvp: boolean
+  // "320 pts" — text, never colour alone.
+  pointsLabel: string
+}
+
 export function ownRowElementId(userId: string): string {
   return `leaderboard-row-${userId}`
 }
@@ -81,7 +93,14 @@ export function useLeaderboardViewModel() {
   const navigate = useNavigate()
   const { activeRole, isOfficerView } = useActiveRole()
   const { selectedCoachTeamId } = useActiveTeam()
-  const { seasonRepository, getCoachTeamsUseCase, getTeamLeaderboardUseCase, getTeamPresenceLeaderboardUseCase, getTeamMvpUseCase } = useLeaderboardDependencies()
+  const {
+    seasonRepository,
+    getCoachTeamsUseCase,
+    getTeamLeaderboardUseCase,
+    getTeamPresenceLeaderboardUseCase,
+    getTeamLegacyLeaderboardUseCase,
+    getTeamMvpUseCase,
+  } = useLeaderboardDependencies()
 
   const [tab, setTab] = useState<LeaderboardTab>('goals')
   // Dirigeant habilité: section then team, in a collapsible panel that is open
@@ -89,9 +108,10 @@ export function useLeaderboardViewModel() {
   const officer = useOfficerTeamSelection(isOfficerView)
   const [areFiltersVisible, setAreFiltersVisible] = useState(isOfficerView)
   const isPresenceTab = tab === 'presence'
+  const isLegacyTab = tab === 'legacy'
   // Counter tabs keep their metric; on the presence tab the (unused) counter
   // list falls back to goals so one query result serves every counter tab.
-  const metric: LeaderboardMetric = isPresenceTab ? 'goals' : tab
+  const metric: LeaderboardMetric = tab === 'goals' || tab === 'cards' ? tab : 'goals'
 
   // PO-LB-06 / UI design §5 — a presentation variant keyed on the ACTIVE role
   // (a coach+player account in coach mode gets no emphasis). Not an
@@ -141,6 +161,13 @@ export function useLeaderboardViewModel() {
     enabled: isPresenceTab && !!teamId && seasonQuery.isSuccess && !noCurrentSeason,
   })
 
+  // ASC Legacy tab — fetched only when opened, like presence.
+  const legacyQuery = useQuery({
+    queryKey: queryKeys.teamLegacyLeaderboard(teamId ?? ''),
+    queryFn: () => getTeamLegacyLeaderboardUseCase.execute({ teamId: teamId! }),
+    enabled: isLegacyTab && !!teamId && seasonQuery.isSuccess && !noCurrentSeason,
+  })
+
   // "No team" is only meaningful once the coach-teams query settled (or was
   // never needed): never flashed while it is still loading.
   const noTeam = !isOfficerView && !teamId && !coachTeamsQuery.isLoading && !seasonQuery.isLoading
@@ -176,14 +203,30 @@ export function useLeaderboardViewModel() {
     responseLabel: entry.responseRate === null ? 'Réponses : —' : `Réponses : ${entry.responseRate} %`,
   }))
 
+  const legacyRows: LegacyRowModel[] = (legacyQuery.data?.players ?? []).map((entry) => ({
+    userId: entry.userId,
+    rank: entry.rank,
+    displayName: entry.displayName,
+    points: entry.points,
+    isMuted: entry.isMuted,
+    isOwn: isPlayerView && entry.userId === user?.id,
+    isMvp: mvpIds.has(entry.userId),
+    pointsLabel: `${entry.points.toLocaleString('fr-FR')} ${Math.abs(entry.points) > 1 ? 'pts' : 'pt'}`,
+  }))
+
   const ownRow = rows.find((row) => row.isOwn)
   // AC-LB-07 — the bar always shows a rank (zero players are ranked), player
   // view only.
   const youBar = ownRow ? { rank: ownRow.rank, displayName: ownRow.displayName, value: ownRow.value, userId: ownRow.userId } : null
 
   const isLoading =
-    seasonQuery.isLoading || coachTeamsQuery.isLoading || leaderboardQuery.isLoading || (isPresenceTab && presenceQuery.isLoading)
-  const error = seasonQuery.error ?? coachTeamsQuery.error ?? leaderboardQuery.error ?? (isPresenceTab ? presenceQuery.error : null)
+    seasonQuery.isLoading ||
+    coachTeamsQuery.isLoading ||
+    leaderboardQuery.isLoading ||
+    (isPresenceTab && presenceQuery.isLoading) ||
+    (isLegacyTab && legacyQuery.isLoading)
+  const error =
+    seasonQuery.error ?? coachTeamsQuery.error ?? leaderboardQuery.error ?? (isPresenceTab ? presenceQuery.error : null) ?? (isLegacyTab ? legacyQuery.error : null)
 
   return {
     isLoading,
@@ -193,6 +236,7 @@ export function useLeaderboardViewModel() {
       void coachTeamsQuery.refetch()
       void leaderboardQuery.refetch()
       if (isPresenceTab) void presenceQuery.refetch()
+      if (isLegacyTab) void legacyQuery.refetch()
     },
     noTeam,
     needsTeamSelection,
@@ -216,16 +260,21 @@ export function useLeaderboardViewModel() {
     tab,
     onTabChange: setTab,
     isPresenceTab,
+    isLegacyTab,
     metric,
     rows,
     presenceRows,
+    legacyRows,
+    // PO-LG-16 — the current season has no Legacy mode / tiers yet.
+    isLegacyNotConfigured: legacyQuery.isSuccess && !legacyQuery.data.isConfigured,
+    isLegacyTabAllZero: legacyRows.length > 0 && legacyRows.every((row) => row.points === 0),
     isPresenceTabAllZero: presenceRows.length > 0 && presenceRows.every((row) => row.presentCount === 0),
     // UI design §6 — "Aucun match joué" hint: every value of the active tab is 0.
     isActiveTabAllZero: rows.length > 0 && rows.every((row) => row.value === 0),
 
     showOwnRowEmphasis: isPlayerView,
-    // The presence tab has no YouBar: its own row is emphasized in place.
-    youBar: isPresenceTab ? null : youBar,
+    // The presence and Legacy tabs have no YouBar: their own row is emphasized in place.
+    youBar: isPresenceTab || isLegacyTab ? null : youBar,
     scrollToOwnRow: () => {
       if (!youBar) return
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches

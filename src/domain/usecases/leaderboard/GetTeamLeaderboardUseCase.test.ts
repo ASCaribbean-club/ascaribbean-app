@@ -12,7 +12,7 @@ const players: LeaderboardPlayerCounts[] = [
 describe('GetTeamLeaderboardUseCase', () => {
   it('reads the repository once for the given team and ranks goals and total cards', async () => {
     const listTeamPlayerCounts = vi.fn(async () => players)
-    const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts, listTeamPresenceCounts: async () => [] } satisfies LeaderboardRepository)
+    const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts, listTeamPresenceCounts: async () => [], listTeamLegacyPoints: async () => ({ isConfigured: true, players: [] }) } satisfies LeaderboardRepository)
 
     const result = await useCase.execute({ teamId: 'team-1' })
 
@@ -22,7 +22,7 @@ describe('GetTeamLeaderboardUseCase', () => {
   })
 
   it('returns empty lists for an empty roster', async () => {
-    const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts: async () => [], listTeamPresenceCounts: async () => [] })
+    const useCase = new GetTeamLeaderboardUseCase({ listTeamPlayerCounts: async () => [], listTeamPresenceCounts: async () => [], listTeamLegacyPoints: async () => ({ isConfigured: true, players: [] }) })
 
     await expect(useCase.execute({ teamId: 't' })).resolves.toEqual({ goals: [], cards: [] })
   })

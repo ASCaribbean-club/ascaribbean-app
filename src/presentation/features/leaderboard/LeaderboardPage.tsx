@@ -5,6 +5,7 @@ import { BackHeader } from '@presentation/shared/layout/BackHeader'
 import { LeaderboardFilters } from './components/LeaderboardFilters'
 import { LeaderboardRow } from './components/LeaderboardRow'
 import { LeaderboardSkeleton } from './components/LeaderboardSkeleton'
+import { LegacyRow } from './components/LegacyRow'
 import { PresenceRow } from './components/PresenceRow'
 import { LeaderboardTabs } from './components/LeaderboardTabs'
 import { YouBar } from './components/YouBar'
@@ -105,6 +106,19 @@ export function LeaderboardPage() {
         <LeaderboardTabs tab={vm.tab} onTabChange={vm.onTabChange}>
           {vm.isLoading ? (
             <LeaderboardSkeleton />
+          ) : vm.isLegacyTab ? (
+            vm.isLegacyNotConfigured ? (
+              <p className="text-[13px] text-white/50">L'ASC Legacy n'est pas encore configuré pour cette saison.</p>
+            ) : (
+              <>
+                {vm.isLegacyTabAllZero && <p className="text-[13px] text-white/50">Aucun point ASC Legacy cette saison pour l'instant.</p>}
+                <ol className="flex flex-col">
+                  {vm.legacyRows.map((row) => (
+                    <LegacyRow key={row.userId} row={row} emphasizeOwn={vm.showOwnRowEmphasis} />
+                  ))}
+                </ol>
+              </>
+            )
           ) : vm.isPresenceTab ? (
             <>
               {vm.isPresenceTabAllZero && <p className="text-[13px] text-white/50">Aucune présence confirmée cette saison pour l'instant.</p>}

@@ -14,6 +14,7 @@
 | Suivi d'erreurs | Actif par défaut (intérêt légitime : garder le service en état) |
 | Mesure d'usage | **Désactivée par défaut**, activée par `enableAnalytics()` (consentement : point OUVERT) |
 | Dashboard | « AS Caribbean — usage » : <https://eu.posthog.com/project/306111/dashboard/1024112> |
+| Accès admin | lien texte « Statistiques d'usage de l'application (PostHog) » en bas de l'accueil du backoffice |
 | Code | `src/presentation/shared/observability/` — `posthog-js` n'est importé que par `posthog-adapter.ts` |
 
 ## 2. Ce qui est tracé — table de correspondance

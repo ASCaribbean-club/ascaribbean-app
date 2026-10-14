@@ -71,6 +71,17 @@ export function BackofficeOverviewPage() {
         <PendingInvitationsPanel data={vm.pendingInvitations} />
       </div>
 
+      {/* Statistiques d'usage de l'application (PostHog) — lien texte, ouvert
+          dans un nouvel onglet. */}
+      <a
+        href={vm.usageDashboardUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="self-start text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+      >
+        Statistiques d'usage de l'application (PostHog) ↗
+      </a>
+
       <InviteUserDialog target={vm.inviteDialogTarget} onClose={vm.closeInviteDialog} />
       <TeamFormDialog dialog={vm.teamDialog} onClose={vm.closeTeamDialog} />
       <MembershipFormDialog isOpen={vm.isMembershipDialogOpen} onClose={vm.closeMembershipDialog} />

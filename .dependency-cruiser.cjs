@@ -33,6 +33,14 @@ module.exports = {
       from: { path: '^src/presentation', pathNot: '^src/presentation/di/(container\\.ts|containers/)' },
       to: { path: '^src/data' },
     },
+    {
+      name: 'posthog-only-in-adapter',
+      severity: 'error',
+      comment:
+        "posthog-js n'est importé que par presentation/shared/observability/posthog-adapter.ts — tout le reste passe par l'interface Observability, pour que changer d'outil se résume à réécrire l'adaptateur.",
+      from: { pathNot: '^src/presentation/shared/observability/posthog-adapter\\.ts$' },
+      to: { path: '(^|/)node_modules/posthog-js(/|$)' },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },

@@ -3,6 +3,37 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [1.0.0] — 2026-10-14
+
+### Web
+**Administrateur**
+- ASC Legacy : nouvel onglet avec le journal des points, les paliers et le référentiel.
+- Saisons : choix du mode de points Legacy dans la fenêtre de saison.
+- Adhésions : numéro de maillot facultatif dans les formulaires.
+- Accueil : lien vers les statistiques d'usage de l'application.
+
+### Mobile
+**Joueur**
+- ASC Legacy : nouvel écran avec ses points et son palier, accessible depuis le menu.
+- Classement : nouvel onglet ASC Legacy pour comparer les points de l'équipe.
+- Convocations : le nombre de réponses de l'équipe est visible.
+- Votes : un rappel invite à élire le joueur du match, qui est signalé par une étoile à côté de son prénom.
+- Votes : le vote se ferme 3 jours après le coup d'envoi, plus une heure.
+- Composition : elle s'ouvre aux joueurs 24 heures avant le coup d'envoi et affiche les numéros de maillot.
+
+**Coach**
+- Convocations : choix des joueurs convoqués, et ajout de joueurs après la création.
+- Convocations : le rendez-vous est proposé une heure avant le coup d'envoi.
+- Matchs : choix du type de compétition.
+- Composition : modification des numéros de maillot des joueurs.
+
+**Dirigeant habilité**
+- Actus : nouvel éditeur avec choix du type, brouillon et publication.
+
+**Tous**
+- Actus : étiquette facultative, filtres par étiquette, favoris avec étoile et nouvelle présentation des cartes.
+- Menu : lien vers le règlement intérieur du club.
+
 ## [0.11.0] — 2026-10-07
 
 ### Mobile

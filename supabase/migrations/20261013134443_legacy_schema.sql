@@ -26,8 +26,6 @@
 --   * "Club-local date" of a fact = (timestamptz at time zone 'Europe/Paris')::date
 --     (PO-PU-09 still open elsewhere).
 --
--- NOT APPLIED by the agent that wrote it: to be reviewed and applied by the
--- developer.
 
 create extension if not exists btree_gist;
 

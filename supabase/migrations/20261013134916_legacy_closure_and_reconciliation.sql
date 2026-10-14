@@ -15,8 +15,6 @@
 --   convocation-closure.ts              private.close_convocation_if_complete /
 --                                       private.close_elapsed_convocations
 --
--- NOT APPLIED by the agent that wrote it: to be reviewed and applied by the
--- developer.
 
 -- =========================================================================
 -- 1. Closure rule change (PO-LG-23 / ex-OPEN-LG-07)
@@ -36,12 +34,11 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_team_id uuid;
   v_date timestamptz;
   required_count int;
   recorded_count int;
 begin
-  select team_id, date into v_team_id, v_date
+  select date into v_date
   from public.convocations
   where id = new.convocation_id;
 
@@ -51,14 +48,18 @@ begin
   end if;
 
   select count(*) into required_count
-  from public.user_roles
-  where team_id = v_team_id and role = 'player';
-
-  select count(*) into recorded_count
-  from public.attendance_records
+  from public.convocation_attendees
   where convocation_id = new.convocation_id;
 
-  if recorded_count >= required_count then
+  select count(*) into recorded_count
+  from public.attendance_records ar
+  where ar.convocation_id = new.convocation_id
+    and exists (
+      select 1 from public.convocation_attendees ca
+      where ca.convocation_id = ar.convocation_id and ca.user_id = ar.user_id
+    );
+
+  if required_count > 0 and recorded_count >= required_count then
     update public.convocations
     set status = 'closed', closed_at = now(), closed_by = new.validated_by
     where id = new.convocation_id and status = 'open';
@@ -83,8 +84,16 @@ as $$
       )
   where c.status = 'open'
     and c.date + interval '3 days' <= now()
-    and (select count(*) from public.attendance_records ar where ar.convocation_id = c.id)
-        >= (select count(*) from public.user_roles ur where ur.team_id = c.team_id and ur.role = 'player')
+    and (select count(*) from public.convocation_attendees ca where ca.convocation_id = c.id) > 0
+    and (
+      select count(*)
+      from public.attendance_records ar
+      where ar.convocation_id = c.id
+        and exists (
+          select 1 from public.convocation_attendees ca
+          where ca.convocation_id = ar.convocation_id and ca.user_id = ar.user_id
+        )
+    ) >= (select count(*) from public.convocation_attendees ca where ca.convocation_id = c.id)
     and exists (select 1 from public.attendance_records ar where ar.convocation_id = c.id);
 $$;
 -- The existing cron job 'close-elapsed-convocations' (every 15 min) keeps
@@ -259,7 +268,7 @@ begin
   where t.id = v_conv.team_id;
 
   if v_conv.type = 'match' then
-    select md.match_type into v_match_type
+    select md.competition_type into v_match_type
     from public.match_details md where md.convocation_id = p_convocation_id;
   end if;
 

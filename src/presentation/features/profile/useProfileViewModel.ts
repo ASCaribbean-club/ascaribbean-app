@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import type { Membership } from '@domain/entities/membership'
 import { distinctRoles, type PlayerPosition, type Role } from '@domain/entities/user'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { useProfileDependencies } from '@presentation/di/hooks/use-profile-dependencies'
 import { getInitials } from '@presentation/shared/formatters/greeting'
@@ -41,6 +42,7 @@ export interface ProfileRoleBlock {
 }
 
 export function useProfileViewModel() {
+  const observability = useObservability()
   const { user } = useAuth()
   const navigate = useNavigate()
   const { signOutUseCase } = useAuthDependencies()
@@ -87,6 +89,7 @@ export function useProfileViewModel() {
   })
 
   return {
+    onPaymentLinkOpen: () => observability.track({ name: 'payment_link_opened', props: {} }),
     isLoading: roleScopesQuery.isLoading,
     // A failure here is a real error — unlike some dashboard queries, this
     // screen has no meaningful "partial" rendering of someone's own dossier.

@@ -68,7 +68,7 @@ export function MenuPage() {
         <MenuSectionTitle>Club & administration</MenuSectionTitle>
         <div className="flex flex-col gap-3">
           {CLUB_ADMINISTRATION_LINKS.map((link) => (
-            <ExternalLinkRow key={link.title} link={link} />
+            <ExternalLinkRow key={link.title} link={link} onOpen={vm.onOpenExternalLink} />
           ))}
         </div>
       </section>
@@ -80,7 +80,7 @@ export function MenuPage() {
         <MenuSectionTitle>Services externes</MenuSectionTitle>
         <div className="flex flex-col gap-3">
           {MENU_EXTERNAL_LINKS.map((link) => (
-            <ExternalLinkRow key={link.title} link={link} />
+            <ExternalLinkRow key={link.title} link={link} onOpen={vm.onOpenExternalLink} />
           ))}
         </div>
       </section>

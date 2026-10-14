@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { EXPENSE_PAYMENT_METHODS, type ExpensePaymentMethod } from '@domain/entities/expense-payment-method'
@@ -37,6 +38,7 @@ export function useReimbursementSheetViewModel({ advance, memberName, today, onC
 
   const dateError = validateReimbursementDate(reimbursedOn, today, advance.spentOn)
 
+  const observability = useObservability()
   const mutation = useMutation({
     mutationFn: () => {
       if (!user || !paymentMethod) throw new Error('No authenticated session or payment method.')
@@ -48,6 +50,7 @@ export function useReimbursementSheetViewModel({ advance, memberName, today, onC
       })
     },
     onSuccess: () => {
+      observability.track({ name: 'record_created', props: { kind: 'reimbursement' } })
       // AC-FA-34 — the advance leaves "À rembourser", totals and the line follow.
       void queryClient.invalidateQueries({ queryKey: queryKeys.financesRoot() })
       onClose()

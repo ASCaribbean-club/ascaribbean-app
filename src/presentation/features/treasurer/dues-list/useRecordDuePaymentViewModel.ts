@@ -1,3 +1,4 @@
+import { useObservability } from "@presentation/di/hooks/use-observability";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PAYMENT_METHODS, type PaymentMethod } from "@domain/entities/payment-method";
@@ -54,6 +55,7 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
   const [amountTouched, setAmountTouched] = useState(false);
   const [dateTouched, setDateTouched] = useState(false);
 
+  const observability = useObservability();
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) throw new Error("No authenticated session.");
@@ -68,6 +70,7 @@ export function useRecordDuePaymentViewModel({ membershipId, onRecorded }: Param
       });
     },
     onSuccess: (payment) => {
+      observability.track({ name: "record_created", props: { kind: "payment" } });
       // AC-TR-18 — centralised keys: the aggregated dues read (list,
       // dashboard, banner), the admin memberships screens and their badge,
       // and the profile membership.

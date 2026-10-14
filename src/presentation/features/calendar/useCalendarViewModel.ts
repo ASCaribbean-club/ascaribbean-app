@@ -7,7 +7,7 @@ import type { Section } from '@domain/entities/section'
 import { filterBySection } from '@domain/rules/club-schedule-rules'
 import type { ClubScheduleItem } from '@domain/usecases/club-overview/ListClubScheduleUseCase'
 import { dayKey, groupConvocationTypesByDay, isPastDate } from '@domain/rules/convocation-rules'
-import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { canPlayerRespond, getResponseDeadline } from '@domain/policies/response-deadline'
 import { getMatchOutcome } from '@domain/policies/match-outcome-rules'
 import type { ConvocationForCoach } from '@domain/usecases/coach-dashboard/ListTeamConvocationsUseCase'
 import type { ConvocationForPlayer } from '@domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
@@ -20,6 +20,8 @@ import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 import { addMonths, addWeeks, formatMonthYear, getMonthGridDates, getWeekDates, isSameDay } from '@presentation/shared/formatters/calendar-date'
+import { toConvocationAnalytics } from '@presentation/shared/observability/convocation-analytics'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useCalendarDependencies } from '@presentation/di/hooks/use-calendar-dependencies'
 import { useClubOverviewDependencies } from '@presentation/di/hooks/use-club-overview-dependencies'
 import { toSectionLabelView } from '@presentation/shared/formatters/section-label'
@@ -261,7 +263,12 @@ export function useCalendarViewModel() {
   // highlighted decides nothing about the data) — 'week' + today is the
   // default per UI design §2 ("état par défaut à l'ouverture, jour du jour
   // sélectionné").
+  const observability = useObservability()
   const [rangeMode, setRangeMode] = useState<CalendarRangeMode>('week')
+  const changeRangeMode = (mode: CalendarRangeMode) => {
+    setRangeMode(mode)
+    observability.track({ name: 'calendar_range_selected', props: { mode } })
+  }
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date())
 
   // Same minute-tick pattern as usePlayerDashboardViewModel/
@@ -381,6 +388,19 @@ export function useCalendarViewModel() {
     onMutate: () => setRespondError(null),
     onSuccess: (_response, variables) => {
       setRespondError(null)
+      const responded = convocationsInScope.find((item) => item.id === variables.convocationId)
+      if (responded) {
+        const deadline = getResponseDeadline(responded.type, new Date(responded.date))
+        observability.track({
+          name: 'convocation_responded',
+          props: {
+            ...toConvocationAnalytics(responded),
+            status: variables.status,
+            minutes_before_deadline: Math.round((deadline.getTime() - now.getTime()) / 60_000),
+            origin: 'calendar',
+          },
+        })
+      }
       if (playerTeamId && user) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.calendarPlayerConvocations(playerTeamId, user.id) })
         void queryClient.invalidateQueries({ queryKey: queryKeys.playerConvocationResponse(variables.convocationId, user.id) })
@@ -422,7 +442,7 @@ export function useCalendarViewModel() {
 
     /// --- Range nav ---
     rangeMode,
-    onChangeRangeMode: setRangeMode,
+    onChangeRangeMode: changeRangeMode,
     scopeLabel,
     onNavigatePrevious,
     onNavigateNext,

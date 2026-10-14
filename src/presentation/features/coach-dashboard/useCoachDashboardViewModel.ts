@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getFirstName, getInitials } from '../../shared/formatters/greeting'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useActiveTeam } from '../../shared/hooks/use-active-team'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { usePermission } from '../../shared/hooks/use-permission'
@@ -11,6 +12,7 @@ export function useCoachDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { selectedCoachTeamId, selectCoachTeam } = useActiveTeam()
+  const observability = useObservability()
   const {
     getCoachTeamsUseCase,
     listTeamConvocationsUseCase: listUpcomingTeamConvocationsUseCase,
@@ -89,7 +91,10 @@ export function useCoachDashboardViewModel() {
     hasMultipleTeams: (teamsQuery.data?.length ?? 0) > 1,
     // PO-6/AC-CD-14: real team list + selection, driven by ActiveTeamProvider.
     teams: teamsQuery.data?.map((summary) => summary.team) ?? [],
-    onSelectTeam: selectCoachTeam,
+    onSelectTeam: (teamId: string) => {
+      selectCoachTeam(teamId)
+      observability.track({ name: 'filter_applied', props: { screen: 'coach_dashboard', filter: 'team', active: true } })
+    },
 
     /// --- Next training or match card ---
     nextTrainingOrMatch: nextTrainingOrMatch,
@@ -125,6 +130,7 @@ export function useCoachDashboardViewModel() {
     // active team itself, the same ActiveTeamProvider-backed way this
     // screen does (PO-AL-01 résolu). ---
     goToAlerts: () => {
+      observability.track({ name: 'alert_clicked', props: { alert: 'coach_alerts' } })
       navigate('/alerts')
     },
     alertsCount: coachAlertsQuery.data?.length ?? 0,

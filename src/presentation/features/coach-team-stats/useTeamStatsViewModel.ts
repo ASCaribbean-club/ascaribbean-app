@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useCoachTeamStatsDependencies } from '@presentation/di/hooks/use-coach-team-stats-dependencies'
 import { useActiveTeam } from '@presentation/shared/hooks/use-active-team'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
@@ -13,6 +14,7 @@ export type TeamStatsFilter = 'presence' | 'goals' | 'cards'
 
 export function useTeamStatsViewModel() {
   const { user } = useAuth()
+  const observability = useObservability()
   const navigate = useNavigate()
   const { selectedCoachTeamId } = useActiveTeam()
   const { seasonRepository, sectionRepository, getCoachTeamsUseCase, getTeamStatsUseCase } = useCoachTeamStatsDependencies()
@@ -111,7 +113,10 @@ export function useTeamStatsViewModel() {
 
     /// --- Effectif (§4.1) ---
     filter,
-    onFilterChange: setFilter,
+    onFilterChange: (value: TeamStatsFilter) => {
+      setFilter(value)
+      observability.track({ name: 'filter_applied', props: { screen: 'team_stats', filter: 'roster', active: true } })
+    },
     roster: rosterRows,
 
     goBack: () => navigate(-1),

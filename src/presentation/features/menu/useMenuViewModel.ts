@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useAuthDependencies } from '@presentation/di/hooks/use-auth-dependencies'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { useAvailabilityTeamId } from '@presentation/shared/hooks/use-availability-team-id'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
+import type { MenuExternalLink } from './external-links'
 
 // specs/menu.md §1/§2 — the Menu adds ZERO use cases, ZERO repositories,
 // ZERO rbac-matrix entries of its own (§2 "Aucune entrée de matrice, aucune
@@ -13,6 +15,7 @@ const DOUBLE_TAP_WINDOW_MS = 400
 
 export function useMenuViewModel() {
   const { signOutUseCase } = useAuthDependencies()
+  const observability = useObservability()
   const { activeRole, isOfficerView, isTreasurerView, dashboardRoles } = useActiveRole()
   const availabilityTeamId = useAvailabilityTeamId()
   const canReadTeamAvailability = usePermission('availability:read-team', { teamId: availabilityTeamId })
@@ -50,6 +53,8 @@ export function useMenuViewModel() {
 
   return {
     onLogout: () => signOutUseCase.execute(),
+    onOpenExternalLink: (link: MenuExternalLink) =>
+      observability.track({ name: 'external_link_opened', props: { target: link.target } }),
 
     // specs/player-unavailability.md §1/UI design §1 — UX only; the RPC is the
     // real boundary.

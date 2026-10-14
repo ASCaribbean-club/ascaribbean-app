@@ -18,6 +18,7 @@ import { usePermission } from "@presentation/shared/hooks/use-permission";
 import { useActiveRole } from "@presentation/shared/hooks/use-active-role";
 import { useAuth } from "@presentation/shared/hooks/use-auth";
 import { useSectionFilter } from "@presentation/shared/hooks/use-section-filter";
+import { useObservability } from "@presentation/di/hooks/use-observability";
 import { toDueView } from "../due-view";
 import { useDuesReminderFlow } from "../use-dues-reminder-flow";
 import { useTreasurerDues } from "../use-treasurer-dues";
@@ -33,6 +34,7 @@ export function useTreasurerDashboardViewModel() {
   const navigate = useNavigate();
   const { isTreasurerView } = useActiveRole();
   const { sectionFilter, selectSection } = useSectionFilter();
+  const observability = useObservability();
   const duesQuery = useTreasurerDues(isTreasurerView);
   const canRemind = usePermission("dues:remind");
   const now = useNow();
@@ -84,6 +86,7 @@ export function useTreasurerDashboardViewModel() {
     onSelectSection: (value: string) => {
       if (!value) return;
       selectSection(value === "all" ? null : value);
+      observability.track({ name: "filter_applied", props: { screen: "treasurer_dashboard", filter: "section", active: value !== "all" } });
     },
 
     /// --- Collection card + tiles ---

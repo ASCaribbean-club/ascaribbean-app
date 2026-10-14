@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -34,6 +35,7 @@ export function useNewsEditorFormViewModel({ mode, news }: UseNewsEditorFormView
     setValues((current) => ({ ...current, [key]: value }))
   }
 
+  const observability = useObservability()
   const mutation = useMutation({
     mutationFn: (status: CreatableClubNewsStatus) => {
       if (!user) {
@@ -72,6 +74,7 @@ export function useNewsEditorFormViewModel({ mode, news }: UseNewsEditorFormView
       })
     },
     onSuccess: (_saved, status) => {
+      if (mode === 'create') observability.track({ name: 'record_created', props: { kind: 'news' } })
       // AC-DH-23: the Dirigeant list and the members' feed are both refreshed.
       void queryClient.invalidateQueries({ queryKey: queryKeys.newsManageList() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.newsFeed() })

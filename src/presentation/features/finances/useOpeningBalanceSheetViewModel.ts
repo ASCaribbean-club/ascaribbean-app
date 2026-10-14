@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { FinancesSnapshot } from '@domain/entities/finance'
@@ -34,6 +35,7 @@ export function useOpeningBalanceSheetViewModel({ snapshot, carrierId, carrierNa
   const seasonId = snapshot.season?.id ?? null
   const amountError = validateMoneyInput(amountEuros, true)
 
+  const observability = useObservability()
   const mutation = useMutation({
     mutationFn: () => {
       if (!user || !seasonId) throw new Error('No authenticated session or season.')
@@ -41,6 +43,7 @@ export function useOpeningBalanceSheetViewModel({ snapshot, carrierId, carrierNa
       return isEditing ? updateOpeningBalanceUseCase.execute(request) : recordOpeningBalanceUseCase.execute(request)
     },
     onSuccess: () => {
+      if (!isEditing) observability.track({ name: 'record_created', props: { kind: 'opening_balance' } })
       // AC-FI-30 — balance, available and kind breakdown derive from the snapshot.
       void queryClient.invalidateQueries({ queryKey: queryKeys.financesRoot() })
       onRecorded()

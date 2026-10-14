@@ -8,6 +8,9 @@ import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
+import { useObservability } from '@presentation/di/hooks/use-observability'
+import { DomainError } from '@domain/errors/domain-error'
+import type { Observability } from '@presentation/shared/observability/observability'
 import { usePlayerDashboardViewModel } from './usePlayerDashboardViewModel'
 
 // AC-PD-06's canRespond combination and the next/upcoming split are the two
@@ -19,11 +22,24 @@ vi.mock('@presentation/shared/hooks/use-auth')
 vi.mock('@presentation/shared/hooks/use-active-role')
 vi.mock('@presentation/shared/hooks/use-permission')
 vi.mock('@presentation/di/hooks/use-player-dashboard-dependencies')
+vi.mock('@presentation/di/hooks/use-observability')
 
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedUseActiveRole = vi.mocked(useActiveRole)
 const mockedUsePermission = vi.mocked(usePermission)
 const mockedUsePlayerDashboardDependencies = vi.mocked(usePlayerDashboardDependencies)
+const mockedUseObservability = vi.mocked(useObservability)
+
+class RuleRefusedError extends DomainError {}
+
+const observability: Observability = {
+  track: vi.fn(),
+  reportError: vi.fn(),
+  enableAnalytics: vi.fn(),
+  identify: vi.fn(),
+  setActiveRole: vi.fn(),
+  reset: vi.fn(),
+}
 
 const USER_ID = 'user-1'
 const TEAM_ID = 'team-1'
@@ -52,7 +68,8 @@ function buildUpcoming(convocation: Convocation, myResponse: ConvocationResponse
   return { convocation, myResponse, responseCounts: { present: 0, absent: 0, pending: 0 }, isConvoked: true, matchDetails: null, opponent: null, meetingDetails: null }
 }
 
-function renderViewModel(upcoming: ConvocationForPlayer[]) {
+function renderViewModel(upcoming: ConvocationForPlayer[], respondOutcome: () => Promise<undefined> = () => Promise.resolve(undefined)) {
+  mockedUseObservability.mockReturnValue(observability)
   mockedUseAuth.mockReturnValue({
     user: { id: USER_ID, fullName: 'Test Player', email: 't@test.fr', roles: [{ role: 'player', teamId: TEAM_ID }], position: null, age: null, handedness: null, charterAcceptedAt: null },
     isLoading: false,
@@ -61,7 +78,7 @@ function renderViewModel(upcoming: ConvocationForPlayer[]) {
   mockedUseActiveRole.mockReturnValue({ activeRole: 'player', dashboardRoles: [],
     setActiveRole: vi.fn(),
     toggleActiveRole: vi.fn(), isOfficerView: false, isTreasurerView: false, hasMultipleDashboardRoles: false })
-  const respondToConvocationUseCase = { execute: vi.fn().mockResolvedValue(undefined) }
+  const respondToConvocationUseCase = { execute: vi.fn().mockImplementation(respondOutcome) }
   mockedUsePlayerDashboardDependencies.mockReturnValue({
     getPlayerTeamUseCase: { execute: vi.fn().mockResolvedValue({ id: TEAM_ID, name: 'Équipe 1' }) },
     listUpcomingConvocationsForPlayerUseCase: { execute: vi.fn().mockResolvedValue(upcoming) },
@@ -145,5 +162,54 @@ describe('usePlayerDashboardViewModel', () => {
     expect(respondToConvocationUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'present' }),
     )
+  })
+
+  describe('observability', () => {
+    async function respondWith(outcome: () => Promise<undefined>) {
+      mockedUsePermission.mockReturnValue(true)
+      const date = new Date(Date.now() + 90 * 60_000).toISOString()
+      const { result, respondToConvocationUseCase } = renderViewModel([buildUpcoming(buildConvocation({ date }))], outcome)
+      await waitFor(() => expect(result.current.nextConvocation).toBeDefined())
+      result.current.onRespondPresent()
+      await waitFor(() => expect(respondToConvocationUseCase.execute).toHaveBeenCalledTimes(1))
+    }
+
+    it('tracks the response with the remaining notice on success', async () => {
+      await respondWith(() => Promise.resolve(undefined))
+
+      await waitFor(() => expect(observability.track).toHaveBeenCalledTimes(1))
+      // training: deadline = start - 10 min, started in 90 min → ~80 min left
+      expect(observability.track).toHaveBeenCalledWith({
+        name: 'convocation_responded',
+        props: {
+          convocation_type: 'training',
+          convocation_date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          status: 'present',
+          minutes_before_deadline: expect.any(Number),
+          origin: 'dashboard',
+        },
+      })
+      const props = vi.mocked(observability.track).mock.calls[0][0].props as { minutes_before_deadline: number }
+      expect(props.minutes_before_deadline).toBeGreaterThanOrEqual(79)
+      expect(props.minutes_before_deadline).toBeLessThanOrEqual(80)
+      expect(observability.reportError).not.toHaveBeenCalled()
+    })
+
+    it('tracks a DomainError as a product signal, not as an error', async () => {
+      await respondWith(() => Promise.reject(new RuleRefusedError('closed')))
+
+      await waitFor(() => expect(observability.track).toHaveBeenCalledTimes(1))
+      expect(observability.track).toHaveBeenCalledWith({ name: 'convocation_response_rejected', props: expect.objectContaining({ error_class: 'RuleRefusedError', origin: 'dashboard', convocation_type: 'training' }) })
+      expect(observability.reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports a non-domain error', async () => {
+      const failure = new TypeError('network down')
+      await respondWith(() => Promise.reject(failure))
+
+      await waitFor(() => expect(observability.reportError).toHaveBeenCalledTimes(1))
+      expect(observability.reportError).toHaveBeenCalledWith(failure, { source: 'mutation', action: 'respond_to_convocation' })
+      expect(observability.track).not.toHaveBeenCalled()
+    })
   })
 })

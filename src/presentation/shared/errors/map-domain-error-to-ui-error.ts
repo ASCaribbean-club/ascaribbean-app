@@ -21,6 +21,8 @@ import { InconsistentMatchScoreError } from '@domain/errors/inconsistent-match-s
 import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-assignment-input-error'
 import { InvalidAuditLogFiltersError } from '@domain/errors/invalid-audit-log-filters-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
+import { InvalidLegacyInputError } from '@domain/errors/invalid-legacy-input-error'
+import { LegacySeasonNotConfiguredError } from '@domain/errors/legacy-season-not-configured-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
 import { InvalidOpponentInputError } from '@domain/errors/invalid-opponent-input-error'
 import { InvalidNewsInputError } from '@domain/errors/invalid-news-input-error'
@@ -578,6 +580,26 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
 
   // specs/web-mission-templates.md AC-MT-11 — one string for both rules
   // (empty label, capacity outside 1..3), same reasoning as the branches above.
+  // docs/specs/asc-legacy.md §4.9/§4.10 — an invalid tier ladder, manual award or
+  // correction, rejected from domain/ before any network call.
+  // PO-LG-16 — the date of the fact is in a season with no Legacy configuration.
+  if (error instanceof LegacySeasonNotConfiguredError) {
+    return {
+      message: 'La saison de cette date n’est pas configurée pour l’ASC Legacy (mode de points et paliers). Configurez-la avant d’attribuer des points.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
+  if (error instanceof InvalidLegacyInputError) {
+    return {
+      message:
+        'Les données ASC Legacy sont invalides : rangs consécutifs, noms et récompenses renseignés, seuils croissants d’un palier à l’autre, remise entre 0 et 100 %.',
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
   if (error instanceof InvalidMissionTemplateError) {
     return {
       message: 'Le libellé est obligatoire, la capacité doit être comprise entre 1 et 3 personnes et la description ne peut pas dépasser 500 caractères.',

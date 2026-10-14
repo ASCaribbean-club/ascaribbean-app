@@ -8,6 +8,7 @@ import { InvalidOpponentInputError } from "@domain/errors/invalid-opponent-input
 import { InvalidRoleScopeError } from "@domain/errors/invalid-role-scope-error";
 import { ConvocationCreationWindowClosedError } from "@domain/errors/convocation-creation-window-closed-error";
 import { InvalidScheduleError } from "@domain/errors/invalid-schedule-error";
+import { InvalidLegacyInputError } from "@domain/errors/invalid-legacy-input-error";
 import { InvalidMissionTemplateError } from "@domain/errors/invalid-mission-template-error";
 import { InvalidTrainingLocationInputError } from "@domain/errors/invalid-training-location-input-error";
 import { InvalidPaymentUrlError, InvalidSeasonInputError, PaymentUrlTooLongError } from "@domain/errors/invalid-season-input-error";
@@ -63,6 +64,14 @@ describe("mapDomainErrorToUiError", () => {
       variant: "inline",
       retryable: true,
     });
+  });
+
+  it("maps InvalidLegacyInputError to a retryable inline error", () => {
+    const result = mapDomainErrorToUiError(new InvalidLegacyInputError("Tier names must be unique"));
+
+    expect(result.variant).toBe("inline");
+    expect(result.retryable).toBe(true);
+    expect(result.message).toContain("ASC Legacy");
   });
 
   it("maps InvalidMissionTemplateError to a retryable inline error", () => {

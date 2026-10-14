@@ -1,4 +1,5 @@
 import {
+  IconAward,
   IconBuildingBank,
   IconCalendarEvent,
   IconCalendarStats,
@@ -14,7 +15,7 @@ import {
   type Icon,
 } from '@tabler/icons-react'
 
-export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'finance-carriers' | 'news' | 'convocations' | 'mission-templates' | 'locations' | 'audit'
+export type BackofficeNavItemId = 'overview' | 'users' | 'sections' | 'teams' | 'seasons' | 'memberships' | 'finance-carriers' | 'news' | 'convocations' | 'mission-templates' | 'locations' | 'legacy' | 'audit'
 
 export interface BackofficeNavItem {
   id: BackofficeNavItemId
@@ -151,6 +152,17 @@ export const BACKOFFICE_NAV_ITEMS: BackofficeNavItem[] = [
     path: '/admin/locations',
     icon: IconMapPin,
     emptyStateTitle: 'Aucun lieu d’entraînement à afficher pour l’instant',
+  },
+  {
+    // docs/specs/asc-legacy.md §6.4 — "ASC Legacy", right before the audit log:
+    // the club-wide tiers (applied to the current season and every future one)
+    // and the read-only view of each season's Legacy configuration. No numeric
+    // badge. `IconAward` is a replaceable proposal.
+    id: 'legacy',
+    label: 'ASC Legacy',
+    path: '/admin/legacy',
+    icon: IconAward,
+    emptyStateTitle: 'Aucun palier à afficher pour l’instant',
   },
   {
     // specs/web-audit-logs.md §2/UI design "Où ça vit" — 8th sidebar entry,

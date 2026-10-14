@@ -268,6 +268,7 @@ export const queryKeys = {
   teamLeaderboard: (teamId: string) => ['teams', teamId, 'leaderboard'] as const,
   // Presence tab read (get_team_presence_leaderboard), fetched on tab open.
   teamPresenceLeaderboard: (teamId: string) => ['teams', teamId, 'leaderboard', 'presence'] as const,
+  teamLegacyLeaderboard: (teamId: string) => ['teams', teamId, 'leaderboard', 'legacy'] as const,
 
   // specs/coach-dashboard.md §1 point 7 (PO-1) / specs/player-dashboard.md
   // PO-PD-07 — GetTeamRecentFormUseCase's read (form + season goals for/
@@ -402,4 +403,20 @@ export const queryKeys = {
   financeCarriersAdminRoot: () => ['finance-carriers'] as const,
   financeCarriersAdminList: () => ['finance-carriers', 'admin', 'list'] as const,
   financeCheckpointDetail: (checkpointId: string) => ['finances', 'checkpoint', checkpointId] as const,
+
+  // docs/specs/asc-legacy.md §6.1 — the player Legacy screen (overview bundle),
+  // scoped by member. Invalidated together with `legacyRoot` after any Legacy write.
+  legacyRoot: () => ['legacy'] as const,
+  // The season dialog's points mode (admin), per season.
+  legacySeasonMode: (seasonId: string) => ['legacy', 'season-mode', seasonId] as const,
+  // Every ledger entry and the player directory — backoffice "Points attribués" tab.
+  legacyLedger: () => ['legacy', 'ledger'] as const,
+  // The convocation behind one ledger entry, loaded when its row is expanded.
+  legacyEntryConvocation: (convocationId: string) => ['legacy', 'entry-convocation', convocationId] as const,
+  legacyPlayers: () => ['legacy', 'players'] as const,
+  // The whole référentiel (every rule version) — backoffice "ASC Legacy" tab.
+  legacyRules: () => ['legacy', 'rules'] as const,
+  // The tiers of one season (backoffice "ASC Legacy" tab).
+  legacyTiers: (seasonId: string) => ['legacy', 'tiers', seasonId] as const,
+  legacyOverview: (userId: string) => ['legacy', 'overview', userId] as const,
 }

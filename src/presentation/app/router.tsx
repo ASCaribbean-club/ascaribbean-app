@@ -14,6 +14,7 @@ import { CreateConvocationForm } from '../features/convocation/CreateConvocation
 import { ConvocationDetailPage } from '../features/convocation/ConvocationDetailPage'
 import { CoachAlertsPage } from '../features/coach-alerts/CoachAlertsPage'
 import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
+import { LegacyPage } from '../features/legacy/overview/LegacyPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { LeaderboardPage } from '@presentation/features/leaderboard/LeaderboardPage'
 import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
@@ -210,6 +211,10 @@ export const router = createBrowserRouter([
               // to catch a coach reaching this URL directly rather than via
               // the Menu card.
               { path: 'stats', element: <PlayerStatsPage /> },
+              // docs/specs/asc-legacy.md §6.1/PO-LG-15 — pushed from the Menu
+              // "ASC Legacy" card (player active role), same full-screen group
+              // as 'stats' above, no BottomNav change.
+              { path: 'legacy', element: <LegacyPage /> },
               // specs/coach-team-stats.md §1/UI design §1 — "route poussée
               // (sticky back header, pas un onglet supplémentaire)", same
               // full-screen-over-tabs group as profile/convocations above.

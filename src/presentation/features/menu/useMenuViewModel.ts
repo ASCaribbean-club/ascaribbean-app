@@ -68,6 +68,12 @@ export function useMenuViewModel() {
     canViewStatistics: !isOfficerView && !isTreasurerView,
     statisticsHref: activeRole === 'coach' ? '/team-stats' : '/stats',
 
+    // docs/specs/asc-legacy.md PO-LG-15/PO-LG-17 — the ASC Legacy card is a
+    // static entry shown to the player active role only for now (amends
+    // AC-MN-05 for this card; the Bureau validated the grid, PO-LG-24). The
+    // screen itself only ever reads the caller's own rows (RLS).
+    canViewLegacy: activeRole === 'player',
+
     // AC-MN-09 — `APP_VERSION` is a Vite `define` (vite.config.ts) fed by
     // package.json's version at build time, typed in src/vite-env.d.ts.
     // Never a hardcoded string: the mockup's "2.4.1" was mockup copy, not

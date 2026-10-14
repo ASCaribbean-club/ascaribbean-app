@@ -14,6 +14,7 @@ import { createConvocationContainer, type ConvocationContainer } from './contain
 import { createFinanceCarriersContainer, type FinanceCarriersContainer } from './containers/finance-carriers-container'
 import { createFinancesContainer, type FinancesContainer } from './containers/finances-container'
 import { createLeaderboardContainer, type LeaderboardContainer } from './containers/leaderboard-container'
+import { createLegacyContainer, type LegacyContainer } from './containers/legacy-container'
 import { createMembershipsContainer, type MembershipsContainer } from './containers/memberships-container'
 import { createMissionTemplatesContainer, type MissionTemplatesContainer } from './containers/mission-templates-container'
 import { createNotificationsContainer, type NotificationsContainer } from './containers/notifications-container'
@@ -41,6 +42,7 @@ export interface Container {
   financeCarriers: FinanceCarriersContainer
   finances: FinancesContainer
   leaderboard: LeaderboardContainer
+  legacy: LegacyContainer
   memberships: MembershipsContainer
   missionTemplates: MissionTemplatesContainer
   news: NewsContainer
@@ -70,6 +72,7 @@ export function createContainer(): Container {
     financeCarriers: createFinanceCarriersContainer(supabaseClient),
     finances: createFinancesContainer(supabaseClient),
     leaderboard: createLeaderboardContainer(supabaseClient),
+    legacy: createLegacyContainer(supabaseClient),
     memberships: createMembershipsContainer(supabaseClient),
     missionTemplates: createMissionTemplatesContainer(supabaseClient),
     news: createNewsContainer(supabaseClient),

@@ -333,4 +333,69 @@ export interface Team {
 
 ---
 
+## Observabilité — consentement à la mesure d'usage (point OUVERT)
+
+**Où** : `presentation/shared/observability/posthog-adapter.ts` (`enableAnalytics()`), `before_send`.
+
+**Valeur actuelle** : le suivi d'erreurs est actif par défaut (intérêt légitime : garder le service en état) ; la mesure d'usage démarre **désactivée** (tous les événements autres que `$exception` sont écartés avant envoi) et ne s'active que par l'appel de `enableAnalytics()`. Aucun écran de consentement n'existe.
+
+**Pourquoi cette valeur, provisoirement** : savoir si la mesure d'audience relève de l'exemption CNIL ou exige un consentement explicite dépend du référent RGPD, pas encore désigné (`GOUVERNANCE.md`). Le choix le plus protecteur est retenu en attendant.
+
+**Ce qu'il faudrait challenger** :
+- L'exemption CNIL de mesure d'audience couvre-t-elle des événements rattachés à un identifiant interne (UUID + rôles) ? Si oui, appeler `enableAnalytics()` au démarrage ; sinon, construire l'écran de consentement qui l'appelle.
+- En l'état, **en production aucun indicateur d'usage ne remonte** tant que cette fonction n'est pas appelée : à trancher avant d'attendre des chiffres du dashboard.
+
+**Priorité de revisite** : avant mise en prod.
+
+---
+
+## Observabilité — rétention des données PostHog
+
+**Où** : projet PostHog (Paramètres), `RETENTION_PURGE.md`.
+
+**Valeur actuelle** : rétention des événements non configurable via l'API/MCP et fixée par le plan gratuit (1 an d'après la documentation PostHog — non relu dans l'interface). Rétention des enregistrements de session : `30d` (valeur la plus courte) — sans effet, le replay est désactivé.
+
+**Pourquoi cette valeur, provisoirement** : une saison dure environ 10 mois ; un an permet de répondre à « les joueurs répondent-ils aux convocations ? » sur une saison complète, et aucune durée plus courte n'est disponible sans changer de plan.
+
+**Ce qu'il faudrait challenger** :
+- Vérifier la durée réelle dans l'interface PostHog (Paramètres → Rétention) ; « 1 an » est une hypothèse documentaire.
+- Cohérence avec `RETENTION_PURGE.md` : les événements ne contiennent aucune donnée directement identifiante (UUID interne seulement). À ajouter à la politique de purge si le référent RGPD l'exige.
+
+**Priorité de revisite** : avant mise en prod.
+
+---
+
+## Observabilité — réglages du SDK acceptés sans analyse fine
+
+**Où** : `posthog-adapter.ts` (valeurs par défaut de `posthog-js` non surchargées).
+
+**Valeur actuelle** : envoi par lots avec vidage périodique ; file d'attente rejouée au retour du réseau ; limitation d'événements côté client ; pas d'échantillonnage ; `persistence: 'localStorage'`.
+
+**Pourquoi cette valeur, provisoirement** : volume attendu très faible (quelques dizaines de membres), quota gratuit largement suffisant.
+
+**Ce qu'il faudrait challenger** :
+- **Hors ligne** (exigence CDC section 12) : que devient la file d'événements d'un joueur sans réseau, puis qui revient ? À observer une fois le mode dégradé construit.
+- `localStorage` persiste l'identifiant anonyme ; à reconsidérer si le consentement exige de ne rien stocker avant accord.
+- Plan gratuit = un seul projet PostHog : production uniquement, aucun envoi en dev.
+
+**Priorité de revisite** : après premiers retours réels.
+
+---
+
+## Observabilité — bundle de production alourdi par `keepNames`
+
+**Où** : `vite.config.ts` (`rolldownOptions.output.keepNames`, `workbox.maximumFileSizeToCacheInBytes`).
+
+**Valeur actuelle** : `keepNames: true` conserve les noms de classes à la minification (nécessaire : `DomainError.name` vient de `new.target.name`, sinon `error_class` serait illisible en production) ; le bundle principal dépasse alors 2 MiB, le plafond de précache Workbox est relevé à 3 MiB.
+
+**Pourquoi cette valeur, provisoirement** : le plus simple pour garder les noms d'erreurs lisibles sans toucher au domaine.
+
+**Ce qu'il faudrait challenger** :
+- Un bundle de ~2,1 Mo (non compressé) pèse sur un chargement mobile : découpage par route (`import()` dynamique) à envisager.
+- Alternative : un code d'erreur explicite sur `DomainError` plutôt que dépendre du nom de classe.
+
+**Priorité de revisite** : après premiers retours réels.
+
+---
+
 ## (Prochaine entrée à ajouter ici)

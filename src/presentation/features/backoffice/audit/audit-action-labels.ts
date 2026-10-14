@@ -61,6 +61,9 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'expense.reimbursement_updated': "Modification du remboursement d'une avance",
   'finance_carrier.archived': "Archivage d'un porteur de fonds",
   'finance_carrier.restored': "Restauration d'un porteur de fonds",
+  'legacy_points.awarded': 'Attribution de points Legacy',
+  'legacy_reward.granted': 'Remise de récompense Legacy',
+  'legacy_rule.changed': 'Modification du barème Legacy',
 }
 
 // AC-AU-08/AC-AU-11 — never throws: a code absent from AUDIT_ACTIONS

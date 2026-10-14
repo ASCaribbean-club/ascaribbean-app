@@ -33,7 +33,7 @@ export const AUDIT_ACTIONS = [
   'role.granted', // wired: AssignRoleUseCase, AssignCoachToTeamsUseCase
   'role.revoked', // wired: RemoveRoleAssignmentUseCase
   'account.deactivated', // not wired — no "deactivate account" use case exists yet
-  'legacy_points.corrected', // not wired — no Legacy points correction use case exists yet
+  'legacy_points.corrected', // not wired — Legacy correction use case not built yet (asc-legacy §8, PO-LG-23: this code is reused)
   'export.nominative', // not wired — no nominative export use case exists yet
   'purge.executed', // not wired — future service_role retention job, not a use case
   'membership.payment_recorded', // wired: RecordPaymentUseCase
@@ -96,6 +96,13 @@ export const AUDIT_ACTIONS = [
   'expense.reimbursement_updated', // wired: SetExpenseReimbursementUseCase
   'finance_carrier.archived', // wired: ArchiveFinanceCarrierUseCase
   'finance_carrier.restored', // wired: RestoreFinanceCarrierUseCase
+  // docs/specs/asc-legacy.md §5/PO-LG-08 — emitted by the Legacy use cases
+  // (business actions, never a trigger; automatic awards are not audited).
+  // Mirrors supabase/migrations/20261013134924_legacy_audit.sql's widened
+  // `audit_log_action_check` and record_audit_log_entry guard.
+  'legacy_points.awarded', // wired: AwardLegacyPointsUseCase
+  'legacy_reward.granted', // not wired — reward grant use case not built yet
+  'legacy_rule.changed', // not wired — rule create/close use case not built yet
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

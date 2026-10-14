@@ -34,23 +34,26 @@ export function NewsFeed() {
         <div aria-hidden className="h-1 w-24 rounded-full bg-linear-to-r from-coach-red via-coach-green to-white" />
       </header>
 
-      {vm.areFiltersVisible && <NewsTagFilter value={vm.tagFilter} onChange={vm.setTagFilter} />}
+      {vm.areFiltersVisible && <NewsTagFilter value={vm.filter} onChange={vm.setFilter} />}
 
       {vm.isLoading && <p className="text-[13px] text-white/50">Chargement…</p>}
       {vm.error && <p role="alert" className="text-[13px] text-white/50">Impossible de charger les actualités.</p>}
 
       {!vm.isLoading && !vm.error && vm.news.length === 0 && (
         // Cas normal (aucune actu publiée non expirée), jamais une erreur — specs/actus.md § "États à couvrir".
-        <p className="text-[13px] text-white/50">Aucune actu pour le moment</p>
+        <p className="text-[13px] text-white/50">{vm.emptyMessage}</p>
       )}
 
       {!vm.isLoading && !vm.error && vm.news.length > 0 && (
-        // Full-bleed list: the thick band between cards spans the whole screen
-        // width (docs/designs/actus v2), so the cards pad themselves.
+        // Cards pad themselves; a short green/orange/red liseret (same family as
+        // the header's) separates them instead of a full-bleed grey band.
         <ul className="m-0 -mx-5.5 flex list-none flex-col p-0">
-          {vm.news.map((news) => (
-            <li key={news.id} className="border-b-8 border-white/6 px-5.5 pt-5 pb-5 has-[a]:pb-0">
-              <NewsCard news={news} />
+          {vm.news.map((news, index) => (
+            <li key={news.id} className="px-5.5 pt-5">
+              <NewsCard news={news} isFavorite={vm.isFavorite(news.id)} onToggleFavorite={() => vm.toggleFavorite(news.id)} />
+              {index < vm.news.length - 1 && (
+                <div aria-hidden className="mt-5 h-0.5 w-16 rounded-full bg-linear-to-r from-coach-green via-coach-amber to-coach-red" />
+              )}
             </li>
           ))}
         </ul>

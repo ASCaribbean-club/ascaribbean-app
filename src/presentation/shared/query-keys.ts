@@ -85,6 +85,9 @@ export const queryKeys = {
   // beyond the resource name itself (no userId/teamId — nothing to scope by).
   newsFeed: () => ['news', 'feed'] as const,
 
+  // The member's own starred news ids — per user, unlike the club-wide feed.
+  newsFavorites: (userId: string) => ['news', 'favorites', userId] as const,
+
   // specs/web-actus.md AC-WA-19 — the backoffice /admin/news admin list
   // (listAll(), every status/expiry). Deliberately a DISTINCT key from
   // newsFeed above even though both back a ClubNews[]: different repository

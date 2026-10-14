@@ -1,34 +1,69 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { matchesNewsTagFilter, type NewsTagFilter } from '@domain/policies/news-visibility'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { matchesNewsFeedFilter, type NewsFeedFilter } from '@domain/policies/news-visibility'
 import { queryKeys } from '../../shared/query-keys'
+import { useAuth } from '../../shared/hooks/use-auth'
 import { useNewsDependencies } from '../../di/hooks/use-news-dependencies'
 
 // specs/actus.md UI design — identical feed for every role, no team/section/
-// season scope, so no user/role input to this query at all (queryKeys.newsFeed
-// has no discriminant either). The tag filter is applied client-side on the
-// already-fetched list: no extra request per chip.
+// season scope, so no user/role input to the feed query (queryKeys.newsFeed
+// has no discriminant either). Favorites are the one per-member piece: a
+// second query keyed by user. The filter is applied client-side on the
+// already-fetched lists: no extra request per chip.
 export function useNewsViewModel() {
-  const { listPublishedNewsUseCase } = useNewsDependencies()
-  const [tagFilter, setTagFilter] = useState<NewsTagFilter>('all')
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const { listPublishedNewsUseCase, listNewsFavoriteIdsUseCase, setNewsFavoriteUseCase } = useNewsDependencies()
+  const [filter, setFilter] = useState<NewsFeedFilter>('all')
   // Hidden by default to save vertical space; the toggle sits in the header.
   const [areFiltersVisible, setAreFiltersVisible] = useState(false)
+  const userId = user?.id ?? ''
 
   const newsQuery = useQuery({
     queryKey: queryKeys.newsFeed(),
     queryFn: () => listPublishedNewsUseCase.execute(),
   })
 
-  const allNews = newsQuery.data ?? []
+  const favoritesKey = queryKeys.newsFavorites(userId)
+  const favoritesQuery = useQuery({
+    queryKey: favoritesKey,
+    queryFn: () => listNewsFavoriteIdsUseCase.execute(userId),
+    enabled: !!userId,
+  })
+
+  const favoriteIds = new Set(favoritesQuery.data ?? [])
+
+  // Optimistic: the star flips immediately, rolled back if the write fails.
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: (variables: { newsId: string; isFavorite: boolean }) =>
+      setNewsFavoriteUseCase.execute({ userId, ...variables }),
+    onMutate: async ({ newsId, isFavorite }) => {
+      await queryClient.cancelQueries({ queryKey: favoritesKey })
+      const previous = queryClient.getQueryData<string[]>(favoritesKey)
+      const others = (previous ?? []).filter((id) => id !== newsId)
+      queryClient.setQueryData<string[]>(favoritesKey, isFavorite ? [...others, newsId] : others)
+      return { previous }
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(favoritesKey, context?.previous)
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: favoritesKey }),
+  })
+
+  const news = (newsQuery.data ?? []).filter((item) => matchesNewsFeedFilter(item, filter, favoriteIds))
 
   return {
     isLoading: newsQuery.isLoading,
     error: newsQuery.error,
-    news: allNews.filter((news) => matchesNewsTagFilter(news, tagFilter)),
-    tagFilter,
-    setTagFilter,
+    news,
+    filter,
+    setFilter,
     areFiltersVisible,
     toggleFilters: () => setAreFiltersVisible((visible) => !visible),
-    isFilterActive: tagFilter !== 'all',
+    isFilterActive: filter !== 'all',
+    isFavorite: (newsId: string) => favoriteIds.has(newsId),
+    toggleFavorite: (newsId: string) =>
+      toggleFavoriteMutation.mutate({ newsId, isFavorite: !favoriteIds.has(newsId) }),
+    emptyMessage: filter === 'favorites' ? 'Aucun favori pour le moment' : 'Aucune actu pour le moment',
   }
 }

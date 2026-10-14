@@ -1,4 +1,4 @@
-import { IconCoins, IconChartBar, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
+import { IconAward, IconCoins, IconChartBar, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
 import { ChangelogDialog } from './components/ChangelogDialog'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
@@ -46,6 +46,7 @@ export function MenuPage() {
             <MenuNavCard icon={IconChartBar} title="Statistiques" subtitle="Présence, buts" to={vm.statisticsHref} />
           )}
           <MenuNavCard icon={IconTrophy} title="Classement" subtitle="Buts, cartons" to="/leaderboard" />
+          {vm.canViewLegacy && <MenuNavCard icon={IconAward} title="ASC Legacy" subtitle="Points et récompenses" to="/legacy" />}
           {/* specs/player-unavailability.md UI design §1 — the card disappears
               (never greyed out) when can('availability:read-team') is false. */}
           {vm.canReadTeamAvailability && (

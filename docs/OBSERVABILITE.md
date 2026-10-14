@@ -106,8 +106,19 @@ Nom, e-mail, téléphone, nom d'équipe ou de section choisi dans un filtre, ide
 | Données créées (trésorier, actus, convocations) | créations par type |
 | Liens externes et lien de paiement | liens externes et paiement |
 | Indisponibilités déclarées et préavis moyen (jours) | préavis des indisponibilités |
+| Utilisateurs actifs par jour | audience : membres distincts actifs par jour |
+| Utilisateurs actifs : jour, semaine, mois | audience : 1 / 7 / 30 jours glissants |
+| Utilisateurs actifs sur la période | audience : total sur 30 jours |
+| Utilisateurs actifs par rôle courant | audience par `active_role` |
+| Sessions par jour | sessions (visites) par jour |
+| Pages vues par jour | écrans ouverts par jour |
+| Pages vues par session | profondeur de visite |
+| Nouveaux, récurrents et dormants | cycle de vie des membres actifs |
+| Fidélité : jours d'activité par membre | stickiness sur 30 jours |
 | Onglets des convocations consultés | `convocation_tab_viewed` par `tab` et `convocation_type` |
 | Missions et votes | `mission_claimed`, `vote_cast` par `convocation_type` |
+
+Audience : les « pages vues » sont les `screen_viewed` (pas `$pageview`, désactivé), et les utilisateurs actifs sont des UUID distincts ; rien n'est compté avant `enableAnalytics()`.
 
 Limite connue : « mode dégradé hors ligne » n'existe pas encore dans l'application ; la question 3 mesure donc les **pertes de connexion**, pas l'usage du mode dégradé.
 

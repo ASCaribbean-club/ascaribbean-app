@@ -14,6 +14,7 @@ import type { InviteUserDialogTarget } from '@presentation/features/backoffice/u
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { USAGE_DASHBOARD_URL } from './usage-dashboard'
 
 // specs/web-dashboard.md UI design §"Plafond d'affichage" (PO-WD-02, non
 // tranché — position par défaut retenue for this pass): 5 rows max per
@@ -247,6 +248,7 @@ export function useBackofficeOverviewViewModel() {
   return {
     firstName,
     contextLine,
+    usageDashboardUrl: USAGE_DASHBOARD_URL,
 
     statCards,
 

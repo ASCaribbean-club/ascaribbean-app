@@ -1,3 +1,4 @@
+import { ObservabilityRoot } from '@presentation/shared/observability/ObservabilityRoot'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from '../shared/layout/AppShell'
 import { LoginPage } from '../features/auth/login/LoginPage'
@@ -46,7 +47,13 @@ import { RequireDesktopViewport } from './RequireDesktopViewport'
 import { RequireBackofficeSession } from './RequireBackofficeSession'
 import { RequireBackofficeAccess } from './RequireBackofficeAccess'
 
+// Route racine sans chemin : n'ajoute aucun segment d'URL, mais donne un point
+// unique pour les pages vues (motifs de route) et l'identification — cf.
+// ARCHITECTURE.md, section observabilité.
 export const router = createBrowserRouter([
+  {
+    element: <ObservabilityRoot />,
+    children: [
   { path: '/login', element: <LoginPage /> },
   // specs/web-users-invitation-links.md §5 — public, outside RequireSession:
   // there is no session until verifyAuthLink() succeeds (the tap on
@@ -276,6 +283,8 @@ export const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
     ],
   },
 ])

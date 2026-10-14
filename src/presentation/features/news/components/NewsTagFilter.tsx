@@ -1,22 +1,23 @@
-import type { NewsTagFilter as NewsTagFilterValue } from '@domain/policies/news-visibility'
+import type { NewsFeedFilter } from '@domain/policies/news-visibility'
 import { NEWS_TAG_LABELS } from '@presentation/shared/formatters/news-tag'
 import { cn } from '@presentation/shared/lib/utils'
 
-const CHIPS: { value: NewsTagFilterValue; label: string }[] = [
+const CHIPS: { value: NewsFeedFilter; label: string }[] = [
   { value: 'all', label: 'Tout' },
   { value: 'club', label: NEWS_TAG_LABELS.club },
   { value: 'equipes', label: NEWS_TAG_LABELS.equipes },
   { value: 'boutique', label: NEWS_TAG_LABELS.boutique },
+  { value: 'favorites', label: 'Favoris' },
 ]
 
 interface NewsTagFilterProps {
-  value: NewsTagFilterValue
-  onChange: (value: NewsTagFilterValue) => void
+  value: NewsFeedFilter
+  onChange: (value: NewsFeedFilter) => void
 }
 
 export function NewsTagFilter({ value, onChange }: NewsTagFilterProps) {
   return (
-    <div role="group" aria-label="Filtrer par tag" className="flex gap-1.5">
+    <div role="group" aria-label="Filtrer les actus" className="flex gap-1.5">
       {CHIPS.map((chip) => (
         <button
           key={chip.value}

@@ -1,12 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { NewsRepositoryImpl } from '@data/repositories/NewsRepositoryImpl'
+import { NewsFavoriteRepositoryImpl } from '@data/repositories/NewsFavoriteRepositoryImpl'
 import { UserRepositoryImpl } from '@data/repositories/UserRepositoryImpl'
 import type { NewsRepository } from '@domain/repositories/news-repository'
+import type { NewsFavoriteRepository } from '@domain/repositories/news-favorite-repository'
 import type { UserRepository } from '@domain/repositories/user-repository'
 import { ArchiveClubNewsUseCase } from '@domain/usecases/news/ArchiveClubNewsUseCase'
 import { CreateClubNewsUseCase } from '@domain/usecases/news/CreateClubNewsUseCase'
 import { ListManageableNewsUseCase } from '@domain/usecases/news/ListManageableNewsUseCase'
 import { ListPublishedNewsUseCase } from '@domain/usecases/news/ListPublishedNewsUseCase'
+import { ListNewsFavoriteIdsUseCase } from '@domain/usecases/news/ListNewsFavoriteIdsUseCase'
+import { SetNewsFavoriteUseCase } from '@domain/usecases/news/SetNewsFavoriteUseCase'
 import { UpdateClubNewsUseCase } from '@domain/usecases/news/UpdateClubNewsUseCase'
 
 export interface NewsContainer {
@@ -23,6 +27,9 @@ export interface NewsContainer {
   updateClubNewsUseCase: UpdateClubNewsUseCase
   // 2026-09-17 developer decision (resolves PO-WA-06) — "Supprimer" action.
   archiveClubNewsUseCase: ArchiveClubNewsUseCase
+  newsFavoriteRepository: NewsFavoriteRepository
+  listNewsFavoriteIdsUseCase: ListNewsFavoriteIdsUseCase
+  setNewsFavoriteUseCase: SetNewsFavoriteUseCase
 }
 
 export function createNewsContainer(supabaseClient: SupabaseClient): NewsContainer {
@@ -33,6 +40,9 @@ export function createNewsContainer(supabaseClient: SupabaseClient): NewsContain
   const createClubNewsUseCase = new CreateClubNewsUseCase(userRepository, newsRepository)
   const updateClubNewsUseCase = new UpdateClubNewsUseCase(userRepository, newsRepository)
   const archiveClubNewsUseCase = new ArchiveClubNewsUseCase(userRepository, newsRepository)
+  const newsFavoriteRepository = new NewsFavoriteRepositoryImpl(supabaseClient)
+  const listNewsFavoriteIdsUseCase = new ListNewsFavoriteIdsUseCase(newsFavoriteRepository)
+  const setNewsFavoriteUseCase = new SetNewsFavoriteUseCase(newsFavoriteRepository)
 
   return {
     newsRepository,
@@ -42,5 +52,8 @@ export function createNewsContainer(supabaseClient: SupabaseClient): NewsContain
     createClubNewsUseCase,
     updateClubNewsUseCase,
     archiveClubNewsUseCase,
+    newsFavoriteRepository,
+    listNewsFavoriteIdsUseCase,
+    setNewsFavoriteUseCase,
   }
 }

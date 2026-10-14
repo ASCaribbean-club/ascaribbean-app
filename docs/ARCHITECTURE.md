@@ -373,6 +373,7 @@ Dans les deux cas, la journalisation n'est **jamais** un appel depuis un composa
 8. **La politique de rétention n'est pas du code applicatif.** Elle est implémentée côté Supabase (job planifié) et documentée dans `RETENTION-PURGE.md` ; `domain/` ne la connaît pas.
 9. **Ne pas créer de couche vide par anticipation.** Chaque dossier doit avoir une raison d'exister aujourd'hui.
 10. **Une erreur de mutation n'est jamais gérée brute dans un composant.** Le ViewModel la traduit d'abord via `mapDomainErrorToUiError` (section 6) avant de l'exposer.
+11. **L'observabilité n'est pas du métier.** Rien dans `domain/` ne trace un événement ; `posthog-js` n'est importé que par l'adaptateur ; une `DomainError` n'est pas une erreur à remonter (section 15).
 
 ## 13. Arborescence cible — amorçage du projet
 
@@ -488,6 +489,13 @@ src/presentation/
 │   ├── errors/
 │   │   ├── ui-error.ts               Type UiError (message, variant, retryable)
 │   │   └── map-domain-error-to-ui-error.ts  DomainError → UiError, voir section 6
+│   ├── observability/                Observabilité (hors domain/) — voir section 15
+│   │   ├── analytics-events.ts       Catalogue typé = liste blanche des événements
+│   │   ├── observability.ts          Interface track / reportError / enableAnalytics
+│   │   ├── posthog-adapter.ts        Seul fichier qui importe posthog-js
+│   │   ├── scrub-event.ts            Liste blanche de propriétés avant envoi
+│   │   ├── should-report-error.ts    DomainError ≠ erreur à remonter
+│   │   └── ErrorBoundary.tsx         Plantage au rendu, écran de repli minimal
 │   ├── query-keys.ts                 Fabriques de queryKey — à figer dès le premier écran
 │   └── formatters/                   Dates, montants — locale fr-FR
 ├── features/
@@ -536,3 +544,13 @@ Le squelette est considéré posé quand :
 - Modalité d'injection de dépendances : conteneur simple instancié à l'amorçage, ou Context React dédié — à trancher au premier écran.
 - Stratégie de cache hors ligne (`persistQueryClient` + IndexedDB) pour le mode dégradé exigé en section 12 du CDC — à spécifier lors du module Calendrier.
 - Granularité des politiques RLS : une politique par table ou par couple table/action — à arbitrer lors de la conception du schéma, avec pour contrainte la lisibilité de la correspondance avec `rbac-matrix.ts`.
+
+## 15. Observabilité
+
+Suivi d'erreurs et mesure d'usage via PostHog Cloud EU (`adr/0001-observabilite-posthog.md`). Inventaire complet de ce qui est tracé : `OBSERVABILITE.md`.
+
+- **Placement : hors de `domain/`.** L'observabilité n'est pas de la logique métier : aucun use case ne trace d'événement ni ne remonte d'erreur. Tout vit dans `presentation/shared/observability/`, câblé par `presentation/di/containers/observability-container.ts` (même mécanisme que les autres services, hook `useObservability`). Les ViewModels appellent `track()` / `reportError()` ; les composants n'importent jamais PostHog.
+- **Le catalogue est la liste blanche.** `analytics-events.ts` est une union discriminée (même esprit que `domain/policies/actions.ts`) : `track()` n'accepte que ses membres, une propriété non prévue ne compile pas. C'est à la fois la garantie RGPD et la garantie de réversibilité — changer d'outil = réécrire `posthog-adapter.ts`, règle `posthog-only-in-adapter` de `dependency-cruiser`.
+- **`DomainError` ≠ erreur remontée.** Une règle métier refusée (réponse après la clôture…) n'est pas un bug : `should-report-error.ts` ne remonte que les erreurs non métier (réseau, inconnu, programmation). Un `DomainError` peut au plus devenir un événement d'usage (`convocation_response_rejected`), car un pic est un signal produit.
+- **Trois points de capture, une classification** : `ErrorBoundary` (rendu), `window.onerror` + `unhandledrejection` (hors rendu), `onError` des mutations dans les ViewModels (action utilisateur en échec).
+- **Actif en production uniquement**, mesure d'usage coupée jusqu'à `enableAnalytics()` (consentement OPEN).

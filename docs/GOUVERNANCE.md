@@ -33,6 +33,7 @@ Le club doit pouvoir continuer à faire évoluer et héberger l'application **sa
 | **Supabase — production** | Base de données, authentification, stockage fichiers pour l'application réellement utilisée par le club | Président (Owner de l'organisation — facturation) | Rôle *Developer* (accès schéma, déploiement — pas facturation ni suppression d'organisation) | Oui |
 | **Registrar du nom de domaine** | Propriété du nom de domaine du club | Président (titulaire exclusif) | Aucun accès permanent — sollicité ponctuellement pour le paramétrage DNS initial ou une modification technique | Non |
 | **Brevo** (ou équivalent email transactionnel) | Envoi des emails de l'application (invitations, notifications) | Président (Owner) | Rôle *Membre* | Oui |
+| **PostHog** (Cloud EU) | Suivi d'erreurs et mesure d'usage de l'application (`OBSERVABILITE.md`) | Président (Owner de l'organisation) | Rôle *Membre* | Oui |
 | *(à venir)* Vercel ou hébergeur du site vitrine Next.js | Hébergement du futur site public | Président (Owner) | Rôle développeur | Selon phase |
 
 > **Supabase — deux projets distincts, même organisation.** Le projet de développement et le projet de production appartiennent tous les deux à l'organisation du club (même titulaire, mêmes rôles ci-dessus) ; ce n'est pas un compte séparé. Le serveur MCP Supabase utilisé par l'assistant de développement est volontairement restreint au projet de **développement uniquement** (paramètre `project_ref`) — l'assistant n'a donc jamais d'accès, même en lecture, à la base de production. Le plan gratuit Supabase met en pause un projet après 7 jours d'inactivité : c'est pourquoi le job de ping de maintien en vie (`RETENTION-PURGE.md` section 5) cible exclusivement le projet de **production** ; le projet de développement, moins critique, se restaure manuellement en cas de pause (ouverture du dashboard Supabase).
@@ -57,6 +58,8 @@ En cas de départ du mainteneur technique (Développeur) ou de tout autre contri
 4. S'assurer qu'un successeur (ou à défaut le président lui-même en mode minimal) dispose d'un accès *Maintain*/*Admin* sur le dépôt GitHub avant la révocation, pour ne jamais se retrouver sans accès technique du tout.
 ## 6. Documents liés
  
+- `OBSERVABILITE.md` — ce qui est tracé dans l'application, comment, et ce qui est désactivé.
+- `adr/0001-observabilite-posthog.md` — choix de PostHog Cloud EU.
 - `RETENTION-PURGE.md` — politique de rétention et de purge des données, stratégie d'archive froide.
 - Les décisions d'architecture (choix de stack, arbitrages freemium) sont à conserver dans le dépôt, idéalement sous forme d'ADR (*Architecture Decision Records*) au fil de l'eau plutôt que de rester uniquement dans un historique de conversation.
 ## 7. Points ouverts

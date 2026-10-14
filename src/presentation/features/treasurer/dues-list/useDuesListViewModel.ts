@@ -17,6 +17,7 @@ import { formatEuroAmount, formatEuros } from "@presentation/shared/formatters/c
 import { usePermission } from "@presentation/shared/hooks/use-permission";
 import { useNow } from "@presentation/shared/hooks/use-now";
 import { useSectionFilter } from "@presentation/shared/hooks/use-section-filter";
+import { useObservability } from "@presentation/di/hooks/use-observability";
 import { toDueView } from "../due-view";
 import { useDuesReminderFlow } from "../use-dues-reminder-flow";
 import { useTreasurerDues } from "../use-treasurer-dues";
@@ -44,6 +45,7 @@ export function useDuesListViewModel() {
   const canRemind = usePermission("dues:remind");
   const now = useNow();
   const { sectionFilter, selectSection } = useSectionFilter();
+  const observability = useObservability();
   const duesQuery = useTreasurerDues(canViewDues);
 
   const [searchText, setSearchText] = useState("");
@@ -156,6 +158,7 @@ export function useDuesListViewModel() {
     onSelectStatus: (value: string) => {
       if (!value) return;
       setStatusFilter(value as DuesStatusFilter);
+      observability.track({ name: "filter_applied", props: { screen: "dues_list", filter: "status", active: value !== "all" } });
     },
     showSectionFilter,
     sections,
@@ -163,6 +166,7 @@ export function useDuesListViewModel() {
     onSelectSection: (value: string) => {
       if (!value) return;
       selectSection(value === "all" ? null : value);
+      observability.track({ name: "filter_applied", props: { screen: "dues_list", filter: "section", active: value !== "all" } });
     },
     reset,
 

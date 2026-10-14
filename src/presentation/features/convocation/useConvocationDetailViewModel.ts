@@ -5,7 +5,7 @@ import type { ActualStatus, ConvocationArrangements, DeclaredStatus } from '@dom
 import type { MatchArrangements } from '@domain/entities/match-details'
 import type { MatchEventType } from '@domain/entities/match-event'
 import { hasActiveRoleForConvocation } from '@domain/rules/active-role-scope'
-import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { canPlayerRespond, getResponseDeadline } from '@domain/policies/response-deadline'
 import { isVotingOpen } from '@domain/policies/player-vote-rules'
 import { isPastDate } from '@domain/rules/convocation-rules'
 // specs/match-stats.md — "Résultat" tab, third pass on this screen (PO-MS-09
@@ -20,6 +20,8 @@ import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from '@presentation/shared/formatters/date-input'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
+import { useObservability } from '@presentation/di/hooks/use-observability'
+import { toConvocationAnalytics } from '@presentation/shared/observability/convocation-analytics'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
@@ -55,6 +57,7 @@ export type ConvocationDetailTab = 'infos' | 'composition' | 'effectif' | 'missi
 export function useConvocationDetailViewModel() {
   const { id: convocationId } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const observability = useObservability()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const {
@@ -97,6 +100,14 @@ export function useConvocationDetailViewModel() {
   })
 
   const convocation = detailedConvocationQuery.data?.convocation
+
+  // Onglet ouvert : événement d'usage (type et date de la convocation, jamais son id).
+  const changeTab = (tab: ConvocationDetailTab) => {
+    setActiveTab(tab)
+    if (convocation) {
+      observability.track({ name: 'convocation_tab_viewed', props: { ...toConvocationAnalytics(convocation), tab } })
+    }
+  }
   const matchDetails = detailedConvocationQuery.data?.matchDetails ?? null
 
   const teamQuery = useQuery({
@@ -287,8 +298,20 @@ export function useConvocationDetailViewModel() {
       })
     },
     onMutate: () => setRespondError(null),
-    onSuccess: () => {
+    onSuccess: (_result, status) => {
       setRespondError(null)
+      if (convocation) {
+        const deadline = getResponseDeadline(convocation.type, new Date(convocation.date))
+        observability.track({
+          name: 'convocation_responded',
+          props: {
+            ...toConvocationAnalytics(convocation),
+            status,
+            minutes_before_deadline: Math.round((deadline.getTime() - Date.now()) / 60_000),
+            origin: 'convocation_detail',
+          },
+        })
+      }
       const playerTeamId = user?.roles.find((r) => r.role === 'player')?.teamId
 
       // AC-MD-14 — same invalidation shape as usePlayerDashboardViewModel's to invalidate query cache after response
@@ -813,6 +836,7 @@ export function useConvocationDetailViewModel() {
     },
     onMutate: () => setVoteSubmitError(null),
     onSuccess: () => {
+      if (convocation) observability.track({ name: 'vote_cast', props: toConvocationAnalytics(convocation) })
       // AC-PV-05 — modifying a vote must update the aggregate too, not just
       // this voter's own row: both keys invalidated together, same
       // dual-invalidation shape as respondMutation's onSuccess above.
@@ -1113,7 +1137,7 @@ export function useConvocationDetailViewModel() {
     attendanceConfirmationMissing,
 
     activeTab,
-    setActiveTab,
+    setActiveTab: changeTab,
 
     activeRole,
     roleMatchesConvocationTeam,

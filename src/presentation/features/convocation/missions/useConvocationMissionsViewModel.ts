@@ -6,6 +6,8 @@ import { can } from '@domain/policies/can'
 import { isMissionSelfServiceOpen } from '@domain/policies/mission-deadline'
 import { MAX_MISSION_CAPACITY, MIN_MISSION_CAPACITY, isValidMissionLabel } from '@domain/policies/mission-rules'
 import type { ActiveDashboardRole } from '@domain/rules/active-role-scope'
+import { useObservability } from '@presentation/di/hooks/use-observability'
+import { toConvocationAnalytics } from '@presentation/shared/observability/convocation-analytics'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
@@ -105,6 +107,7 @@ const CAPACITY_OPTIONS = Array.from({ length: MAX_MISSION_CAPACITY - MIN_MISSION
 export function useConvocationMissionsViewModel(params: MissionsViewModelParams) {
   const { convocationId, convocation, sectionId, activeRole, roleMatchesConvocationTeam, isTabActive, now } = params
   const { user } = useAuth()
+  const observability = useObservability()
   const queryClient = useQueryClient()
   const {
     listConvocationMissionsUseCase,
@@ -192,10 +195,16 @@ export function useConvocationMissionsViewModel(params: MissionsViewModelParams)
     }
   }
 
+  const claimOptions = missionMutationOptions()
   const claimMutation = useMutation({
     mutationFn: (variables: { missionId: string }) =>
       claimMissionUseCase.execute({ actorId: user!.id, convocationId: convocationId!, missionId: variables.missionId }),
-    ...missionMutationOptions(),
+    ...claimOptions,
+    onSuccess: () => {
+      // S'assigner soi-même une mission (self-service) — jamais la mission ni son libellé.
+      if (convocation) observability.track({ name: 'mission_claimed', props: toConvocationAnalytics(convocation) })
+      claimOptions.onSuccess()
+    },
   })
 
   const releaseMutation = useMutation({

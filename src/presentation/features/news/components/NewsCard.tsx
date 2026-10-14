@@ -9,6 +9,7 @@ interface NewsCardProps {
   news: ClubNews
   isFavorite: boolean
   onToggleFavorite: () => void
+  onOpenLink: () => void
 }
 
 function formatExpiry(expiresAtIso: string): string {
@@ -21,7 +22,7 @@ function formatExpiry(expiresAtIso: string): string {
 // view tracking): the footer's left side shows until when the item stays
 // visible instead, only if it expires. The full-width band between cards is
 // added by the caller (NewsFeed), not here.
-export function NewsCard({ news, isFavorite, onToggleFavorite }: NewsCardProps) {
+export function NewsCard({ news, isFavorite, onToggleFavorite, onOpenLink }: NewsCardProps) {
   return (
     <article className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -43,6 +44,7 @@ export function NewsCard({ news, isFavorite, onToggleFavorite }: NewsCardProps) 
             <a
               href={news.link}
               target="_blank"
+              onClick={onOpenLink}
               rel="noopener noreferrer"
               aria-label={`Lire la suite : ${news.title}`}
               className="flex size-11 items-center justify-center text-white/60 hover:text-white"

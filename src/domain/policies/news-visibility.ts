@@ -29,3 +29,15 @@ export type NewsTagFilter = 'all' | ClubNewsTag
 export function matchesNewsTagFilter(news: Pick<ClubNews, 'tag'>, filter: NewsTagFilter): boolean {
   return filter === 'all' || news.tag === filter
 }
+
+// The feed's chips: a tag filter, or the member's starred items. Favorites are
+// per member, so the caller supplies the starred ids.
+export type NewsFeedFilter = NewsTagFilter | 'favorites'
+
+export function matchesNewsFeedFilter(
+  news: Pick<ClubNews, 'id' | 'tag'>,
+  filter: NewsFeedFilter,
+  favoriteIds: ReadonlySet<string>,
+): boolean {
+  return filter === 'favorites' ? favoriteIds.has(news.id) : matchesNewsTagFilter(news, filter)
+}

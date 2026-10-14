@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ClubNews } from '../entities/club-news'
-import { isNewsVisible, matchesNewsTagFilter } from './news-visibility'
+import { isNewsVisible, matchesNewsFeedFilter, matchesNewsTagFilter } from './news-visibility'
 
 function newsWith(overrides: Partial<ClubNews>): ClubNews {
   return {
@@ -60,5 +60,20 @@ describe('matchesNewsTagFilter', () => {
     expect(matchesNewsTagFilter({ tag: 'boutique' }, 'boutique')).toBe(true)
     expect(matchesNewsTagFilter({ tag: 'club' }, 'boutique')).toBe(false)
     expect(matchesNewsTagFilter({ tag: null }, 'boutique')).toBe(false)
+  })
+})
+
+describe('matchesNewsFeedFilter', () => {
+  const favorites = new Set(['news-1'])
+
+  it('keeps only starred items under "favorites"', () => {
+    expect(matchesNewsFeedFilter({ id: 'news-1', tag: null }, 'favorites', favorites)).toBe(true)
+    expect(matchesNewsFeedFilter({ id: 'news-2', tag: null }, 'favorites', favorites)).toBe(false)
+  })
+
+  it('defers to the tag filter otherwise, starred or not', () => {
+    expect(matchesNewsFeedFilter({ id: 'news-2', tag: 'club' }, 'club', favorites)).toBe(true)
+    expect(matchesNewsFeedFilter({ id: 'news-1', tag: 'club' }, 'boutique', favorites)).toBe(false)
+    expect(matchesNewsFeedFilter({ id: 'news-2', tag: null }, 'all', favorites)).toBe(true)
   })
 })

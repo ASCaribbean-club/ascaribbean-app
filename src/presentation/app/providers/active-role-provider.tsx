@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useAuth } from '../../shared/hooks/use-auth'
 
 // 'player' / 'coach' / 'authorized-officer' — a section-manager/admin
@@ -44,6 +45,12 @@ export function ActiveRoleProvider({ children }: PropsWithChildren) {
   const { user } = useAuth()
   const dashboardRoles = useMemo(() => getDashboardRoles(user?.roles ?? []), [user])
   const [activeRole, setActiveRole] = useState<DashboardRole>(dashboardRoles[0] ?? 'player')
+
+  // Le rôle courant accompagne chaque événement d'usage (voir OBSERVABILITE.md).
+  const observability = useObservability()
+  useEffect(() => {
+    observability.setActiveRole(activeRole)
+  }, [observability, activeRole])
 
   const toggleActiveRole = () => {
     if (dashboardRoles.length <= 1) return

@@ -19,6 +19,7 @@ import { createMembershipsContainer, type MembershipsContainer } from './contain
 import { createMissionTemplatesContainer, type MissionTemplatesContainer } from './containers/mission-templates-container'
 import { createNotificationsContainer, type NotificationsContainer } from './containers/notifications-container'
 import { createNewsContainer, type NewsContainer } from './containers/news-container'
+import { createObservabilityContainer, type ObservabilityContainer } from './containers/observability-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createPlayerStatsContainer, type PlayerStatsContainer } from './containers/player-stats-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
@@ -47,6 +48,7 @@ export interface Container {
   missionTemplates: MissionTemplatesContainer
   news: NewsContainer
   notifications: NotificationsContainer
+  observability: ObservabilityContainer
   playerDashboard: PlayerDashboardContainer
   playerStats: PlayerStatsContainer
   profile: ProfileContainer
@@ -77,6 +79,7 @@ export function createContainer(): Container {
     missionTemplates: createMissionTemplatesContainer(supabaseClient),
     news: createNewsContainer(supabaseClient),
     notifications: createNotificationsContainer(supabaseClient),
+    observability: createObservabilityContainer(),
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     playerStats: createPlayerStatsContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),

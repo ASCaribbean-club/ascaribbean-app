@@ -6,6 +6,10 @@
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string
   readonly VITE_SUPABASE_ANON_KEY: string
+  // Clé projet PostHog (`phc_…`) : publique par conception, seule clé PostHog
+  // autorisée en VITE_. Absente → observabilité muette.
+  readonly VITE_POSTHOG_KEY?: string
+  readonly VITE_POSTHOG_HOST?: string
 }
 
 // Fed by vite.config.ts's `define: { APP_VERSION: ... }` (reads

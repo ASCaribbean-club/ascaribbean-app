@@ -91,6 +91,8 @@ Nom, e-mail, téléphone, nom d'équipe ou de section choisi dans un filtre, ide
 
 ## 8. Dashboard « AS Caribbean — usage »
 
+Organisation (grille de 12 colonnes, cinq groupes titrés) : **Audience** en tête — utilisateurs actifs et sessions sur 30 jours, puis courbes jour/semaine/mois, par jour, par rôle, pages vues, profondeur de visite, nouveaux/récurrents, fidélité — puis **Convocations**, **Écrans et filtres**, **Actions** (alertes, créations, liens), **Technique** (hors ligne, erreurs).
+
 | Insight | Question |
 |---|---|
 | Réponses aux convocations (présent / absent) | 1 — les joueurs répondent-ils ? |
@@ -109,6 +111,7 @@ Nom, e-mail, téléphone, nom d'équipe ou de section choisi dans un filtre, ide
 | Utilisateurs actifs par jour | audience : membres distincts actifs par jour |
 | Utilisateurs actifs : jour, semaine, mois | audience : 1 / 7 / 30 jours glissants |
 | Utilisateurs actifs sur la période | audience : total sur 30 jours |
+| Sessions sur la période | audience : sessions sur 30 jours |
 | Utilisateurs actifs par rôle courant | audience par `active_role` |
 | Sessions par jour | sessions (visites) par jour |
 | Pages vues par jour | écrans ouverts par jour |

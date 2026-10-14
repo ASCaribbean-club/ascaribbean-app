@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { LegacyPointsMode } from '@domain/entities/legacy'
 import type { Season } from '@domain/entities/season'
 import { useSeasonsDependencies } from '@presentation/di/hooks/use-seasons-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
+import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
 
 export type SeasonFormMode = 'create' | 'edit'
@@ -67,9 +69,23 @@ interface UseSeasonFormDialogViewModelParams {
 export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSeasonFormDialogViewModelParams) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const { createSeasonUseCase, updateSeasonUseCase } = useSeasonsDependencies()
+  const { createSeasonUseCase, updateSeasonUseCase, legacyRepository, setLegacySeasonModeUseCase } = useSeasonsDependencies()
+  // docs/specs/asc-legacy.md §5 — 'legacy:manage_tiers' (admin): UX only, RLS is the boundary.
+  const canManageLegacy = usePermission('legacy:manage_tiers')
 
   const [values, setValues] = useState<SeasonFormValues>(() => toFormValues(season))
+
+  // docs/specs/asc-legacy.md PO-LG-06 — the season's Legacy points mode lives in
+  // its own table, not on Season, so it is loaded separately (edit mode only)
+  // and `null` here means "untouched": the field then shows the stored mode.
+  const loadedModeQuery = useQuery({
+    queryKey: queryKeys.legacySeasonMode(season?.id ?? ''),
+    queryFn: () => legacyRepository.findSeasonMode(season!.id),
+    enabled: mode === 'edit' && !!season && canManageLegacy,
+  })
+  const loadedLegacyMode = loadedModeQuery.data ?? null
+  const [legacyModeChoice, setLegacyModeChoice] = useState<LegacyPointsMode | null>(null)
+  const legacyMode = legacyModeChoice ?? loadedLegacyMode
 
   function setField<K extends keyof SeasonFormValues>(key: K, value: SeasonFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }))
@@ -81,7 +97,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
   const cotisationAmount = values.cotisationAmountEuros.trim() === '' ? null : Number(values.cotisationAmountEuros)
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!user) {
         // Unreachable in practice — RequireBackofficeAccess already gated
         // this screen on an admin session — but keeps the mutationFn total
@@ -89,28 +105,34 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
         throw new Error('No authenticated admin session.')
       }
 
-      if (mode === 'create') {
-        return createSeasonUseCase.execute({
-          actorId: user.id,
-          label: values.label,
-          startDate: values.startDate,
-          endDate: values.endDate,
-          cotisationAmount,
-          paymentUrl: values.paymentUrl,
-        })
-      }
-
       // mode === 'edit': `season` is guaranteed non-null by SeasonFormDialog's
       // own prop typing (edit mode always carries the row being edited).
-      return updateSeasonUseCase.execute({
-        actorId: user.id,
-        seasonId: season!.id,
-        label: values.label,
-        startDate: values.startDate,
-        endDate: values.endDate,
-        cotisationAmount,
-        paymentUrl: values.paymentUrl,
-      })
+      const saved =
+        mode === 'create'
+          ? await createSeasonUseCase.execute({
+              actorId: user.id,
+              label: values.label,
+              startDate: values.startDate,
+              endDate: values.endDate,
+              cotisationAmount,
+              paymentUrl: values.paymentUrl,
+            })
+          : await updateSeasonUseCase.execute({
+              actorId: user.id,
+              seasonId: season!.id,
+              label: values.label,
+              startDate: values.startDate,
+              endDate: values.endDate,
+              cotisationAmount,
+              paymentUrl: values.paymentUrl,
+            })
+
+      // Written only when the admin picked a mode that differs from the stored
+      // one. Runs after the season write: a create needs the new season's id.
+      if (canManageLegacy && legacyMode !== null && legacyMode !== loadedLegacyMode) {
+        await setLegacySeasonModeUseCase.execute({ actorId: user.id, seasonId: saved.id, mode: legacyMode })
+      }
+      return saved
     },
     onSuccess: () => {
       // AC-WS-22 — centralized queryKeys, invalidated so the list reflects
@@ -129,6 +151,7 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
       // findCurrent() internally.
       void queryClient.invalidateQueries({ queryKey: queryKeys.usersAdminDirectory() })
       void queryClient.invalidateQueries({ queryKey: queryKeys.usersBadgeCount() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.legacyRoot() })
       onSuccess()
     },
   })
@@ -156,6 +179,10 @@ export function useSeasonFormDialogViewModel({ mode, season, onSuccess }: UseSea
     setEndDate: (value: string) => setField('endDate', value),
     setCotisationAmountEuros: (value: string) => setField('cotisationAmountEuros', value),
     setPaymentUrl: (value: string) => setField('paymentUrl', value),
+    canManageLegacy,
+    legacyMode,
+    isLegacyModeLoading: loadedModeQuery.isLoading,
+    setLegacyMode: setLegacyModeChoice,
 
     canSubmit,
     isSubmitting: mutation.isPending,

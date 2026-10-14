@@ -9,6 +9,8 @@ import {
 } from '@presentation/shared/components/ui/dialog'
 import { Input } from '@presentation/shared/components/ui/input'
 import { Label } from '@presentation/shared/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@presentation/shared/components/ui/select'
+import type { LegacyPointsMode } from '@domain/entities/legacy'
 import type { SeasonDialogState } from '../useBackofficeSeasonsViewModel'
 import { useSeasonFormDialogViewModel } from '../useSeasonFormDialogViewModel'
 
@@ -160,7 +162,7 @@ function SeasonFormDialogContent({ dialog, onClose }: SeasonFormDialogProps & { 
               />
               <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">€</span>
             </div>
-            <p className="text-xs text-muted-foreground">Montant de référence appliqué aux adhésions de cette saison.</p>
+            <p className="text-xs text-muted-foreground">Montant de référence appliqué aux adhésions de cette saison. S'il n'est pas défini, la cotisation retenue est celle de chaque adhésion : le montant n'est pas figé par membre.</p>
           </div>
 
           {/* specs/profile-membership-dues.md §6/AC-PMD-18 — optional payment
@@ -187,6 +189,34 @@ function SeasonFormDialogContent({ dialog, onClose }: SeasonFormDialogProps & { 
               Page de paiement de la cotisation, ouverte depuis le profil des membres. Laisser vide pour ne pas afficher de lien. Adresse en https uniquement.
             </p>
           </div>
+
+          {/* docs/specs/asc-legacy.md PO-LG-06/PO-LG-16 — per-season ASC Legacy
+              points mode. Optional here, but a season only counts Legacy points
+              once its mode is set (and it has tiers). No "unset" choice: the
+              mode is configuration, switching it changes no data. */}
+          {vm.canManageLegacy && (
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <Label htmlFor="season-legacy-mode" className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Mode de points ASC Legacy
+              </Label>
+              <Select
+                value={vm.legacyMode ?? ''}
+                onValueChange={(value) => vm.setLegacyMode(value as LegacyPointsMode)}
+                disabled={vm.isSubmitting || vm.isLegacyModeLoading}
+              >
+                <SelectTrigger id="season-legacy-mode" className="h-11 w-full min-w-0 rounded-xl">
+                  <SelectValue placeholder="Non configuré" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cumulative">Cumulatif (depuis l'arrivée)</SelectItem>
+                  <SelectItem value="per_season">Par saison</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cumulatif : tous les points comptent. Par saison : seuls les points de la saison comptent. Le mode doit être défini pour que l'ASC Legacy s'affiche aux joueurs : sans mode, l'écran indique que Legacy n'est pas configuré. Les paliers se règlent dans l'onglet ASC Legacy.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button

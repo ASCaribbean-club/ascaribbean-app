@@ -19,8 +19,6 @@
 -- only ('legacy:manage_rules'). The treasurer list is copied unchanged from
 -- 20261007151442_finances_member_advances.sql.
 --
--- NOT APPLIED by the agent that wrote it: to be reviewed and applied by the
--- developer.
 
 alter table public.audit_log
   drop constraint audit_log_action_check;

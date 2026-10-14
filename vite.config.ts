@@ -23,6 +23,16 @@ export default defineConfig({
     // Typed in src/vite-env.d.ts — consumed by useMenuViewModel.ts (AC-MN-09).
     APP_VERSION: JSON.stringify(appVersion),
   },
+  build: {
+    // 'hidden' : génère les .map sans référence `//# sourceMappingURL` dans le
+    // bundle. Ils sont envoyés à PostHog puis supprimés avant le déploiement
+    // (scripts/release-sourcemaps.mjs) — jamais servis publiquement.
+    sourcemap: 'hidden',
+    // DomainError pose `this.name = new.target.name` : sans keepNames le
+    // minifieur renomme les classes ("t", "e"…) et `error_class` (événement
+    // convocation_response_rejected) deviendrait illisible en production.
+    rolldownOptions: { output: { keepNames: true } },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -49,6 +59,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // keepNames (ci-dessus) fait passer le bundle principal au-delà des
+        // 2 MiB par défaut : sans ce relèvement il sortirait du précache.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // Stratégie de base à l'amorçage : précache de l'app shell (JS/CSS/HTML).
         // Les stratégies runtime (API Supabase, mode dégradé) se spécifient
         // lors du module Calendrier — cf. ARCHITECTURE.md section 14.

@@ -955,4 +955,45 @@ describe('can — convocation_attendee:add', () => {
     expect(can(userWith([{ role: 'authorized-officer' }]), 'convocation_attendee:add', { teamId: 'team-1' })).toBe(false)
     expect(can(userWith([{ role: 'admin' }]), 'convocation_attendee:add', { teamId: 'team-1' })).toBe(false)
   })
+
+  // docs/specs/asc-legacy.md §5 — 'legacy:manage_tiers' is ['admin']-only and
+  // club-wide (no scope check, same as 'season:write').
+  it('allows an admin to manage the Legacy season configuration', () => {
+    expect(can(userWith([{ role: 'admin' }]), 'legacy:manage_tiers')).toBe(true)
+  })
+
+  it('denies every non-admin role from managing the Legacy season configuration', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'authorized-officer' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      expect(can(userWith([role]), 'legacy:manage_tiers')).toBe(false)
+    }
+  })
+
+  // docs/specs/asc-legacy.md §5 — 'legacy:award': Dirigeant habilité + admin, club-wide.
+  it('allows an authorized officer and an admin to award Legacy points', () => {
+    expect(can(userWith([{ role: 'authorized-officer' }]), 'legacy:award')).toBe(true)
+    expect(can(userWith([{ role: 'admin' }]), 'legacy:award')).toBe(true)
+  })
+
+  it('denies every other role from awarding Legacy points', () => {
+    const roles: User['roles'] = [
+      { role: 'player', teamId: 'team-1' },
+      { role: 'coach', teamIds: ['team-1'] },
+      { role: 'section-manager', sectionId: 'section-a' },
+      { role: 'treasurer' },
+      { role: 'medical-referent' },
+      { role: 'volunteer' },
+    ]
+    for (const role of roles) {
+      expect(can(userWith([role]), 'legacy:award')).toBe(false)
+    }
+  })
 })

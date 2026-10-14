@@ -92,6 +92,7 @@ export function ProfilePage() {
           dues={vm.membershipDues}
           loading={vm.membershipLoading}
           error={vm.membershipError}
+          onPaymentLinkOpen={vm.onPaymentLinkOpen}
         />
 
         {/* AC-PR-01/02/08 — exactly one of: a TabsList (2+ distinct roles),

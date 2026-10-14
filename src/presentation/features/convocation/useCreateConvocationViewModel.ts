@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -300,6 +301,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     onRetry: () => void teamPlayersQuery.refetch(),
   }
 
+  const observability = useObservability()
   const createConvocation = useMutation({
     mutationFn: (input: CreateConvocationUseCaseInput) => createConvocationUseCase.execute(input),
     onError: (error) => {
@@ -312,6 +314,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       }
     },
     onSuccess: () => {
+      observability.track({ name: 'record_created', props: { kind: 'convocation' } })
       if (teamId) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.teamUpcomingConvocations(teamId) })
       }

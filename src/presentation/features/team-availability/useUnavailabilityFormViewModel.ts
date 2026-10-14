@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Unavailability } from '@domain/entities/unavailability'
 import { toLocalIsoDate } from '@domain/policies/availability'
 import type { UnavailabilityDraft } from '@domain/usecases/team-availability/unavailability-draft'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useTeamAvailabilityDependencies } from '@presentation/di/hooks/use-team-availability-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
@@ -40,6 +41,7 @@ interface Params {
 export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active, onDone }: Params) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const observability = useObservability()
   const { declareUnavailabilityUseCase, updateUnavailabilityUseCase, liftUnavailabilityUseCase } = useTeamAvailabilityDependencies()
 
   const existingOf = (kind: EditableKind) => active.find((u) => u.kind === kind)
@@ -73,7 +75,15 @@ export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active
         ? updateUnavailabilityUseCase.execute({ user, teamId, existing, draft })
         : declareUnavailabilityUseCase.execute({ user, teamId, playerId, draft, now: new Date() })
     },
-    onSuccess: refresh,
+    onSuccess: () => {
+      // Préavis seulement — ni le type (un médical révèle de la santé), ni le motif.
+      if (!existing) {
+        const dayMs = 86_400_000
+        const noticeDays = Math.max(0, Math.round((new Date(values.startsOn).getTime() - Date.now()) / dayMs))
+        observability.track({ name: 'unavailability_declared', props: { notice_days: noticeDays } })
+      }
+      refresh()
+    },
   })
 
   const liftMutation = useMutation({

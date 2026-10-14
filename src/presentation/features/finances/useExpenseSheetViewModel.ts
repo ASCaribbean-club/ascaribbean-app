@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { EXPENSE_PAYMENT_METHODS, type ExpensePaymentMethod } from '@domain/entities/expense-payment-method'
@@ -191,6 +192,7 @@ export function useExpenseSheetViewModel({
     payer !== null &&
     !hasExpenseChanged(expense, { amountCents: amountInputToCents(amountEuros), label, spentOn, categoryId, payer })
 
+  const observability = useObservability()
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) throw new Error('No authenticated session.')
@@ -223,6 +225,7 @@ export function useExpenseSheetViewModel({
       })
     },
     onSuccess: () => {
+      if (!expense) observability.track({ name: 'record_created', props: { kind: 'expense' } })
       // AC-FI-11 / AC-FA-07 — centralised keys: list, summary card, month,
       // breakdown, outflows, available balance, the carrier's balance and the
       // "À rembourser" block all derive from the one snapshot.
@@ -254,6 +257,7 @@ export function useExpenseSheetViewModel({
       return createExpenseCategoryUseCase.execute({ actorId: user.id, label: newCategoryLabel })
     },
     onSuccess: (category) => {
+      observability.track({ name: 'record_created', props: { kind: 'expense_category' } })
       setCreatedCategories((current) => [...current, category])
       setCategoryId(category.id)
       setIsNewCategoryOpen(false)

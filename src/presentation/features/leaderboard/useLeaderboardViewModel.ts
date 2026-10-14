@@ -105,7 +105,7 @@ export function useLeaderboardViewModel() {
   const [tab, setTab] = useState<LeaderboardTab>('goals')
   // Dirigeant habilité: section then team, in a collapsible panel that is open
   // by default for them (it is how they pick a team). Not persisted.
-  const officer = useOfficerTeamSelection(isOfficerView)
+  const officer = useOfficerTeamSelection(isOfficerView, 'leaderboard')
   const [areFiltersVisible, setAreFiltersVisible] = useState(isOfficerView)
   const isPresenceTab = tab === 'presence'
   const isLegacyTab = tab === 'legacy'

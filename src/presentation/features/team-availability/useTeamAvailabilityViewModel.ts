@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTeamAvailabilityDependencies } from '@presentation/di/hooks/use-team-availability-dependencies'
 import { useActiveRole } from '@presentation/shared/hooks/use-active-role'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { useAvailabilityTeamId } from '@presentation/shared/hooks/use-availability-team-id'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
@@ -23,6 +24,7 @@ import {
 // availability-view.ts; the Page only branches on the booleans below.
 export function useTeamAvailabilityViewModel() {
   const { user } = useAuth()
+  const observability = useObservability()
   const navigate = useNavigate()
   const { teamRepository, getTeamAvailabilityUseCase } = useTeamAvailabilityDependencies()
   const { isOfficerView } = useActiveRole()
@@ -34,7 +36,7 @@ export function useTeamAvailabilityViewModel() {
   const [areFiltersVisible, setAreFiltersVisible] = useState(isOfficerView)
 
   // Dirigeant habilité: section then team (shared with the leaderboard).
-  const officer = useOfficerTeamSelection(isOfficerView)
+  const officer = useOfficerTeamSelection(isOfficerView, 'team_availability')
   const teamId = isOfficerView ? officer.teamId : ownTeamId
 
   // Routing decision made BEFORE the query fires (`enabled`), never merely
@@ -115,7 +117,10 @@ export function useTeamAvailabilityViewModel() {
     outLabel: labels.tile,
     chips,
     filter,
-    onFilterChange: setFilter,
+    onFilterChange: (value: AvailabilityFilter) => {
+      setFilter(value)
+      observability.track({ name: 'filter_applied', props: { screen: 'team_availability', filter: 'status', active: value !== 'all' } })
+    },
 
     isRosterEmpty: availability !== undefined && rows.length === 0,
     isFilterEmpty: rows.length > 0 && visibleRows.length === 0,

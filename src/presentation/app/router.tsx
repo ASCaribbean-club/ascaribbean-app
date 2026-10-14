@@ -25,6 +25,7 @@ import { BackofficeOverviewPage } from '../features/backoffice/overview/Backoffi
 import { BackofficeUsersPage } from '../features/backoffice/users/BackofficeUsersPage'
 import { BackofficeSectionsPage } from '../features/backoffice/sections/BackofficeSectionsPage'
 import { BackofficeTeamsPage } from '../features/backoffice/teams/BackofficeTeamsPage'
+import { BackofficeLegacyPage } from '../features/backoffice/legacy/BackofficeLegacyPage'
 import { BackofficeSeasonsPage } from '../features/backoffice/seasons/BackofficeSeasonsPage'
 import { BackofficeMembershipsPage } from '../features/backoffice/memberships/BackofficeMembershipsPage'
 import { BackofficeMissionTemplatesPage } from '../features/backoffice/mission-templates/BackofficeMissionTemplatesPage'
@@ -109,6 +110,8 @@ export const router = createBrowserRouter([
                   { path: 'mission-templates', element: <BackofficeMissionTemplatesPage /> },
                   { path: 'news', element: <BackofficeNewsPage /> },
                   { path: 'locations', element: <BackofficeLocalizationsPage /> },
+                  // docs/specs/asc-legacy.md §6.4 — same guards, no extra route.
+                  { path: 'legacy', element: <BackofficeLegacyPage /> },
                   { path: 'audit', element: <BackofficeAuditPage /> },
                 ],
               },

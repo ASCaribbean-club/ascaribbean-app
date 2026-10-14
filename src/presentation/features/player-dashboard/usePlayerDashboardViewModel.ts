@@ -3,13 +3,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { DeclaredStatus } from '@domain/entities/convocation'
 import type { ConvocationForPlayer } from '@/domain/usecases/player-dashboard/ListUConvocationsForPlayerUseCase'
 import type { PendingVoteReminder } from '@domain/usecases/player-vote/GetPendingVoteReminderUseCase'
-import { canPlayerRespond } from '@domain/policies/response-deadline'
+import { DomainError } from '@domain/errors/domain-error'
+import { canPlayerRespond, getResponseDeadline } from '@domain/policies/response-deadline'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import type { UiError } from '@presentation/shared/errors/ui-error'
 import { getFirstName, getInitials } from '@presentation/shared/formatters/greeting'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { useObservability } from '@presentation/di/hooks/use-observability'
+import { toConvocationAnalytics } from '@presentation/shared/observability/convocation-analytics'
+import { shouldReportError } from '@presentation/shared/observability/should-report-error'
 import { usePlayerDashboardDependencies } from '@presentation/di/hooks/use-player-dashboard-dependencies'
 import { hasMissingOrRejectedDocument } from '@domain/rules/document-rules'
 import { useNavigate } from 'react-router-dom'
@@ -39,6 +43,7 @@ export function usePlayerDashboardViewModel() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const observability = useObservability()
   const {
     getPlayerTeamUseCase,
     listUpcomingConvocationsForPlayerUseCase,
@@ -171,8 +176,20 @@ export function usePlayerDashboardViewModel() {
       })
     },
     onMutate: () => setRespondError(null),
-    onSuccess: () => {
+    onSuccess: (_result, status) => {
       setRespondError(null)
+      if (nextConvocation) {
+        const deadline = getResponseDeadline(nextConvocation.convocation.type, new Date(nextConvocation.convocation.date))
+        observability.track({
+          name: 'convocation_responded',
+          props: {
+            ...toConvocationAnalytics(nextConvocation.convocation),
+            status,
+            minutes_before_deadline: Math.round((deadline.getTime() - Date.now()) / 60_000),
+            origin: 'dashboard',
+          },
+        })
+      }
       // AC-PD-04 — the button/status must flip immediately after a
       // successful response, same invalidateQueries shape as
       // useCreateConvocationViewModel's onSuccess.
@@ -184,6 +201,18 @@ export function usePlayerDashboardViewModel() {
     },
     onError: (error) => {
       setRespondError(mapDomainErrorToUiError(error))
+      // Règle métier refusée (ex. réponse après la clôture) : signal produit,
+      // pas un bug. Tout le reste (réseau, inconnu) est une erreur à remonter.
+      if (shouldReportError(error)) {
+        observability.reportError(error, { source: 'mutation', action: 'respond_to_convocation' })
+      } else if (error instanceof DomainError) {
+        if (nextConvocation) {
+          observability.track({
+            name: 'convocation_response_rejected',
+            props: { ...toConvocationAnalytics(nextConvocation.convocation), error_class: error.name, origin: 'dashboard' },
+          })
+        }
+      }
     },
   })
 
@@ -200,6 +229,7 @@ export function usePlayerDashboardViewModel() {
     /// --- "Document manquant" alert ---
     hasMissingDocument,
     goToDocuments: () => {
+      observability.track({ name: 'alert_clicked', props: { alert: 'missing_document' } })
       // TODO: no /documents route exists yet — same stub-route situation
       // as goToCalendar below (UI design §2, "cet écran n'existe pas
       // encore dans router.tsx").
@@ -213,7 +243,10 @@ export function usePlayerDashboardViewModel() {
         matchRecap: formatPendingVoteMatchRecap(pendingVoteQuery.data),
       }
       : null,
-    goToVote: (convocationId: string) => navigate(`/convocations/${convocationId}?tab=votes`),
+    goToVote: (convocationId: string) => {
+      observability.track({ name: 'alert_clicked', props: { alert: 'pending_vote' } })
+      navigate(`/convocations/${convocationId}?tab=votes`)
+    },
 
     /// --- "Prochaine convocation" card ---
     nextConvocation,

@@ -50,7 +50,7 @@ export function NewsFeed() {
         <ul className="m-0 -mx-5.5 flex list-none flex-col p-0">
           {vm.news.map((news, index) => (
             <li key={news.id} className="px-5.5 pt-5">
-              <NewsCard news={news} isFavorite={vm.isFavorite(news.id)} onToggleFavorite={() => vm.toggleFavorite(news.id)} />
+              <NewsCard news={news} isFavorite={vm.isFavorite(news.id)} onToggleFavorite={() => vm.toggleFavorite(news.id)} onOpenLink={vm.onOpenLink} />
               {index < vm.news.length - 1 && (
                 <div aria-hidden className="mt-5 h-0.5 w-16 rounded-full bg-linear-to-r from-coach-green via-coach-amber to-coach-red" />
               )}

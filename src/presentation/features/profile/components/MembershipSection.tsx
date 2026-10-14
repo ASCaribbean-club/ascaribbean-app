@@ -16,6 +16,7 @@ interface MembershipSectionProps {
   // seasonLabel at their empty values, so this flag is the only way to tell
   // them apart (useProfileViewModel's own comment on membershipError).
   error: boolean
+  onPaymentLinkOpen: () => void
 }
 
 // specs/profile-page.md §7 addendum (2026-09-04, resolves PO-PR-06) — new
@@ -38,7 +39,7 @@ function formatValidUntil(iso: string): string {
   return new Date(year, month - 1, day).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export function MembershipSection({ membership, seasonLabel, dues, loading, error }: MembershipSectionProps) {
+export function MembershipSection({ membership, seasonLabel, dues, loading, error, onPaymentLinkOpen }: MembershipSectionProps) {
   return (
     <section className="flex flex-col gap-2.5 px-5.5">
       <h2 className="text-[11px] font-semibold tracking-wide text-white/50 uppercase">Adhésion</h2>
@@ -87,7 +88,7 @@ export function MembershipSection({ membership, seasonLabel, dues, loading, erro
           </li>
           {dues && <DuesRow dues={dues} />}
         </ul>
-        {dues?.showPaymentLink && dues.paymentUrl && <DuesPaymentLink paymentUrl={dues.paymentUrl} />}
+        {dues?.showPaymentLink && dues.paymentUrl && <DuesPaymentLink paymentUrl={dues.paymentUrl} onOpen={onPaymentLinkOpen} />}
         </>
       )}
     </section>

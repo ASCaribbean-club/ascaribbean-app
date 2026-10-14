@@ -1,3 +1,4 @@
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FinancesSnapshot, TreasuryCheckpoint } from '@domain/entities/finance'
@@ -121,6 +122,7 @@ export function useCheckpointSheetViewModel({ snapshot, today, checkpoint, canDe
       { counts: rows.map((row) => ({ carrierId: row.id, countedCents: row.countedCents ?? 0 })), debrief },
     )
 
+  const observability = useObservability()
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) throw new Error('No authenticated session.')
@@ -131,6 +133,7 @@ export function useCheckpointSheetViewModel({ snapshot, today, checkpoint, canDe
       return recordTreasuryCheckpointUseCase.execute({ actorId: user.id, checkedOn: today, today, debrief, counts: countInputs })
     },
     onSuccess: () => {
+      if (!checkpoint) observability.track({ name: 'record_created', props: { kind: 'checkpoint' } })
       // AC-FI-20 — history and "Compté …" lines derive from the snapshot.
       void queryClient.invalidateQueries({ queryKey: queryKeys.financesRoot() })
       onRecorded()

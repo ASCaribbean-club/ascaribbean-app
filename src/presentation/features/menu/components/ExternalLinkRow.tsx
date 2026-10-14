@@ -3,6 +3,7 @@ import type { MenuExternalLink } from '../external-links'
 
 interface ExternalLinkRowProps {
   link: MenuExternalLink
+  onOpen: (link: MenuExternalLink) => void
 }
 
 // specs/menu.md AC-MN-10 — visually marked as leaving the app (trailing
@@ -10,13 +11,14 @@ interface ExternalLinkRowProps {
 // (`rel="noopener noreferrer"`), no personal data in the URL (there's
 // nothing user-specific to put there in the first place). `url` is a
 // placeholder pending PO-MN-03 — see ../external-links.ts.
-export function ExternalLinkRow({ link }: ExternalLinkRowProps) {
+export function ExternalLinkRow({ link, onOpen }: ExternalLinkRowProps) {
   const IconComponent = link.icon
 
   return (
     <a
       href={link.url !== '' ? link.url : undefined}
       target="_blank"
+      onClick={() => onOpen(link)}
       rel="noopener noreferrer"
       className="flex min-h-16 w-full items-center gap-3.5 rounded-3xl border border-white/10 bg-white/5 px-4.5 py-4"
     >

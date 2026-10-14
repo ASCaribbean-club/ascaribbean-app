@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { matchesNewsFeedFilter, type NewsFeedFilter } from '@domain/policies/news-visibility'
+import { useObservability } from '@presentation/di/hooks/use-observability'
 import { queryKeys } from '../../shared/query-keys'
 import { useAuth } from '../../shared/hooks/use-auth'
 import { useNewsDependencies } from '../../di/hooks/use-news-dependencies'
@@ -12,6 +13,7 @@ import { useNewsDependencies } from '../../di/hooks/use-news-dependencies'
 // already-fetched lists: no extra request per chip.
 export function useNewsViewModel() {
   const { user } = useAuth()
+  const observability = useObservability()
   const queryClient = useQueryClient()
   const { listPublishedNewsUseCase, listNewsFavoriteIdsUseCase, setNewsFavoriteUseCase } = useNewsDependencies()
   const [filter, setFilter] = useState<NewsFeedFilter>('all')
@@ -57,7 +59,14 @@ export function useNewsViewModel() {
     error: newsQuery.error,
     news,
     filter,
-    setFilter,
+    setFilter: (value: NewsFeedFilter) => {
+      setFilter(value)
+      observability.track({
+        name: 'filter_applied',
+        props: { screen: 'news', filter: value === 'favorites' ? 'favorites' : 'tag', active: value !== 'all' },
+      })
+    },
+    onOpenLink: () => observability.track({ name: 'external_link_opened', props: { target: 'news_link' } }),
     areFiltersVisible,
     toggleFilters: () => setAreFiltersVisible((visible) => !visible),
     isFilterActive: filter !== 'all',

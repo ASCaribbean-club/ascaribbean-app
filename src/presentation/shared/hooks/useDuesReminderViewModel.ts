@@ -1,3 +1,4 @@
+import { useObservability } from "@presentation/di/hooks/use-observability";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ export function useDuesReminderViewModel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const observability = useObservability();
   const { getMyDuesReminderUseCase, markNotificationReadUseCase } =
     useNotificationsDependencies();
 
@@ -75,7 +77,10 @@ export function useDuesReminderViewModel() {
     remindedDateLabel: reminder
       ? formatLongReminderDate(reminder.remindedAt)
       : "",
-    onOpenProfile: () => navigate("/profile"),
+    onOpenProfile: () => {
+      observability.track({ name: "alert_clicked", props: { alert: "dues_reminder" } });
+      navigate("/profile");
+    },
     isHiding: hideMutation.isPending,
     hideErrorMessage,
     onHide: () => {

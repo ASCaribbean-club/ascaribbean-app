@@ -1,3 +1,4 @@
+import { useObservability } from "@presentation/di/hooks/use-observability";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTreasurerDependencies } from "@presentation/di/hooks/use-treasurer-dependencies";
@@ -41,6 +42,7 @@ export function useDuesReminderFlow({ onSent }: Params = {}) {
     return () => clearTimeout(timer);
   }, [feedback]);
 
+  const observability = useObservability();
   const mutation = useMutation({
     mutationFn: (membershipIds: string[]) => {
       if (!user) throw new Error("No authenticated session.");
@@ -50,6 +52,7 @@ export function useDuesReminderFlow({ onSent }: Params = {}) {
       });
     },
     onSuccess: (summary) => {
+      observability.track({ name: "record_created", props: { kind: "dues_reminder" } });
       // The reminder state, counts and buttons refresh without a reload; the
       // notifications prefix covers a Treasurer reminding themselves.
       void queryClient.invalidateQueries({ queryKey: queryKeys.treasurerDues() });

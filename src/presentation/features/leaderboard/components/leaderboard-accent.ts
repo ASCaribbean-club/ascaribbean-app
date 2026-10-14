@@ -43,3 +43,29 @@ export const COUNTER_SHAPE: Record<LeaderboardCounterKind, string> = {
   yellow: 'h-3 w-2 rounded-xs',
   red: 'h-3 w-2 rounded-xs',
 }
+
+// Presence and ASC Legacy tabs — same treatment as the two metric tabs above: a
+// dedicated colour on the marker dot and on the active underline, doubled by a
+// distinct shape and the text label (AC-LB-17). Sky for presence, violet for
+// Legacy: neither collides with the green goals, amber/red cards.
+export type LeaderboardExtraTab = 'presence' | 'legacy'
+
+export const EXTRA_TAB_LABEL: Record<LeaderboardExtraTab, string> = {
+  presence: 'Présence',
+  legacy: 'ASC Legacy',
+}
+
+export const EXTRA_TAB_ACCENT: Record<LeaderboardExtraTab, { dot: string; shape: string; underline: string }> = {
+  // Diamond.
+  presence: {
+    dot: 'bg-sky-400',
+    shape: 'size-2.5 rotate-45 rounded-xs',
+    underline: 'data-[state=active]:border-sky-400',
+  },
+  // Hollow ring.
+  legacy: {
+    dot: 'border-2 border-violet-400 bg-transparent',
+    shape: 'size-2.5 rounded-full',
+    underline: 'data-[state=active]:border-violet-400',
+  },
+}

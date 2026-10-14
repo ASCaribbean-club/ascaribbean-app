@@ -19,3 +19,12 @@ export interface TeamPresenceLeaderboardPlayerDto {
   convoked_count: number
   responded_count: number
 }
+
+// `get_team_legacy_leaderboard` RPC return value — Dto convention. See
+// supabase/migrations/20261014143219_team_legacy_leaderboard_rpc.sql.
+export interface TeamLegacyLeaderboardPlayerDto {
+  user_id: string
+  full_name: string
+  points: number
+  is_configured: boolean
+}

@@ -46,3 +46,25 @@ export interface PresenceEntry extends PresencePlayerCounts {
   attendanceRate: number | null
   responseRate: number | null
 }
+
+// ASC Legacy tab — one roster player's Legacy points for the current season, by
+// the season's points mode (what get_team_legacy_leaderboard returns, mapped).
+export interface LegacyPlayerPoints {
+  userId: string
+  displayName: string
+  points: number
+}
+
+// `isConfigured` is false while the current season has no points mode or no
+// tiers (PO-LG-16): the screen then says so instead of ranking zeros.
+export interface TeamLegacyPoints {
+  isConfigured: boolean
+  players: LegacyPlayerPoints[]
+}
+
+// Same competition rank as the other tabs; `value` is what is ranked.
+export interface LegacyRankedPlayer extends LegacyPlayerPoints {
+  rank: number
+  value: number
+  isMuted: boolean
+}

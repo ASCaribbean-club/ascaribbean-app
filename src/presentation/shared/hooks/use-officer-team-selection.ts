@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useObservability } from '@presentation/di/hooks/use-observability'
+import type { FilterScreen } from '@presentation/shared/observability/analytics-events'
 import { useClubOverviewDependencies } from '@presentation/di/hooks/use-club-overview-dependencies'
 import { queryKeys } from '../query-keys'
 import { useSectionFilter } from './use-section-filter'
@@ -9,7 +11,8 @@ import { useSectionFilter } from './use-section-filter'
 // dashboard and calendar), then a team of that section. Sections and teams are
 // only read when `enabled` (the officer view is active). The team resolves to
 // `undefined` until chosen; a section with a single team needs no second tap.
-export function useOfficerTeamSelection(enabled: boolean) {
+export function useOfficerTeamSelection(enabled: boolean, screen: FilterScreen) {
+  const observability = useObservability()
   const { sectionRepository, listClubTeamsUseCase } = useClubOverviewDependencies()
   const { sectionFilter, selectSection } = useSectionFilter()
   const [pickedTeamId, setPickedTeamId] = useState<string | null>(null)
@@ -44,10 +47,14 @@ export function useOfficerTeamSelection(enabled: boolean) {
       if (!value) return
       selectSection(value === 'all' ? null : value)
       setPickedTeamId(null)
+      observability.track({ name: 'filter_applied', props: { screen, filter: 'section', active: value !== 'all' } })
     },
     teamOptions: sectionTeams.map((team) => ({ id: team.id, name: team.name })),
     teamId,
     selectedTeamName: sectionTeams.find((team) => team.id === teamId)?.name ?? null,
-    onSelectTeam: setPickedTeamId,
+    onSelectTeam: (value: string) => {
+      setPickedTeamId(value)
+      observability.track({ name: 'filter_applied', props: { screen, filter: 'team', active: true } })
+    },
   }
 }

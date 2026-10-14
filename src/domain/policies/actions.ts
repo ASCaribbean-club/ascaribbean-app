@@ -378,3 +378,18 @@ export type Action =
   // the private.is_admin() guard of archive_finance_carrier() AND
   // restore_finance_carrier() ('finance_carrier:archive').
   | 'finance_carrier:archive'
+  // docs/specs/asc-legacy.md §5/PO-LG-09 — admin only, club-wide (no scope check,
+  // same shape as 'season:write'). Covers the per-season Legacy configuration:
+  // the points mode and the tiers (§5 maps the mode here). presentation/ decides
+  // whether the "Mode de points ASC Legacy" field of the season dialog is
+  // RENDERED. Mirrors, by hand, the RLS policies legacy_season_settings_insert_admin
+  // / legacy_season_settings_update_admin / legacy_tiers_insert_admin /
+  // legacy_tiers_update_admin (supabase/migrations/20261013134443_legacy_schema.sql).
+  | 'legacy:manage_tiers'
+  // docs/specs/asc-legacy.md §5/PO-LG-09 — Dirigeant habilité and Administrateur,
+  // club-wide (no scope check). Covers a MANUAL award of points to a player;
+  // convocation-source rows are only ever written by the SECURITY DEFINER
+  // closure path. Mirrors, by hand, the RLS policy legacy_points_entries_insert_award
+  // (supabase/migrations/20261013134443_legacy_schema.sql). A correction is a
+  // separate rule (PO-LG-18, Dirigeant only) and is not covered here.
+  | 'legacy:award'

@@ -417,6 +417,19 @@ export const rbacMatrix: Record<Action, Role[]> = {
   // no delete policy. Reading is admin-only RLS, no separate matrix entry.
   'mission-template:manage': ['admin'],
 
+  // docs/specs/asc-legacy.md §5/PO-LG-09 — 'legacy:manage_tiers': ['admin'],
+  // club-wide. Mirrors legacy_season_settings_insert_admin /
+  // legacy_season_settings_update_admin / legacy_tiers_insert_admin /
+  // legacy_tiers_update_admin, each commented with this action name — see
+  // supabase/migrations/20261013134443_legacy_schema.sql.
+  'legacy:manage_tiers': ['admin'],
+
+  // docs/specs/asc-legacy.md §5/PO-LG-09 — 'legacy:award': Dirigeant habilité +
+  // Administrateur, club-wide. Mirrors legacy_points_entries_insert_award (manual
+  // source rows only), commented with this action name in
+  // supabase/migrations/20261013134443_legacy_schema.sql.
+  'legacy:award': ['authorized-officer', 'admin'],
+
   // specs/coach-match-composition.md §2 — 'match_lineup:write': ['coach'],
   // scoped to the coach's own team (can.ts). Deliberate restrictive gap, same
   // as 'match_details:update' (PO-MC-10: section-manager/officer/admin not

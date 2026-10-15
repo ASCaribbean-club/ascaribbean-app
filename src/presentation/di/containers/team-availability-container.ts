@@ -10,6 +10,7 @@ import { DeclareUnavailabilityUseCase } from '@domain/usecases/team-availability
 import { GetActiveUnavailabilitiesUseCase } from '@domain/usecases/team-availability/GetActiveUnavailabilitiesUseCase'
 import { LiftUnavailabilityUseCase } from '@domain/usecases/team-availability/LiftUnavailabilityUseCase'
 import { UpdateUnavailabilityUseCase } from '@domain/usecases/team-availability/UpdateUnavailabilityUseCase'
+import { GetConvocationAvailabilityUseCase } from '@domain/usecases/team-availability/GetConvocationAvailabilityUseCase'
 import { GetTeamAvailabilityUseCase } from '@domain/usecases/team-availability/GetTeamAvailabilityUseCase'
 
 export interface TeamAvailabilityContainer {
@@ -20,6 +21,7 @@ export interface TeamAvailabilityContainer {
 
   // Use cases
   getTeamAvailabilityUseCase: GetTeamAvailabilityUseCase
+  getConvocationAvailabilityUseCase: GetConvocationAvailabilityUseCase
   getActiveUnavailabilitiesUseCase: GetActiveUnavailabilitiesUseCase
   declareUnavailabilityUseCase: DeclareUnavailabilityUseCase
   updateUnavailabilityUseCase: UpdateUnavailabilityUseCase
@@ -37,6 +39,7 @@ export function createTeamAvailabilityContainer(supabaseClient: SupabaseClient):
     teamAvailabilityRepository,
     unavailabilityRepository,
     getTeamAvailabilityUseCase: new GetTeamAvailabilityUseCase(teamAvailabilityRepository),
+    getConvocationAvailabilityUseCase: new GetConvocationAvailabilityUseCase(teamAvailabilityRepository),
     getActiveUnavailabilitiesUseCase: new GetActiveUnavailabilitiesUseCase(unavailabilityRepository),
     declareUnavailabilityUseCase: new DeclareUnavailabilityUseCase(unavailabilityRepository),
     updateUnavailabilityUseCase: new UpdateUnavailabilityUseCase(unavailabilityRepository),

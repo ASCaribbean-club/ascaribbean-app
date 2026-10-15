@@ -13,9 +13,10 @@ import type { EditableKind } from './useAvailabilityEditViewModel'
 // Form fields are strings (native inputs); the use case validates the shape.
 export interface UnavailabilityFormValues {
   startsOn: string
-  // medical: expected return; suspension: lift date. Same slot, one input.
+  // medical / absence: expected return; suspension: lift date. Same slot, one input.
   endsOn: string
   matchCount: string
+  // suspension: optional motif; absence: required reason (visible to teammates).
   reason: string
 }
 
@@ -23,6 +24,9 @@ function initialValues(existing: Unavailability | undefined, today: string): Una
   if (!existing) return { startsOn: today, endsOn: '', matchCount: '1', reason: '' }
   if (existing.kind === 'medical') {
     return { startsOn: existing.startsOn, endsOn: existing.expectedReturnOn ?? '', matchCount: '1', reason: '' }
+  }
+  if (existing.kind === 'absence') {
+    return { startsOn: existing.startsOn, endsOn: existing.expectedReturnOn ?? '', matchCount: '1', reason: existing.reason }
   }
   return { startsOn: existing.startsOn, endsOn: existing.liftedOn ?? '', matchCount: String(existing.matchCount), reason: existing.reason ?? '' }
 }
@@ -37,7 +41,7 @@ interface Params {
 
 // Same remount-via-state-initializer pattern as useTrainingLocationFormDialogViewModel:
 // values are seeded once per sheet opening. One value set per kind, so
-// switching Malade/Blessé <-> Suspension never loses what was typed.
+// switching Malade/Blessé <-> Suspension <-> Indisponible never loses what was typed.
 export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active, onDone }: Params) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
@@ -49,7 +53,11 @@ export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active
   const [kind, setKind] = useState<EditableKind>(() => kinds.find((k) => existingOf(k)) ?? kinds[0])
   const [valuesByKind, setValuesByKind] = useState<Record<EditableKind, UnavailabilityFormValues>>(() => {
     const today = toLocalIsoDate(new Date())
-    return { medical: initialValues(existingOf('medical'), today), suspension: initialValues(existingOf('suspension'), today) }
+    return {
+      medical: initialValues(existingOf('medical'), today),
+      suspension: initialValues(existingOf('suspension'), today),
+      absence: initialValues(existingOf('absence'), today),
+    }
   })
 
   const values = valuesByKind[kind]
@@ -70,7 +78,9 @@ export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active
       const draft: UnavailabilityDraft =
         kind === 'medical'
           ? { kind, startsOn: values.startsOn, expectedReturnOn: end }
-          : { kind, startsOn: values.startsOn, matchCount: Number(values.matchCount), reason: values.reason, liftedOn: end }
+          : kind === 'absence'
+            ? { kind, startsOn: values.startsOn, reason: values.reason, expectedReturnOn: end }
+            : { kind, startsOn: values.startsOn, matchCount: Number(values.matchCount), reason: values.reason, liftedOn: end }
       return existing
         ? updateUnavailabilityUseCase.execute({ user, teamId, existing, draft })
         : declareUnavailabilityUseCase.execute({ user, teamId, playerId, draft, now: new Date() })
@@ -109,7 +119,11 @@ export function useUnavailabilityFormViewModel({ teamId, playerId, kinds, active
     setReason: (value: string) => setField('reason', value),
 
     // Presence only; real validation belongs to the use case.
-    canSubmit: values.startsOn !== '' && (kind === 'medical' || values.matchCount !== '') && !isPending,
+    canSubmit:
+      values.startsOn !== '' &&
+      (kind !== 'suspension' || values.matchCount !== '') &&
+      (kind !== 'absence' || values.reason.trim() !== '') &&
+      !isPending,
     // "Marquer disponible" only makes sense on an existing active record.
     canLift: !!existing && !isPending,
     isPending,

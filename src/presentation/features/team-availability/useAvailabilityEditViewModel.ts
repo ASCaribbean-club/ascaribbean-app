@@ -25,7 +25,7 @@ export function useAvailabilityEditViewModel(teamId: string, playerId: string) {
     gcTime: 0,
   })
 
-  const kinds: EditableKind[] = canDeclareMedical ? ['medical', 'suspension'] : ['suspension']
+  const kinds: EditableKind[] = canDeclareMedical ? ['medical', 'suspension', 'absence'] : ['suspension', 'absence']
 
   return {
     kinds,

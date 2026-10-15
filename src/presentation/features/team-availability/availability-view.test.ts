@@ -12,18 +12,18 @@ import {
 const coach: TeamAvailability = {
   view: 'coach',
   entries: [
-    { userId: '1', displayName: 'A', status: 'available', startsOn: null, endsOn: null },
-    { userId: '2', displayName: 'B', status: 'medical', startsOn: '2026-09-24', endsOn: null },
-    { userId: '3', displayName: 'C', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06' },
+    { userId: '1', displayName: 'A', status: 'available', startsOn: null, endsOn: null, reason: null },
+    { userId: '2', displayName: 'B', status: 'medical', startsOn: '2026-09-24', endsOn: null, reason: null },
+    { userId: '3', displayName: 'C', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06', reason: null },
   ],
 }
 
 const teammate: TeamAvailability = {
   view: 'teammate',
   entries: [
-    { userId: '1', displayName: 'A', status: 'available', startsOn: null, endsOn: null },
-    { userId: '2', displayName: 'B', status: 'unavailable', startsOn: null, endsOn: null },
-    { userId: '3', displayName: 'C', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06' },
+    { userId: '1', displayName: 'A', status: 'available', startsOn: null, endsOn: null, reason: null },
+    { userId: '2', displayName: 'B', status: 'unavailable', startsOn: null, endsOn: null, reason: null },
+    { userId: '3', displayName: 'C', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06', reason: null },
   ],
 }
 
@@ -51,6 +51,17 @@ describe('availability view', () => {
     expect(JSON.stringify(rows)).not.toMatch(/medical|Malade/i)
   })
 
+  it('absence rows lead with the reason, in both views', () => {
+    const entry = { userId: '9', displayName: 'Eta', status: 'absent' as const, startsOn: '2026-10-20', endsOn: '2026-10-27', reason: 'En vacances' }
+    const views: TeamAvailability[] = [{ view: 'coach', entries: [entry] }, { view: 'teammate', entries: [entry] }]
+    for (const availability of views) {
+      const [row] = buildAvailabilityRows(availability)
+      expect(row.status).toBe('absent')
+      expect(row.subtitle).toMatch(/^En vacances · Depuis le 20 oct\.? · Retour le 27 oct/)
+      expect(countAvailability([row])).toEqual({ available: 0, out: 1, suspended: 0 })
+    }
+  })
+
   it('counts and filters by category, medical and unavailable both being "out"', () => {
     for (const availability of [coach, teammate]) {
       const rows = buildAvailabilityRows(availability)
@@ -62,9 +73,8 @@ describe('availability view', () => {
     }
   })
 
-  it('labels the middle category per view, never "Malades" for a player', () => {
-    expect(outCategoryLabels('coach')).toEqual({ tile: 'Malades', chip: 'Malades' })
-    expect(outCategoryLabels('teammate')).toEqual({ tile: 'Indisponibles', chip: 'Indisponibles' })
+  it('labels the middle category "Indisponibles" (medical and absences share it)', () => {
+    expect(outCategoryLabels()).toEqual({ tile: 'Indisponibles', chip: 'Indisponibles' })
   })
 })
 

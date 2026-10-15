@@ -47,11 +47,12 @@ export function AvailabilityEditSheet({ teamId, playerId, playerName, onClose }:
   )
 }
 
-const KIND_LABEL = { medical: 'Malade / Blessé', suspension: 'Suspendu' } as const
+const KIND_LABEL = { medical: 'Malade / Blessé', suspension: 'Suspendu', absence: 'Indisponible' } as const
 
 function UnavailabilityForm(props: Parameters<typeof useUnavailabilityFormViewModel>[0]) {
   const vm = useUnavailabilityFormViewModel(props)
   const isSuspension = vm.kind === 'suspension'
+  const isAbsence = vm.kind === 'absence'
 
   return (
     <form
@@ -62,7 +63,7 @@ function UnavailabilityForm(props: Parameters<typeof useUnavailabilityFormViewMo
       }}
     >
       {vm.kinds.length > 1 && (
-        <div role="tablist" aria-label="Type d’indisponibilité" className="grid grid-cols-2 gap-2">
+        <div role="tablist" aria-label="Type d’indisponibilité" className={`grid gap-2 ${vm.kinds.length > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           {vm.kinds.map((kind) => (
             <button
               key={kind}
@@ -70,7 +71,7 @@ function UnavailabilityForm(props: Parameters<typeof useUnavailabilityFormViewMo
               role="tab"
               aria-selected={vm.kind === kind}
               onClick={() => vm.setKind(kind)}
-              className={`h-11 rounded-full border text-[13.5px] font-bold ${
+              className={`min-h-11 rounded-full border px-2 text-[13px] leading-tight font-bold ${
                 vm.kind === kind ? 'border-white/40 bg-white/15 text-white' : 'border-white/12 bg-transparent text-white/60'
               }`}
             >
@@ -88,6 +89,20 @@ function UnavailabilityForm(props: Parameters<typeof useUnavailabilityFormViewMo
           <DateTimeInput id="endsOn" type="date" value={vm.values.endsOn} onChange={vm.setEndsOn} />
         </FormField>
       </div>
+
+      {isAbsence && (
+        <FormField label="Raison" htmlFor="reason">
+          <Input
+            id="reason"
+            required
+            maxLength={120}
+            placeholder="Ex. : En vacances"
+            value={vm.values.reason}
+            onChange={(event) => vm.setReason(event.target.value)}
+            className={FIELD_CLASSNAME}
+          />
+        </FormField>
+      )}
 
       {isSuspension && (
         <>

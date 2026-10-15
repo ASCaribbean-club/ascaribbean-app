@@ -13,11 +13,13 @@ import { getAttendeeCap } from '@domain/policies/convocation-attendee-rules'
 import { getConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
 import { filterTeamsBySection } from '@domain/rules/club-schedule-rules'
+import { toLocalIsoDate } from '@domain/policies/availability'
 import { isPastDate } from '@domain/rules/convocation-rules'
 import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import { mapDomainErrorToUiError } from '../../shared/errors/map-domain-error-to-ui-error'
 import { useClubOverviewDependencies } from '../../di/hooks/use-club-overview-dependencies'
 import { useConvocationDependencies } from '../../di/hooks/use-convocation-dependencies'
+import { useTeamAvailabilityDependencies } from '../../di/hooks/use-team-availability-dependencies'
 import { combineDateAndTime, toDateInputValue, toTimeOneHourBefore } from '../../shared/formatters/date-input'
 import { useActiveRole } from '../../shared/hooks/use-active-role'
 import { useAuth } from '../../shared/hooks/use-auth'
@@ -26,6 +28,8 @@ import { usePermission } from '../../shared/hooks/use-permission'
 import { queryKeys } from '../../shared/query-keys'
 import {
   describeCounter,
+  describeUnavailability,
+  describeUnavailableNotice,
   EMPTY_TEAM_MESSAGE,
   getSelectionBlockingMessage,
   isAllTeamLocked,
@@ -154,6 +158,7 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
   const queryClient = useQueryClient()
   const { createConvocationUseCase, opponentRepository, listAvailableTrainingLocationsUseCase, listTeamPlayersUseCase } =
     useConvocationDependencies()
+  const { getConvocationAvailabilityUseCase } = useTeamAvailabilityDependencies()
 
   const routeState = location.state as CreateConvocationRouteState | null
 
@@ -256,17 +261,33 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     enabled: !!teamId,
   })
   const teamPlayers = teamPlayersQuery.data ?? []
-  const allPlayerIds = teamPlayers.map((player) => player.userId)
+
+  // A player who is out on the convocation's day (absence, suspension, medical)
+  // can't be convoked. Evaluated on the chosen date, today while none is set.
+  // Fail closed: if availability can't be read the card shows the load error
+  // (retry) rather than letting an unavailable player be ticked.
+  const availabilityDay = values.date || toLocalIsoDate(new Date())
+  const availabilityQuery = useQuery({
+    queryKey: queryKeys.convocationAvailability(teamId ?? '', availabilityDay),
+    queryFn: () => getConvocationAvailabilityUseCase.execute({ user: user!, teamId: teamId!, on: availabilityDay }),
+    enabled: !!teamId && !!user,
+  })
+  const unavailability = availabilityQuery.data ?? {}
+  const convocablePlayers = teamPlayers.filter((player) => !unavailability[player.userId])
+  const unavailableCount = teamPlayers.length - convocablePlayers.length
+
+  // "Toute l'équipe" and "Tout sélectionner" mean every CONVOCABLE player.
+  const allPlayerIds = convocablePlayers.map((player) => player.userId)
   const selectedIds = resolveSelectedIds(allPlayerIds, customSelection)
 
   const competitionType = values.type === 'match' ? values.competitionType : null
   // Official match + team above the cap: "Toute l'équipe" cannot stay active,
   // the list is forced open with everyone pre-ticked (PO-CPS-10).
-  const allTeamLocked = isAllTeamLocked(teamPlayers.length, values.type, competitionType)
+  const allTeamLocked = isAllTeamLocked(convocablePlayers.length, values.type, competitionType)
   const isAllTeamActive = customSelection === null && !allTeamLocked
-  const recipientsStatus: RecipientsViewModel['status'] = teamPlayersQuery.isLoading
+  const recipientsStatus: RecipientsViewModel['status'] = teamPlayersQuery.isLoading || availabilityQuery.isLoading
     ? 'loading'
-    : teamPlayersQuery.isError
+    : teamPlayersQuery.isError || availabilityQuery.isError
       ? 'error'
       : teamPlayers.length === 0
         ? 'empty'
@@ -281,13 +302,15 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
       userId: player.userId,
       displayName: player.displayName,
       selected: selectedIds.includes(player.userId),
+      unavailableLabel: unavailability[player.userId] ? describeUnavailability(unavailability[player.userId]) : null,
     })),
     isAllTeamActive,
     isAllTeamLocked: allTeamLocked,
     allTeamLockedMessage: allTeamLocked
-      ? `Indisponible : l’équipe compte ${teamPlayers.length} joueurs, un match officiel est limité à ${cap}.`
+      ? `Indisponible : l’équipe compte ${convocablePlayers.length} joueurs convocables, un match officiel est limité à ${cap}.`
       : null,
     playerCountLabel: `${teamPlayers.length} joueur${teamPlayers.length > 1 ? 's' : ''}`,
+    unavailableNotice: describeUnavailableNotice(unavailableCount),
     counter: recipientsStatus === 'ready' ? describeCounter(selectedIds.length, values.type, competitionType) : null,
     blockingMessage: selectionBlockingMessage,
     // "Tout sélectionner" is absent (not greyed) when it could only break the cap.
@@ -298,7 +321,10 @@ export function useCreateConvocationViewModel(initialValues?: Partial<Convocatio
     onToggleAllTeam: (active) => setCustomSelection(active ? null : allPlayerIds),
     onTogglePlayer: (userId) => setCustomSelection(toggleSelection(selectedIds, userId)),
     onBulkAction: () => setCustomSelection(selectedIds.length > 0 ? [] : allPlayerIds),
-    onRetry: () => void teamPlayersQuery.refetch(),
+    onRetry: () => {
+      void teamPlayersQuery.refetch()
+      void availabilityQuery.refetch()
+    },
   }
 
   const observability = useObservability()

@@ -1,4 +1,4 @@
-import { IconLoader2, IconUserPlus } from '@tabler/icons-react'
+import { IconBan, IconLoader2, IconUserPlus } from '@tabler/icons-react'
 import { InitialsAvatar } from '@presentation/shared/components/InitialsAvatar'
 import { Button } from '@presentation/shared/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@presentation/shared/components/ui/dialog'
@@ -66,11 +66,17 @@ export function AddAttendeePanel({ attendee }: AddAttendeePanelProps) {
                   <button
                     type="button"
                     onClick={() => attendee.onPick(player.userId)}
-                    disabled={attendee.pendingUserId !== null}
-                    className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-left transition-colors hover:bg-white/10 disabled:opacity-60"
+                    disabled={attendee.pendingUserId !== null || player.unavailableLabel !== null}
+                    className="flex min-h-11 w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-left transition-colors hover:bg-white/10 disabled:opacity-60 disabled:hover:bg-white/5"
                   >
                     <InitialsAvatar name={player.displayName} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{player.displayName}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-white">{player.displayName}</span>
+                      {player.unavailableLabel && (
+                        <span className="mt-0.5 block text-[12px] font-semibold text-coach-amber">{player.unavailableLabel}</span>
+                      )}
+                    </span>
+                    {player.unavailableLabel && <IconBan aria-hidden className="size-5 shrink-0 text-coach-amber" />}
                     {attendee.pendingUserId === player.userId && <IconLoader2 className="size-4 animate-spin" aria-label="Ajout en cours" />}
                   </button>
                 </li>

@@ -15,8 +15,8 @@ export interface DeclareUnavailabilityInput {
   now: Date
 }
 
-// Coach (own team): medical or suspension. Dirigeant habilité: suspension only,
-// club-wide. UX/use-case guard — RLS (unavailabilities_insert_coach /
+// Coach (own team): medical, suspension or absence. Dirigeant habilité:
+// suspension or absence, club-wide. UX/use-case guard — RLS (unavailabilities_insert_coach /
 // unavailabilities_insert_officer_suspension) is the real boundary.
 export class DeclareUnavailabilityUseCase {
   constructor(private readonly repository: UnavailabilityRepository) {}
@@ -28,11 +28,20 @@ export class DeclareUnavailabilityUseCase {
 
     const normalized = normalizeDraft(draft)
     const base = { userId: playerId, declaredBy: user.id, declaredAt: now.toISOString(), startsOn: normalized.startsOn }
-    const input: NewUnavailability =
-      normalized.kind === 'medical'
-        ? { ...base, kind: 'medical', expectedReturnOn: normalized.expectedReturnOn }
-        : { ...base, kind: 'suspension', matchCount: normalized.matchCount, reason: normalized.reason, liftedOn: normalized.liftedOn }
+    return this.repository.create(toNewUnavailability(base, normalized))
+  }
+}
 
-    return this.repository.create(input)
+function toNewUnavailability(
+  base: { userId: string; declaredBy: string; declaredAt: string; startsOn: string },
+  draft: UnavailabilityDraft,
+): NewUnavailability {
+  switch (draft.kind) {
+    case 'medical':
+      return { ...base, kind: 'medical', expectedReturnOn: draft.expectedReturnOn }
+    case 'suspension':
+      return { ...base, kind: 'suspension', matchCount: draft.matchCount, reason: draft.reason, liftedOn: draft.liftedOn }
+    case 'absence':
+      return { ...base, kind: 'absence', reason: draft.reason, expectedReturnOn: draft.expectedReturnOn }
   }
 }

@@ -22,6 +22,9 @@ export function toUnavailability(row: UnavailabilityRow): Unavailability {
         reason: row.reason,
         liftedOn: row.lifted_on,
       }
+    case 'absence':
+      // `reason` is required for an absence (CHECK in the migration).
+      return { ...base, kind: 'absence', reason: row.reason ?? '', expectedReturnOn: row.expected_return_on }
     default:
       throw new Error(`Unknown unavailability kind: ${row.kind}`)
   }
@@ -46,6 +49,8 @@ export function toUnavailabilityInsertRow(input: NewUnavailability): Unavailabil
         reason: input.reason,
         lifted_on: input.liftedOn,
       }
+    case 'absence':
+      return { ...base, expected_return_on: input.expectedReturnOn, match_count: null, reason: input.reason, lifted_on: null }
     default: {
       const unreachable: never = input
       return unreachable
@@ -59,6 +64,8 @@ export function toUnavailabilityUpdateRow(u: Unavailability): UnavailabilityUpda
       return { starts_on: u.startsOn, expected_return_on: u.expectedReturnOn, match_count: null, reason: null, lifted_on: null }
     case 'suspension':
       return { starts_on: u.startsOn, expected_return_on: null, match_count: u.matchCount, reason: u.reason, lifted_on: u.liftedOn }
+    case 'absence':
+      return { starts_on: u.startsOn, expected_return_on: u.expectedReturnOn, match_count: null, reason: u.reason, lifted_on: null }
     default: {
       const unreachable: never = u
       return unreachable

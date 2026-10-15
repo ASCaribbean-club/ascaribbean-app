@@ -4,7 +4,7 @@
 export interface UnavailabilityRow {
   id: string
   user_id: string
-  // CHECK-constrained to 'medical' | 'suspension'.
+  // CHECK-constrained to 'medical' | 'suspension' | 'absence'.
   kind: string
   starts_on: string
   declared_by: string

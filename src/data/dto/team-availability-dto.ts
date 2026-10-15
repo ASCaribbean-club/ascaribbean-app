@@ -4,9 +4,11 @@
 export interface TeamAvailabilityDto {
   user_id: string
   full_name: string
-  // Coach caller: 'available' | 'medical' | 'suspended'.
-  // Player caller: 'available' | 'unavailable' | 'suspended'.
+  // Coach caller: 'available' | 'medical' | 'suspended' | 'absent'.
+  // Player caller: 'available' | 'unavailable' | 'suspended' | 'absent'.
   status: string
   starts_on: string | null
   ends_on: string | null
+  // Only set for 'absent' (the reason is not health data).
+  reason: string | null
 }

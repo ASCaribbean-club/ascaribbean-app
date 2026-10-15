@@ -1,4 +1,4 @@
-import type { IsoDate, MedicalUnavailability, SuspensionUnavailability, Unavailability } from '@domain/entities/unavailability'
+import type { AbsenceUnavailability, IsoDate, MedicalUnavailability, SuspensionUnavailability, Unavailability } from '@domain/entities/unavailability'
 import { InvalidUnavailabilityInputError } from '@domain/errors/invalid-unavailability-input-error'
 
 // The editable part of an Unavailability, per kind: what a coach/officer types.
@@ -6,6 +6,7 @@ import { InvalidUnavailabilityInputError } from '@domain/errors/invalid-unavaila
 export type UnavailabilityDraft =
   | { kind: 'medical'; startsOn: IsoDate; expectedReturnOn: IsoDate | null }
   | { kind: 'suspension'; startsOn: IsoDate; matchCount: number; reason: string | null; liftedOn: IsoDate | null }
+  | { kind: 'absence'; startsOn: IsoDate; reason: string; expectedReturnOn: IsoDate | null }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -28,6 +29,13 @@ export function normalizeDraft(draft: UnavailabilityDraft): UnavailabilityDraft 
   if (draft.kind === 'medical') {
     if (draft.expectedReturnOn !== null) assertIsoDate(draft.expectedReturnOn, 'expectedReturnOn')
     return draft
+  }
+
+  if (draft.kind === 'absence') {
+    if (draft.expectedReturnOn !== null) assertIsoDate(draft.expectedReturnOn, 'expectedReturnOn')
+    const reason = draft.reason.trim()
+    if (reason === '') throw new InvalidUnavailabilityInputError('reason is required for an absence')
+    return { ...draft, reason }
   }
 
   if (!Number.isInteger(draft.matchCount) || draft.matchCount < 0) {
@@ -54,6 +62,15 @@ export function applyDraft(existing: Unavailability, draft: UnavailabilityDraft)
   }
   if (normalized.kind === 'medical') {
     const next: MedicalUnavailability = { ...base, kind: 'medical', expectedReturnOn: normalized.expectedReturnOn }
+    return next
+  }
+  if (normalized.kind === 'absence') {
+    const next: AbsenceUnavailability = {
+      ...base,
+      kind: 'absence',
+      reason: normalized.reason,
+      expectedReturnOn: normalized.expectedReturnOn,
+    }
     return next
   }
   const next: SuspensionUnavailability = {

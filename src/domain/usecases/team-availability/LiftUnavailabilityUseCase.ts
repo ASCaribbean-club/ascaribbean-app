@@ -23,7 +23,7 @@ export class LiftUnavailabilityUseCase {
     }
     const today = toLocalIsoDate(now)
     const lifted: Unavailability =
-      existing.kind === 'medical' ? { ...existing, expectedReturnOn: today } : { ...existing, liftedOn: today }
+      existing.kind === 'suspension' ? { ...existing, liftedOn: today } : { ...existing, expectedReturnOn: today }
     return this.repository.update(lifted)
   }
 }

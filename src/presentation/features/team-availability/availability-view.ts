@@ -4,9 +4,10 @@ import type { TeamAvailability } from '@domain/usecases/team-availability/GetTea
 // Display status of a row. 'medical' only ever exists in the coach view; the
 // teammate view can only produce 'unavailable' (specs/player-unavailability.md
 // UI design §3) — "Malade / Blessé" never reaches a player's component tree.
-export type AvailabilityDisplayStatus = 'available' | 'medical' | 'unavailable' | 'suspended'
+export type AvailabilityDisplayStatus = 'available' | 'medical' | 'unavailable' | 'suspended' | 'absent'
 
-// 'out' = the middle category: "Malades" for a coach, "Indisponibles" for a player.
+// 'out' = the middle category: every kind of unavailability that is not a
+// suspension (medical, or an absence with a reason) — "Indisponibles".'
 export type AvailabilityFilter = 'all' | 'available' | 'out' | 'suspended'
 
 export interface AvailabilityRowView {
@@ -39,13 +40,24 @@ export function formatAvailabilitySubtitle(startsOn: IsoDate | null, endsOn: Iso
   return endsOn ? `${from} · Retour le ${formatAvailabilityDate(endsOn)}` : from
 }
 
+// An absence leads with its reason ("En vacances · Depuis le … · Retour le …").
+function formatAbsenceSubtitle(reason: string | null, startsOn: IsoDate | null, endsOn: IsoDate | null): string | null {
+  const dates = formatAvailabilitySubtitle(startsOn, endsOn)
+  return [reason, dates].filter(Boolean).join(' · ') || null
+}
+
 export function buildAvailabilityRows(availability: TeamAvailability): AvailabilityRowView[] {
   if (availability.view === 'coach') {
     return availability.entries.map((entry) => ({
       userId: entry.userId,
       displayName: entry.displayName,
       status: entry.status,
-      subtitle: entry.status === 'available' ? null : formatAvailabilitySubtitle(entry.startsOn, entry.endsOn),
+      subtitle:
+        entry.status === 'available'
+          ? null
+          : entry.status === 'absent'
+            ? formatAbsenceSubtitle(entry.reason, entry.startsOn, entry.endsOn)
+            : formatAvailabilitySubtitle(entry.startsOn, entry.endsOn),
     }))
   }
 
@@ -54,8 +66,14 @@ export function buildAvailabilityRows(availability: TeamAvailability): Availabil
     displayName: entry.displayName,
     status: entry.status,
     // Q-UI-02: no "Aucune indisponibilité" line in the teammate view. Only a
-    // suspension carries dates (the entry has none for 'unavailable').
-    subtitle: entry.status === 'suspended' ? formatAvailabilitySubtitle(entry.startsOn, entry.endsOn) : null,
+    // suspension or an absence carries dates (the entry has none for
+    // 'unavailable'); an absence also carries its reason.
+    subtitle:
+      entry.status === 'suspended'
+        ? formatAvailabilitySubtitle(entry.startsOn, entry.endsOn)
+        : entry.status === 'absent'
+          ? formatAbsenceSubtitle(entry.reason, entry.startsOn, entry.endsOn)
+          : null,
   }))
 }
 
@@ -67,6 +85,7 @@ function categoryOf(status: AvailabilityDisplayStatus): keyof AvailabilityCounts
       return 'suspended'
     case 'medical':
     case 'unavailable':
+    case 'absent':
       return 'out'
   }
 }
@@ -81,8 +100,8 @@ export function filterAvailabilityRows(rows: AvailabilityRowView[], filter: Avai
   return filter === 'all' ? rows : rows.filter((row) => categoryOf(row.status) === filter)
 }
 
-export function outCategoryLabels(view: TeamAvailability['view']): { tile: string; chip: string } {
-  return view === 'coach' ? { tile: 'Malades', chip: 'Malades' } : { tile: 'Indisponibles', chip: 'Indisponibles' }
+export function outCategoryLabels(): { tile: string; chip: string } {
+  return { tile: 'Indisponibles', chip: 'Indisponibles' }
 }
 
 // A row opens the edit sheet when the viewer may write at least one kind for it.

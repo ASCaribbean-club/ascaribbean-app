@@ -1,5 +1,6 @@
 import type { CompetitionType } from '@domain/entities/competition-type'
 import type { ConvocationType } from '@domain/entities/convocation'
+import type { ConvocationUnavailability } from '@domain/usecases/team-availability/GetConvocationAvailabilityUseCase'
 import {
   getAttendeeCap,
   getAttendeeCapExcess,
@@ -83,6 +84,37 @@ export function getSelectionBlockingMessage(
   return describeCapExcess(count, type, competitionType)
 }
 
+const RETURN_DATE = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
+
+function formatReturnDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number)
+  return RETURN_DATE.format(new Date(year, month - 1, day))
+}
+
+/**
+ * Text shown on a player who cannot be convoked. The end bound is exclusive
+ * (the player is back ON that day), hence "retour le". A medical case arrives
+ * as a bare 'unavailable': no reason, no date.
+ */
+export function describeUnavailability(unavailability: ConvocationUnavailability): string {
+  const back = unavailability.returnOn ? ` · retour le ${formatReturnDate(unavailability.returnOn)}` : ''
+  switch (unavailability.reason) {
+    case 'absent':
+      return `Indisponible : ${unavailability.detail ?? 'absent'}${back}`
+    case 'suspended':
+      return `Suspendu${back}`
+    case 'unavailable':
+      return 'Indisponible'
+  }
+}
+
+export function describeUnavailableNotice(unavailableCount: number): string | null {
+  if (unavailableCount === 0) return null
+  return unavailableCount === 1
+    ? '1 joueur indisponible ne peut pas être convoqué'
+    : `${unavailableCount} joueurs indisponibles ne peuvent pas être convoqués`
+}
+
 // --- Shape handed by the ViewModel to RecipientsCard (components/RecipientsCard.tsx).
 // Declared here, next to the pure logic that fills it, so the component only
 // renders booleans/strings it was given (ARCHITECTURE.md §6).
@@ -91,6 +123,9 @@ export interface RecipientsPlayerView {
   userId: string
   displayName: string
   selected: boolean
+  // Non-null = the player cannot be convoked: the row is disabled and shows
+  // this text (reason + return date when known). Never a health detail.
+  unavailableLabel: string | null
 }
 
 export interface RecipientsViewModel {
@@ -103,6 +138,8 @@ export interface RecipientsViewModel {
   allTeamLockedMessage: string | null
   // "N joueurs" under the switch when the list is open.
   playerCountLabel: string
+  // "N indisponibles ne seront pas convoqués", null when everyone can be convoked.
+  unavailableNotice: string | null
   counter: RecipientsCounter | null
   // First blocking message of the selection (also repeated by the form's sticky
   // error zone), rendered as the destructive alert under the list.

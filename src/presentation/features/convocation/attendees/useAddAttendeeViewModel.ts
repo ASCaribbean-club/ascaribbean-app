@@ -4,12 +4,15 @@ import type { CompetitionType } from '@domain/entities/competition-type'
 import type { Convocation } from '@domain/entities/convocation'
 import { ConvocationAttendeeAddRefusedError } from '@domain/errors/convocation-attendee-add-refused-error'
 import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
+import { toLocalIsoDate } from '@domain/policies/availability'
 import { canAddAnotherAttendee, getAttendeeCap, isAttendeeAddWindowOpen } from '@domain/policies/convocation-attendee-rules'
 import { useConvocationDependencies } from '@presentation/di/hooks/use-convocation-dependencies'
+import { useTeamAvailabilityDependencies } from '@presentation/di/hooks/use-team-availability-dependencies'
 import { mapDomainErrorToUiError } from '@presentation/shared/errors/map-domain-error-to-ui-error'
 import { useAuth } from '@presentation/shared/hooks/use-auth'
 import { usePermission } from '@presentation/shared/hooks/use-permission'
 import { queryKeys } from '@presentation/shared/query-keys'
+import { describeUnavailability } from '../recipients-selection'
 
 interface AddAttendeeParams {
   convocationId: string | undefined
@@ -38,6 +41,7 @@ export function useAddAttendeeViewModel(params: AddAttendeeParams) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const { listUnconvokedPlayersUseCase, addConvocationAttendeeUseCase } = useConvocationDependencies()
+  const { getConvocationAvailabilityUseCase } = useTeamAvailabilityDependencies()
 
   const hasPermission = usePermission('convocation_attendee:add', { teamId: convocation?.teamId })
   const canAdd =
@@ -55,6 +59,17 @@ export function useAddAttendeeViewModel(params: AddAttendeeParams) {
     queryFn: () => listUnconvokedPlayersUseCase.execute(convocationId!),
     enabled: !!convocationId && canAdd && isOpen,
   })
+
+  // Who is out on the convocation's day can't be added (same rule as the
+  // creation form). Fail closed: if availability can't be read the panel shows
+  // its load error rather than offering a player who may be unavailable.
+  const availabilityDay = convocation ? toLocalIsoDate(new Date(convocation.date)) : ''
+  const availabilityQuery = useQuery({
+    queryKey: queryKeys.convocationAvailability(convocation?.teamId ?? '', availabilityDay),
+    queryFn: () => getConvocationAvailabilityUseCase.execute({ user: user!, teamId: convocation!.teamId, on: availabilityDay }),
+    enabled: !!convocation && !!user && canAdd && isOpen,
+  })
+  const unavailability = availabilityQuery.data ?? {}
 
   const cap = convocation ? getAttendeeCap(convocation.type, competitionType) : null
   const capReached = !!convocation && !canAddAnotherAttendee(convokedCount, convocation.type, competitionType)
@@ -98,11 +113,14 @@ export function useAddAttendeeViewModel(params: AddAttendeeParams) {
     setErrorMessage(null)
   }
   function onPick(userId: string) {
-    if (addMutation.isPending) return
+    if (addMutation.isPending || unavailability[userId]) return
     addMutation.mutate(userId)
   }
 
-  const players = playersQuery.data ?? []
+  const players = (playersQuery.data ?? []).map((player) => ({
+    ...player,
+    unavailableLabel: unavailability[player.userId] ? describeUnavailability(unavailability[player.userId]) : null,
+  }))
 
   return {
     canAdd,
@@ -115,9 +133,12 @@ export function useAddAttendeeViewModel(params: AddAttendeeParams) {
     // The cap is already reached: the panel explains, it lists nobody.
     capReached,
     capReachedMessage: cap === null ? null : `Match officiel : ${cap} convoqués au maximum. Impossible d’en ajouter un autre.`,
-    isLoading: playersQuery.isLoading,
-    hasLoadError: playersQuery.isError,
-    retryLoad: () => void playersQuery.refetch(),
+    isLoading: playersQuery.isLoading || availabilityQuery.isLoading,
+    hasLoadError: playersQuery.isError || availabilityQuery.isError,
+    retryLoad: () => {
+      void playersQuery.refetch()
+      void availabilityQuery.refetch()
+    },
     players,
     hasNoPlayerToAdd: !playersQuery.isLoading && !playersQuery.isError && players.length === 0,
     pendingUserId: addMutation.isPending ? (addMutation.variables ?? null) : null,

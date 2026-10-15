@@ -45,7 +45,7 @@ export function RecipientsCard({ recipients }: RecipientsCardProps) {
           <span className="min-w-0">
             <span className="m-0 block text-[14.5px] font-bold text-white">Toute l’équipe</span>
             <span className="m-0 mt-0.5 block text-[12px] text-white/50">
-              {recipients.allTeamLockedMessage ?? 'Par défaut pour entraînements et matchs'}
+              {recipients.allTeamLockedMessage ?? recipients.unavailableNotice ?? 'Par défaut pour entraînements et matchs'}
             </span>
           </span>
           <Switch
@@ -95,12 +95,15 @@ export function RecipientsCard({ recipients }: RecipientsCardProps) {
             )}
           </div>
 
+          {recipients.unavailableNotice && <p className="m-0 text-[12px] font-semibold text-coach-amber">{recipients.unavailableNotice}</p>}
+
           <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
             {recipients.players.map((player) => (
               <PlayerSelectRow
                 key={player.userId}
                 name={player.displayName}
                 selected={player.selected}
+                unavailableLabel={player.unavailableLabel}
                 onToggle={() => recipients.onTogglePlayer(player.userId)}
               />
             ))}

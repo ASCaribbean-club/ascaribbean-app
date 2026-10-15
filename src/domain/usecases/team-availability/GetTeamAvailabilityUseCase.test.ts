@@ -20,9 +20,9 @@ function repoReturning(rows: TeamAvailabilityRow[]): TeamAvailabilityRepository 
 }
 
 const rows: TeamAvailabilityRow[] = [
-  { userId: 'p-3', displayName: 'Zed', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06' },
-  { userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: null, endsOn: null },
-  { userId: 'p-2', displayName: 'Beta', status: 'medical', startsOn: '2026-09-24', endsOn: '2026-10-20' },
+  { userId: 'p-3', displayName: 'Zed', status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06', reason: null },
+  { userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: null, endsOn: null, reason: null },
+  { userId: 'p-2', displayName: 'Beta', status: 'medical', startsOn: '2026-09-24', endsOn: '2026-10-20', reason: null },
 ]
 
 describe('GetTeamAvailabilityUseCase', () => {
@@ -34,8 +34,8 @@ describe('GetTeamAvailabilityUseCase', () => {
     })
     expect(result.view).toBe('coach')
     expect(result.entries.map((e) => e.userId)).toEqual(['p-1', 'p-2', 'p-3'])
-    expect(result.entries[1]).toMatchObject({ status: 'medical', startsOn: '2026-09-24', endsOn: '2026-10-20' })
-    expect(result.entries[2]).toMatchObject({ status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06' })
+    expect(result.entries[1]).toMatchObject({ status: 'medical', startsOn: '2026-09-24', endsOn: '2026-10-20', reason: null })
+    expect(result.entries[2]).toMatchObject({ status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06', reason: null })
     expect(repo.calls).toEqual(['t-1'])
   })
 
@@ -45,17 +45,17 @@ describe('GetTeamAvailabilityUseCase', () => {
       teamId: 't-1',
     })
     expect(result.view).toBe('teammate')
-    expect(result.entries[1]).toEqual({ userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: null, endsOn: null })
-    expect(result.entries[2]).toMatchObject({ status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06' })
+    expect(result.entries[1]).toEqual({ userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: null, endsOn: null, reason: null })
+    expect(result.entries[2]).toMatchObject({ status: 'suspended', startsOn: '2026-09-15', endsOn: '2026-10-06', reason: null })
     expect(JSON.stringify(result)).not.toContain('medical')
     expect(JSON.stringify(result)).not.toContain('2026-10-20')
   })
 
   it('player view re-projects a raw already-unavailable row without dates', async () => {
     const result = await new GetTeamAvailabilityUseCase(
-      repoReturning([{ userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: '2026-09-24', endsOn: '2026-10-20' }]),
+      repoReturning([{ userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: '2026-09-24', endsOn: '2026-10-20', reason: null }]),
     ).execute({ user: makeUser([{ role: 'player', teamId: 't-1' }]), teamId: 't-1' })
-    expect(result.entries[0]).toMatchObject({ status: 'unavailable', startsOn: null, endsOn: null })
+    expect(result.entries[0]).toMatchObject({ status: 'unavailable', startsOn: null, endsOn: null, reason: null })
   })
 
   it('coach+player on the same team gets the coach view', async () => {
@@ -68,9 +68,9 @@ describe('GetTeamAvailabilityUseCase', () => {
 
   it('available entries carry no dates for the coach', async () => {
     const result = await new GetTeamAvailabilityUseCase(
-      repoReturning([{ userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: '2026-01-01', endsOn: null }]),
+      repoReturning([{ userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: '2026-01-01', endsOn: null, reason: null }]),
     ).execute({ user: makeUser([{ role: 'coach', teamIds: ['t-1'] }]), teamId: 't-1' })
-    expect(result.entries[0]).toMatchObject({ startsOn: null, endsOn: null })
+    expect(result.entries[0]).toMatchObject({ startsOn: null, endsOn: null, reason: null })
   })
 
   it('rejects another team without touching the repository', async () => {
@@ -89,8 +89,8 @@ describe('GetTeamAvailabilityUseCase', () => {
 
   it('authorized-officer: teammate projection for any team — medical shown as unavailable, no medical dates', async () => {
     const repo = repoReturning([
-      { userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: null, endsOn: null },
-      { userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: null, endsOn: null },
+      { userId: 'p-2', displayName: 'Beta', status: 'unavailable', startsOn: null, endsOn: null, reason: null },
+      { userId: 'p-1', displayName: 'Alpha', status: 'available', startsOn: null, endsOn: null, reason: null },
     ])
     const result = await new GetTeamAvailabilityUseCase(repo).execute({
       user: makeUser([{ role: 'authorized-officer' }]),
@@ -98,7 +98,7 @@ describe('GetTeamAvailabilityUseCase', () => {
     })
     expect(result.view).toBe('teammate')
     expect(result.entries.map((e) => e.userId)).toEqual(['p-1', 'p-2'])
-    expect(result.entries[1]).toMatchObject({ status: 'unavailable', startsOn: null, endsOn: null })
+    expect(result.entries[1]).toMatchObject({ status: 'unavailable', startsOn: null, endsOn: null, reason: null })
     expect(repo.calls).toEqual(['t-9'])
   })
 })

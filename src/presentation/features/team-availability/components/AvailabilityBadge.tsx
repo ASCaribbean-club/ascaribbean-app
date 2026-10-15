@@ -9,6 +9,7 @@ const BADGE: Record<AvailabilityDisplayStatus, { label: string; className: strin
   available: { label: 'Disponible', className: 'border-coach-green/40 bg-coach-green/15 text-coach-green-text' },
   medical: { label: 'Malade / Blessé', className: 'border-coach-amber/40 bg-coach-amber/15 text-coach-amber' },
   unavailable: { label: 'Indisponible', className: 'border-coach-amber/40 bg-coach-amber/15 text-coach-amber' },
+  absent: { label: 'Indisponible', className: 'border-coach-amber/40 bg-coach-amber/15 text-coach-amber' },
   suspended: { label: 'Suspendu', className: 'border-coach-red/40 bg-coach-red/15 text-coach-red-text' },
 }
 

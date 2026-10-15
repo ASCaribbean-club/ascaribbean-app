@@ -63,7 +63,7 @@ export function useTeamAvailabilityViewModel() {
   const availability = availabilityQuery.data
   const rows = availability ? buildAvailabilityRows(availability) : []
   const visibleRows = filterAvailabilityRows(rows, filter)
-  const labels = outCategoryLabels(availability?.view ?? 'teammate')
+  const labels = outCategoryLabels()
 
   const chips = [
     { value: 'all', label: 'Tous' },

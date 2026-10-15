@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { IsoDate } from '@domain/entities/unavailability'
 import type { TeamAvailabilityRepository, TeamAvailabilityRow } from '@domain/repositories/team-availability-repository'
 import type { TeamAvailabilityDto } from '@data/dto/team-availability-dto'
 import { mapSupabaseError } from '@data/errors/map-supabase-error'
@@ -11,8 +12,8 @@ import { toTeamAvailabilityRow } from '@data/mappers/team-availability-mapper'
 export class TeamAvailabilityRepositoryImpl implements TeamAvailabilityRepository {
   constructor(private readonly client: SupabaseClient) {}
 
-  async listForTeam(teamId: string): Promise<TeamAvailabilityRow[]> {
-    const { data, error } = await this.client.rpc('get_team_availability', { p_team_id: teamId })
+  async listForTeam(teamId: string, on?: IsoDate): Promise<TeamAvailabilityRow[]> {
+    const { data, error } = await this.client.rpc('get_team_availability', { p_team_id: teamId, p_on: on ?? null })
 
     if (error) throw mapSupabaseError(error)
     return ((data ?? []) as TeamAvailabilityDto[]).map(toTeamAvailabilityRow)

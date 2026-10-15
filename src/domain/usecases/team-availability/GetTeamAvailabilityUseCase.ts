@@ -9,6 +9,8 @@ import type { TeamAvailabilityRepository } from '@domain/repositories/team-avail
 export interface GetTeamAvailabilityInput {
   user: User
   teamId: string
+  // Day the statuses are evaluated for; omitted = today.
+  on?: IsoDate
 }
 
 export interface CoachAvailabilityEntry {
@@ -17,6 +19,8 @@ export interface CoachAvailabilityEntry {
   status: AvailabilityStatus
   startsOn: IsoDate | null
   endsOn: IsoDate | null
+  // 'absent' only.
+  reason: string | null
 }
 
 // No `medical` variant and no medical dates can be expressed in this type:
@@ -28,6 +32,8 @@ export interface TeammateAvailabilityEntry {
   status: TeammateAvailabilityStatus
   startsOn: IsoDate | null
   endsOn: IsoDate | null
+  // 'absent' only.
+  reason: string | null
 }
 
 export type TeamAvailability =
@@ -43,12 +49,12 @@ export type TeamAvailability =
 export class GetTeamAvailabilityUseCase {
   constructor(private readonly repository: TeamAvailabilityRepository) {}
 
-  async execute({ user, teamId }: GetTeamAvailabilityInput): Promise<TeamAvailability> {
+  async execute({ user, teamId, on }: GetTeamAvailabilityInput): Promise<TeamAvailability> {
     if (!can(user, 'availability:read-team', { teamId })) {
       throw new ForbiddenError('availability:read-team is not granted for this team')
     }
 
-    const rows = await this.repository.listForTeam(teamId)
+    const rows = await this.repository.listForTeam(teamId, on)
     const sorted = [...rows].sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'))
 
     // Same rule as the RPC: coach of the team wins over player.
@@ -68,6 +74,7 @@ export class GetTeamAvailabilityUseCase {
             status,
             startsOn: status === 'available' ? null : row.startsOn,
             endsOn: status === 'available' ? null : row.endsOn,
+            reason: status === 'absent' ? row.reason : null,
           }
         }),
       }
@@ -78,15 +85,16 @@ export class GetTeamAvailabilityUseCase {
       entries: sorted.map((row) => {
         const status: TeammateAvailabilityStatus =
           row.status === 'unavailable' ? 'unavailable' : toTeammateStatus(row.status)
-        // Suspension is not health data: its dates are shown (developer
-        // decision 2026-10-01). Nothing else carries a date.
-        const showDates = status === 'suspended'
+        // A suspension or an absence is not health data: dates (and the
+        // absence reason) are shown. Nothing else carries a date.
+        const showDates = status === 'suspended' || status === 'absent'
         return {
           userId: row.userId,
           displayName: row.displayName,
           status,
           startsOn: showDates ? row.startsOn : null,
           endsOn: showDates ? row.endsOn : null,
+          reason: status === 'absent' ? row.reason : null,
         }
       }),
     }

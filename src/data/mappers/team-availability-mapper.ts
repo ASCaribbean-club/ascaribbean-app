@@ -7,12 +7,14 @@ export function toTeamAvailabilityRow(dto: TeamAvailabilityDto): TeamAvailabilit
     case 'medical':
     case 'suspended':
     case 'unavailable':
+    case 'absent':
       return {
         userId: dto.user_id,
         displayName: dto.full_name,
         status: dto.status,
         startsOn: dto.starts_on,
         endsOn: dto.ends_on,
+        reason: dto.reason,
       }
     default:
       throw new Error(`Unknown availability status: ${dto.status}`)

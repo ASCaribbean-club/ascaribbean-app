@@ -15,6 +15,24 @@ const baseRow: UnavailabilityRow = {
   lifted_on: null,
 }
 
+describe('unavailability mapper (absence)', () => {
+  const absenceRow: UnavailabilityRow = { ...baseRow, kind: 'absence', reason: 'En vacances', expected_return_on: '2026-10-27' }
+
+  it('maps an absence row, return date in expected_return_on', () => {
+    expect(toUnavailability(absenceRow)).toMatchObject({ kind: 'absence', reason: 'En vacances', expectedReturnOn: '2026-10-27' })
+  })
+
+  it('writes the reason and nothing suspension-specific', () => {
+    const absence = toUnavailability(absenceRow)
+    expect(toUnavailabilityUpdateRow(absence)).toEqual({
+      starts_on: '2026-09-24', expected_return_on: '2026-10-27', match_count: null, reason: 'En vacances', lifted_on: null,
+    })
+    const input = { ...absence, id: undefined }
+    delete input.id
+    expect(toUnavailabilityInsertRow(input)).toMatchObject({ kind: 'absence', reason: 'En vacances', match_count: null, lifted_on: null })
+  })
+})
+
 describe('unavailability mapper', () => {
   it('maps a medical row with an indefinite end', () => {
     expect(toUnavailability(baseRow)).toEqual({

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   describeCapExcess,
   describeCounter,
+  describeUnavailability,
+  describeUnavailableNotice,
   getSelectionBlockingMessage,
   isAllTeamLocked,
   resolveSelectedIds,
@@ -90,5 +92,30 @@ describe('getSelectionBlockingMessage', () => {
   it('is null for a valid selection', () => {
     expect(getSelectionBlockingMessage(14, 'match', 'official')).toBeNull()
     expect(getSelectionBlockingMessage(30, 'match', 'friendly')).toBeNull()
+  })
+})
+
+describe('describeUnavailability', () => {
+  it('writes the reason and the return date of an absence', () => {
+    expect(describeUnavailability({ userId: 'a', reason: 'absent', detail: 'En vacances', returnOn: '2026-10-27' })).toBe(
+      'Indisponible : En vacances · retour le 27 oct.',
+    )
+  })
+
+  it('omits the return date when there is no end', () => {
+    expect(describeUnavailability({ userId: 'a', reason: 'absent', detail: 'En vacances', returnOn: null })).toBe('Indisponible : En vacances')
+  })
+
+  it('says only "Indisponible" for a health case, and "Suspendu" for a suspension', () => {
+    expect(describeUnavailability({ userId: 'a', reason: 'unavailable', detail: null, returnOn: null })).toBe('Indisponible')
+    expect(describeUnavailability({ userId: 'a', reason: 'suspended', detail: null, returnOn: null })).toBe('Suspendu')
+  })
+})
+
+describe('describeUnavailableNotice', () => {
+  it('is absent when everyone can be convoked, and pluralises otherwise', () => {
+    expect(describeUnavailableNotice(0)).toBeNull()
+    expect(describeUnavailableNotice(1)).toBe('1 joueur indisponible ne peut pas être convoqué')
+    expect(describeUnavailableNotice(3)).toBe('3 joueurs indisponibles ne peuvent pas être convoqués')
   })
 })

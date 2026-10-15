@@ -24,6 +24,9 @@ vi.mock('@presentation/shared/hooks/use-auth')
 vi.mock('@presentation/shared/hooks/use-active-role')
 vi.mock('@presentation/shared/hooks/use-permission')
 vi.mock('@presentation/di/hooks/use-convocation-dependencies')
+vi.mock('@presentation/di/hooks/use-team-availability-dependencies', () => ({
+  useTeamAvailabilityDependencies: () => ({ getConvocationAvailabilityUseCase: { execute: vi.fn().mockResolvedValue({}) } }),
+}))
 
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedUseActiveRole = vi.mocked(useActiveRole)

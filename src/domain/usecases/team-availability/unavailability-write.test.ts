@@ -185,3 +185,46 @@ describe('GetActiveUnavailabilitiesUseCase', () => {
     ).rejects.toBeInstanceOf(ForbiddenError)
   })
 })
+
+describe('absence unavailability', () => {
+  const absenceDraft = { kind: 'absence', startsOn: '2026-10-20', reason: '  En vacances ', expectedReturnOn: '2026-10-27' } as const
+
+  it('lets a coach declare it, trimming the reason', async () => {
+    const { repository, create } = repo()
+    await new DeclareUnavailabilityUseCase(repository).execute({ user: coach, teamId: 'team-1', playerId: 'p-1', now: NOW, draft: absenceDraft })
+    expect(create).toHaveBeenCalledWith({
+      kind: 'absence', userId: 'p-1', startsOn: '2026-10-20', reason: 'En vacances', expectedReturnOn: '2026-10-27',
+      declaredBy: 'actor-1', declaredAt: NOW.toISOString(),
+    })
+  })
+
+  it('lets an officer declare it for any team, with no end date', async () => {
+    const { repository, create } = repo()
+    await new DeclareUnavailabilityUseCase(repository).execute({
+      user: officer, teamId: 'team-9', playerId: 'p-1', now: NOW, draft: { ...absenceDraft, expectedReturnOn: null },
+    })
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ kind: 'absence', expectedReturnOn: null }))
+  })
+
+  it('refuses a blank reason', async () => {
+    const { repository, create } = repo()
+    await expect(
+      new DeclareUnavailabilityUseCase(repository).execute({ user: coach, teamId: 'team-1', playerId: 'p-1', now: NOW, draft: { ...absenceDraft, reason: '   ' } }),
+    ).rejects.toBeInstanceOf(InvalidUnavailabilityInputError)
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('refuses a player', async () => {
+    const { repository } = repo()
+    await expect(
+      new DeclareUnavailabilityUseCase(repository).execute({ user: player, teamId: 'team-1', playerId: 'p-1', now: NOW, draft: absenceDraft }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
+  })
+
+  it('lifting closes it today through expectedReturnOn', async () => {
+    const existing: Unavailability = { id: 'a-1', userId: 'p-1', kind: 'absence', startsOn: '2026-10-01', reason: 'Travail', expectedReturnOn: null, declaredBy: 'c', declaredAt: '2026-10-01T08:00:00.000Z' }
+    const { repository, update } = repo([existing])
+    await new LiftUnavailabilityUseCase(repository).execute({ user: officer, teamId: 'team-9', existing, now: NOW })
+    expect(update).toHaveBeenCalledWith({ ...existing, expectedReturnOn: '2026-10-05' })
+  })
+})

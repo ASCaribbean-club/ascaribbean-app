@@ -39,7 +39,18 @@ export interface SuspensionUnavailability extends UnavailabilityBase {
   liftedOn: IsoDate | null
 }
 
-export type Unavailability = MedicalUnavailability | SuspensionUnavailability
+// Non-medical, non-disciplinary unavailability declared with a reason
+// ("en vacances", "travail", ...). The reason is REQUIRED and visible to
+// teammates, so it must never carry health information: a health reason is
+// declared as `medical`, which has no free text.
+export interface AbsenceUnavailability extends UnavailabilityBase {
+  kind: 'absence'
+  reason: string
+  /** `null` = no end date. Exclusive bound: available again ON this day. */
+  expectedReturnOn: IsoDate | null
+}
+
+export type Unavailability = MedicalUnavailability | SuspensionUnavailability | AbsenceUnavailability
 
 // `Omit<Unavailability, 'id'>` collapses a discriminated union (Omit is not
 // distributive: the variant-specific fields are lost). This distributes it so

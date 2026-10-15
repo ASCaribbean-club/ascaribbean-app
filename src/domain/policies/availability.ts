@@ -14,8 +14,8 @@ import { can } from './can'
 // expectedReturnOn / liftedOn day the person is available again. These
 // policies never read the clock — `now` is always a parameter.
 
-export type AvailabilityStatus = 'available' | 'medical' | 'suspended'
-export type TeammateAvailabilityStatus = 'available' | 'unavailable' | 'suspended'
+export type AvailabilityStatus = 'available' | 'medical' | 'suspended' | 'absent'
+export type TeammateAvailabilityStatus = 'available' | 'unavailable' | 'suspended' | 'absent'
 
 export function toLocalIsoDate(now: Date): IsoDate {
   const y = String(now.getFullYear()).padStart(4, '0')
@@ -25,11 +25,17 @@ export function toLocalIsoDate(now: Date): IsoDate {
 }
 
 export function isUnavailabilityActive(u: Unavailability, now: Date): boolean {
-  const today = toLocalIsoDate(now)
+  return isUnavailabilityActiveOn(u, toLocalIsoDate(now))
+}
+
+// Same rule evaluated on an arbitrary calendar day: a convocation is for a
+// future date, so "is this player out for it" is asked on that day, not today.
+export function isUnavailabilityActiveOn(u: Unavailability, today: IsoDate): boolean {
   if (u.startsOn > today) return false
 
   switch (u.kind) {
     case 'medical':
+    case 'absence':
       return u.expectedReturnOn === null || today < u.expectedReturnOn
     case 'suspension':
       return u.liftedOn === null || today < u.liftedOn
@@ -47,6 +53,7 @@ export function getAvailabilityStatus(list: Unavailability[], now: Date): Availa
   // "Priorité médical / suspension".
   if (active.some((u) => u.kind === 'medical')) return 'medical'
   if (active.some((u) => u.kind === 'suspension')) return 'suspended'
+  if (active.some((u) => u.kind === 'absence')) return 'absent'
   return 'available'
 }
 
@@ -60,6 +67,8 @@ export function toTeammateStatus(status: AvailabilityStatus): TeammateAvailabili
       return 'unavailable'
     case 'suspended':
       return 'suspended'
+    case 'absent':
+      return 'absent'
     default: {
       const unreachable: never = status
       return unreachable
@@ -68,8 +77,8 @@ export function toTeammateStatus(status: AvailabilityStatus): TeammateAvailabili
 }
 
 // Who may write which kind (declare / edit / lift). Medical needs
-// 'availability:declare' (coach, own team); a suspension is also open to the
-// Dirigeant habilité, club-wide. UX + use-case guard — RLS is the real gate.
+// 'availability:declare' (coach, own team); a suspension or an absence is also
+// open to the Dirigeant habilité, club-wide (neither is health data). UX + use-case guard — RLS is the real gate.
 export function canWriteUnavailability(user: User, kind: Unavailability['kind'], teamId: string): boolean {
   if (kind === 'medical') return can(user, 'availability:declare', { teamId })
   return can(user, 'availability:declare', { teamId }) || can(user, 'availability:declare-suspension', { teamId })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { MedicalUnavailability, SuspensionUnavailability } from '@domain/entities/unavailability'
-import { getAvailabilityStatus, isUnavailabilityActive, toTeammateStatus } from '@domain/policies/availability'
+import type { AbsenceUnavailability, MedicalUnavailability, SuspensionUnavailability } from '@domain/entities/unavailability'
+import { getAvailabilityStatus, isUnavailabilityActive, isUnavailabilityActiveOn, toTeammateStatus } from '@domain/policies/availability'
 
 // Local-time constructor: the policy compares the device's local calendar day.
 const day = (iso: string) => {
@@ -15,6 +15,30 @@ function medical(startsOn: string, expectedReturnOn: string | null): MedicalUnav
 function suspension(startsOn: string, liftedOn: string | null): SuspensionUnavailability {
   return { id: 's1', userId: 'u1', kind: 'suspension', startsOn, liftedOn, matchCount: 2, reason: null, declaredBy: 'c1', declaredAt: '2026-09-01T08:00:00Z' }
 }
+
+function absence(startsOn: string, expectedReturnOn: string | null): AbsenceUnavailability {
+  return { id: 'a1', userId: 'u1', kind: 'absence', startsOn, expectedReturnOn, reason: 'En vacances', declaredBy: 'c1', declaredAt: '2026-09-01T08:00:00Z' }
+}
+
+describe('isUnavailabilityActiveOn (absence)', () => {
+  const vacation = absence('2026-10-20', '2026-10-27')
+  it('is evaluated on the given day: inclusive start, exclusive return', () => {
+    expect(isUnavailabilityActiveOn(vacation, '2026-10-19')).toBe(false)
+    expect(isUnavailabilityActiveOn(vacation, '2026-10-20')).toBe(true)
+    expect(isUnavailabilityActiveOn(vacation, '2026-10-26')).toBe(true)
+    expect(isUnavailabilityActiveOn(vacation, '2026-10-27')).toBe(false)
+  })
+  it('with no end date stays active indefinitely', () => {
+    expect(isUnavailabilityActiveOn(absence('2026-10-20', null), '2030-01-01')).toBe(true)
+  })
+  it('ranks below medical and suspension, above available', () => {
+    const now = day('2026-10-22')
+    expect(getAvailabilityStatus([vacation], now)).toBe('absent')
+    expect(getAvailabilityStatus([vacation, suspension('2026-10-01', null)], now)).toBe('suspended')
+    expect(getAvailabilityStatus([vacation, medical('2026-10-01', null)], now)).toBe('medical')
+    expect(toTeammateStatus('absent')).toBe('absent')
+  })
+})
 
 describe('isUnavailabilityActive', () => {
   describe.each([

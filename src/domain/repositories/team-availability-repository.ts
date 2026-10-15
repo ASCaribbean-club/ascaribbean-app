@@ -10,16 +10,20 @@ import type { AvailabilityStatus, TeammateAvailabilityStatus } from '@domain/pol
 export interface TeamAvailabilityRow {
   userId: string
   displayName: string
-  // Coach caller: 'available' | 'medical' | 'suspended'.
-  // Player caller: 'available' | 'unavailable' | 'suspended'.
+  // Coach caller: 'available' | 'medical' | 'suspended' | 'absent'.
+  // Player caller: 'available' | 'unavailable' | 'suspended' | 'absent'.
   status: AvailabilityStatus | TeammateAvailabilityStatus
   startsOn: IsoDate | null
   // expectedReturnOn / liftedOn — exclusive bound.
   endsOn: IsoDate | null
+  // 'absent' only — why the person is out. Not health data.
+  reason: string | null
 }
 
 export interface TeamAvailabilityRepository {
   // An out-of-scope teamId resolves to [] (no existence leak), same shape as
   // TeamRosterRepository.listPlayers.
-  listForTeam(teamId: string): Promise<TeamAvailabilityRow[]>
+  // `on` = the calendar day the status is evaluated for (a convocation's day);
+  // omitted = today.
+  listForTeam(teamId: string, on?: IsoDate): Promise<TeamAvailabilityRow[]>
 }

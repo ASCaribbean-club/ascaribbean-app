@@ -23,7 +23,7 @@ export default defineConfig({
         test: {
           name: 'domain-data',
           environment: 'node',
-          include: ['src/domain/**/*.test.ts', 'src/data/**/*.test.ts'],
+          include: ['src/domain/**/*.test.ts', 'src/data/**/*.test.ts', 'supabase/functions/_shared/**/*.test.ts'],
           // *.rls.test.ts needs a running local Supabase stack (`supabase
           // start`) — excluded from the default project list, run instead
           // via the separate `rls` project below (`npm run test:rls`).

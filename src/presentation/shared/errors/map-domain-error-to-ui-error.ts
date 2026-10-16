@@ -22,6 +22,10 @@ import { InvalidCoachAssignmentInputError } from '@domain/errors/invalid-coach-a
 import { InvalidAuditLogFiltersError } from '@domain/errors/invalid-audit-log-filters-error'
 import { InvalidCredentialsError } from '@domain/errors/invalid-credentials-error'
 import { InvalidLegacyInputError } from '@domain/errors/invalid-legacy-input-error'
+import { LegacyDateOutsideSeasonError } from '@domain/errors/legacy-date-outside-season-error'
+import { LegacyPointsOutOfRangeError } from '@domain/errors/legacy-points-out-of-range-error'
+import { LegacyChosenSeasonNotConfiguredError } from '@domain/errors/legacy-chosen-season-not-configured-error'
+import { LegacyReasonRequiredError } from '@domain/errors/legacy-reason-required-error'
 import { LegacySeasonNotConfiguredError } from '@domain/errors/legacy-season-not-configured-error'
 import { InvalidMembershipInputError } from '@domain/errors/invalid-membership-input-error'
 import { InvalidOpponentInputError } from '@domain/errors/invalid-opponent-input-error'
@@ -66,6 +70,8 @@ import type { UiError } from './ui-error'
 // the form is still open, §5, no error/mutation involved at all). Exported
 // so the second call site reuses this exact string rather than a
 // hand-copied duplicate that could drift from this one.
+import { formatFullDate } from '@presentation/shared/formatters/club-date'
+
 export const MATCH_ARRANGEMENTS_WINDOW_CLOSED_MESSAGE = 'Le coup d’envoi est passé, ces informations ne sont plus modifiables.'
 
 // specs/match-details-missions.md UI design "Échéance dépassée" — one string
@@ -582,6 +588,15 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
   // (empty label, capacity outside 1..3), same reasoning as the branches above.
   // docs/specs/asc-legacy.md §4.9/§4.10 — an invalid tier ladder, manual award or
   // correction, rejected from domain/ before any network call.
+  // PO-LPC-03 — checked before its parent class below.
+  if (error instanceof LegacyChosenSeasonNotConfiguredError) {
+    return {
+      message: 'La saison sélectionnée n’est pas configurée (mode de points et paliers). Configurez-la avant d’enregistrer un rattrapage.',
+      variant: 'inline',
+      retryable: false,
+    }
+  }
+
   // PO-LG-16 — the date of the fact is in a season with no Legacy configuration.
   if (error instanceof LegacySeasonNotConfiguredError) {
     return {
@@ -589,6 +604,31 @@ export function mapDomainErrorToUiError(error: unknown): UiError {
       variant: 'inline',
       retryable: false,
     }
+  }
+
+  // docs/specs/legacy-points-catchup.md §7.5 / OPEN-LPC-06 — explicit refusals,
+  // checked BEFORE the generic InvalidLegacyInputError (they are subclasses).
+  if (error instanceof LegacyDateOutsideSeasonError) {
+    return {
+      message: `La date choisie n’appartient pas à la saison sélectionnée (${formatFullDate(error.startDate)} – ${formatFullDate(error.endDate)}).`,
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof LegacyPointsOutOfRangeError) {
+    return {
+      message:
+        error.action === 'points_catchup'
+          ? `Le rattrapage doit être un nombre entier de points entre ${error.min} et ${error.max}.`
+          : `Les points doivent être un nombre entier entre ${error.min} et ${error.max}.`,
+      variant: 'inline',
+      retryable: true,
+    }
+  }
+
+  if (error instanceof LegacyReasonRequiredError) {
+    return { message: 'Le motif est obligatoire.', variant: 'inline', retryable: true }
   }
 
   if (error instanceof InvalidLegacyInputError) {

@@ -78,6 +78,7 @@ function AwardPointsDialogContent({ players, rules, onClose }: Omit<AwardPointsD
               onChange={(event) => vm.setEarnedOn(event.target.value)}
               className="h-11 min-w-0 rounded-xl"
             />
+            {vm.selectedSeasonRangeLabel && <p className="text-xs text-muted-foreground">{vm.selectedSeasonRangeLabel}</p>}
           </div>
 
           <div className="flex min-w-0 flex-col gap-1.5">
@@ -101,15 +102,36 @@ function AwardPointsDialogContent({ players, rules, onClose }: Omit<AwardPointsD
             </p>
           </div>
 
+          {vm.isCatchup && (
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <Label htmlFor="award-season" className={LABEL}>
+                Saison
+              </Label>
+              <Select value={vm.seasonId} onValueChange={vm.setSeasonId} disabled={vm.isSubmitting}>
+                <SelectTrigger id="award-season" className="h-11 w-full min-w-0 rounded-xl">
+                  <SelectValue placeholder="Choisir une saison" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vm.seasonOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">La date du fait doit appartenir à cette saison.</p>
+            </div>
+          )}
+
           {vm.isVariable && (
             <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="award-points" className={LABEL}>
-                Points (0 à {vm.maxPoints})
+                Points ({vm.minPoints} à {vm.maxPoints})
               </Label>
               <Input
                 id="award-points"
                 type="number"
-                min="0"
+                min={vm.minPoints}
                 max={vm.maxPoints ?? undefined}
                 step="1"
                 inputMode="numeric"
@@ -133,6 +155,7 @@ function AwardPointsDialogContent({ players, rules, onClose }: Omit<AwardPointsD
               disabled={vm.isSubmitting}
               value={vm.reason}
               onChange={(event) => vm.setReason(event.target.value)}
+              placeholder={vm.isCatchup ? 'Ex. : saison précédente' : undefined}
               className="min-h-20 min-w-0 rounded-xl"
             />
             <p className="text-xs text-muted-foreground">Visible par le joueur dans son historique.</p>

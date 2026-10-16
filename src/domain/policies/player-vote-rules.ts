@@ -23,9 +23,10 @@ export function isVotingOpen(kickoff: Date, now: Date): boolean {
  * kickoff + VOTING_DEADLINE_START_OFFSET_HOURS (end of the match, roughly).
  * Used by the dashboard reminder AND enforced by CastVoteUseCase; mirrored
  * manually in the votes_insert_cast / votes_update_cast RLS policies
- * (supabase/migrations/20261012090240_votes_closing_window.sql).
+ * (supabase/migrations/20261012090240_votes_closing_window.sql, moved from 3 to 2 days by
+ * 20261016193133_votes_deadline_two_days.sql).
  */
-export const VOTING_DEADLINE_DAYS = 3
+export const VOTING_DEADLINE_DAYS = 2
 export const VOTING_DEADLINE_START_OFFSET_HOURS = 1
 
 const HOUR_MS = 60 * 60 * 1000

@@ -21,7 +21,7 @@ Le push est un **complément** : il n'est jamais garanti (téléphone éteint, p
 | T2 | Convocation sans réponse | Joueurs convoqués n'ayant pas répondu | 24 h avant un match ou une réunion, 12 h avant un entraînement | Push |
 | T3 | Relance de cotisation | Le membre relancé par le trésorier | Au moment de la relance manuelle (sans montant dans le push) | Push |
 | T4 | Mise à jour disponible + nouveautés | Tous | Au premier lancement après la mise à jour | In-app uniquement |
-| T5 | Annonce de l'homme du match | Joueurs et coachs de l'équipe + tous les dirigeants habilités | Une fois le vote clos (coup d'envoi + 1 h + 3 jours), s'il y a au moins un vote | Push |
+| T5 | Annonce de l'homme du match | Joueurs et coachs de l'équipe + tous les dirigeants habilités | Une fois le vote clos (coup d'envoi + 1 h + 2 jours), s'il y a au moins un vote | Push |
 
 Ton : court, léger, au plus un emoji, jamais culpabilisant. Les textes sont définis à **un seul endroit** : `supabase/functions/_shared/push-messages.ts`.
 
@@ -167,7 +167,7 @@ gantt
     Coup d'envoi                            :milestone, 2026-01-10 20:00, 0h
     section Vote homme du match
     T1 ouverture (coup d'envoi + 1 h)      :milestone, 2026-01-10 21:00, 0h
-    Fenêtre de vote (3 jours)               :2026-01-10 21:00, 72h
+    Fenêtre de vote (2 jours)               :2026-01-10 21:00, 48h
     T1 rappel (24 h avant la clôture)      :milestone, 2026-01-12 21:00, 0h
     section Résultat
     T5 annonce (clôture)                    :milestone, 2026-01-13 21:00, 0h

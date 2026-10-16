@@ -19,10 +19,10 @@ describe('isVotingOpen', () => {
 
 describe('isVotingClosed', () => {
   const kickoff = new Date('2026-10-10T15:00:00.000Z')
-  // deadline = kickoff + 1h + 3 days
+  // deadline = kickoff + 1h + 2 days
   it('is false until the deadline and true from the deadline on (strict boundary)', () => {
-    expect(isVotingClosed(kickoff, new Date('2026-10-13T15:59:59.000Z'))).toBe(false)
-    expect(isVotingClosed(kickoff, new Date('2026-10-13T16:00:00.000Z'))).toBe(true)
+    expect(isVotingClosed(kickoff, new Date('2026-10-12T15:59:59.000Z'))).toBe(false)
+    expect(isVotingClosed(kickoff, new Date('2026-10-12T16:00:00.000Z'))).toBe(true)
   })
 })
 
@@ -34,17 +34,16 @@ describe('getVotingDaysRemaining', () => {
     expect(getVotingDaysRemaining(kickoff, kickoff)).toBeNull()
   })
 
-  it('stays at 3 days during the first hour after kickoff, then rounds partial days up', () => {
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T15:00:01.000Z'))).toBe(3)
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T16:00:00.000Z'))).toBe(3)
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T16:00:01.000Z'))).toBe(3)
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-11T16:00:01.000Z'))).toBe(2)
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-12T16:00:01.000Z'))).toBe(1)
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-13T15:00:00.000Z'))).toBe(1)
+  it('stays at 2 days during the first hour after kickoff, then rounds partial days up', () => {
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T15:00:01.000Z'))).toBe(2)
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T16:00:00.000Z'))).toBe(2)
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-10T16:00:01.000Z'))).toBe(2)
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-11T16:00:01.000Z'))).toBe(1)
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-12T15:00:00.000Z'))).toBe(1)
   })
 
   it('is null once the deadline has passed', () => {
-    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-13T16:00:00.000Z'))).toBeNull()
+    expect(getVotingDaysRemaining(kickoff, new Date('2026-10-12T16:00:00.000Z'))).toBeNull()
     expect(getVotingDaysRemaining(kickoff, new Date('2026-10-20T15:00:00.000Z'))).toBeNull()
   })
 })

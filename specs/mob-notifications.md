@@ -37,7 +37,7 @@ C'est la feature que `specs/coach-alerts.md` §1 renvoie à « une autre feature
 
 | Alerte | Surface in-app existante | Règle source |
 |---|---|---|
-| Vote homme du match non exprimé | `PendingVoteAlert` (tableau de bord joueur), via `GetPendingVoteReminderUseCase` | `player-vote-rules.ts` : vote ouvert après le coup d'envoi, clôture à coup d'envoi + `VOTING_DEADLINE_START_OFFSET_HOURS` (1 h) + `VOTING_DEADLINE_DAYS` (3 j) |
+| Vote homme du match non exprimé | `PendingVoteAlert` (tableau de bord joueur), via `GetPendingVoteReminderUseCase` | `player-vote-rules.ts` : vote ouvert après le coup d'envoi, clôture à coup d'envoi + `VOTING_DEADLINE_START_OFFSET_HOURS` (1 h) + `VOTING_DEADLINE_DAYS` (2 j) |
 | Homme du match désigné | Étoile du joueur du match, via `GetTeamMvpUseCase` → `get_team_mvp` | Dernier match **clos** de l'équipe ayant reçu au moins un vote ; candidat(s) le(s) plus voté(s) ; **égalité = tous les ex æquo** |
 | Relance de cotisation | `DuesReminderBanner` (tête du Dashboard, tous rôles) | `mobile-treasurer.md` amendement (4) §H, `isDuesAlertVisible` |
 | Actions coach (présences, score, buteurs) | Écran Alertes coach | `coach-alerts.md` signaux A, B, C |
@@ -54,10 +54,10 @@ C'est la feature que `specs/coach-alerts.md` §1 renvoie à « une autre feature
 
 | # | Déclencheur | Destinataire | Condition, évaluée **au moment de l'envoi** | Moment |
 |---|---|---|---|---|
-| **T1** | Vote homme du match non exprimé | Joueur·euse de l'équipe du match (votants = tous les joueurs de l'équipe, PO-CPS-09 — pas seulement les convoqués) | `type = 'match'`, non annulé, fenêtre de vote ouverte (`isVotingOpen` et non `isVotingClosed`), aucun vote de ce compte dans la catégorie `man_of_the_match` | **Deux moments (PO-NT-03 résolu)** : (1) à l'**ouverture du vote** ; (2) **24 h avant la clôture** (clôture = coup d'envoi + 1 h + 3 j, donc coup d'envoi + 1 h + 2 j). **Deux push au plus** par personne et par vote. L'instant exact d'« ouverture » : PO-NT-28 |
+| **T1** | Vote homme du match non exprimé | Joueur·euse de l'équipe du match (votants = tous les joueurs de l'équipe, PO-CPS-09 — pas seulement les convoqués) | `type = 'match'`, non annulé, fenêtre de vote ouverte (`isVotingOpen` et non `isVotingClosed`), aucun vote de ce compte dans la catégorie `man_of_the_match` | **Deux moments (PO-NT-03 résolu)** : (1) à l'**ouverture du vote** ; (2) **24 h avant la clôture** (clôture = coup d'envoi + 1 h + 2 j, donc coup d'envoi + 1 h + 1 j). **Deux push au plus** par personne et par vote. L'instant exact d'« ouverture » : PO-NT-28 |
 | **T2** | Convocation sans réponse | Convoqué·e (ligne `convocation_attendees`), sans ligne `convocation_responses` | `status = 'open'`, non annulée, `canPlayerRespond` encore vrai, aucune réponse | **Match et réunion : coup d'envoi − 24 h. Entraînement : début − 12 h** (demande développeuse) |
 | **T3** | Relance de cotisation | Titulaire de l'adhésion (`memberships.user_id`), quel que soit son rôle | Résultat `'sent'` de `send_dues_reminders()` (règles de `mobile-treasurer` §B inchangées, dont le délai de 7 jours) | À l'envoi par le Trésorier |
-| **T5** | Annonce de l'homme du match | **Joueurs et coachs de l'équipe du match + tous les Dirigeants habilités, toutes équipes** (PO-NT-22 résolu) | `type = 'match'`, non annulé, vote clos (`isVotingClosed`), **au moins un vote** dans la catégorie. Lauréat(s) = règle de `get_team_mvp` | À la clôture du vote (coup d'envoi + 1 h + 3 j), au prochain passage du job |
+| **T5** | Annonce de l'homme du match | **Joueurs et coachs de l'équipe du match + tous les Dirigeants habilités, toutes équipes** (PO-NT-22 résolu) | `type = 'match'`, non annulé, vote clos (`isVotingClosed`), **au moins un vote** dans la catégorie. Lauréat(s) = règle de `get_team_mvp` | À la clôture du vote (coup d'envoi + 1 h + 2 j), au prochain passage du job |
 
 4. **Un journal d'envoi** (idempotence). Clé = (compte, convocation, déclencheur, **étape**) :
    - **T1** : deux étapes, « ouverture » et « avant clôture ». Au plus **un** push par étape, donc **deux au plus** par (compte, match).
@@ -133,7 +133,7 @@ Cette règle n'a **aucune limite de nombre** : elle tourne à chaque lancement c
 - **Match annulé** entre les deux étapes : aucun second push.
 - **Joueur ajouté à l'équipe** pendant la fenêtre : il reçoit les étapes encore à venir, jamais une étape déjà passée en rattrapage.
 - ⚠️ **Instant d'« ouverture » — à préciser, sans bloquer** : `isVotingOpen` ouvre le vote **dès le coup d'envoi**, donc pendant le match. Un push à cet instant tomberait pendant que les joueurs jouent. `player-vote-rules.ts` décrit par ailleurs coup d'envoi + `VOTING_DEADLINE_START_OFFSET_HOURS` (1 h) comme « la fin du match, à peu près ». **PO-NT-28**, défaut : premier push à coup d'envoi + 1 h. La règle d'ouverture du vote elle-même (`isVotingOpen`) **n'est pas modifiée**.
-- **Fenêtre** : avec une clôture à coup d'envoi + 1 h + 3 j, les deux étapes sont espacées d'environ 2 jours. Les deux constantes restent dans `domain/policies/`, miroir SQL manuel.
+- **Fenêtre** : avec une clôture à coup d'envoi + 1 h + 2 j, les deux étapes sont espacées d'environ 1 jour. Les deux constantes restent dans `domain/policies/`, miroir SQL manuel.
 
 ### Tuile « Paramètres » et écran Paramètres
 
@@ -174,7 +174,7 @@ Cette règle n'a **aucune limite de nombre** : elle tourne à chaque lancement c
 
 ### T5 — Annonce de l'homme du match
 
-**Règle de lauréat — réemployée, jamais redéfinie.** `get_team_mvp` (`20261012093753_get_team_mvp_rpc.sql`) fixe déjà : clôture = coup d'envoi + 1 h + 3 j (miroir manuel de `getVotingDeadline`), candidat(s) au plus grand nombre de votes, **égalité = tous les ex æquo**, aucun lauréat si aucun vote. T5 applique cette règle **au match qui vient de clore**, pas « au dernier match clos » de l'équipe : un match plus ancien clos en retard ne doit pas être annoncé à la place. La logique de sélection doit donc être factorisée (même règle, deux usages), jamais recopiée.
+**Règle de lauréat — réemployée, jamais redéfinie.** `get_team_mvp` (`20261012093753_get_team_mvp_rpc.sql`) fixe déjà : clôture = coup d'envoi + 1 h + 2 j (miroir manuel de `getVotingDeadline`), candidat(s) au plus grand nombre de votes, **égalité = tous les ex æquo**, aucun lauréat si aucun vote. T5 applique cette règle **au match qui vient de clore**, pas « au dernier match clos » de l'équipe : un match plus ancien clos en retard ne doit pas être annoncé à la place. La logique de sélection doit donc être factorisée (même règle, deux usages), jamais recopiée.
 
 **Destinataires — décision développeuse (2026-10-15), PO-NT-22 résolu** :
 
@@ -472,7 +472,7 @@ Purge par job planifié Supabase, **aucune logique d'expiration dans `domain/`**
 | PO-NT-06 | **In-app pour T2** : bandeau dédié « convocation sans réponse » ? | Non : la carte « Prochaine convocation » suffit | Développeuse | Non |
 | PO-NT-07 | **Compte multi-rôles** : un tap sur T1/T2 bascule-t-il le rôle actif sur « Joueur » ? | Non | Développeuse | Non |
 | PO-NT-08 | **Historique** : un écran « Notifications » pour retrouver un push effacé (rejoint PO-TR-12) ? | Non | Développeuse | Non |
-| PO-NT-09 | **Heures de silence** ? T1 (ouverture) et T5 dépendent de l'heure du match : un match à 21 h donne un premier rappel de vote vers 22 h, et une annonce T5 vers 22 h trois jours plus tard | Pas d'heures de silence | Développeuse | Non |
+| PO-NT-09 | **Heures de silence** ? T1 (ouverture) et T5 dépendent de l'heure du match : un match à 21 h donne un premier rappel de vote vers 22 h, et une annonce T5 vers 22 h deux jours plus tard | Pas d'heures de silence | Développeuse | Non |
 | PO-NT-10 | **Candidats « etc. »** (§1 hors périmètre) | Aucun dans cette passe | Développeuse / Bureau | Non |
 | PO-NT-11 | **Textes définitifs** (push, écran Paramètres, alerte d'activation, confirmation de relance du Trésorier). Cadre au §1bis, exemples indicatifs | Exemples du §1bis comme première version ; un seul emoji par écran dans la fenêtre de lancement (choix de conception) | Bureau / développeuse | Non |
 | PO-NT-12 | **RGPD** : services push des éditeurs comme destinataires techniques ; information des membres (texte du « i ») ; consentement | À inscrire au registre de traitement | **Référent RGPD (non désigné)** | Non pour concevoir ni construire. **Avant mise en production** |

@@ -66,9 +66,19 @@ export default defineConfig({
         // Les stratégies runtime (API Supabase, mode dégradé) se spécifient
         // lors du module Calendrier — cf. ARCHITECTURE.md section 14.
         globPatterns: ['**/*.{js,css,html,svg,ico,png}'],
+        // specs/mob-notifications.md §6 note 1 — Web Push handlers
+        // (`push`, `notificationclick`) live in public/push-sw.js and are
+        // pulled into the GENERATED service worker. registerType stays
+        // 'autoUpdate' (PO-NT-17): the update cycle is unchanged.
+        importScripts: ['/push-sw.js'],
       },
     }),
   ],
+  // Tunnel HTTPS (ngrok) pour tester le Web Push sur un téléphone réel : Vite
+  // refuse par défaut les hôtes inconnus.
+  preview: {
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.io'],
+  },
   resolve: {
     alias: {
       '@domain': path.resolve(dirname, 'src/domain'),

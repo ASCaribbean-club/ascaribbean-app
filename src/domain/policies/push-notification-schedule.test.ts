@@ -55,7 +55,7 @@ describe('T1 vote reminder stages', () => {
 
   it('computes the two instants (kickoff + 1h, deadline - 24h)', () => {
     expect(getVoteReminderInstant('opening', kickoff)).toEqual(at(HOUR))
-    expect(getVoteReminderInstant('before_closing', kickoff)).toEqual(at(HOUR + 48 * HOUR))
+    expect(getVoteReminderInstant('before_closing', kickoff)).toEqual(at(HOUR + 24 * HOUR))
   })
 
   it('sends nothing before the opening instant', () => {
@@ -65,16 +65,16 @@ describe('T1 vote reminder stages', () => {
 
   it('sends the opening stage from kickoff + 1h until the second instant', () => {
     expect(getDueVoteReminderStage(input, at(HOUR))).toBe('opening')
-    expect(getDueVoteReminderStage(input, at(HOUR + 48 * HOUR - 1))).toBe('opening')
+    expect(getDueVoteReminderStage(input, at(HOUR + 24 * HOUR - 1))).toBe('opening')
   })
 
   it('sends only the latest stage afterwards (no catch-up)', () => {
-    expect(getDueVoteReminderStage(input, at(HOUR + 48 * HOUR))).toBe('before_closing')
+    expect(getDueVoteReminderStage(input, at(HOUR + 24 * HOUR))).toBe('before_closing')
   })
 
   it('stops at the voting deadline (strict, like isVotingClosed)', () => {
-    expect(getDueVoteReminderStage(input, at(HOUR + 72 * HOUR - 1))).toBe('before_closing')
-    expect(getDueVoteReminderStage(input, at(HOUR + 72 * HOUR))).toBeNull()
+    expect(getDueVoteReminderStage(input, at(HOUR + 48 * HOUR - 1))).toBe('before_closing')
+    expect(getDueVoteReminderStage(input, at(HOUR + 48 * HOUR))).toBeNull()
   })
 
   it('sends nothing when already voted or cancelled', () => {
@@ -84,7 +84,7 @@ describe('T1 vote reminder stages', () => {
 })
 
 describe('T5 announcement', () => {
-  const deadlineOffset = HOUR + 72 * HOUR
+  const deadlineOffset = HOUR + 48 * HOUR
   const input = { kickoff, isCancelled: false, voteCount: 3 }
 
   it('is due from the closing instant', () => {

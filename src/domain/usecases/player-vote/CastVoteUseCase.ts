@@ -30,7 +30,7 @@ export interface CastVoteInput {
 // PO-PV-06(d) is now resolved (2026-09-29, developer decision): voting
 // opens once the match kicks off — see isVotingOpen/VotingNotOpenError
 // below. The CLOSING half is resolved too (2026-10-12, developer decision):
-// kickoff + 1h + 3 days — see isVotingClosed/VotingClosedError.
+// kickoff + 1h + 2 days — see isVotingClosed/VotingClosedError.
 //
 // PO-PV-10b (self-voting) is resolved (2026-09-16, developer decision):
 // NOT permitted. Enforced both here (ForbiddenError, so the candidate list
@@ -61,7 +61,7 @@ export class CastVoteUseCase {
       throw new VotingNotOpenError(`Voting is not open yet for convocation ${input.convocationId}.`)
     }
 
-    // PO-PV-06 closing half (2026-10-12): kickoff + 1h + 3 days.
+    // PO-PV-06 closing half (2026-10-12): kickoff + 1h + 2 days.
     if (isVotingClosed(new Date(convocation.date), input.now)) {
       throw new VotingClosedError(`Voting is closed for convocation ${input.convocationId}.`)
     }

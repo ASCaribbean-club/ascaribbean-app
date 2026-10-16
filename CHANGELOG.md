@@ -3,6 +3,25 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [1.1.0] — 2026-10-16
+
+### Web
+**Administrateur**
+- ASC Legacy : les points de rattrapage s'attribuent sur la saison choisie, avec un minimum de 1 point.
+
+### Mobile
+**Joueur**
+- Notifications : activation des notifications dans l'application, avec des réglages pour choisir celles que l'on reçoit.
+- Notifications : un rappel pour répondre à une convocation, un rappel pour voter, et l'annonce du joueur du match.
+- Votes : le vote se ferme désormais 2 jours après le coup d'envoi, plus une heure (au lieu de 3 jours).
+
+**Coach**
+- Disponibilités : déclaration d'une absence avec sa raison (vacances, travail…), visible dans la liste de l'équipe.
+- Convocations : les joueurs indisponibles le jour du match sont signalés et ne peuvent plus être convoqués par erreur.
+
+**Dirigeant habilité**
+- Disponibilités : déclaration d'une absence avec sa raison, comme pour une suspension.
+
 ## [1.0.0] — 2026-10-14
 
 ### Web

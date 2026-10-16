@@ -14,6 +14,8 @@ export const LEGACY_ACTIONS = [
   'partner_contribution',
   'exceptional_commitment',
   'season_end_bonus',
+  // docs/specs/legacy-points-catchup.md PO-LPC-01 — manual, variable 1..300.
+  'points_catchup',
 ] as const
 
 export type LegacyAction = (typeof LEGACY_ACTIONS)[number]
@@ -31,7 +33,7 @@ export interface LegacyRule {
   channel: LegacyChannel
   pointsKind: LegacyPointsKind
   points: number | null // fixed rule
-  maxPoints: number | null // variable rule (minimum is 0)
+  maxPoints: number | null // variable rule (minimum: see legacyMinimumPoints)
   reasonRequired: boolean
   validFrom: string
   validTo: string | null

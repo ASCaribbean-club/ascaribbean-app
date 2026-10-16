@@ -1,9 +1,10 @@
-import { IconAward, IconCoins, IconChartBar, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
+import { IconAward, IconCoins, IconChartBar, IconSettings, IconTrophy, IconUsers, IconWallet } from '@tabler/icons-react'
 import { ChangelogDialog } from './components/ChangelogDialog'
 import { ExternalLinkRow } from './components/ExternalLinkRow'
 import { LogoutButton } from './components/LogoutButton'
 import { MenuNavCard } from './components/MenuNavCard'
-import { MenuSectionTitle } from './components/MenuSectionTitle'
+import { MenuNavRow } from './components/MenuNavRow'
+import { MenuSectionTitle } from '@presentation/shared/components/MenuSectionTitle'
 import { VersionFooter } from './components/VersionFooter'
 import { CLUB_ADMINISTRATION_LINKS, MENU_EXTERNAL_LINKS } from './external-links'
 import { useMenuViewModel } from './useMenuViewModel'
@@ -83,6 +84,13 @@ export function MenuPage() {
             <ExternalLinkRow key={link.title} link={link} onOpen={vm.onOpenExternalLink} />
           ))}
         </div>
+      </section>
+
+      {/* "APPLICATION" — specs/mob-notifications.md AC-NT-32: last tile, same
+          for the 8 roles, no can() and no query. */}
+      <section className="flex flex-col gap-2.5">
+        <MenuSectionTitle>Application</MenuSectionTitle>
+        <MenuNavRow icon={IconSettings} title="Paramètres" subtitle="Notifications" to="/settings" />
       </section>
 
       <LogoutButton onLogout={vm.onLogout} />

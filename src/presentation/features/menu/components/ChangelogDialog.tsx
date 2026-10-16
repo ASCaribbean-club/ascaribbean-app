@@ -1,6 +1,7 @@
 import changelogMarkdown from '/CHANGELOG.md?raw'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@presentation/shared/components/ui/dialog'
-import { parseMobileChangelog } from '../changelog/parse-changelog'
+import { ReleaseNotesList } from '@presentation/shared/components/ReleaseNotesList'
+import { parseMobileChangelog } from '@presentation/shared/changelog/parse-changelog'
 
 interface ChangelogDialogProps {
   open: boolean
@@ -19,25 +20,7 @@ export function ChangelogDialog({ open, onOpenChange }: ChangelogDialogProps) {
           <DialogTitle>Changements par version</DialogTitle>
           <DialogDescription>Ce qui a changé à chaque version de l'application.</DialogDescription>
         </DialogHeader>
-        <div className="flex min-h-0 flex-col gap-5 overflow-y-auto pr-1">
-          {releases.map((release) => (
-            <section key={release.version} className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold">
-                Version {release.version} <span className="font-normal text-muted-foreground">· {release.date}</span>
-              </h3>
-              {release.groups.map((group) => (
-                <div key={group.role ?? 'all'} className="flex flex-col gap-1">
-                  {group.role && <p className="text-xs font-medium text-muted-foreground">{group.role}</p>}
-                  <ul className="list-disc space-y-1 pl-4">
-                    {group.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </section>
-          ))}
-        </div>
+        <ReleaseNotesList releases={releases} />
       </DialogContent>
     </Dialog>
   )

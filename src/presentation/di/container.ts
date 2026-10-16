@@ -22,6 +22,7 @@ import { createNewsContainer, type NewsContainer } from './containers/news-conta
 import { createObservabilityContainer, type ObservabilityContainer } from './containers/observability-container'
 import { createPlayerDashboardContainer, type PlayerDashboardContainer } from './containers/player-dashboard-container'
 import { createPlayerStatsContainer, type PlayerStatsContainer } from './containers/player-stats-container'
+import { createPushNotificationsContainer, type PushNotificationsContainer } from './containers/push-notifications-container'
 import { createProfileContainer, type ProfileContainer } from './containers/profile-container'
 import { createSeasonsContainer, type SeasonsContainer } from './containers/seasons-container'
 import { createSectionAndTeamsContainer, type SectionAndTeamsContainer } from './containers/section-and-teams-container'
@@ -52,6 +53,7 @@ export interface Container {
   playerDashboard: PlayerDashboardContainer
   playerStats: PlayerStatsContainer
   profile: ProfileContainer
+  pushNotifications: PushNotificationsContainer
   seasons: SeasonsContainer
   sectionAndTeams: SectionAndTeamsContainer
   teamAvailability: TeamAvailabilityContainer
@@ -83,6 +85,7 @@ export function createContainer(): Container {
     playerDashboard: createPlayerDashboardContainer(supabaseClient),
     playerStats: createPlayerStatsContainer(supabaseClient),
     profile: createProfileContainer(supabaseClient),
+    pushNotifications: createPushNotificationsContainer(supabaseClient),
     seasons: createSeasonsContainer(supabaseClient),
     sectionAndTeams: createSectionAndTeamsContainer(supabaseClient),
     teamAvailability: createTeamAvailabilityContainer(supabaseClient),

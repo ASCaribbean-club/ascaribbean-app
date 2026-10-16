@@ -8,6 +8,9 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY: string
   // Clé projet PostHog (`phc_…`) : publique par conception, seule clé PostHog
   // autorisée en VITE_. Absente → observabilité muette.
+  // Clé VAPID PUBLIQUE (Web Push) : seule moitié de la paire autorisée en VITE_.
+  // La clé privée est un secret de l'Edge Function send-push, JAMAIS en VITE_.
+  readonly VITE_VAPID_PUBLIC_KEY?: string
   readonly VITE_POSTHOG_KEY?: string
   readonly VITE_POSTHOG_HOST?: string
 }

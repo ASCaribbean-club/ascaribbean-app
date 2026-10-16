@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { LegacyRule, LegacyTier, LegacyTierInput } from '@domain/entities/legacy'
 import { InvalidLegacyInputError } from '@domain/errors/invalid-legacy-input-error'
+import { LegacyPointsOutOfRangeError } from '@domain/errors/legacy-points-out-of-range-error'
+import { LegacyReasonRequiredError } from '@domain/errors/legacy-reason-required-error'
 import {
   actionForConvocation,
   computeBalance,
@@ -15,6 +17,7 @@ import {
   validateCorrection,
   validateLegacyTiers,
   validateManualAward,
+  legacyMinimumPoints,
 } from './legacy-rules'
 
 function rule(overrides: Partial<LegacyRule> = {}): LegacyRule {
@@ -312,10 +315,39 @@ describe('validateManualAward', () => {
     expect(() => validateManualAward({ rule: variable, ...base, points: 51 })).toThrow(InvalidLegacyInputError)
     expect(() => validateManualAward({ rule: variable, ...base, points: -1 })).toThrow(InvalidLegacyInputError)
   })
+  it('keeps 0 valid for exceptional_commitment (AC-LPC-10)', () => {
+    const variable = manualRule({ action: 'exceptional_commitment', pointsKind: 'variable', points: null, maxPoints: 50 })
+    expect(() => validateManualAward({ rule: variable, ...base, points: 0 })).not.toThrow()
+  })
+  it('bounds points_catchup to 1..300 (AC-LPC-03, AC-LPC-11)', () => {
+    const catchup = manualRule({ action: 'points_catchup', pointsKind: 'variable', points: null, maxPoints: 300 })
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 0 })).toThrow(LegacyPointsOutOfRangeError)
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 1 })).not.toThrow()
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 300 })).not.toThrow()
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 301 })).toThrow(LegacyPointsOutOfRangeError)
+    expect(() => validateManualAward({ rule: catchup, ...base, points: -5 })).toThrow(LegacyPointsOutOfRangeError)
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 1.5 })).toThrow(LegacyPointsOutOfRangeError)
+  })
+  it('refuses a blank reason on points_catchup with a dedicated error (AC-LPC-04)', () => {
+    const catchup = manualRule({ action: 'points_catchup', pointsKind: 'variable', points: null, maxPoints: 300 })
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 10, reason: ' ' })).toThrow(LegacyReasonRequiredError)
+  })
+  it('refuses a catch-up dated before the rule valid_from', () => {
+    const catchup = manualRule({ action: 'points_catchup', pointsKind: 'variable', points: null, maxPoints: 300, validFrom: '2026-08-01' })
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 10, earnedOn: '2026-07-31' })).toThrow(InvalidLegacyInputError)
+    expect(() => validateManualAward({ rule: catchup, ...base, points: 10, earnedOn: '2026-08-01' })).not.toThrow()
+  })
   it('rejects an empty reason on any manual rule', () => {
     expect(() => validateManualAward({ rule: manualRule(), ...base, reason: '   ' })).toThrow(
       InvalidLegacyInputError,
     )
+  })
+})
+
+describe('legacyMinimumPoints', () => {
+  it('is 1 for points_catchup and 0 for every other action', () => {
+    expect(legacyMinimumPoints({ action: 'points_catchup' })).toBe(1)
+    expect(legacyMinimumPoints({ action: 'exceptional_commitment' })).toBe(0)
   })
 })
 

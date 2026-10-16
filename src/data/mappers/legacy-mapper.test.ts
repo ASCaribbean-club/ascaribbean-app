@@ -80,6 +80,32 @@ describe('toLegacyRule', () => {
   })
 })
 
+describe('toLegacyRule — points_catchup', () => {
+  it('maps the variable manual catch-up rule', () => {
+    const row: LegacyRuleRow = {
+      id: 'r2',
+      action: 'points_catchup',
+      team_type: null,
+      channel: 'manual',
+      points_kind: 'variable',
+      points: null,
+      max_points: 300,
+      reason_required: true,
+      valid_from: '2024-07-01',
+      valid_to: null,
+    }
+    expect(toLegacyRule(row)).toMatchObject({
+      action: 'points_catchup',
+      teamType: null,
+      channel: 'manual',
+      pointsKind: 'variable',
+      points: null,
+      maxPoints: 300,
+      reasonRequired: true,
+    })
+  })
+})
+
 describe('toLegacyManualEntryInsertRow', () => {
   it('maps a manual award to a manual-source row and nothing else', () => {
     expect(

@@ -15,6 +15,7 @@ export const LEGACY_ACTION_LABELS: Record<LegacyAction, string> = {
   partner_contribution: "Apport d'un partenaire / organisation d'événement",
   exceptional_commitment: 'Engagement exceptionnel',
   season_end_bonus: 'Bonus fidélité fin de saison',
+  points_catchup: 'Rattrapage de points',
 }
 
 export const LEGACY_CORRECTION_LABEL = 'Correction'

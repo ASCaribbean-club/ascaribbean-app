@@ -12,6 +12,8 @@ import type {
 } from '@domain/entities/legacy'
 import type { SectionType } from '@domain/entities/section'
 import { InvalidLegacyInputError } from '@domain/errors/invalid-legacy-input-error'
+import { LegacyPointsOutOfRangeError } from '@domain/errors/legacy-points-out-of-range-error'
+import { LegacyReasonRequiredError } from '@domain/errors/legacy-reason-required-error'
 
 /**
  * ASC Legacy reference rules (docs/specs/asc-legacy.md §4).
@@ -26,6 +28,8 @@ import { InvalidLegacyInputError } from '@domain/errors/invalid-legacy-input-err
  *   isSeasonConfigured             private.legacy_season_is_configured
  *   computeSeniority               public.legacy_seniority (20261013134443_legacy_schema.sql)
  *   validateManualAward            private.legacy_manual_award_is_valid + RLS legacy_points_entries_insert_award
+ *   legacyMinimumPoints            private.legacy_manual_award_is_valid (minimum of points_catchup),
+ *                                  supabase/migrations/20261016100000_legacy_points_catchup.sql
  *   validateCorrection             private.legacy_correction_target_matches + RLS legacy_points_entries_insert_correct
  * computeBalance, computeTierStatus and rewardsStatus have no SQL mirror: the
  * balance and tier status are derived at read time and never stored (PO-LG-01).
@@ -278,6 +282,15 @@ export interface ManualAwardInput {
   earnedOn: string
 }
 
+// docs/specs/legacy-points-catchup.md PO-LPC-02 — the minimum of a variable
+// rule is 0 (exceptional_commitment, 0..50) except `points_catchup`, which is
+// 1..300 (a 0-point catch-up is meaningless). Rule-specific branch rather than a
+// generic column, so no schema change on legacy_rules.
+// SQL mirror: private.legacy_manual_award_is_valid (points_catchup -> minimum 1).
+export function legacyMinimumPoints(rule: Pick<LegacyRule, 'action'>): number {
+  return rule.action === 'points_catchup' ? 1 : 0
+}
+
 // §4.9 — there is no input path that creates points without a manual rule
 // (PO-LG-08); a reason is mandatory on every manual award (PO-LG-19).
 export function validateManualAward({ rule, points, reason, earnedOn }: ManualAwardInput): void {
@@ -288,16 +301,22 @@ export function validateManualAward({ rule, points, reason, earnedOn }: ManualAw
     throw new InvalidLegacyInputError('This rule is not valid at the date of the fact')
   }
   if (!Number.isInteger(points)) {
+    if (rule.pointsKind === 'variable') {
+      throw new LegacyPointsOutOfRangeError(rule.action, legacyMinimumPoints(rule), rule.maxPoints ?? 0)
+    }
     throw new InvalidLegacyInputError('Points must be an integer')
   }
   if (rule.pointsKind === 'fixed' && points !== rule.points) {
     throw new InvalidLegacyInputError("Points must match the rule's fixed value")
   }
-  if (rule.pointsKind === 'variable' && (points < 0 || points > (rule.maxPoints ?? 0))) {
-    throw new InvalidLegacyInputError("Points must be between 0 and the rule's maximum")
+  if (
+    rule.pointsKind === 'variable' &&
+    (points < legacyMinimumPoints(rule) || points > (rule.maxPoints ?? 0))
+  ) {
+    throw new LegacyPointsOutOfRangeError(rule.action, legacyMinimumPoints(rule), rule.maxPoints ?? 0)
   }
   if (reason.trim().length === 0) {
-    throw new InvalidLegacyInputError('A reason is required')
+    throw new LegacyReasonRequiredError('A reason is required')
   }
 }
 

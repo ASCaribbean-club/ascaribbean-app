@@ -3,6 +3,11 @@
 //
 // Forme : [ressource, ...discriminants] (ARCHITECTURE.md §6).
 export const queryKeys = {
+  // specs/mob-notifications.md — real state of this device's push switch.
+  // specs/mob-notifications.md AC-NT-37 — result of the one automatic activation attempt.
+  pushOnboarding: (userId: string) => ['push-notifications', userId, 'onboarding'] as const,
+  pushNotificationState: (userId: string) => ['push-notifications', userId, 'state'] as const,
+
   coachTeams: (coachId: string) => ['teams', 'coach', coachId] as const,
   teamUpcomingConvocations: (teamId: string) => ['convocations', 'team', teamId, 'upcoming'] as const,
   teamOpponents: (teamId?: string) => ['opponents', 'team', teamId ?? ''] as const,

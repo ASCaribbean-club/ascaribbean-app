@@ -31,7 +31,7 @@ function convocationWith(overrides: Partial<Convocation> = {}): Convocation {
     id: 'convocation-1',
     teamId: 'team-1',
     type: 'match',
-    date: '2026-09-14T18:00:00.000Z',
+    date: '2026-09-15T18:00:00.000Z',
     location: 'Gymnase',
     trainingLocation: null,
     status: 'open',
@@ -118,7 +118,7 @@ describe('CastVoteUseCase', () => {
     ).rejects.toThrow(VotingNotOpenError)
   })
 
-  // PO-PV-06 closing half, resolved 2026-10-12: kickoff + 1h + 3 days.
+  // PO-PV-06 closing half, resolved 2026-10-12: kickoff + 1h + 2 days.
   it('throws VotingClosedError once the voting deadline has passed', async () => {
     const useCase = new CastVoteUseCase(
       fakeUserRepository(playerUser('team-1')),

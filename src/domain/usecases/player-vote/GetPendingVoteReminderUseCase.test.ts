@@ -42,7 +42,7 @@ describe('GetPendingVoteReminderUseCase', () => {
     const result = await setup([convocation({})]).execute(input)
     expect(result).toEqual({
       convocationId: 'c1',
-      daysRemaining: 3,
+      daysRemaining: 2,
       kickoff: '2026-10-11T15:00:00.000Z',
       opponentName: null,
       goalsFor: null,

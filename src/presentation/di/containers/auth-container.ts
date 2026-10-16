@@ -31,6 +31,7 @@ export function createAuthContainer(supabaseClient: SupabaseClient): AuthContain
     signInWithPasswordUseCase: new SignInWithPasswordUseCase(authRepository),
     updatePasswordUseCase: new UpdatePasswordUseCase(authRepository),
     verifyAuthLinkUseCase: new VerifyAuthLinkUseCase(authRepository),
+    // AC-NT-07: signing out leaves the device push subscription untouched.
     signOutUseCase: new SignOutUseCase(authRepository),
     getCurrentUserUseCase: new GetCurrentUserUseCase(userRepository),
     acceptCharterUseCase: new AcceptCharterUseCase(userRepository),

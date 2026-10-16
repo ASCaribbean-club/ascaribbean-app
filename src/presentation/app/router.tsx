@@ -16,6 +16,9 @@ import { ConvocationDetailPage } from '../features/convocation/ConvocationDetail
 import { CoachAlertsPage } from '../features/coach-alerts/CoachAlertsPage'
 import { PlayerStatsPage } from '../features/player-stats/PlayerStatsPage'
 import { LegacyPage } from '../features/legacy/overview/LegacyPage'
+import { SettingsPage } from '../features/settings/SettingsPage'
+import { PushOnboardingHost } from '../features/push-onboarding/PushOnboardingHost'
+import { WhatsNewHost } from '../features/whats-new/WhatsNewHost'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { LeaderboardPage } from '@presentation/features/leaderboard/LeaderboardPage'
 import { TeamStatsPage } from '../features/coach-team-stats/TeamStatsPage'
@@ -164,6 +167,10 @@ export const router = createBrowserRouter([
                       (AC-DH-15), same scope as ActiveTeamProvider. */}
                   <SectionFilterProvider>
                     <Outlet />
+                    {/* specs/mob-notifications.md T4 — release notes after the autoUpdate reload; mounted only here (session + charter). */}
+                    <WhatsNewHost />
+                    {/* specs/mob-notifications.md AC-NT-37 — one silent default-activation attempt per account+device. */}
+                    <PushOnboardingHost />
                   </SectionFilterProvider>
                 </ActiveTeamProvider>
               </ActiveRoleProvider>
@@ -210,6 +217,8 @@ export const router = createBrowserRouter([
               // group's placement stays uniform, not because the screen
               // needs that context.
               { path: 'profile', element: <ProfilePage /> },
+              // specs/mob-notifications.md AC-NT-33 — pushed Settings route (Notifications section), no BottomNav.
+              { path: 'settings', element: <SettingsPage /> },
               // specs/player-stats.md UI design §1/§2, PO-PS-01/AC-PS-15
               // (résolu 2026-09-28) — reached from Menu's "Statistiques"
               // card for the player active role (MenuPage.tsx now branches

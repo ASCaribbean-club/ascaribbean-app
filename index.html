@@ -44,6 +44,110 @@
   </head>
   <body translate="no">
     <div id="root"></div>
+    <!--
+      Fallback for a browser too old to run the app (Vite's build target and
+      Tailwind v4 both need Chrome 111+ / Safari 16.4+ / Firefox 128+), or for a
+      bundle that fails to load (stale service-worker cache after a deploy).
+      Classic script, no syntax newer than ES5, so it runs where the module
+      bundle cannot. React's createRoot().render() replaces #root's content, so
+      this message disappears as soon as the app does boot.
+
+      It also reports the failure to PostHog (Error tracking), because the
+      PostHog SDK lives in the very bundle that failed to load. Sent straight
+      to the capture endpoint as an `$exception`, the only event class allowed
+      without usage-measurement consent (see posthog-adapter.ts). Same privacy
+      rules as scrub-event.ts: no URL, no user id (anonymous, no person profile,
+      no GeoIP), only the browser's user agent, the error message truncated and
+      the script file name without its query string.
+      `%VITE_POSTHOG_KEY%` / `%PROD%` are substituted by Vite at build time;
+      anything not a real key (dev, missing variable) disables the report.
+    -->
+    <script>
+      ;(function () {
+        var POSTHOG_KEY = '%VITE_POSTHOG_KEY%'
+        var POSTHOG_HOST = '%VITE_POSTHOG_HOST%'
+        var IS_PROD = '%PROD%' === 'true'
+        var reported = false
+
+        function report(type, message, filename) {
+          if (reported || !IS_PROD || POSTHOG_KEY.indexOf('phc_') !== 0) return
+          reported = true
+          if (POSTHOG_HOST.indexOf('https://') !== 0) POSTHOG_HOST = 'https://eu.i.posthog.com'
+          try {
+            var body = JSON.stringify({
+              api_key: POSTHOG_KEY,
+              event: '$exception',
+              distinct_id: 'boot-' + Math.random().toString(36).slice(2) + Date.now().toString(36),
+              properties: {
+                $process_person_profile: false,
+                $geoip_disable: true,
+                $raw_user_agent: navigator.userAgent,
+                source: 'boot_failure',
+                display_mode: window.matchMedia && window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+                sw_controlled: !!(navigator.serviceWorker && navigator.serviceWorker.controller),
+                $exception_list: [
+                  {
+                    type: type,
+                    value: String(message || '').slice(0, 200) + (filename ? ' @ ' + String(filename).split('?')[0].split('/').pop() : ''),
+                    mechanism: { handled: false, type: 'boot' },
+                  },
+                ],
+              },
+            })
+            // text/plain keeps it a "simple" CORS request (no preflight).
+            var xhr = new XMLHttpRequest()
+            xhr.open('POST', POSTHOG_HOST.replace(/\/$/, '') + '/capture/')
+            xhr.setRequestHeader('Content-Type', 'text/plain')
+            xhr.send(body)
+          } catch (e) {
+            // Reporting must never break the fallback message.
+          }
+        }
+
+        function show(text) {
+          var root = document.getElementById('root')
+          if (!root || root.childElementCount > 0) return
+          var box = document.createElement('div')
+          box.setAttribute('role', 'alert')
+          box.style.cssText =
+            'min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+            'gap:16px;padding:24px;text-align:center;background:#030201;color:#fff;font-family:system-ui,sans-serif'
+          var p = document.createElement('p')
+          p.textContent = text
+          var button = document.createElement('button')
+          button.textContent = 'Recharger'
+          button.style.cssText =
+            'min-height:44px;padding:0 24px;border:0;border-radius:8px;background:#fff;color:#030201;font-size:16px'
+          button.onclick = function () {
+            window.location.reload()
+          }
+          box.appendChild(p)
+          box.appendChild(button)
+          root.appendChild(box)
+        }
+
+        var supported =
+          window.CSS &&
+          typeof CSS.supports === 'function' &&
+          CSS.supports('color', 'color-mix(in srgb, red, blue)') &&
+          'CSSPropertyRule' in window
+        if (!supported) {
+          report('UnsupportedBrowserError', 'color-mix / @property not supported')
+          show('Votre navigateur est trop ancien pour AS Caribbean. Mettez-le à jour (Chrome 111 ou plus récent), puis rechargez la page.')
+          return
+        }
+
+        // A module that fails to parse or load fires `error` on window and
+        // never mounts React: if #root is still empty shortly after, say so.
+        window.addEventListener('error', function (event) {
+          setTimeout(function () {
+            var root = document.getElementById('root')
+            if (root && root.childElementCount === 0) report('AppBootError', event.message, event.filename)
+            show("L'application n'a pas pu démarrer. Rechargez la page ; si le problème continue, mettez votre navigateur à jour.")
+          }, 3000)
+        })
+      })()
+    </script>
     <script type="module" src="/src/presentation/app/main.tsx"></script>
   </body>
 </html>

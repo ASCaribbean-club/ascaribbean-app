@@ -178,18 +178,6 @@ export function useConvocationDetailViewModel() {
     enabled: !!convocationId && activeRole === 'player' && activeTab === 'effectif',
   })
 
-  const rosterForCoachQuery = useQuery({
-    queryKey: queryKeys.convocationRosterForCoach(convocationId ?? ''),
-    queryFn: () => getConvocationRosterForCoachUseCase.execute(convocationId!),
-    // specs/match-stats.md query-keys.ts comment — this is deliberately the
-    // SAME read the Effectif tab already caches: `actualStatus`/`status` on
-    // each roster item is exactly what MS-13's soft eligibility rule
-    // (isEligibleScorer below) needs for the Résultat tab's scorer/carded-
-    // player picker, and its displayName doubles as the coach variant's own
-    // `nameByUserId` lookup. No second, forked read for the same roster.
-    enabled: !!convocationId && activeRole === 'coach' && (activeTab === 'effectif' || activeTab === 'resultat'),
-  })
-
   // Same minute-tick pattern as usePlayerDashboardViewModel, so canRespond
   // re-evaluates once the response window closes mid-session rather than
   // only on the next unrelated re-render (RESPONSE_DEADLINE_MINUTES is
@@ -199,6 +187,24 @@ export function useConvocationDetailViewModel() {
     const id = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // A past `open` convocation is where the "Présences à confirmer" badge can
+  // apply (see attendanceConfirmationMissing below). Deciding it needs the
+  // roster (who has no attendance record yet), so the coach loads it on every
+  // tab for such a convocation, not only on Effectif/Résultat.
+  const isPastOpenConvocation = !!convocation && convocation.status === 'open' && isPastDate(convocation.date, now)
+
+  const rosterForCoachQuery = useQuery({
+    queryKey: queryKeys.convocationRosterForCoach(convocationId ?? ''),
+    queryFn: () => getConvocationRosterForCoachUseCase.execute(convocationId!),
+    // specs/match-stats.md query-keys.ts comment — this is deliberately the
+    // SAME read the Effectif tab already caches: `actualStatus`/`status` on
+    // each roster item is exactly what MS-13's soft eligibility rule
+    // (isEligibleScorer below) needs for the Résultat tab's scorer/carded-
+    // player picker, and its displayName doubles as the coach variant's own
+    // `nameByUserId` lookup. No second, forked read for the same roster.
+    enabled: !!convocationId && activeRole === 'coach' && (activeTab === 'effectif' || activeTab === 'resultat' || isPastOpenConvocation),
+  })
 
   // specs/coach-match-composition.md — the "Composition" tab's own
   // ViewModel, called HERE (page level) rather than inside the tab's
@@ -254,14 +260,18 @@ export function useConvocationDetailViewModel() {
   const canValidateAttendance = activeRole === 'coach' && hasAttendanceValidatePermission
 
   // Développeuse, 2026-09-30 — AC-MD-05 override (specs/match_details_page.md's
-  // own dated note): the "opposite" of the old "Clôturée" pill — a past
-  // convocation still `open` means attendance_records_close_convocation
-  // never fired, i.e. at least one player's attendance is still
-  // unconfirmed. Coach-only, same `canValidateAttendance` gate as
-  // AttendanceConfirmRow itself (only the role that can act on this sees
-  // it).
+  // own dated note): the "opposite" of the old "Clôturée" pill — flags a past
+  // convocation whose attendance is still unconfirmed. `open` alone is not
+  // enough: closure waits 3 days after the date even once every record is set
+  // (20261013134916), so a fully confirmed convocation stays `open` and must
+  // not be flagged. A roster item with `actualStatus === null` is a convoked
+  // player without an attendance record. While the roster is loading the
+  // badge stays hidden rather than flashing. Coach-only, same
+  // `canValidateAttendance` gate as AttendanceConfirmRow itself.
   const attendanceConfirmationMissing =
-    canValidateAttendance && !!convocation && convocation.status === 'open' && isPastDate(convocation.date, now)
+    canValidateAttendance
+    && isPastOpenConvocation
+    && (rosterForCoachQuery.data?.roster.some((item) => item.actualStatus === null) ?? false)
 
   const hasRbacPermission = usePermission('convocation:respond', { teamId: convocation?.teamId })
   // AC-MD-13 — RBAC AND response-deadline window, same shape as

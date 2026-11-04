@@ -45,12 +45,14 @@ function responseWith(overrides: Partial<ConvocationResponse>): ConvocationRespo
 function attendeesConvokedTo(...convokedIds: string[]): ConvocationAttendeeRepository {
   return {
     add: vi.fn(),
+    findByConvocations: vi.fn(),
     listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids.filter((id) => convokedIds.includes(id))),
   }
 }
 function allConvoked(): ConvocationAttendeeRepository {
   return {
     add: vi.fn(),
+    findByConvocations: vi.fn(),
     listConvokedConvocationIds: vi.fn(async (_userId: string, ids: string[]) => ids),
   }
 }

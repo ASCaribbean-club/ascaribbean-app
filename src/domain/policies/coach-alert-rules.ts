@@ -5,19 +5,31 @@
 // requires to be written EXPLICITLY rather than merely inherited
 // (AC-AL-06 — a cancelled convocation is never an alert for B/C;
 // AC-AL-08 — `goalsFor === 0` is never an alert for C).
-import type { Convocation } from '../entities/convocation'
+import type { AttendanceRecord, Convocation } from '../entities/convocation'
 import type { MatchDetails } from '../entities/match-details'
 import { isPastDate } from '../rules/convocation-rules'
+import { isConvocationComplete } from './convocation-closure'
 import { isMatchResultRecordable } from './match-result-timing-rules'
 
 // Signal A — specs/coach-alerts.md §1 table row A / AC-AL-01. Every type
-// (training/match/meeting): a past convocation still `open` means the
-// `attendance_records_close_convocation` DB trigger never fired, i.e. at
-// least one attendance record is missing. `status === 'open'` already
-// excludes `cancelled` by construction (AC-AL-06's first sentence) — no
-// separate cancellation check needed here.
-export function missingAttendanceConfirmation(convocation: Convocation, now: Date): boolean {
-  return convocation.status === 'open' && isPastDate(convocation.date, now)
+// (training/match/meeting): a past convocation still `open` WITH at least one
+// convoked player whose attendance record is missing. `open` alone is not
+// enough: closure waits 3 days after the date even once every record is set
+// (private.close_convocation_if_complete, 20261013134916), so a fully
+// confirmed convocation stays `open` for days and must not be flagged.
+// Completeness reuses `isConvocationComplete` (convocation-closure.ts), the
+// rule the closing trigger mirrors. `status === 'open'` already excludes
+// `cancelled` by construction (AC-AL-06's first sentence) — no separate
+// cancellation check needed here.
+export function missingAttendanceConfirmation(
+  convocation: Convocation,
+  now: Date,
+  convokedUserIds: string[],
+  attendanceRecords: AttendanceRecord[],
+): boolean {
+  return convocation.status === 'open'
+    && isPastDate(convocation.date, now)
+    && !isConvocationComplete(convokedUserIds, attendanceRecords)
 }
 
 // Signal B — specs/coach-alerts.md §1 table row B / AC-AL-01/AC-AL-06/
@@ -67,9 +79,16 @@ export interface CoachAlertActions {
 // exclusive (B requires `goalsFor === null`, C requires `goalsFor !== null`),
 // so at most two of the three booleans are ever true together (A + B, or
 // A + C) — never all three.
-export function getCoachAlertActions(convocation: Convocation, matchDetails: MatchDetails | null, attributedGoalCount: number, now: Date): CoachAlertActions {
+export function getCoachAlertActions(
+  convocation: Convocation,
+  matchDetails: MatchDetails | null,
+  attributedGoalCount: number,
+  now: Date,
+  convokedUserIds: string[],
+  attendanceRecords: AttendanceRecord[],
+): CoachAlertActions {
   return {
-    attendanceConfirmationMissing: missingAttendanceConfirmation(convocation, now),
+    attendanceConfirmationMissing: missingAttendanceConfirmation(convocation, now, convokedUserIds, attendanceRecords),
     matchScoreMissing: missingMatchScore(convocation, matchDetails, now),
     goalAttributionMissing: missingGoalAttribution(convocation, matchDetails, attributedGoalCount),
   }

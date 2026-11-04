@@ -15,7 +15,7 @@ export type FilterScreen =
   | 'news'
   | 'calendar'
 export type FilterKind = 'section' | 'team' | 'status' | 'roster' | 'tag' | 'favorites'
-export type AlertKind = 'missing_document' | 'pending_vote' | 'dues_reminder' | 'coach_alerts'
+export type AlertKind = 'missing_document' | 'pending_vote' | 'dues_reminder' | 'coach_alerts' | 'notifications_activation'
 export type ExternalLinkTarget = 'news_link' | 'club_site' | 'instagram' | 'donation' | 'federation' | 'club_rules' | 'support'
 export type RecordKind =
   | 'convocation'

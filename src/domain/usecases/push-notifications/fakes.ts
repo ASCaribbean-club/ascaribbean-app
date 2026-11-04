@@ -33,11 +33,11 @@ export function fakeSubscriptions(exists = false) {
   } satisfies PushSubscriptionRepository
 }
 
-export function fakePreferences(initial: { attempted?: boolean; optOut?: boolean } = {}) {
+export function fakePreferences(initial: { optOut?: boolean; bannerDismissed?: boolean } = {}) {
   return {
-    hasAttemptedAutoEnable: vi.fn(() => initial.attempted ?? false),
-    markAutoEnableAttempted: vi.fn(),
     hasExplicitOptOut: vi.fn(() => initial.optOut ?? false),
     setExplicitOptOut: vi.fn(),
+    hasDismissedNotificationsBanner: vi.fn(() => initial.bannerDismissed ?? false),
+    dismissNotificationsBanner: vi.fn(),
   } satisfies PushPreferenceRepository
 }

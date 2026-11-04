@@ -119,6 +119,7 @@ export function BackofficeConvocationsPage() {
               onToggleExpanded={vm.toggleExpanded}
               onEdit={vm.goToEdit}
               onOpenAttendance={vm.goToAttendance}
+              onDuplicate={vm.canCreate ? vm.goToDuplicate : undefined}
             />
             {vm.hasMore && (
               <div className="flex justify-center">
@@ -145,6 +146,7 @@ export function BackofficeConvocationsPage() {
                 row={vm.selectedRow}
                 onEdit={() => vm.goToEdit(vm.selectedRow!.id)}
                 onOpenAttendance={() => vm.goToAttendance(vm.selectedRow!.id)}
+                onDuplicate={vm.canCreate ? () => vm.goToDuplicate(vm.selectedRow!.id) : undefined}
               />
             </>
           )}

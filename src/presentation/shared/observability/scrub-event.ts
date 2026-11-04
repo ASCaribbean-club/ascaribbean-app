@@ -34,7 +34,7 @@ const CATALOGUE_PROP_KEYS: Record<CataloguePropKey, true> = {
   tab: true,
 }
 
-const COMMON_KEYS = [...Object.keys(CATALOGUE_PROP_KEYS), 'token', 'distinct_id', '$lib', '$lib_version', '$device_id', '$session_id', '$window_id', '$is_identified', '$process_person_profile', '$browser', '$os', '$device_type', '$screen_width', '$screen_height', '$viewport_width', '$viewport_height', 'roles', 'source', 'action', 'active_role']
+const COMMON_KEYS = [...Object.keys(CATALOGUE_PROP_KEYS), 'token', 'distinct_id', '$lib', '$lib_version', '$device_id', '$session_id', '$window_id', '$is_identified', '$process_person_profile', '$browser', '$browser_version', '$os', '$os_version', '$device_type', 'display_mode', 'sw_controlled', '$screen_width', '$screen_height', '$viewport_width', '$viewport_height', 'roles', 'source', 'action', 'active_role']
 
 const EXCEPTION_KEYS = ['$exception_list', '$exception_level', '$exception_fingerprint', '$exception_handled', '$exception_types', '$exception_sources', '$exception_functions']
 

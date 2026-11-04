@@ -9,13 +9,15 @@
 // configured in Supabase Auth (supabase/config.toml, `[auth] otp_expiry`,
 // same manual-mirroring convention as RLS ↔ rbac-matrix.ts, CLAUDE.md §7).
 // Tranché à 5h le 2026-09-23 (manual WhatsApp/SMS delivery needs more slack
-// than an immediate email) — also set otp_expiry = 18000 in config.toml AND
+// than an immediate email), raised to 24h on 2026-11-04 — the maximum
+// Supabase accepts (anything above 86400 s is rejected). Also set
+// otp_expiry = 86400 in config.toml AND
 // in the hosted project's own Auth setting (Dashboard > Authentication >
 // Providers > Email > Email OTP Expiration); config.toml alone does not
 // reach a project that isn't using `supabase config push`. Never write
 // "expire bientôt" without a number, and never hardcode a number anywhere
 // else in this message.
-export const INVITE_LINK_VALIDITY_HOURS = 5
+export const INVITE_LINK_VALIDITY_HOURS = 24
 
 export interface BuildInvitationMessageParams {
   firstName: string

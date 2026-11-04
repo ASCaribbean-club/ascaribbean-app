@@ -37,6 +37,9 @@ export interface ConvocationRowView {
   attendanceSummary: { present: number; absent: number; unrecorded: number } | null
   // AC-WC-12 — the pencil exists only for an upcoming, open convocation.
   canEdit: boolean
+  // "Dupliquer" exists for any training that is not cancelled (past ones
+  // too). Permission is the screen's, not the row's.
+  canDuplicate: boolean
   // AC-WC-12 — attendance entry exists only for a past, non-cancelled one.
   attendanceLinkLabel: string | null
   panelFields: PanelField[]
@@ -128,6 +131,7 @@ export function toConvocationRowView(item: AdminConvocationListItem, now: Date):
     attendance,
     attendanceSummary,
     canEdit: isConvocationEditable(convocation, now),
+    canDuplicate: convocation.type === 'training' && convocation.status !== 'cancelled',
     attendanceLinkLabel: canEnterAttendance(convocation, now)
       ? convocation.status === 'closed'
         ? 'Voir / modifier les présences'

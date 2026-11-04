@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { ConvocationType } from '@domain/entities/convocation'
 import { ConvocationCreationWindowClosedError } from '@domain/errors/convocation-creation-window-closed-error'
 import { ConvocationAttendeeCapExceededError } from '@domain/errors/convocation-attendee-cap-exceeded-error'
 import { ConvocationNotEditableError } from '@domain/errors/convocation-not-editable-error'
 import { InvalidConvocationInputError } from '@domain/errors/invalid-convocation-input-error'
+import { TrainingDuplicationIncompleteError } from '@domain/errors/training-duplication-incomplete-error'
 import { TrainingLocationArchivedError } from '@domain/errors/training-location-archived-error'
 import { isConvocationEditable } from '@domain/policies/convocation-admin-windows'
 import { useConvocationAdminDependencies } from '@presentation/di/hooks/use-convocation-admin-dependencies'
@@ -20,10 +21,13 @@ import {
   EMPTY_CONVOCATION_FORM_VALUES,
   buildCreateInput,
   buildUpdateInput,
+  computeRepeatDates,
+  getRepeatMaxDate,
   getFormCreationWindow,
   resetTypeSpecificValues,
   validateConvocationForm,
   valuesEqual,
+  valuesForDuplicate,
   valuesFromItem,
   type ConvocationFormErrors,
   type ConvocationFormField,
@@ -38,6 +42,13 @@ const OFFICIAL_CAP_MESSAGE =
   'Un match officiel est limité à 14 convoqués : cette équipe compte plus de joueurs. Choisissez Amical, ou créez la convocation depuis l’application mobile pour sélectionner les joueurs.'
 const EMPTY_TEAM_MESSAGE = 'Cette équipe n’a aucun joueur à convoquer.'
 const UPDATE_ERROR_MESSAGE = 'La convocation n’a pas pu être modifiée. Réessayez.'
+
+// "lundi 11 novembre 2026 · 18:30" — one line of the recap.
+function formatRecapDate(date: Date): string {
+  const day = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return `${day} · ${time}`
+}
 
 // specs/web-create-convocation.md UI design "Écran 2/3" — one ViewModel for the
 // create AND edit forms (mode carried by the route). The edit form is the
@@ -58,11 +69,15 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     opponentRepository,
     listAvailableTrainingLocationsUseCase,
     createConvocationUseCase,
+    createRecurringTrainingsUseCase,
     updateConvocationUseCase,
     listTeamPlayersUseCase,
   } = useConvocationAdminDependencies()
   const { user } = useAuth()
   const navigate = useNavigate()
+  // `?from=<trainingId>` ("Dupliquer"): the creation form pre-filled from it.
+  const [searchParams] = useSearchParams()
+  const duplicateFromId = isEdit ? null : searchParams.get('from')
   const queryClient = useQueryClient()
   const now = useNow()
 
@@ -72,16 +87,29 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [windowClosed, setWindowClosed] = useState(false)
   const [agendaDraft, setAgendaDraft] = useState('')
+  const [isRecapOpen, setIsRecapOpen] = useState(false)
+  // After a partial run, resubmitting would duplicate what was created.
+  const [isIncomplete, setIsIncomplete] = useState(false)
 
-  // --- Stored convocation (edit) ---
+  // --- Stored convocation (edit, or the training being duplicated) ---
+  const sourceId = isEdit ? convocationId : (duplicateFromId ?? '')
+  const hasSource = isEdit || !!duplicateFromId
   const itemQuery = useQuery({
-    queryKey: queryKeys.adminConvocation(convocationId),
-    queryFn: () => adminConvocationRepository.findById(convocationId),
-    enabled: isEdit,
+    queryKey: queryKeys.adminConvocation(sourceId),
+    queryFn: () => adminConvocationRepository.findById(sourceId),
+    enabled: hasSource,
   })
   const item = itemQuery.data ?? null
+  // Only a training can be duplicated: any other `from` is ignored (empty form).
+  const duplicateSource = !isEdit && item?.convocation.type === 'training' ? item : null
 
-  const baseValues = isEdit ? (item ? valuesFromItem(item) : EMPTY_CONVOCATION_FORM_VALUES) : EMPTY_CONVOCATION_FORM_VALUES
+  const baseValues = isEdit
+    ? item
+      ? valuesFromItem(item)
+      : EMPTY_CONVOCATION_FORM_VALUES
+    : duplicateSource
+      ? valuesForDuplicate(duplicateSource)
+      : EMPTY_CONVOCATION_FORM_VALUES
   const values: ConvocationFormValues = { ...baseValues, ...edits }
 
   // --- Reference data ---
@@ -138,6 +166,13 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
 
   const isDirty = isEdit ? !valuesEqual(values, baseValues) : true
 
+  // Training creation with "Répéter": the full list of trainings to create,
+  // first included — shown in the recap before anything is written.
+  const isRepeatAvailable = !isEdit && values.type === 'training'
+  const isRepeating = isRepeatAvailable && values.repeat
+  const repeatDates = computeRepeatDates(values)
+  const repeatMaxDate = getRepeatMaxDate(values)
+
   // --- Mutation ---
   const mutation = useMutation({
     mutationFn: async () => {
@@ -155,13 +190,19 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
       // the web in this pass: the whole team is convoked. The roster is read
       // at submit time so the list is the team's players as of now.
       const players = await listTeamPlayersUseCase.execute(values.teamId)
-      return createConvocationUseCase.execute(
-        buildCreateInput(
-          values,
-          user.id,
-          players.map((player) => player.userId),
-        ),
+      const input = buildCreateInput(
+        values,
+        user.id,
+        players.map((player) => player.userId),
       )
+      if (isRepeating && input.type === 'training') {
+        return createRecurringTrainingsUseCase.execute({
+          training: input,
+          frequency: values.repeatFrequency,
+          until: new Date(`${values.repeatUntil}T00:00`),
+        })
+      }
+      return createConvocationUseCase.execute(input)
     },
     onSuccess: async () => {
       // AC-WC-16 — the list (and the panel) refresh by key invalidation; the
@@ -176,7 +217,18 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
       ])
       navigate(LIST_PATH)
     },
-    onError: (error) => {
+    onError: async (error) => {
+      if (error instanceof TrainingDuplicationIncompleteError) {
+        setIsIncomplete(true)
+        setSubmitError(
+          `${error.createdCount} entraînement(s) sur ${error.requestedCount} ont été créés, puis l’opération s’est arrêtée au ${formatRecapDate(new Date(error.firstFailedDate))}. Vérifiez la liste avant de recommencer, pour ne pas créer de doublons.`,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.adminConvocationsRoot() }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.convocationsRoot() }),
+        ])
+        return
+      }
       if (error instanceof ConvocationNotEditableError) {
         // AC-WC-23 — the window closed while the form was open: keep what was
         // typed on screen, offer only the way back, resync in the background.
@@ -259,6 +311,16 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     setShowErrors(true)
     setSubmitError(null)
     if (Object.keys(validateConvocationForm(values, isEdit ? 'edit' : 'create', now)).length > 0) return
+    // Several trainings at once: the admin reviews the list first.
+    if (isRepeating) {
+      setIsRecapOpen(true)
+      return
+    }
+    mutation.mutate()
+  }
+
+  function confirmRecap() {
+    setIsRecapOpen(false)
     mutation.mutate()
   }
 
@@ -275,8 +337,8 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     setType,
 
     // States
-    isLoading: isEdit && itemQuery.isLoading,
-    loadError: isEdit && itemQuery.error ? mapDomainErrorToUiError(itemQuery.error) : null,
+    isLoading: hasSource && itemQuery.isLoading,
+    loadError: hasSource && itemQuery.error ? mapDomainErrorToUiError(itemQuery.error) : null,
     retryLoad: () => {
       void itemQuery.refetch()
     },
@@ -287,11 +349,16 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     submitError,
     // AC-WC-23 — once the window closed there is nothing to retry; for edit,
     // saving is also disabled while nothing changed (form state, not a right).
-    canSubmit: !windowClosed && isDirty && !isResponseWindowClosed,
+    canSubmit: !windowClosed && isDirty && !isResponseWindowClosed && !isIncomplete,
+    isIncomplete,
     isResponseWindowClosed,
     isRetroactive,
 
     // Header (edit): plain-text reminder of what can't be changed.
+    // Duplicate: where the pre-filled values come from.
+    duplicateSubtitle: duplicateSource
+      ? `Copie de ${duplicateSource.teamName} · ${formatRecapDate(new Date(duplicateSource.convocation.date))}`
+      : '',
     editSubtitle: item ? `${item.teamName} · ${formatConvocationType(item.convocation.type)}` : '',
 
     // Options
@@ -311,6 +378,19 @@ export function useConvocationFormViewModel(target: ConvocationFormMode) {
     setAgendaDraft,
     addAgendaPoint,
     removeAgendaPoint,
+
+    // "Répéter" (training creation) and its recap before validation.
+    isRepeatAvailable,
+    isRepeating,
+    repeatMinDate: values.date || undefined,
+    repeatMaxDate: repeatMaxDate ? toDateInputValue(repeatMaxDate) : undefined,
+    repeatCount: repeatDates.length,
+    repeatDateLabels: repeatDates.map(formatRecapDate),
+    recapTeamName: teamOptions.find((team) => team.id === values.teamId)?.name ?? '',
+    recapLocationName: trainingLocations.find((location) => location.id === values.trainingLocationId)?.name ?? '',
+    isRecapOpen,
+    closeRecap: () => setIsRecapOpen(false),
+    confirmRecap,
 
     submit,
     cancel: () => navigate(LIST_PATH),

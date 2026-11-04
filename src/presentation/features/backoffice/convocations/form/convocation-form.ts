@@ -3,6 +3,13 @@ import type { CompetitionType } from '@domain/entities/competition-type'
 import type { ConvocationType } from '@domain/entities/convocation'
 import { getConvocationCreationWindow, type ConvocationCreationWindow } from '@domain/policies/convocation-creation-window'
 import { isValidMatchSchedule } from '@domain/policies/match-scheduling-rules'
+import {
+  computeTrainingOccurrences,
+  getMaxRecurrenceEnd,
+  isRecurrenceEndAllowed,
+  MAX_RECURRENCE_MONTHS,
+  type TrainingRecurrenceFrequency,
+} from '@domain/policies/training-recurrence'
 import type { CreateConvocationUseCaseInput } from '@domain/usecases/convocation/CreateConvocationUseCase'
 import type { UpdateConvocationUseCaseInput } from '@domain/usecases/convocation/UpdateConvocationUseCase'
 import { combineDateAndTime, toDateInputValue, toTimeInputValue } from '@presentation/shared/formatters/date-input'
@@ -32,15 +39,32 @@ export interface ConvocationFormValues {
   meetingPointLocation: string
   title: string
   agenda: string[]
+  // Create only, training only: "Répéter" creates the training and its
+  // repetitions in one go (up to 3 months after the first one).
+  repeat: boolean
+  repeatFrequency: TrainingRecurrenceFrequency
+  repeatUntil: string // yyyy-mm-dd, last day (inclusive) of a repetition
 }
 
 export type ConvocationFormField =
-  'sectionId' | 'teamId' | 'date' | 'time' | 'trainingLocationId' | 'opponentId' | 'competitionType' | 'location' | 'meetingPointTime' | 'title'
+  | 'sectionId'
+  | 'teamId'
+  | 'date'
+  | 'time'
+  | 'trainingLocationId'
+  | 'opponentId'
+  | 'competitionType'
+  | 'location'
+  | 'meetingPointTime'
+  | 'title'
+  | 'repeatUntil'
 
 export type ConvocationFormErrors = Partial<Record<ConvocationFormField, string>>
 
 export const REQUIRED_FIELD_MESSAGE = 'Ce champ est obligatoire.'
 export const PAST_DATE_MESSAGE = 'La date et l’heure doivent être dans le futur.'
+export const REPEAT_TOO_FAR_MESSAGE = `La date de fin doit être au plus ${MAX_RECURRENCE_MONTHS} mois après le premier entraînement.`
+export const REPEAT_NO_COPY_MESSAGE = 'Aucune répétition avant cette date : choisissez une date plus tardive.'
 export const MEETING_POINT_MESSAGE = 'Le rendez-vous doit précéder le coup d’envoi, le même jour.'
 
 export const EMPTY_CONVOCATION_FORM_VALUES: ConvocationFormValues = {
@@ -58,6 +82,9 @@ export const EMPTY_CONVOCATION_FORM_VALUES: ConvocationFormValues = {
   meetingPointLocation: '',
   title: '',
   agenda: [],
+  repeat: false,
+  repeatFrequency: 'weekly',
+  repeatUntil: '',
 }
 
 // Changing the type keeps team, date and time, and resets every field that
@@ -75,6 +102,24 @@ export function resetTypeSpecificValues(values: ConvocationFormValues, type: Con
     meetingPointLocation: EMPTY_CONVOCATION_FORM_VALUES.meetingPointLocation,
     title: EMPTY_CONVOCATION_FORM_VALUES.title,
     agenda: EMPTY_CONVOCATION_FORM_VALUES.agenda,
+    repeat: EMPTY_CONVOCATION_FORM_VALUES.repeat,
+    repeatFrequency: EMPTY_CONVOCATION_FORM_VALUES.repeatFrequency,
+    repeatUntil: EMPTY_CONVOCATION_FORM_VALUES.repeatUntil,
+  }
+}
+
+// "Dupliquer" on a training: the creation form pre-filled with the source's
+// team, venue and time of day. The date starts one week later (the source
+// itself already exists) and "Répéter" is on; turning it off creates a single
+// copy.
+export function valuesForDuplicate(item: AdminConvocationListItem): ConvocationFormValues {
+  const source = new Date(item.convocation.date)
+  const nextWeek = new Date(source.getFullYear(), source.getMonth(), source.getDate() + 7)
+  return {
+    ...valuesFromItem(item),
+    sectionId: item.sectionId,
+    date: toDateInputValue(nextWeek),
+    repeat: true,
   }
 }
 
@@ -114,6 +159,9 @@ export function valuesEqual(a: ConvocationFormValues, b: ConvocationFormValues):
     a.meetingPointTime === b.meetingPointTime &&
     a.meetingPointLocation === b.meetingPointLocation &&
     a.title === b.title &&
+    a.repeat === b.repeat &&
+    a.repeatFrequency === b.repeatFrequency &&
+    a.repeatUntil === b.repeatUntil &&
     a.agenda.length === b.agenda.length &&
     a.agenda.every((point, index) => point === b.agenda[index])
   )
@@ -129,6 +177,33 @@ export function getFormCreationWindow(values: ConvocationFormValues, now: Date):
 function kickoffIso(values: ConvocationFormValues): string | null {
   if (!values.date || !values.time) return null
   return combineDateAndTime(values.date, values.time)
+}
+
+function repeatStart(values: ConvocationFormValues): Date | null {
+  const kickoff = kickoffIso(values)
+  return kickoff ? new Date(kickoff) : null
+}
+
+function repeatUntilDay(values: ConvocationFormValues): Date | null {
+  return values.repeatUntil ? new Date(`${values.repeatUntil}T00:00`) : null
+}
+
+// Last day the "Jusqu'au" field accepts, null while the date/time is missing.
+export function getRepeatMaxDate(values: ConvocationFormValues): Date | null {
+  const start = repeatStart(values)
+  return start ? getMaxRecurrenceEnd(start) : null
+}
+
+// Every training the form would create, FIRST ONE INCLUDED, in order. Empty
+// when "Répéter" is off or its fields don't (yet) describe a valid range.
+// Feeds the recap shown before validation.
+export function computeRepeatDates(values: ConvocationFormValues): Date[] {
+  if (!values.repeat || values.type !== 'training') return []
+  const start = repeatStart(values)
+  const until = repeatUntilDay(values)
+  if (!start || !until || !isRecurrenceEndAllowed(start, until)) return []
+  const copies = computeTrainingOccurrences(start, values.repeatFrequency, until)
+  return copies.length === 0 ? [] : [start, ...copies]
 }
 
 export function validateConvocationForm(values: ConvocationFormValues, mode: 'create' | 'edit', now: Date): ConvocationFormErrors {
@@ -151,6 +226,15 @@ export function validateConvocationForm(values: ConvocationFormValues, mode: 'cr
   switch (values.type) {
     case 'training':
       if (!values.trainingLocationId) errors.trainingLocationId = REQUIRED_FIELD_MESSAGE
+      if (mode === 'create' && values.repeat) {
+        const start = repeatStart(values)
+        const until = repeatUntilDay(values)
+        if (!until) errors.repeatUntil = REQUIRED_FIELD_MESSAGE
+        else if (start && !isRecurrenceEndAllowed(start, until)) errors.repeatUntil = REPEAT_TOO_FAR_MESSAGE
+        else if (start && computeTrainingOccurrences(start, values.repeatFrequency, until).length === 0) {
+          errors.repeatUntil = REPEAT_NO_COPY_MESSAGE
+        }
+      }
       break
     case 'match':
       if (!values.opponentId) errors.opponentId = REQUIRED_FIELD_MESSAGE

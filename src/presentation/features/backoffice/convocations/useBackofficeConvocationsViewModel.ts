@@ -189,6 +189,8 @@ export function useBackofficeConvocationsViewModel() {
     },
 
     goToCreate: () => navigate('/admin/convocations/new'),
+    // Opens the creation form pre-filled from this training (trainings only).
+    goToDuplicate: (id: string) => navigate(`/admin/convocations/new?from=${id}`),
     goToEdit: (id: string) => navigate(`/admin/convocations/${id}/edit`),
     goToAttendance: (id: string) => navigate(`/admin/convocations/${id}/attendance`),
   }

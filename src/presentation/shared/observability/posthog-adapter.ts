@@ -42,6 +42,14 @@ export function createPosthogObservability({ projectKey, host }: PosthogAdapterO
     },
   })
 
+  // Contexte de plantage : un bug propre à un navigateur ancien, à l'installation
+  // PWA ou à un service worker obsolète se lit dans ces deux propriétés
+  // (valeurs fermées, aucune donnée personnelle).
+  posthog.register({
+    display_mode: window.matchMedia?.('(display-mode: standalone)').matches ? 'standalone' : 'browser',
+    sw_controlled: Boolean(navigator.serviceWorker?.controller),
+  })
+
   return {
     track(event: AnalyticsEvent) {
       if (event.name === 'screen_viewed') currentRoute = event.props.route

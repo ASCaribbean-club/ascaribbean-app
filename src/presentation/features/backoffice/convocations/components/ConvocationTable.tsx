@@ -16,6 +16,7 @@ interface ConvocationTableProps {
   onToggleExpanded: (id: string) => void
   onEdit: (id: string) => void
   onOpenAttendance: (id: string) => void
+  onDuplicate?: (id: string) => void
 }
 
 // specs/web-create-convocation.md UI design "Tableau" — expandable-row pattern
@@ -23,7 +24,7 @@ interface ConvocationTableProps {
 // (`aria-expanded`, keyboard), clicking elsewhere on the row expands too (mouse
 // comfort). No sticky header (project memory); the Table primitive scrolls
 // horizontally in its own container.
-export function ConvocationTable({ rows, expandedIds, onToggleExpanded, onEdit, onOpenAttendance }: ConvocationTableProps) {
+export function ConvocationTable({ rows, expandedIds, onToggleExpanded, onEdit, onOpenAttendance, onDuplicate }: ConvocationTableProps) {
   return (
     <Table>
       <TableHeader>
@@ -79,7 +80,12 @@ export function ConvocationTable({ rows, expandedIds, onToggleExpanded, onEdit, 
               {isExpanded && (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={COLUMN_COUNT} className="whitespace-normal bg-muted/30 p-4">
-                    <ConvocationDetailsPanel row={row} onEdit={() => onEdit(row.id)} onOpenAttendance={() => onOpenAttendance(row.id)} />
+                    <ConvocationDetailsPanel
+                      row={row}
+                      onEdit={() => onEdit(row.id)}
+                      onOpenAttendance={() => onOpenAttendance(row.id)}
+                      onDuplicate={onDuplicate && (() => onDuplicate(row.id))}
+                    />
                   </TableCell>
                 </TableRow>
               )}

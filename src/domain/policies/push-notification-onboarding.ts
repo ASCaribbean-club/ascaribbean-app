@@ -1,12 +1,8 @@
-import type { PushPermission, PushSupport } from './push-notification-state'
+import type { PushNotificationState, PushPermission, PushSupport } from './push-notification-state'
 
-// specs/mob-notifications.md §1 "Activation par défaut" (AC-NT-37..40,
-// PO-NT-29..31) — pure decisions only. Reading Notification.permission,
+// specs/mob-notifications.md §1 "Activation par défaut" (AC-NT-37..39,
+// PO-NT-29..30) — pure decisions only. Reading Notification.permission,
 // PushManager and localStorage stays in data/ and presentation/.
-
-// Single constant (AC-NT-40): the one release whose "What's new" window may
-// carry the activation alert.
-export const NOTIFICATIONS_LAUNCH_VERSION = '1.0.0'
 
 export interface NotificationOnboardingFacts {
   support: PushSupport
@@ -19,30 +15,38 @@ export interface NotificationOnboardingFacts {
   explicitOptOut: boolean
 }
 
-export type NotificationOnboardingDecision = 'subscribe-silently' | 'release-device' | 'fallback' | 'none'
+export type NotificationOnboardingDecision = 'subscribe-silently' | 'release-device' | 'none'
 
 /**
  * AC-NT-37/38/42: an explicit opt-out is never overridden, and frees the device
  * if it is still tied to another account (PO-NT-34); an active subscription
  * needs nothing; on an already-granted permission the silent re-sync runs at
- * EVERY signed-in launch (no attempt limit — only the fallback alert is "once",
- * AC-NT-40) and never prompts (PO-NT-29); everything else falls back to the alert.
+ * EVERY signed-in launch (no attempt limit) and never prompts (PO-NT-29);
+ * everything else does nothing (the dashboard banner points to Settings).
  */
 export function decideNotificationOnboarding(facts: NotificationOnboardingFacts): NotificationOnboardingDecision {
   if (facts.explicitOptOut) return facts.deviceHasSubscription ? 'release-device' : 'none'
   if (facts.subscribed) return 'none'
   if (facts.support === 'supported' && facts.permission === 'granted') return 'subscribe-silently'
-  return 'fallback'
+  return 'none'
 }
 
-/** AC-NT-40/PO-NT-31(a): the alert belongs to the launch version's window only, also inside a batch of unseen versions. */
-export function includesLaunchVersion(unseenVersions: string[], launchVersion: string): boolean {
-  return unseenVersions.includes(launchVersion)
+export interface NotificationsBannerFacts {
+  state: PushNotificationState
+  // The account switched notifications off by hand on this device (PO-NT-30).
+  explicitOptOut: boolean
+  // The account closed the dashboard banner on this device.
+  dismissed: boolean
 }
 
-export type ActivationAlertVariant = 'open-settings' | 'how-to'
-
-/** Alert text variant: iPhone outside the installed app / no notification support gets the "how to" wording. */
-export function selectActivationAlertVariant(support: PushSupport): ActivationAlertVariant {
-  return support === 'supported' ? 'open-settings' : 'how-to'
+/**
+ * Dashboard banner pointing to Menu > Paramètres. Shown only when there is
+ * something to do there: notifications off (or the iPhone "add to home screen"
+ * case). Never after a manual opt-out or a dismissal, never when already
+ * enabled, and not when the device blocks or cannot do notifications (the
+ * banner would promise something Settings cannot deliver by a tap).
+ */
+export function shouldShowNotificationsBanner(facts: NotificationsBannerFacts): boolean {
+  if (facts.dismissed || facts.explicitOptOut) return false
+  return facts.state === 'disabled' || facts.state === 'unsupported-ios-not-installed'
 }

@@ -9,6 +9,8 @@ import { ConvocationFormHeader } from './components/ConvocationFormHeader'
 import { ConvocationTypeToggle } from './components/ConvocationTypeToggle'
 import { MatchFields } from './components/MatchFields'
 import { MeetingFields } from './components/MeetingFields'
+import { RepeatFields } from './components/RepeatFields'
+import { RepeatRecapDialog } from './components/RepeatRecapDialog'
 import { TeamPickerFields } from './components/TeamPickerFields'
 import { TrainingFields } from './components/TrainingFields'
 import { useConvocationFormViewModel } from './useConvocationFormViewModel'
@@ -26,7 +28,7 @@ export function BackofficeConvocationFormPage() {
   const header = (
     <ConvocationFormHeader
       title={vm.isEdit ? 'Modifier la convocation' : 'Créer une convocation'}
-      subtitle={vm.isEdit && vm.editSubtitle ? vm.editSubtitle : undefined}
+      subtitle={(vm.isEdit ? vm.editSubtitle : vm.duplicateSubtitle) || undefined}
       backLabel="Retour aux convocations"
       onBack={vm.cancel}
     />
@@ -118,18 +120,20 @@ export function BackofficeConvocationFormPage() {
       )}
 
       {vm.values.type === 'training' && <TrainingFields vm={vm} />}
+      {vm.isRepeatAvailable && <RepeatFields vm={vm} />}
       {vm.values.type === 'match' && <MatchFields vm={vm} />}
       {vm.values.type === 'meeting' && <MeetingFields vm={vm} />}
 
       <ConvocationFormFooter
-        cancelLabel={vm.windowClosed ? 'Retour' : 'Annuler'}
+        cancelLabel={vm.windowClosed || vm.isIncomplete ? 'Retour' : 'Annuler'}
         onCancel={vm.cancel}
-        showSubmit={!vm.windowClosed}
+        showSubmit={!vm.windowClosed && !vm.isIncomplete}
         submitDisabled={!vm.canSubmit}
         isSubmitting={vm.isSubmitting}
-        submitLabel={vm.isEdit ? 'Enregistrer les modifications' : 'Créer la convocation'}
+        submitLabel={vm.isEdit ? 'Enregistrer les modifications' : vm.isRepeating ? 'Voir le récapitulatif' : 'Créer la convocation'}
         submittingLabel={vm.isEdit ? 'Enregistrement…' : 'Création…'}
       />
+      <RepeatRecapDialog vm={vm} />
     </form>
   )
 }

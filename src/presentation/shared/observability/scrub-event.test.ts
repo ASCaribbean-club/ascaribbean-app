@@ -28,6 +28,18 @@ describe('scrubEvent', () => {
     expect(result.properties).not.toHaveProperty('$exception_message')
   })
 
+  it('keeps browser, OS and install context on an exception, drops the raw user agent', () => {
+    const result = scrubEvent(
+      {
+        event: '$exception',
+        properties: { $browser: 'Chrome', $browser_version: 108, $os: 'Android', $os_version: '10', display_mode: 'standalone', sw_controlled: true, $raw_user_agent: 'Mozilla/5.0 ...' },
+      },
+      '/',
+    )
+    expect(result.properties).toMatchObject({ $browser: 'Chrome', $browser_version: 108, $os: 'Android', $os_version: '10', display_mode: 'standalone', sw_controlled: true })
+    expect(result.properties).not.toHaveProperty('$raw_user_agent')
+  })
+
   it('drops unknown properties (email, name, reason)', () => {
     const result = scrubEvent({ event: 'convocation_responded', properties: { status: 'present', email: 'a@b.c', fullName: 'X', reason: 'blessé' } }, '/')
     expect(result.properties).toHaveProperty('status', 'present')

@@ -1,4 +1,5 @@
 import { DuesReminderBanner } from '@presentation/shared/components/DuesReminderBanner'
+import { NotificationsBanner } from '@presentation/shared/components/NotificationsBanner'
 import { FloatingActionButton } from '@presentation/shared/components/FloatingActionButton'
 import { SectionFilterChips } from '@presentation/shared/components/SectionFilterChips'
 import { Button } from '@presentation/shared/components/ui/button'
@@ -27,6 +28,7 @@ export function DirigeantDashboardPage() {
 
       <div className="flex flex-col gap-4 px-5.5 pb-28">
         <DuesReminderBanner />
+        <NotificationsBanner />
 
         <OverviewTiles tiles={vm.tiles} />
 

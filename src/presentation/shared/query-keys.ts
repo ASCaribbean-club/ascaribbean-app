@@ -7,6 +7,8 @@ export const queryKeys = {
   // specs/mob-notifications.md AC-NT-37 — result of the one automatic activation attempt.
   pushOnboarding: (userId: string) => ['push-notifications', userId, 'onboarding'] as const,
   pushNotificationState: (userId: string) => ['push-notifications', userId, 'state'] as const,
+  // Dashboard banner "activate notifications" (visible or not).
+  pushBanner: (userId: string) => ['push-notifications', userId, 'banner'] as const,
 
   coachTeams: (coachId: string) => ['teams', 'coach', coachId] as const,
   teamUpcomingConvocations: (teamId: string) => ['convocations', 'team', teamId, 'upcoming'] as const,

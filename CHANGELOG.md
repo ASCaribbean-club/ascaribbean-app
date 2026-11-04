@@ -3,6 +3,23 @@
 Nouveautés et corrections visibles par les utilisateurs, version par version.
 **Web** = console d'administration (Administrateur). **Mobile** = application installable (tous les autres rôles).
 
+## [1.2.0] — 2026-11-04
+
+### Web
+**Administrateur**
+- Entraînements : on peut créer un entraînement et ses répétitions hebdomadaires en une fois (3 mois maximum), avec un récapitulatif avant validation.
+- Entraînements : un bouton Dupliquer pré-remplit le formulaire de création à partir d'un entraînement existant.
+- Invitations : le lien d'invitation reste valable 24 h au lieu de 5 h.
+
+### Mobile
+**Coach**
+- Correction : une convocation dont toutes les présences sont confirmées n'apparaît plus dans les alertes.
+- Correction : le badge de présence disparaît une fois tous les joueurs convoqués confirmés.
+
+**Tous**
+- Notifications : une bannière sur l'accueil invite à activer les notifications dans les réglages, et peut être fermée.
+- Correction : si l'application ne peut pas démarrer (navigateur trop ancien, version en cache obsolète), un message s'affiche au lieu d'une page blanche.
+
 ## [1.1.0] — 2026-10-16
 
 ### Web

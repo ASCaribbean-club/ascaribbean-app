@@ -16,8 +16,9 @@ import type { AttendanceRecord } from '../entities/convocation'
  * SQL: private.close_convocation_if_complete / private.close_elapsed_convocations
  * in supabase/migrations/20261012181317_convocation_attendees_rewire.sql.
  */
-// Completeness alone no longer closes a convocation: closure also waits for
-// CONVOCATION_CLOSURE_DELAY_MS after its start (rules/convocation-rules.ts).
+// Completeness alone does not close a convocation: closure also waits 3 days
+// after its date (SQL only, 20261013134916), so a complete convocation stays
+// `open` meanwhile.
 export function isConvocationComplete(
   requiredUserIds: string[],
   attendanceRecords: AttendanceRecord[],

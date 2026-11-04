@@ -4,13 +4,17 @@ import {
   EMPTY_CONVOCATION_FORM_VALUES,
   MEETING_POINT_MESSAGE,
   PAST_DATE_MESSAGE,
+  REPEAT_NO_COPY_MESSAGE,
+  REPEAT_TOO_FAR_MESSAGE,
   getFormCreationWindow,
   REQUIRED_FIELD_MESSAGE,
   buildCreateInput,
   buildUpdateInput,
+  computeRepeatDates,
   resetTypeSpecificValues,
   validateConvocationForm,
   valuesEqual,
+  valuesForDuplicate,
   valuesFromItem,
   type ConvocationFormValues,
 } from './convocation-form'
@@ -340,5 +344,80 @@ describe('getFormCreationWindow', () => {
 
   it('is retroactive once the kickoff has passed', () => {
     expect(getFormCreationWindow(values({ date: '2026-09-30', time: '18:00' }), NOW)).toBe('retroactive')
+  })
+})
+
+describe('repeat (training creation)', () => {
+  const training = (overrides: Partial<ConvocationFormValues> = {}) =>
+    values({ trainingLocationId: 'l1', repeat: true, repeatFrequency: 'weekly', ...overrides })
+
+  it('requires an end date once "Répéter" is on', () => {
+    expect(validateConvocationForm(training(), 'create', NOW)).toMatchObject({ repeatUntil: REQUIRED_FIELD_MESSAGE })
+  })
+
+  it('does not look at the repeat fields when "Répéter" is off', () => {
+    expect(validateConvocationForm(training({ repeat: false }), 'create', NOW)).toEqual({})
+  })
+
+  it('refuses an end date more than 3 months after the first training', () => {
+    expect(validateConvocationForm(training({ repeatUntil: '2027-01-06' }), 'create', NOW)).toMatchObject({
+      repeatUntil: REPEAT_TOO_FAR_MESSAGE,
+    })
+  })
+
+  it('refuses an end date that leaves no repetition', () => {
+    expect(validateConvocationForm(training({ repeatUntil: '2026-10-08' }), 'create', NOW)).toMatchObject({
+      repeatUntil: REPEAT_NO_COPY_MESSAGE,
+    })
+  })
+
+  it('accepts exactly 3 months', () => {
+    expect(validateConvocationForm(training({ repeatUntil: '2027-01-05' }), 'create', NOW)).toEqual({})
+  })
+
+  it('lists every training of the recap, the first one included', () => {
+    const dates = computeRepeatDates(training({ repeatUntil: '2026-10-19' }))
+    expect(dates).toEqual([new Date(2026, 9, 5, 15, 0), new Date(2026, 9, 12, 15, 0), new Date(2026, 9, 19, 15, 0)])
+  })
+
+  it('has no recap when off, not a training, or the range is invalid', () => {
+    expect(computeRepeatDates(training({ repeat: false, repeatUntil: '2026-10-19' }))).toEqual([])
+    expect(computeRepeatDates(training({ type: 'match', repeatUntil: '2026-10-19' }))).toEqual([])
+    expect(computeRepeatDates(training({ repeatUntil: '2027-06-01' }))).toEqual([])
+  })
+
+  it('resets the repeat fields when the type changes', () => {
+    const reset = resetTypeSpecificValues(training({ repeatUntil: '2026-10-19' }), 'match')
+    expect(reset).toMatchObject({ repeat: false, repeatUntil: '' })
+  })
+})
+
+describe('valuesForDuplicate', () => {
+  it('pre-fills team, section, venue and time, one week later, with "Répéter" on', () => {
+    const item = {
+      convocation: {
+        id: 'c1',
+        teamId: 't1',
+        type: 'training',
+        date: new Date(2026, 9, 15, 18, 0).toISOString(),
+        location: null,
+        trainingLocation: { id: 'l1', name: 'Gymnase', address: '1 rue', isArchived: false },
+        status: 'open',
+      },
+      sectionId: 's1',
+      match: null,
+      meeting: null,
+    } as unknown as AdminConvocationListItem
+
+    expect(valuesForDuplicate(item)).toMatchObject({
+      sectionId: 's1',
+      teamId: 't1',
+      type: 'training',
+      date: '2026-10-22',
+      time: '18:00',
+      trainingLocationId: 'l1',
+      repeat: true,
+      repeatUntil: '',
+    })
   })
 })

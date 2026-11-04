@@ -1,4 +1,4 @@
-import { IconAlertTriangle, IconPencil } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCopy, IconPencil } from '@tabler/icons-react'
 import { Button } from '@presentation/shared/components/ui/button'
 import type { ConvocationRowView } from '../convocation-row-view'
 
@@ -6,13 +6,15 @@ interface ConvocationDetailsPanelProps {
   row: ConvocationRowView
   onEdit: () => void
   onOpenAttendance: () => void
+  // Absent when the user cannot create convocations; the button also needs row.canDuplicate.
+  onDuplicate?: () => void
 }
 
 // specs/web-create-convocation.md UI design "Panneau d'information" (PO-WC-14
 // proposal) — read-only, no form control, no nominative response data and no
 // health data. The footer buttons are ABSENT when not applicable, never
 // greyed (AC-WC-12). Expanding writes nothing (AC-WC-11).
-export function ConvocationDetailsPanel({ row, onEdit, onOpenAttendance }: ConvocationDetailsPanelProps) {
+export function ConvocationDetailsPanel({ row, onEdit, onOpenAttendance, onDuplicate }: ConvocationDetailsPanelProps) {
   return (
     <div className="flex flex-col gap-4">
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -68,12 +70,18 @@ export function ConvocationDetailsPanel({ row, onEdit, onOpenAttendance }: Convo
         </div>
       )}
 
-      {(row.canEdit || row.attendanceLinkLabel) && (
+      {(row.canEdit || row.attendanceLinkLabel || (row.canDuplicate && onDuplicate)) && (
         <div className="flex justify-end gap-2">
           {row.canEdit && (
             <Button type="button" variant="outline" onClick={onEdit} className="h-11 rounded-full">
               <IconPencil className="size-4" aria-hidden />
               Modifier
+            </Button>
+          )}
+          {row.canDuplicate && onDuplicate && (
+            <Button type="button" variant="outline" onClick={onDuplicate} className="h-11 rounded-full">
+              <IconCopy className="size-4" aria-hidden />
+              Dupliquer
             </Button>
           )}
           {row.attendanceLinkLabel && (

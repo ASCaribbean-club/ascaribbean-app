@@ -1,12 +1,5 @@
 import { useState } from 'react'
 import changelogMarkdown from '/CHANGELOG.md?raw'
-import { useNavigate } from 'react-router-dom'
-import {
-  includesLaunchVersion,
-  NOTIFICATIONS_LAUNCH_VERSION,
-  type ActivationAlertVariant,
-} from '@domain/policies/push-notification-onboarding'
-import { usePushOnboarding } from '@presentation/shared/hooks/use-push-onboarding'
 import { selectUnseenReleases } from '@domain/policies/release-notes'
 import { parseMobileChangelog } from '@presentation/shared/changelog/parse-changelog'
 
@@ -36,8 +29,6 @@ function writeLastSeen(version: string): void {
 }
 
 export function useWhatsNewViewModel() {
-  const navigate = useNavigate()
-  const onboarding = usePushOnboarding()
   // Computed once per mount: the unseen releases never change while it is open.
   const [initial] = useState(() => {
     const lastSeen = readLastSeen()
@@ -54,25 +45,7 @@ export function useWhatsNewViewModel() {
     if (!open) writeLastSeen(APP_VERSION)
   }
 
-  // AC-NT-39/40: the activation alert exists only in the launch version's
-  // window, and only when the default activation did not succeed.
-  const isLaunchWindow = includesLaunchVersion(
-    initial.map((release) => release.version),
-    NOTIFICATIONS_LAUNCH_VERSION,
-  )
-  const activationAlertVariant: ActivationAlertVariant | null =
-    isLaunchWindow && onboarding.data?.kind === 'fallback' ? onboarding.data.variant : null
-
-  // Same closing consequence as "C'est noté" (version marked seen), then Settings.
-  // Never asks the permission itself (AC-NT-13).
-  const onActivationAlertAction = () => {
-    onOpenChange(false)
-    navigate('/settings')
-  }
-
   return {
-    activationAlertVariant,
-    onActivationAlertAction,
     releases: initial,
     isOpen,
     onOpenChange,

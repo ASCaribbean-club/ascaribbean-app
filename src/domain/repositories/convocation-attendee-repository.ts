@@ -1,3 +1,5 @@
+import type { ConvocationAttendee } from '../entities/convocation-attendee'
+
 // specs/convocation-player-selection.md §4 — write side of the list of
 // convoked players AFTER creation. At creation, the list travels with the
 // convocation itself (ConvocationRepository.create*, one transaction).
@@ -16,4 +18,10 @@ export interface ConvocationAttendeeRepository {
   // (PO-CPS-03). Read under the team-scoped RLS of the list: a player sees the
   // rows of their own team's convocations.
   listConvokedConvocationIds(userId: string, convocationIds: string[]): Promise<string[]>
+
+  // Every convoked player of every convocation in `convocationIds`, in one
+  // round trip (coach alerts: which attendance records are still missing).
+  // Same team-scoped SELECT policy as above. An empty array resolves to an
+  // empty array without a network call.
+  findByConvocations(convocationIds: string[]): Promise<ConvocationAttendee[]>
 }

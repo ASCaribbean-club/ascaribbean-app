@@ -1,4 +1,5 @@
 import { DuesReminderBanner } from '@presentation/shared/components/DuesReminderBanner'
+import { NotificationsBanner } from '@presentation/shared/components/NotificationsBanner'
 import { TeamFormAndGoalsRow } from '@presentation/shared/components/TeamFormAndGoalsRow'
 import { CoachHeader } from './components/CoachHeader'
 import { CreateConvocationFab } from './components/CreateConvocationFab'
@@ -34,6 +35,7 @@ export function CoachDashboardPage() {
 
       <div className="flex flex-col gap-5 px-5.5 pb-16">
         <DuesReminderBanner />
+        <NotificationsBanner />
 
         <NextTrainingOrMatchCard nextTrainingOrMatch={vm.nextTrainingOrMatch} onOpen={() => vm.goToConvocationDetail(vm.nextTrainingOrMatch?.convocation.id ?? '')} />
 

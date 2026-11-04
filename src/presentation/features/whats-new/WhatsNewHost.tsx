@@ -13,8 +13,6 @@ export function WhatsNewHost() {
       onOpenChange={vm.onOpenChange}
       releases={vm.releases}
       currentVersion={vm.currentVersion}
-      activationAlertVariant={vm.activationAlertVariant}
-      onActivationAlertAction={vm.onActivationAlertAction}
     />
   )
 }

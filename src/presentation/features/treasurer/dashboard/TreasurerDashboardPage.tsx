@@ -1,5 +1,6 @@
 import { SectionFilterChips } from "@presentation/shared/components/SectionFilterChips";
 import { DuesReminderBanner } from "@presentation/shared/components/DuesReminderBanner";
+import { NotificationsBanner } from "@presentation/shared/components/NotificationsBanner";
 import { Skeleton } from "@presentation/shared/components/ui/skeleton";
 import { ReminderConfirmDialog } from "../components/ReminderConfirmDialog";
 import { ReminderFeedback } from "../components/ReminderFeedback";
@@ -29,6 +30,7 @@ export function TreasurerDashboardPage() {
 
       <div className="flex flex-col gap-4 px-5.5 pb-28">
         <DuesReminderBanner />
+        <NotificationsBanner />
         <ReminderFeedback
           feedback={vm.reminderFeedback}
           errorMessage={vm.reminderErrorMessage}

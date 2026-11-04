@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from '@presentation/shared/components/ui/alert'
 import { TeamFormAndGoalsRow } from '@presentation/shared/components/TeamFormAndGoalsRow'
 import { DuesReminderBanner } from '@presentation/shared/components/DuesReminderBanner'
+import { NotificationsBanner } from '@presentation/shared/components/NotificationsBanner'
 import { MissingDocumentAlert } from './components/MissingDocumentAlert'
 import { PendingVoteAlert } from './components/PendingVoteAlert'
 import { NextConvocationCard } from './components/NextConvocationCard'
@@ -35,6 +36,7 @@ export function PlayerDashboardPage() {
 
         {/* Document alert first, dues reminder after — never merged (amendement (4) UI, (b)). */}
         <DuesReminderBanner />
+        <NotificationsBanner />
 
         <NextConvocationCard
           data={vm.nextConvocation}

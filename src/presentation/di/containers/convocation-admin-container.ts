@@ -17,6 +17,7 @@ import type { SectionRepository } from '@domain/repositories/section-repository'
 import type { TeamRepository } from '@domain/repositories/team-repository'
 import { ListTeamPlayersUseCase } from '@domain/usecases/convocation/ListTeamPlayersUseCase'
 import { CreateConvocationUseCase } from '@domain/usecases/convocation/CreateConvocationUseCase'
+import { CreateRecurringTrainingsUseCase } from '@domain/usecases/convocation/CreateRecurringTrainingsUseCase'
 import { UpdateConvocationUseCase } from '@domain/usecases/convocation/UpdateConvocationUseCase'
 import { GetAdminAttendanceSheetUseCase } from '@domain/usecases/convocation-admin/GetAdminAttendanceSheetUseCase'
 import { ListAdminConvocationsUseCase } from '@domain/usecases/convocation-admin/ListAdminConvocationsUseCase'
@@ -38,6 +39,8 @@ export interface ConvocationAdminContainer {
   listAdminConvocationsUseCase: ListAdminConvocationsUseCase
   listAvailableTrainingLocationsUseCase: ListAvailableTrainingLocationsUseCase
   createConvocationUseCase: CreateConvocationUseCase
+  // Creation form, training with "Répéter": the training and its repetitions.
+  createRecurringTrainingsUseCase: CreateRecurringTrainingsUseCase
   // specs/convocation-player-selection.md PO-CPS-08 — the web creation convokes the whole team.
   listTeamPlayersUseCase: ListTeamPlayersUseCase
   updateConvocationUseCase: UpdateConvocationUseCase
@@ -58,6 +61,8 @@ export function createConvocationAdminContainer(supabaseClient: SupabaseClient):
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
   const trainingLocationRepository = new TrainingLocationRepositoryImpl(supabaseClient)
 
+  const createConvocationUseCase = new CreateConvocationUseCase(userRepository, teamRepository, convocationRepository)
+
   return {
     adminConvocationRepository,
     seasonRepository,
@@ -66,7 +71,8 @@ export function createConvocationAdminContainer(supabaseClient: SupabaseClient):
     opponentRepository,
     listAdminConvocationsUseCase: new ListAdminConvocationsUseCase(adminConvocationRepository),
     listAvailableTrainingLocationsUseCase: new ListAvailableTrainingLocationsUseCase(trainingLocationRepository),
-    createConvocationUseCase: new CreateConvocationUseCase(userRepository, teamRepository, convocationRepository),
+    createConvocationUseCase,
+    createRecurringTrainingsUseCase: new CreateRecurringTrainingsUseCase(createConvocationUseCase),
     listTeamPlayersUseCase: new ListTeamPlayersUseCase(teamRosterRepository),
     updateConvocationUseCase: new UpdateConvocationUseCase(userRepository, convocationRepository, opponentRepository),
     getAdminAttendanceSheetUseCase: new GetAdminAttendanceSheetUseCase(

@@ -52,7 +52,7 @@ function setup(options: {
       findByConvocationId: async () => ({ competitionType: options.competitionType ?? 'official' }) as MatchDetails,
     } as unknown as MatchDetailsRepository,
     { listForConvocation: async () => convoked(options.convokedCount ?? 5), listTeamPlayers: async () => [] } as ConvocationRespondersRepository,
-    { add, listConvokedConvocationIds: async () => [] } as ConvocationAttendeeRepository,
+    { add, listConvokedConvocationIds: async () => [], findByConvocations: async () => [] } as ConvocationAttendeeRepository,
     () => options.now ?? BEFORE,
   )
   return { useCase, add }

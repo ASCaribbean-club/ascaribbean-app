@@ -1,6 +1,9 @@
 import type { Convocation } from '../../entities/convocation'
 import type { MatchDetails } from '../../entities/match-details'
 import type { Opponent } from '../../entities/opponent'
+import type { AttendanceRecord } from '../../entities/convocation'
+import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
+import type { ConvocationAttendeeRepository } from '../../repositories/convocation-attendee-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
@@ -45,6 +48,8 @@ export class ListCoachAlertsUseCase {
     private readonly matchDetailsRepository: MatchDetailsRepository,
     private readonly matchEventRepository: MatchEventRepository,
     private readonly opponentRepository: OpponentRepository,
+    private readonly attendanceRecordRepository: AttendanceRecordRepository,
+    private readonly convocationAttendeeRepository: ConvocationAttendeeRepository,
   ) {}
 
   async execute(input: ListCoachAlertsInput): Promise<CoachAlertItem[]> {
@@ -61,10 +66,18 @@ export class ListCoachAlertsUseCase {
     // convocations.
     const matchConvocationIds = convocations.filter((convocation) => convocation.type === 'match').map((convocation) => convocation.id)
 
-    const [matchDetailsList, matchEvents, opponents] = await Promise.all([
+    // Signal A needs the convoked players and the recorded attendance of every
+    // still-open convocation (a past `open` one can be fully confirmed and
+    // simply waiting out the closure delay). Bulk reads again, restricted to
+    // open convocations: closed/cancelled ones can never raise signal A.
+    const openConvocationIds = convocations.filter((convocation) => convocation.status === 'open').map((convocation) => convocation.id)
+
+    const [matchDetailsList, matchEvents, opponents, attendees, attendanceRecords] = await Promise.all([
       this.matchDetailsRepository.findByConvocations(matchConvocationIds),
       this.matchEventRepository.findByConvocations(matchConvocationIds),
       this.opponentRepository.findByTeamId(input.teamId),
+      this.convocationAttendeeRepository.findByConvocations(openConvocationIds),
+      this.attendanceRecordRepository.findByConvocations(openConvocationIds),
     ])
 
     const matchDetailsByConvocationId = new Map(matchDetailsList.map((matchDetails) => [matchDetails.convocationId, matchDetails]))
@@ -76,10 +89,26 @@ export class ListCoachAlertsUseCase {
       attributedGoalCountByConvocationId.set(event.convocationId, (attributedGoalCountByConvocationId.get(event.convocationId) ?? 0) + 1)
     }
 
+    const convokedUserIdsByConvocationId = new Map<string, string[]>()
+    for (const attendee of attendees) {
+      convokedUserIdsByConvocationId.set(attendee.convocationId, [...(convokedUserIdsByConvocationId.get(attendee.convocationId) ?? []), attendee.userId])
+    }
+    const attendanceRecordsByConvocationId = new Map<string, AttendanceRecord[]>()
+    for (const record of attendanceRecords) {
+      attendanceRecordsByConvocationId.set(record.convocationId, [...(attendanceRecordsByConvocationId.get(record.convocationId) ?? []), record])
+    }
+
     const items: CoachAlertItem[] = convocations.map((convocation) => {
       const matchDetails = matchDetailsByConvocationId.get(convocation.id) ?? null
       const attributedGoalCount = attributedGoalCountByConvocationId.get(convocation.id) ?? 0
-      const actions = getCoachAlertActions(convocation, matchDetails, attributedGoalCount, input.now)
+      const actions = getCoachAlertActions(
+        convocation,
+        matchDetails,
+        attributedGoalCount,
+        input.now,
+        convokedUserIdsByConvocationId.get(convocation.id) ?? [],
+        attendanceRecordsByConvocationId.get(convocation.id) ?? [],
+      )
       const opponent = matchDetails ? (opponentById.get(matchDetails.opponentId) ?? null) : null
 
       return {

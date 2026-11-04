@@ -1,8 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ConvocationAttendee } from '@domain/entities/convocation-attendee'
 import type { ConvocationAttendeeRepository } from '@domain/repositories/convocation-attendee-repository'
 import type { ConvocationAttendeeRow } from '../dto/convocation-attendee-row'
 import { mapSupabaseError } from '../errors/map-supabase-error'
-import { toConvocationAttendeeRow } from '../mappers/convocation-attendee-mapper'
+import { toConvocationAttendee, toConvocationAttendeeRow } from '../mappers/convocation-attendee-mapper'
 
 // `public.convocation_attendees` —
 // supabase/migrations/20261012181248_convocation_attendees_schema.sql.
@@ -34,5 +35,19 @@ export class ConvocationAttendeeRepositoryImpl implements ConvocationAttendeeRep
     if (error) throw mapSupabaseError(error)
 
     return (data ?? []).map((row) => row.convocation_id)
+  }
+
+  async findByConvocations(convocationIds: string[]): Promise<ConvocationAttendee[]> {
+    if (convocationIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('convocation_attendees')
+      .select('convocation_id, user_id')
+      .in('convocation_id', convocationIds)
+      .overrideTypes<ConvocationAttendeeRow[]>()
+
+    if (error) throw mapSupabaseError(error)
+
+    return (data ?? []).map(toConvocationAttendee)
   }
 }

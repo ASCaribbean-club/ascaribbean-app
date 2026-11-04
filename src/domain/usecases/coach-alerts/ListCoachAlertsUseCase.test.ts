@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Convocation } from '../../entities/convocation'
+import type { AttendanceRecord, Convocation } from '../../entities/convocation'
 import type { MatchDetails } from '../../entities/match-details'
 import type { MatchEvent } from '../../entities/match-event'
 import type { Opponent } from '../../entities/opponent'
+import type { AttendanceRecordRepository } from '../../repositories/attendance-record-repository'
+import type { ConvocationAttendeeRepository } from '../../repositories/convocation-attendee-repository'
 import type { ConvocationRepository } from '../../repositories/convocation-repository'
 import type { MatchDetailsRepository } from '../../repositories/match-details-repository'
 import type { MatchEventRepository } from '../../repositories/match-event-repository'
@@ -102,6 +104,31 @@ function fakeOpponentRepository(opponents: Opponent[] = [], findByTeamId = vi.fn
   }
 }
 
+// By default every requested convocation has ONE convoked player ('p1') and no
+// attendance record yet — i.e. attendance still to confirm.
+function fakeConvocationAttendeeRepository(
+  findByConvocations = vi.fn(async (ids: string[]) => ids.map((convocationId) => ({ convocationId, userId: 'p1' }))),
+): ConvocationAttendeeRepository {
+  return {
+    add: vi.fn(),
+    listConvokedConvocationIds: vi.fn(),
+    findByConvocations,
+  }
+}
+
+function fakeAttendanceRecordRepository(
+  records: AttendanceRecord[] = [],
+  findByConvocations = vi.fn(async () => records),
+): AttendanceRecordRepository {
+  return {
+    upsert: vi.fn(),
+    findByConvocation: vi.fn(),
+    getOwnAttendanceSummary: vi.fn(),
+    getOwnAttendanceSummaryByType: vi.fn(),
+    findByConvocations,
+  }
+}
+
 const now = new Date('2026-08-19T12:00:00.000Z')
 
 describe('ListCoachAlertsUseCase', () => {
@@ -111,6 +138,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository(),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -124,6 +153,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository(),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -145,6 +176,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([]),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -158,6 +191,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([]),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -176,6 +211,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([matchDetails]),
       fakeMatchEventRepository(),
       fakeOpponentRepository([opponent], findByTeamId),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -191,6 +228,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([]),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -207,6 +246,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([matchDetails]),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -227,6 +268,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([matchDetails]),
       fakeMatchEventRepository(events),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -242,6 +285,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository(),
       fakeMatchEventRepository(),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     const result = await useCase.execute({ teamId: 'team-1', now })
@@ -264,6 +309,8 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([], matchDetailsFindByConvocations),
       fakeMatchEventRepository([], matchEventFindByConvocations),
       fakeOpponentRepository([], opponentFindByTeamId),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1', now })
@@ -286,11 +333,60 @@ describe('ListCoachAlertsUseCase', () => {
       fakeMatchDetailsRepository([], findByConvocationsDetails),
       fakeMatchEventRepository([], findByConvocationsEvents),
       fakeOpponentRepository(),
+      fakeAttendanceRecordRepository(),
+      fakeConvocationAttendeeRepository(),
     )
 
     await useCase.execute({ teamId: 'team-1', now })
 
     expect(findByConvocationsDetails).toHaveBeenCalledExactlyOnceWith(['match-1'])
     expect(findByConvocationsEvents).toHaveBeenCalledExactlyOnceWith(['match-1'])
+  })
+
+  it('does not flag signal A once every convoked player has an attendance record, even if the convocation is still open', async () => {
+    const record: AttendanceRecord = {
+      id: 'ar-1',
+      convocationId: 'c1',
+      userId: 'p1',
+      actualStatus: 'present',
+      absenceValidity: null,
+      note: null,
+      validatedBy: 'coach-1',
+      validatedAt: '2026-08-01T20:00:00.000Z',
+    }
+    const useCase = new ListCoachAlertsUseCase(
+      fakeConvocationRepository([convocationWith({ id: 'c1', type: 'training', status: 'open', date: '2026-08-01T18:00:00.000Z' })]),
+      fakeMatchDetailsRepository(),
+      fakeMatchEventRepository(),
+      fakeOpponentRepository(),
+      fakeAttendanceRecordRepository([record]),
+      fakeConvocationAttendeeRepository(),
+    )
+
+    const result = await useCase.execute({ teamId: 'team-1', now })
+
+    expect(result).toEqual([])
+  })
+
+  it('only requests attendees/attendance records for open convocations', async () => {
+    const findAttendees = vi.fn(async () => [])
+    const findRecords = vi.fn(async () => [])
+    const useCase = new ListCoachAlertsUseCase(
+      fakeConvocationRepository([
+        convocationWith({ id: 'open-1', status: 'open' }),
+        convocationWith({ id: 'closed-1', status: 'closed' }),
+        convocationWith({ id: 'cancelled-1', status: 'cancelled' }),
+      ]),
+      fakeMatchDetailsRepository(),
+      fakeMatchEventRepository(),
+      fakeOpponentRepository(),
+      fakeAttendanceRecordRepository([], findRecords),
+      fakeConvocationAttendeeRepository(findAttendees),
+    )
+
+    await useCase.execute({ teamId: 'team-1', now })
+
+    expect(findAttendees).toHaveBeenCalledExactlyOnceWith(['open-1'])
+    expect(findRecords).toHaveBeenCalledExactlyOnceWith(['open-1'])
   })
 })

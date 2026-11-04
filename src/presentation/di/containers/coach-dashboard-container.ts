@@ -1,4 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { AttendanceRecordRepositoryImpl } from '@data/repositories/AttendanceRecordRepositoryImpl'
+import { ConvocationAttendeeRepositoryImpl } from '@data/repositories/ConvocationAttendeeRepositoryImpl'
 import { ConvocationRepositoryImpl } from '@data/repositories/ConvocationRepositoryImpl'
 import { ConvocationRespondersRepositoryImpl } from '@data/repositories/ConvocationRespondersRepositoryImpl'
 import { ConvocationResponseRepositoryImpl } from '@data/repositories/ConvocationResponseRepositoryImpl'
@@ -53,6 +55,8 @@ export function createCoachDashboardContainer(supabaseClient: SupabaseClient): C
   const matchDetailsRepository = new MatchDetailsRepositoryImpl(supabaseClient)
   const matchEventRepository = new MatchEventRepositoryImpl(supabaseClient)
   const opponentRepository = new OpponentRepositoryImpl(supabaseClient)
+  const attendanceRecordRepository = new AttendanceRecordRepositoryImpl(supabaseClient)
+  const convocationAttendeeRepository = new ConvocationAttendeeRepositoryImpl(supabaseClient)
 
   return {
     seasonRepository,
@@ -72,6 +76,13 @@ export function createCoachDashboardContainer(supabaseClient: SupabaseClient): C
       opponentRepository,
     ),
     getTeamRecentFormUseCase: new GetTeamRecentFormUseCase(convocationRepository, matchDetailsRepository),
-    listCoachAlertsUseCase: new ListCoachAlertsUseCase(convocationRepository, matchDetailsRepository, matchEventRepository, opponentRepository),
+    listCoachAlertsUseCase: new ListCoachAlertsUseCase(
+      convocationRepository,
+      matchDetailsRepository,
+      matchEventRepository,
+      opponentRepository,
+      attendanceRecordRepository,
+      convocationAttendeeRepository,
+    ),
   }
 }

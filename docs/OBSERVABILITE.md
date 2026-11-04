@@ -12,7 +12,7 @@
 | Projet PostHog | « Default project » (id 306111), organisation « AS Caribbean » — titulaire : président ; développeur : membre |
 | Actif où ? | **Production uniquement** (build `vite build` avec `VITE_POSTHOG_KEY`). En dev : rien n'est envoyé, jamais |
 | Suivi d'erreurs | Actif par défaut (intérêt légitime : garder le service en état) |
-| Mesure d'usage | **Désactivée par défaut**, activée par `enableAnalytics()` (consentement : point OUVERT) |
+| Mesure d'usage | Désactivée tant qu'aucune session n'existe ; `enableAnalytics()` est appelée par `ObservabilityRoot` dès qu'un utilisateur est connecté (intérêt légitime, à valider par le référent RGPD : point OUVERT) |
 | Dashboard | « AS Caribbean — usage » : <https://eu.posthog.com/project/306111/dashboard/1024112> |
 | Accès admin | lien texte « Statistiques d'usage de l'application (PostHog) » en bas de l'accueil du backoffice |
 | Code | `src/presentation/shared/observability/` — `posthog-js` n'est importé que par `posthog-adapter.ts` |
@@ -67,7 +67,7 @@ Avant envoi, `scrub-event.ts` ne garde que : classe d'erreur, stack trace, `sour
 | Sondages, feature flags | Désactivé | `disable_surveys: true`, `advanced_disable_feature_flags: true` | `surveys_opt_in: false` | Hors besoin ; évite des appels réseau inutiles |
 | Géolocalisation par IP | Désactivée | `$geoip_disable: true` sur chaque événement | `anonymize_ips: true` | PostHog déduisait ville et code postal de l'IP (constaté lors du test) |
 | Cookies | Aucun | `persistence: 'localStorage'` | — | Pas de bandeau cookies nécessaire pour le suivi |
-| Mesure d'usage | Coupée jusqu'à `enableAnalytics()` | `before_send` | — | Consentement OPEN (voir `DEFAULTS-A-CHALLENGER.md`) |
+| Mesure d'usage | Coupée jusqu'à `enableAnalytics()` (appelée à la connexion) | `before_send` | — | Consentement OPEN (voir `DEFAULTS-A-CHALLENGER.md`) |
 | Source maps publiques | Interdites | `sourcemap: 'hidden'` + suppression | — | Voir §7 |
 
 ## 5. Données jamais envoyées

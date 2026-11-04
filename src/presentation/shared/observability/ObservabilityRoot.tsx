@@ -21,8 +21,12 @@ export function ObservabilityRoot() {
   const userId = user?.id
   const roles = useMemo(() => (user ? distinctRoles(user.roles) : []), [user])
   useEffect(() => {
-    if (userId) observability.identify(userId, roles)
-    else observability.reset()
+    if (userId) {
+      observability.identify(userId, roles)
+      // Mesure d'usage activée dès qu'une session existe (intérêt légitime,
+      // point consentement à valider par le référent RGPD).
+      observability.enableAnalytics()
+    } else observability.reset()
   }, [observability, userId, roles])
 
   return <Outlet />

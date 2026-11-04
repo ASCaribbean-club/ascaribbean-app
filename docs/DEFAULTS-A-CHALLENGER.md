@@ -337,7 +337,7 @@ export interface Team {
 
 **Où** : `presentation/shared/observability/posthog-adapter.ts` (`enableAnalytics()`), `before_send`.
 
-**Valeur actuelle** : le suivi d'erreurs est actif par défaut (intérêt légitime : garder le service en état) ; la mesure d'usage démarre **désactivée** (tous les événements autres que `$exception` sont écartés avant envoi) et ne s'active que par l'appel de `enableAnalytics()`. Aucun écran de consentement n'existe.
+**Valeur actuelle** : le suivi d'erreurs est actif par défaut (intérêt légitime : garder le service en état) ; la mesure d'usage reste **désactivée** (tous les événements autres que `$exception` sont écartés avant envoi) jusqu'à l'appel de `enableAnalytics()`, qui a lieu dans `ObservabilityRoot` dès qu'un utilisateur est connecté (intérêt légitime, sans écran de consentement). Avant ce choix, rien n'était remonté en production car l'appel n'existait nulle part.
 
 **Pourquoi cette valeur, provisoirement** : savoir si la mesure d'audience relève de l'exemption CNIL ou exige un consentement explicite dépend du référent RGPD, pas encore désigné (`GOUVERNANCE.md`). Le choix le plus protecteur est retenu en attendant.
 
